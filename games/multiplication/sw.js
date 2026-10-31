@@ -9,10 +9,16 @@
  * wipes the games' offline files.)
  */
 const CACHE_PREFIX = "ttc-cache-";
-const CACHE_NAME = CACHE_PREFIX + "20261027b";
+const CACHE_NAME = CACHE_PREFIX + "20261028";
 
 const PRECACHE_URLS = [
   "./Multiplication.html",
+  "./dozen-galaxy.html",          // the same game, published a second time as its own app (Dozen Galaxy)
+  "./dozen-galaxy.webmanifest",
+  "./dozen-icon-192.png",
+  "./dozen-icon-512.png",
+  "./dozen-apple-touch-icon.png",
+  "./dozen-favicon-32.png",
   "./MultiDashboard.html",
   "./manifest.json",
   "./dashboard-manifest.json",
@@ -60,7 +66,7 @@ self.addEventListener("fetch", (event) => {
           if (res && res.ok) { const copy = res.clone(); caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)); }   // never cache a 404 page
           return res;
         })
-        .catch(() => caches.open(CACHE_NAME).then((c) => c.match(req).then((r) => r || c.match("./Multiplication.html"))))
+        .catch(() => caches.open(CACHE_NAME).then((c) => c.match(req).then((r) => r || c.match(/dozen-galaxy/i.test(url.pathname) ? "./dozen-galaxy.html" : "./Multiplication.html"))))
     );
     return;
   }

@@ -12,6 +12,21 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Times Tables">
+<script>
+/* Dozen Galaxy as its own app. The site publishes this one file a second time under the name dozen-galaxy.html. When the page is opened
+   under that name, the tags above are switched, before anything else runs, to Dozen Galaxy's own name, manifest and icons, so
+   "Add to Home Screen" makes a separate app. Opened as Multiplication.html nothing changes here. */
+(function(){ try{
+  if(!/\/dozen-galaxy(\.html)?\/?$/i.test(location.pathname)) return;
+  var set = function(sel, attr, val){ var e = document.querySelector(sel); if(e) e.setAttribute(attr, val); };
+  set('link[rel="manifest"]', 'href', './dozen-galaxy.webmanifest');
+  set('link[rel="apple-touch-icon"]', 'href', './dozen-apple-touch-icon.png');
+  set('link[rel="icon"]', 'href', './dozen-favicon-32.png');
+  set('meta[name="theme-color"]', 'content', '#0E1B4D');
+  set('meta[name="apple-mobile-web-app-title"]', 'content', 'Dozen Galaxy');
+  document.title = 'Dozen Galaxy';
+}catch(e){} })();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@500;700;800&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
@@ -366,6 +381,10 @@ const FMT = (()=>{ try{
   try{ o = h ? new URL(h).origin : null; }catch(e){ o = null; }
   return { profile:p, host:/^https?:/.test(o||"") ? o : null, session:Math.random().toString(36).slice(2,10) };
 }catch(e){ return {}; } })();
+/* Dozen Galaxy opens straight away when the page is opened under the name dozen-galaxy.html (the site's Dozen Galaxy card and the Dozen Galaxy home-screen app) or with ?go=dozen on the address. */
+const DZ_DIRECT = (()=>{ try{ return /\/dozen-galaxy(\.html)?\/?$/i.test(location.pathname) || new URLSearchParams(location.search).get("go") === "dozen"; }catch(e){ return false; } })();
+/* Dozen Galaxy wording for the big title and the footer (the page is already drawn at this point; Times Tables is not touched). */
+if(DZ_DIRECT){ try{ const hh = document.querySelectorAll(".brand h1"), xx = document.querySelector(".brand .x"), ft = document.querySelector("footer"); if(hh.length === 2){ hh[0].textContent = "Dozen Galaxy"; hh[1].remove(); if(xx) xx.remove(); } if(ft) ft.textContent = "Dozen Galaxy"; }catch(e){} }
 function fmtHook(name, data){
   if(!FMT.profile) return;
   const ev = { schema:1, lesson_id:"math.g3.times-tables", event:name, ts:new Date().toISOString().replace(/\.\d+Z$/,"Z"), session:FMT.session, profile:FMT.profile, data:data||{} };
@@ -483,7 +502,7 @@ async function renderHome(){
   app.innerHTML = `
     <div class="card home-card">
       <h2>Who's playing?</h2>
-      <p class="sub">Pick your name to see your rounds and best time.</p>
+      <p class="sub">${DZ_DIRECT ? "Pick your name to start your mission." : "Pick your name to see your rounds and best time."}</p>
       <select id="nameSelect" disabled><option>Loading names…</option></select>
       <div id="addNameBox" style="display:none; margin-top:14px;">
         <input type="text" id="newNameInput" class="name-input" placeholder="Type your name" maxlength="30">
@@ -569,7 +588,7 @@ function mergeProgress(rec, remote){
     const remote = await fetchRemoteProgress(session.name);
     session.rec = mergeProgress(session.rec, remote);
     saveKidRecord(session.name, session.rec);
-    renderLevels();
+    dzEnter();
   });
 }
 
@@ -1313,6 +1332,8 @@ function dzPromoHtml(){
 function dzTryButtonHtml(n){
   return (n === 10 || n === 14) ? '<div class="row"><button class="btn" id="dzTryBtn" style="min-height:48px;">🚀 Try Dozen Galaxy</button></div>' : "";
 }
+/* where a child lands after the start-up (profile or name choice): the round map, or Dozen Galaxy Mission Control when opened as Dozen Galaxy. Back ("Round map") from there is the normal round map. */
+function dzEnter(){ if(DZ_DIRECT) dzRenderHub(); else renderLevels(); }
 function dzWireOpen(){
   const b = $dz("dzOpen") || $dz("dzTryBtn");
   if(b) b.addEventListener("click", dzRenderHub);
@@ -1327,7 +1348,7 @@ function dzRenderHub(){
     return '<button class="dz-flight" data-flight="'+f.id+'" aria-label="Flight '+f.id+', '+f.name+'. '+st+' of 3 stars. '+f.blurb.replace(/"/g,"")+'"><span class="no" aria-hidden="true">'+f.id+'</span><span class="tx"><b>'+f.name+'</b><small>'+f.blurb+'</small></span><span class="st" aria-hidden="true">'+dzStarText(st)+'</span></button>';
   }).join("");
   app.innerHTML = '<div class="dz dz-hub">'
-    + '<div class="dz-top"><div class="dz-tag">🚀 Dozen Galaxy</div><div class="grp"><button class="btn secondary small" id="dzToMap">Round map</button></div></div>'
+    + '<div class="dz-top"><div class="dz-tag">🚀 Dozen Galaxy</div><div class="grp"><button class="btn secondary small" id="dzToMap">Round map</button>'+(FMT.profile?'':'<button class="btn secondary small" id="dzSwitch">Switch kid</button>')+'</div></div>'
     + '<div class="card dz-card"><h2 id="dzTitle" tabindex="-1">Mission Control</h2>'
     + '<p>A <b>dozen</b> is 12. Every cargo pod holds a dozen star crystals: <span class="dz-blue">10 blue</span> and <span class="dz-pinkt">2 pink</span>. Captains ask for pods and you work out the crystals.</p>'
     + '<div class="dz-one" aria-hidden="true">'+dzPodSvg()+'</div>'
@@ -1337,6 +1358,7 @@ function dzRenderHub(){
     + '<h3>Your star map: '+m.lit+' of '+DZ_MAP_SIZE+' stars</h3><p class="dz-sub">Every order you deliver lights a star. A dozen stars finish a constellation.</p>'+dzMapHtml(d.pods)
     + '</div></div>';
   $dz("dzToMap").addEventListener("click", ()=>{ renderLevels(); });
+  if($dz("dzSwitch")) $dz("dzSwitch").addEventListener("click", renderHome);
   document.querySelectorAll(".dz-flight").forEach(b=>b.addEventListener("click", ()=>dzStart(parseInt(b.dataset.flight, 10))));
   window.scrollTo(0, 0);
   $dz("dzTitle").focus({ preventScroll:true });
@@ -1662,7 +1684,7 @@ if(location.hash === "#selftest"){ dzRunSelfTest(); }
 else if(FMT.profile){
   session.name = FMT.profile.charAt(0).toUpperCase()+FMT.profile.slice(1);   // the passport animal, never a typed name
   session.rec = getKidRecord(session.name);
-  renderLevels();
+  dzEnter();
 } else renderHome();
 </script>
 <script>(function backPill() {

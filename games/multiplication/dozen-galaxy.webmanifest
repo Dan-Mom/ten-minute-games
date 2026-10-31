@@ -1,0 +1,16 @@
+{
+  "id": "./dozen-galaxy.html",
+  "name": "Dozen Galaxy",
+  "short_name": "Dozen Galaxy",
+  "description": "A space game to help with the 12 times table.",
+  "start_url": "./dozen-galaxy.html",
+  "scope": "./dozen-galaxy.html",
+  "display": "standalone",
+  "background_color": "#0E1B4D",
+  "theme_color": "#0E1B4D",
+  "icons": [
+    { "src": "./dozen-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./dozen-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./dozen-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
