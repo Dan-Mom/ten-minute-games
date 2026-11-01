@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Make Ten Express</title>
+<meta name="theme-color" content="#2f7dd1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<style>
+/* Make Ten Express: one idea (make a ten) in five short levels.
+   Every train car is a ten frame (2 rows of 5 seats), so a child can SEE how many more make 10 instead of counting by ones.
+   Each level: 10 rides. A ride is right first try = a star. Progress stays in this browser only. */
+:root{
+  color-scheme:light;
+  --ink:#1d2b4f; --mute:#4a587a; --page:#eef7ff; --card:#fff;
+  --blue:#2f7dd1; --blue-s:#d5e9ff; --orange:#e8650a; --orange-s:#ffe2c4;
+  --green:#1f8f45; --green-s:#d3f4dd; --red:#c43a3a; --red-s:#fde0e0; --gold:#ffcc33;
+  --seat:#f4f7fb; --rider:#ff8a3d; --rider2:#3db0ff;
+  --display:"Baloo 2","Nunito","Trebuchet MS",system-ui,sans-serif;
+  --body:"Nunito","Trebuchet MS",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font:800 18px/1.45 var(--body);min-height:100vh}
+h1,h2,h3{font-family:var(--display);margin:0;line-height:1.1}
+button{font-family:var(--display);cursor:pointer}
+.wrap{max-width:880px;margin:0 auto;padding:14px 16px 90px}
+.top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.top h1{font-size:clamp(24px,4.5vw,34px);color:var(--blue)}
+.top .stars{margin-left:auto;font:800 18px var(--display);color:#8a6400;background:#fff5cc;border-radius:999px;padding:4px 14px}
+.sound{border:0;background:#fff;border-radius:999px;min-width:44px;min-height:44px;font-size:20px;box-shadow:0 3px 0 #c9dbef}
+
+/* level picker */
+.levels{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:14px;margin-top:16px}
+.lv{text-align:left;border:0;background:var(--card);border-radius:22px;padding:16px;min-height:120px;box-shadow:0 6px 0 #c9dbef;display:flex;flex-direction:column;gap:4px;color:var(--ink)}
+.lv:disabled{opacity:.5;cursor:not-allowed}
+.lv b{font-size:22px;color:var(--blue)}
+.lv span{font:700 15px var(--body);color:var(--mute)}
+.lv i{font-style:normal;font-size:15px;color:#8a6400}
+
+/* play */
+.bar{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
+.back{border:0;background:#fff;border-radius:14px;min-height:44px;padding:0 14px;font-size:16px;color:var(--blue);box-shadow:0 3px 0 #c9dbef}
+.dots{display:flex;gap:5px;flex-wrap:wrap}
+.dots span{width:14px;height:14px;border-radius:50%;background:#d6e2ef}
+.dots span.ok{background:var(--gold)}
+.dots span.try{background:#9fc3e8}
+.dots span.now{outline:3px solid var(--blue);outline-offset:1px}
+.stage{margin-top:14px;background:var(--card);border-radius:26px;padding:18px 16px 20px;box-shadow:0 6px 0 #c9dbef}
+.prompt{font:800 clamp(21px,3.6vw,28px)/1.25 var(--display);text-align:center;min-height:2.5em;display:flex;align-items:center;justify-content:center}
+.train{display:flex;justify-content:center;align-items:flex-end;gap:10px;flex-wrap:wrap;margin:16px 0 6px}
+.engine{font-size:56px;line-height:1;align-self:center}
+.car{position:relative;background:#7fb6ea;border-radius:16px;padding:9px;display:grid;grid-template-columns:repeat(5,38px);grid-template-rows:repeat(2,38px);gap:6px;box-shadow:0 5px 0 #4f86bd}
+.car.full{background:#6fcf8e;box-shadow:0 5px 0 #3e9a5e}
+.car .tag{position:absolute;top:-24px;left:50%;transform:translateX(-50%);font:800 16px var(--display);color:var(--mute)}
+.seat{background:var(--seat);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;color:#aab7c7}
+.seat.r{background:var(--rider);box-shadow:inset 0 -4px 0 rgba(0,0,0,.15)}
+.seat.r2{background:var(--rider2);box-shadow:inset 0 -4px 0 rgba(0,0,0,.15)}
+.seat.new{animation:pop .45s ease}
+.seat.gone{background:transparent;border:2px dashed #c4d0dd}
+.seat.leave{animation:leave .5s ease forwards}
+.cover{position:absolute;inset:0;border-radius:16px;background:repeating-linear-gradient(45deg,#8aa6c2,#8aa6c2 10px,#9db6cf 10px,#9db6cf 20px);display:flex;align-items:center;justify-content:center;color:#fff;font:800 18px var(--display)}
+@keyframes pop{0%{transform:scale(.2)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+@keyframes leave{to{transform:translateY(-26px);opacity:0}}
+@media (max-width:420px){.car{grid-template-columns:repeat(5,30px);grid-template-rows:repeat(2,30px);gap:5px;padding:7px}.engine{font-size:44px}}
+.platform{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;min-height:44px;margin-top:12px;padding:8px;border-top:4px solid #c9b48a}
+.platform .p{width:34px;height:34px;border-radius:50%;background:var(--rider2);box-shadow:inset 0 -4px 0 rgba(0,0,0,.15)}
+.platform .p.g{background:#ffd36b}
+.platform small{font:800 15px var(--display);color:var(--mute);width:100%;text-align:center}
+.bond{display:flex;justify-content:center;align-items:center;gap:8px;font:800 22px var(--display);margin-top:10px;flex-wrap:wrap}
+.bond .c{min-width:48px;min-height:48px;border-radius:50%;border:3px solid var(--blue);display:inline-flex;align-items:center;justify-content:center;background:#fff}
+.bond .c.q{border-style:dashed;color:var(--mute)}
+.eq{text-align:center;font:800 clamp(22px,4vw,30px) var(--display);margin-top:10px;color:var(--ink)}
+.eq em{font-style:normal;color:var(--orange)}
+.pad{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:10px;margin-top:16px}
+.pad button{min-height:60px;border:0;border-radius:16px;background:var(--blue-s);color:var(--blue);font-size:26px;box-shadow:0 4px 0 #a9c9ea}
+.pad button:active{transform:translateY(2px);box-shadow:0 2px 0 #a9c9ea}
+.pad button.no{background:var(--red-s);color:var(--red);box-shadow:0 4px 0 #f1b5b5;animation:shake .35s}
+.pad button.yes{background:var(--green-s);color:var(--green);box-shadow:0 4px 0 #9fdcb3}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.row{display:flex;justify-content:center;gap:10px;margin-top:14px;flex-wrap:wrap}
+.btn{border:0;border-radius:16px;min-height:52px;padding:0 22px;font-size:21px;color:#fff;background:var(--orange);box-shadow:0 5px 0 #a5450a}
+.btn.alt{background:#fff;color:var(--blue);box-shadow:0 4px 0 #c9dbef}
+.hint{margin-top:12px;text-align:center;font:700 17px var(--body);color:var(--mute)}
+.done{text-align:center}
+.done .big{font-size:64px}
+.why{margin-top:18px;background:#fff;border-radius:18px;padding:14px 16px;font:700 15px/1.5 var(--body);color:var(--mute)}
+.why b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><h1>🚂 Make Ten Express</h1><button class="sound" id="snd" type="button" aria-label="Read it to me">🔊</button><span class="stars" id="starTotal">⭐ 0</span></div>
+  <div id="app"></div>
+</div>
+<script>
+(function () {
+  "use strict";
+  var KEY = 'make-ten-express.v1';
+  var LEVELS = [
+    { name: 'Seats Left', goal: 'Partners of 10', blurb: 'Take a quick look. How many seats are still empty?' },
+    { name: 'Fill the Car', goal: 'Make 10 to add', blurb: 'Fill the car to 10 first, then add the rest. 8 + 5 = 10 + 3.' },
+    { name: 'Teen Trains', goal: 'Add to the next ten', blurb: 'Bigger trains. 13 + 7: the car needs 7 to be full, so it is 20.' },
+    { name: 'Getting Off', goal: 'Take away through 10', blurb: '14 − 6: first the 4 in the last car get off, then 2 more. 8 are left.' },
+    { name: 'Mixed Ride', goal: 'All of it, mixed', blurb: 'Every kind of ride, mixed up. Think "make 10" every time.' }
+  ];
+  var ROUNDS = 10;
+  var app = document.getElementById('app');
+  var st = load();
+  var lastSay = '';
+
+  function load() { try { var s = JSON.parse(localStorage.getItem(KEY)); if (s && s.stars) return s; } catch (e) {} return { stars: {} }; }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} }
+  function E(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function rnd(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+  function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function totalStars() { var n = 0; Object.keys(st.stars).forEach(function (k) { n += st.stars[k]; }); return n; }
+  function drawStars() { document.getElementById('starTotal').textContent = '⭐ ' + totalStars(); }
+  function unlocked(i) { return i === 0 || st.stars[i - 1] != null; }
+
+  /* read aloud: the child may not read every word yet */
+  var voiceOn = true;
+  function say(t) {
+    lastSay = t;
+    if (!voiceOn || !window.speechSynthesis) return;
+    try { speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(t.replace(/−/g, ' minus ').replace(/\+/g, ' plus ')); u.lang = 'en-US'; u.rate = 0.9; speechSynthesis.speak(u); } catch (e) {}
+  }
+  document.getElementById('snd').onclick = function () { voiceOn = true; say(lastSay); };
+
+  /* ---------- the rides ---------- */
+  function partner() { return { kind: 'partner', a: rnd(1, 9) }; }
+  function bridge(teen) {
+    for (;;) {
+      var a = teen ? rnd(11, 17) : rnd(6, 9), ones = a % 10, b = rnd(2, 9);
+      if (ones === 0 || ones + b < 10 || a + b > (teen ? 26 : 18)) continue;
+      if (!teen && ones + b === 10) continue;           // level 2 always goes past 10
+      return { kind: 'add', a: a, b: b };
+    }
+  }
+  function takeaway() {
+    for (;;) { var a = rnd(11, 18), b = rnd(2, 9); if (a % 10 < b && a % 10 > 0) return { kind: 'sub', a: a, b: b }; }
+  }
+  function makeRides(lv) {
+    var list = [], seen = {}, tries = 0;
+    while (list.length < ROUNDS) {
+      tries++;
+      var r = lv === 0 ? partner() : lv === 1 ? bridge(false) : lv === 2 ? bridge(true) : lv === 3 ? takeaway()
+        : [partner, function () { return bridge(false); }, function () { return bridge(true); }, takeaway][list.length % 4]();
+      var k = r.kind + r.a + '_' + r.b;
+      if (seen[k] && tries < 200) continue;              // avoid repeats, but level 1 has only 9 different rides
+      seen[k] = 1; list.push(r);
+    }
+    if (lv === 2) { list[0] = { kind: 'add', a: 13, b: 7 }; }   // the example from the start screen
+    return lv === 4 ? shuffle(list) : list;
+  }
+
+  /* ---------- drawing a train ---------- */
+  // cars: array of { n: riders, extra: riders added this step, gone: riders who left, cover: bool }
+  function drawTrain(cars) {
+    var t = E('div', 'train');
+    t.appendChild(E('span', 'engine', '🚂'));
+    cars.forEach(function (c, ci) {
+      var car = E('div', 'car' + (c.n + (c.extra || 0) === 10 && !c.gone ? ' full' : ''));
+      var shown = c.n + (c.extra || 0);
+      for (var i = 0; i < 10; i++) {
+        var s = E('div', 'seat');
+        if (i < c.n) s.className = 'seat r' + (c.leaving && i >= c.n - c.leaving ? ' leave' : '');
+        else if (i < shown) s.className = 'seat r2 new';
+        else if (c.gone && i < c.n + c.gone) s.className = 'seat gone';
+        car.appendChild(s);
+      }
+      if (c.label) car.appendChild(E('span', 'tag', c.label));
+      if (c.cover) car.appendChild(E('div', 'cover', 'Quick look is over!'));
+      t.appendChild(car);
+    });
+    return t;
+  }
+  function carsFor(total) { var cars = []; while (total >= 10) { cars.push({ n: 10 }); total -= 10; } if (total) cars.push({ n: total }); return cars; }
+
+  /* ---------- screens ---------- */
+  function home() {
+    if (window.speechSynthesis) try { speechSynthesis.cancel(); } catch (e) {}
+    drawStars(); app.replaceChildren();
+    var g = E('div', 'levels');
+    LEVELS.forEach(function (L, i) {
+      var b = E('button', 'lv'); b.type = 'button'; b.disabled = !unlocked(i);
+      b.appendChild(E('b', null, 'Level ' + (i + 1) + ' · ' + L.name));
+      b.appendChild(E('span', null, L.goal + '. ' + L.blurb));
+      b.appendChild(E('i', null, st.stars[i] != null ? '⭐ ' + st.stars[i] + ' / ' + ROUNDS : unlocked(i) ? 'About 10 minutes' : '🔒 Finish level ' + i + ' first'));
+      b.onclick = function () { play(i); };
+      g.appendChild(b);
+    });
+    app.appendChild(g);
+    var w = E('div', 'why');
+    w.innerHTML = '<b>For grown-ups:</b> each car is a ten frame. Children see 7 and know 3 seats are empty without counting, then use that to add and take away through 10 (8 + 5 = 8 + 2 + 3). Try to let your child explain how they knew, not just the answer.';
+    app.appendChild(w);
+    lastSay = 'Pick a level. Start with level 1.';
+  }
+
+  function play(lv) {
+    var rides = makeRides(lv), idx = 0, marks = [];
+    function next() {
+      if (idx >= rides.length) return finish();
+      ride(rides[idx], function (firstTry) { marks.push(firstTry); idx++; next(); });
+    }
+    function frame(promptText) {
+      app.replaceChildren();
+      var bar = E('div', 'bar');
+      var bk = E('button', 'back', '← Levels'); bk.type = 'button'; bk.onclick = home; bar.appendChild(bk);
+      bar.appendChild(E('b', null, 'Level ' + (lv + 1) + ' · ' + LEVELS[lv].name));
+      var dots = E('div', 'dots');
+      for (var i = 0; i < ROUNDS; i++) dots.appendChild(E('span', i < marks.length ? (marks[i] ? 'ok' : 'try') : i === idx ? 'now' : ''));
+      bar.appendChild(dots); app.appendChild(bar);
+      var stage = E('div', 'stage'); app.appendChild(stage);
+      var p = E('div', 'prompt', promptText); stage.appendChild(p);
+      say(promptText);
+      return { stage: stage, prompt: function (t) { p.textContent = t; say(t); } };
+    }
+    /* ask(): number buttons; resolves when the child taps the right one. first = right on the first tap. */
+    function ask(stage, choices, right, onRight, hintText) {
+      var pad = E('div', 'pad'), wrong = 0, hint = null;
+      choices.forEach(function (n) {
+        var b = E('button', null, String(n)); b.type = 'button';
+        b.onclick = function () {
+          if (pad.dataset.done) return;
+          if (n === right) { b.className = 'yes'; pad.dataset.done = '1'; onRight(wrong === 0); }
+          else {
+            wrong++; b.className = 'no'; setTimeout(function () { b.className = ''; }, 400);
+            if (!hint && hintText) { hint = E('div', 'hint', hintText); stage.appendChild(hint); say(hintText); }
+          }
+        };
+        pad.appendChild(b);
+      });
+      stage.appendChild(pad);
+    }
+    function options(ans) {
+      var set = [ans], c = [ans + 1, ans - 1, ans + 10, ans - 10, ans + 2, ans - 2];
+      shuffle(c).forEach(function (x) { if (set.length < 4 && x >= 0 && x <= 30 && set.indexOf(x) < 0) set.push(x); });
+      return set.sort(function (x, y) { return x - y; });
+    }
+    function range(a, b) { var r = []; for (var i = a; i <= b; i++) r.push(i); return r; }
+    function cheer(stage, text, done) {
+      var row = E('div', 'row'), b = E('button', 'btn', 'Next ride →'); b.type = 'button'; b.onclick = done;
+      stage.appendChild(E('div', 'eq')).innerHTML = text; row.appendChild(b); stage.appendChild(row);
+      say(text.replace(/<[^>]+>/g, ''));
+      b.focus();
+    }
+
+    function ride(r, done) {
+      if (r.kind === 'partner') return ridePartner(r, done);
+      if (r.kind === 'add') return rideAdd(r, done);
+      return rideSub(r, done);
+    }
+    /* Level 1: a quick look (so counting one by one is not possible), then "how many empty seats?" */
+    function ridePartner(r, done) {
+      var f = frame('Quick look! How many riders?'), a = r.a;
+      var holder = E('div'); f.stage.appendChild(holder);
+      holder.appendChild(drawTrain([{ n: a }]));
+      setTimeout(function () {
+        holder.replaceChildren(drawTrain([{ n: a, cover: true }]));
+        f.prompt('How many seats are empty?');
+        var peek = E('div', 'row'), pb = E('button', 'btn alt', '👀 Peek again'); pb.type = 'button';
+        pb.onclick = function () { holder.replaceChildren(drawTrain([{ n: a }])); setTimeout(function () { holder.replaceChildren(drawTrain([{ n: a, cover: true }])); }, 1500); };
+        peek.appendChild(pb); f.stage.appendChild(peek);
+        ask(f.stage, range(0, 10), 10 - a, function (first) {
+          holder.replaceChildren(drawTrain([{ n: a, extra: 10 - a }]));
+          peek.remove(); f.stage.querySelector('.pad').remove();
+          cheer(f.stage, a + ' and <em>' + (10 - a) + '</em> make 10!', function () { done(first); });
+        }, 'Look at the rows: a full row is 5.');
+      }, 1800);
+    }
+    /* Levels 2-3: fill the car to 10 first, then add what is left. a + b = (a + need) + rest */
+    function rideAdd(r, done) {
+      var a = r.a, b = r.b, ones = a % 10, need = 10 - ones, rest = b - need, ten = a + need, first = true;
+      var f = frame(a + ' + ' + b + ' = ?');
+      var holder = E('div'); f.stage.appendChild(holder);
+      function scene(moved) {
+        holder.replaceChildren();
+        var cars = carsFor(a - ones); if (ones) cars.push({ n: ones, extra: moved ? need : 0 });
+        if (moved && rest) cars.push({ n: 0, extra: rest });
+        holder.appendChild(drawTrain(cars));
+        var pl = E('div', 'platform');
+        pl.appendChild(E('small', null, moved ? (rest ? 'Everyone is on the train.' : 'The platform is empty.') : b + ' riders are waiting'));
+        if (!moved) for (var i = 0; i < b; i++) pl.appendChild(E('span', 'p' + (i < need ? '' : ' g')));
+        holder.appendChild(pl);
+      }
+      scene(false);
+      f.prompt(a + ' + ' + b + '. First fill the car: how many more make it full?');
+      ask(f.stage, range(1, 9), need, function (ok1) {
+        first = ok1; f.stage.querySelector('.pad').remove();
+        var h = f.stage.querySelector('.hint'); if (h) h.remove();
+        scene(true);
+        if (rest) {   // when b is exactly what fills the car, showing a + need = ten would give the answer away
+          var bond = E('div', 'bond');
+          bond.innerHTML = '<span class="c">' + b + '</span> → <span class="c">' + need + '</span> + <span class="c">' + rest + '</span>';
+          f.stage.appendChild(bond);
+          f.stage.appendChild(E('div', 'eq')).innerHTML = a + ' + ' + need + ' = <em>' + ten + '</em>, and ' + rest + ' more';
+        }
+        f.prompt(rest ? 'The car is full: ' + ten + '. ' + rest + ' more. So ' + a + ' + ' + b + ' = ?' : 'The car is full! So ' + a + ' + ' + b + ' = ?');
+        ask(f.stage, options(a + b), a + b, function (ok2) {
+          f.stage.querySelector('.pad').remove();
+          var h2 = f.stage.querySelector('.hint'); if (h2) h2.remove();
+          cheer(f.stage, a + ' + ' + b + ' = ' + ten + (rest ? ' + ' + rest : '') + ' = <em>' + (a + b) + '</em>', function () { done(first && ok2); });
+        }, 'Start from ' + ten + ' and add ' + rest + '.');
+      }, 'The car has ' + ones + '. How many empty seats?');
+    }
+    /* Level 4: take away through 10. a − b = (a − ones) − (b − ones) */
+    function rideSub(r, done) {
+      var a = r.a, b = r.b, ones = a % 10, more = b - ones, ten = a - ones, first = true;
+      var f = frame(a + ' − ' + b + ' = ?');
+      var holder = E('div'); f.stage.appendChild(holder);
+      function scene(step) {
+        var cars = carsFor(ten);
+        if (step === 0) cars.push({ n: ones });
+        else if (step === 1) cars.push({ n: ones, leaving: ones });
+        else { cars[cars.length - 1] = { n: 10 - more, gone: more }; }
+        holder.replaceChildren(drawTrain(cars));
+      }
+      scene(0);
+      f.prompt(b + ' riders get off. First, ' + (ones === 1 ? 'the 1 rider in the last car gets off.' : 'the ' + ones + ' riders in the last car get off.'));
+      setTimeout(function () {
+        scene(1);
+        var bond = E('div', 'bond');
+        bond.innerHTML = '<span class="c">' + b + '</span> → <span class="c">' + ones + '</span> + <span class="c q">?</span>';
+        f.stage.appendChild(bond);
+        f.prompt(ones + ' got off. ' + b + ' need to get off. How many more?');
+        ask(f.stage, range(1, 9), more, function (ok1) {
+          first = ok1; f.stage.querySelector('.pad').remove();
+          var h = f.stage.querySelector('.hint'); if (h) h.remove();
+          bond.innerHTML = '<span class="c">' + b + '</span> → <span class="c">' + ones + '</span> + <span class="c">' + more + '</span>';
+          scene(2);
+          f.stage.appendChild(E('div', 'eq')).innerHTML = a + ' − ' + ones + ' = <em>' + ten + '</em>, then take ' + more + ' more';
+          f.prompt('Now ' + ten + ' are left. Take ' + more + ' more. So ' + a + ' − ' + b + ' = ?');
+          ask(f.stage, options(a - b), a - b, function (ok2) {
+            f.stage.querySelector('.pad').remove();
+            var h2 = f.stage.querySelector('.hint'); if (h2) h2.remove();
+            cheer(f.stage, a + ' − ' + ones + ' − ' + more + ' = <em>' + (a - b) + '</em>', function () { done(first && ok2); });
+          }, 'From ' + ten + ', take away ' + more + '.');
+        }, ones + ' plus what makes ' + b + '?');
+      }, 1600);
+    }
+
+    function finish() {
+      var n = marks.filter(Boolean).length;
+      st.stars[lv] = Math.max(st.stars[lv] || 0, n); save(); drawStars();
+      app.replaceChildren();
+      var s = E('div', 'stage done');
+      s.appendChild(E('div', 'big', n >= 8 ? '🏆' : n >= 5 ? '🎉' : '🚂'));
+      s.appendChild(E('h2', null, 'Level ' + (lv + 1) + ' done! ⭐ ' + n + ' / ' + ROUNDS));
+      var msg = n >= 8 ? 'You think in tens like a train driver!' : 'Nice riding! Play it again to get more stars.';
+      s.appendChild(E('p', 'hint', msg));
+      var row = E('div', 'row');
+      var again = E('button', 'btn alt', 'Play again'); again.type = 'button'; again.onclick = function () { play(lv); };
+      row.appendChild(again);
+      if (lv < LEVELS.length - 1) { var nx = E('button', 'btn', 'Level ' + (lv + 2) + ' →'); nx.type = 'button'; nx.onclick = function () { play(lv + 1); }; row.appendChild(nx); }
+      var lvls = E('button', 'btn alt', 'All levels'); lvls.type = 'button'; lvls.onclick = home; row.appendChild(lvls);
+      s.appendChild(row); app.appendChild(s);
+      say('Level ' + (lv + 1) + ' done! ' + n + ' stars. ' + msg);
+    }
+    next();
+  }
+
+  home();
+})();
+</script>
+<script>(function backPill() {
+  try { if (window.parent !== window) return; } catch (e) { return; }
+  var m = /[?&]home=([^&]*)/.exec(location.search || ''); if (!m) return;
+  var h; try { h = decodeURIComponent(m[1]); } catch (e) { return; }
+  if (!/^[A-Za-z0-9._%~/-]+$/.test(h) || h.indexOf('//') >= 0) return;
+  var a = document.createElement('a'); a.href = h; a.textContent = '← Home';
+  a.setAttribute('style', 'position:fixed;z-index:2147483647;box-sizing:border-box;display:inline-flex;align-items:center;min-height:44px;min-width:44px;padding:0 16px;background:#1f5f99;color:#fff;font:600 14px system-ui,sans-serif;border-radius:999px;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.35);opacity:.92');
+  document.body.appendChild(a);
+  /* The lessons keep their own buttons along the screen edges (Previous / Next in a footer, controls in a header), so a pill nailed to
+     one corner always sat on top of something. Keep the pill 44px tall (easy to tap) and, whenever the page layout changes, put it in
+     whichever of six edge spots does not cover a button, link or field (spots tried in this order: bottom-centre, bottom-left,
+     bottom-right, top-centre, top-left, top-right). Buttons that are always on screen (fixed or sticky) count much more than ones
+     that scroll away. It never moves while the child is just scrolling, and stays where it is as long as its spot is free. */
+  var SPOTS = ['bc', 'bl', 'br', 'tc', 'tl', 'tr'], cur = '', timer = 0;
+  var SEL = 'button,a[href],input,select,textarea,summary,label,[role=button],[role=tab],[tabindex]:not([tabindex="-1"])';
+  function put(s) {
+    var st = a.style, v = s.charAt(0) === 'b' ? 'bottom' : 'top', side = s.charAt(1);
+    st.top = st.bottom = st.left = st.right = 'auto'; st.transform = 'none';
+    st[v] = '10px'; st[v] = 'calc(10px + env(safe-area-inset-' + v + ', 0px))';
+    if (side === 'c') { st.left = '50%'; st.transform = 'translateX(-50%)'; }
+    else { var d = side === 'l' ? 'left' : 'right'; st[d] = '10px'; st[d] = 'calc(10px + env(safe-area-inset-' + d + ', 0px))'; }
+  }
+  function fixedish(e) {
+    for (var n = e; n && n.nodeType === 1; n = n.parentElement) { var p = getComputedStyle(n).position; if (p === 'fixed' || p === 'sticky') return true; }
+    return false;
+  }
+  function place() {
+    try {
+      var W = document.documentElement.clientWidth, H = window.innerHeight, items = [], all, i, j;
+      a.style.pointerEvents = 'none'; all = document.querySelectorAll(SEL);   /* (while measuring, the pill itself must not count as covering anything) */
+      for (i = 0; i < all.length; i++) {
+        var e = all[i]; if (e === a || a.contains(e) || e.querySelector(SEL)) continue;
+        var cs = getComputedStyle(e); if (cs.display === 'none' || cs.visibility === 'hidden' || cs.pointerEvents === 'none') continue;
+        var r = e.getBoundingClientRect(); if (r.width < 2 || r.height < 2 || r.bottom <= 0 || r.top >= H || r.right <= 0 || r.left >= W) continue;
+        var t = document.elementFromPoint(Math.min(Math.max(r.left + r.width / 2, 0), W - 1), Math.min(Math.max(r.top + r.height / 2, 0), H - 1));
+        if (t && !e.contains(t)) continue;   /* hidden behind something else right now (for example scrolled under the footer): not a button the pill can cover */
+        items.push({ r: r, hard: fixedish(e) });
+      }
+      var res = {};
+      SPOTS.forEach(function (s) {
+        put(s); var b = a.getBoundingClientRect(), hard = 0, soft = 0;
+        items.forEach(function (it) { var q = it.r; if (q.left < b.right - 1 && q.right > b.left + 1 && q.top < b.bottom - 1 && q.bottom > b.top + 1) { if (it.hard) hard++; else soft++; } });
+        res[s] = { hard: hard, soft: soft };
+      });
+      var best = '', c = res[cur];
+      for (j = 0; j < SPOTS.length; j++) { var x = res[SPOTS[j]]; if (!best || x.hard < res[best].hard || (x.hard === res[best].hard && x.soft < res[best].soft)) best = SPOTS[j]; }
+      if (!(c && c.hard === 0 && (c.soft === 0 || res[best].hard > 0 || res[best].soft > 0))) cur = best;
+      put(cur); a.style.pointerEvents = '';
+    } catch (e) { put(cur || 'bl'); a.style.pointerEvents = ''; }
+  }
+  function later() { clearTimeout(timer); timer = setTimeout(function () { place(); timer = setTimeout(place, 500); }, 120); }
+  put('bc'); cur = 'bc'; place();
+  window.addEventListener('resize', later); window.addEventListener('orientationchange', later); window.addEventListener('load', later);
+  try { new MutationObserver(function (ms) { for (var i = 0; i < ms.length; i++) if (!a.contains(ms[i].target)) { later(); return; } }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden', 'disabled', 'aria-hidden', 'open'] }); } catch (e) { /* no observer: the spot is only worked out at load and on resize */ }
+})()</script></body>
+</html>
