@@ -156,12 +156,12 @@
         var add = E('button', 'acct-btn small', '+ Add child'); add.type = 'button'; add.onclick = addKid;
         row.appendChild(add);
         box.appendChild(row);
-        var tools = E('div', 'acct-tools');
+        var tools = E('span', 'acct-tools');   // on the same row, right after "+ Add child"
         var so = E('button', 'acct-link', 'Sign out'); so.type = 'button'; so.onclick = signOut; tools.appendChild(so);
         var rm = E('button', 'acct-link', 'Remove a child'); rm.type = 'button'; rm.onclick = removeKid; tools.appendChild(rm);
         var dl = E('button', 'acct-link danger', 'Delete account and all data'); dl.type = 'button'; dl.onclick = deleteAll; tools.appendChild(dl);
         var pv = E('a', 'acct-link', 'Privacy'); pv.href = 'privacy.html'; tools.appendChild(pv);
-        box.appendChild(tools);
+        row.appendChild(tools);
       }
       if (msg) box.appendChild(E('div', 'acct-msg', msg));
     }
