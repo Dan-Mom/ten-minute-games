@@ -1,7 +1,7 @@
 {
   "name": "Ten-Minute Games",
   "short_name": "10-Min Games",
-  "description": "One idea per game, about ten minutes a level.",
+  "description": "Learning games for curious kids.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
