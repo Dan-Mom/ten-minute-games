@@ -453,6 +453,9 @@
   .dz-pod{ width:92px; height:auto; display:block; }
   .dz-tray .dz-pod{ width:var(--pod-w,92px); }
   .dz-pod-shell{ fill:#1C2C78; stroke:#9FB0FF; stroke-width:3; }
+  .dz-pod-split{ stroke:#9FB0FF; stroke-width:1.2; stroke-dasharray:3 3; }
+  .dz-one .dz-pod{ width:min(170px,100%); }
+  .dz-work{ display:flex; flex-wrap:wrap; justify-content:center; gap:2px 16px; font-size:18px; font-weight:800; text-align:center; }
   .dz-gem-b{ fill:#4FC3F7; stroke:#E8F7FF; stroke-width:1.2; }
   .dz-gem-p{ fill:#FF7DB1; stroke:#FFE3EE; stroke-width:1.2; }
   .dz-spark{ stroke:#fff; stroke-width:1.4; stroke-linecap:round; }
@@ -1846,10 +1849,18 @@ function dzGem(cx, cy, pink){
   const sp = pink ? '<path class="dz-spark" d="M'+(cx-2.2)+" "+cy+"H"+(cx+2.2)+"M"+cx+" "+(cy-2.2)+"V"+(cy+2.2)+'"/>' : '<path class="dz-spark" d="M'+(cx-1.6)+" "+(cy-2)+"L"+(cx+0.4)+" "+(cy-3.6)+'"/>';
   return '<path class="'+(pink ? "dz-gem-p" : "dz-gem-b")+'" d="'+d+'"/>'+sp;
 }
-function dzPodSvg(){        // one pod: 6 columns x 2 rows = 12 crystals: the first 5 columns are blue (10), the last column is pink (2)
+function dzPodSvg(){        // one pod: 6 columns x 2 rows = 12 crystals: the first 5 columns are blue (10), then a dashed line, then the last column is pink (2)
   let blue = "", pink = "";
-  for(let c=0;c<6;c++) for(let r=0;r<2;r++){ const g = dzGem(15 + c*16.4, 15 + r*14, c === 5); if(c === 5) pink += g; else blue += g; }
-  return '<svg class="dz-pod" viewBox="0 0 112 44" aria-hidden="true" focusable="false"><rect class="dz-pod-shell" x="2" y="2" width="108" height="40" rx="16"/><g class="dz-g-blue">'+blue+'</g><g class="dz-g-pink">'+pink+'</g></svg>';
+  for(let c=0;c<6;c++) for(let r=0;r<2;r++){ const g = dzGem(15 + c*16.4 + (c === 5 ? 12 : 0), 15 + r*14, c === 5); if(c === 5) pink += g; else blue += g; }
+  return '<svg class="dz-pod" viewBox="0 0 124 44" aria-hidden="true" focusable="false"><rect class="dz-pod-shell" x="2" y="2" width="120" height="40" rx="16"/><line class="dz-pod-split" x1="95" y1="8" x2="95" y2="36"/><g class="dz-g-blue">'+blue+'</g><g class="dz-g-pink">'+pink+'</g></svg>';
+}
+/* under the pods: what every pod holds, then the blue and pink totals the child has already worked out (never before they answer that step) */
+function dzLegendHtml(n, cur){
+  const sp = dzSplit(n), done = cur.step > 0 ? cur.stepsDone : 0;
+  let work = "";
+  if(done >= 1) work += '<span class="dz-blue">10 × '+n+' = '+sp.tens+' blue</span>';
+  if(done >= 2) work += '<span class="dz-pinkt">2 × '+n+' = '+sp.twos+' pink</span>';
+  return '<div class="dz-legend">Every pod: <span class="dz-blue">10 blue</span> + <span class="dz-pinkt">2 pink</span></div>' + (work ? '<div class="dz-work">'+work+'</div>' : "");
 }
 function dzTrayHtml(n, focus, pop){
   let pods = ""; for(let i=0;i<n;i++) pods += dzPodSvg();
@@ -1879,13 +1890,13 @@ function dzBadgesHtml(d){
 function dzFitTray(){
   const scene = $dz("dzScene"), tray = scene && scene.querySelector(".dz-tray");
   if(!tray) return;
-  const n = parseInt(tray.dataset.n, 10), gap = 6, ratio = 44 / 112;
+  const n = parseInt(tray.dataset.n, 10), gap = 6, ratio = 44 / 124;
   let used = 0; const kids = Array.prototype.slice.call(scene.children);
   kids.forEach(c=>{ if(c !== tray) used += c.offsetHeight + gap; });
   const W = scene.clientWidth - 20, H = scene.clientHeight - used - 20;
   let best = 0, fallback = 0;
   for(let cols=1;cols<=n;cols++){
-    const w = Math.min(170, Math.floor((W - (cols-1)*gap) / cols)), rows = Math.ceil(n / cols), h = rows * w * ratio + (rows-1) * gap;
+    const w = Math.min(250, Math.floor((W - (cols-1)*gap) / cols)), rows = Math.ceil(n / cols), h = rows * w * ratio + (rows-1) * gap;
     if(h <= H && w > best) best = w;
     if(w >= 40) fallback = w;                                          // nothing fits: the picture area scrolls by itself; the keys are never moved
   }
@@ -1983,13 +1994,13 @@ function dzDraw(){
   const sealed = '<div class="dz-sealed">🔒 The pods are sealed.<br>'+scanBtn+'</div>';
   let scene;
   if(!answering){
-    scene = dzTrayHtml(n, sh === 1 ? (step === 1 ? "blue" : step === 2 ? "pink" : "all") : "all", cur.pop) + '<div class="dz-legend">Every pod: <span class="dz-blue">10 blue</span> + <span class="dz-pinkt">2 pink</span></div>';
+    scene = dzTrayHtml(n, sh === 1 ? (step === 1 ? "blue" : step === 2 ? "pink" : "all") : "all", cur.pop) + dzLegendHtml(n, cur);
   } else if(o.kind === "pods"){
     if(open){
       const focus = step === 1 ? "blue" : step === 2 ? "pink" : "all";
       scene = dzTrayHtml(n, sh === 1 ? focus : "all", cur.pop);
       scene += sh === 1
-        ? '<div class="dz-legend">Every pod: <span class="dz-blue">10 blue</span> + <span class="dz-pinkt">2 pink</span></div>'
+        ? dzLegendHtml(n, cur)
         : '<div class="dz-words">Every pod = 10 blue + 2 pink.<br>So '+dzPlural(n,"pod","pods")+' = 10 × '+n+' + 2 × '+n+'</div>';
       if(scanBtn) scene += '<div class="dz-hidescan">'+scanBtn+'</div>';
     } else scene = sealed;
