@@ -477,7 +477,7 @@ var UI = {
   startTitle:{zh:"选择难度和语言（中文或 English），然后开始",en:"Choose Starter or Stretch and a language (中文 or English), then begin"},
   startBegin:{zh:"开始学习",en:"Begin"},
   startBlurb:{zh:"大约 5 分钟。你要先猜一猜，再动手试一试，最后用自己的话说清楚。",en:"About 5 minutes. You will predict, try things, and then explain the idea in your own words."},
-  noDataNote:{zh:"不收集姓名、声音或图像。进度只存在这台设备上。",en:"No name, voice, or photos are collected. Progress stays on this device only."},
+  noDataNote:{zh:"游戏不询问姓名，也不收集声音或图像。进度存在这台设备上；家长登录后会保存到家长的账号。",en:"This game asks for no name, voice, or photos. Progress stays on this device unless a parent signs in; then it is saved to their account."},
   previewNote:{zh:"审阅预览：直接双击打开即可，不需要 localhost。上方的场景标签可以随意跳转（会被记为“审阅跳转”）。所有内容与 components/lessons/warning-label-detective/content.ts 一一对应。",en:"Review preview: open this file directly — no localhost needed. The scene chips above jump anywhere (recorded as a review jump). All content mirrors components/lessons/warning-label-detective/content.ts."}
 };
 
@@ -738,7 +738,7 @@ var EVIDENCE_STATE_LABEL = {
 
 var PARENT = {
   title:{zh:"家长 / 审阅视图",en:"Parent / reviewer view"},
-  demoBanner:{zh:"这是本次样品运行的演示数据，只保存在这台设备上。不收集孩子的姓名、账号或云端资料。这不是医学或饮食建议——如果对具体的饮食安排有疑问，请咨询医生或营养师。",en:"This is demo data from this sample run, stored on this device only. No child name, account, or cloud data is collected. This is not medical or dietary advice — a doctor or dietitian can answer any specific concern about your family's diet."},
+  demoBanner:{zh:"这是本次样品运行的演示数据，保存在这台设备上；家长登录后会保存到家长的账号。游戏不询问孩子的姓名。这不是医学或饮食建议——如果对具体的饮食安排有疑问，请咨询医生或营养师。",en:"This is demo data from this sample run, stored on this device unless a parent signs in; then it is saved to their account. The game itself asks for no child name. This is not medical or dietary advice — a doctor or dietitian can answer any specific concern about your family's diet."},
   reviewUsedFlag:{zh:"本次使用过“审阅模式”跳转场景，时间和作答可能不代表孩子的真实完成情况。",en:"Review mode was used to jump between scenes, so times and answers may not reflect a real child run."},
   rows:{
     level:{zh:"难度",en:"Part"},
