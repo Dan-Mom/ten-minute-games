@@ -958,12 +958,12 @@ const HOSTCTX = (function () {
 })();
 
 /* ================= PASSPORT HOOK (My Passport; same event shape as the other lessons, schema 1) =================
-   lesson_id "puzzles.g3.cube" (the passport reads the last part, "cube", and matches it to projects.json "passport").
+   lesson_id "puzzles.all.cube" (the passport reads the last part, "cube", and matches it to projects.json "passport").
    unit    = "week1".."week8" for the Course days, "quest-g0".."quest-g4" for the Quest lessons.
    item    = "d<0-55>" / "q<0-20>" (predictions), activity = "day<1-7>" / "l<0-20>" (finished things).
    Effort only: a finished day or lesson, a prediction, a hint asked for, a right answer after a wrong one. Speed and the timer send nothing. */
 const Hook = (function () {
-  const LESSON = "puzzles.g3.cube", QK = "lp_events_v1", MAX = 500;
+  const LESSON = "puzzles.all.cube", QK = "lp_events_v1", MAX = 500;
   const sid = (function () { let s = ""; try { const a = new Uint8Array(8); crypto.getRandomValues(a); a.forEach(x => { s += (x % 36).toString(36); }); } catch (e) { s = Math.random().toString(36).slice(2, 10); } return s; })();
   let memQ = [], started = false, segStart = Date.now(), ended = false;
   function queue(ev) {
@@ -2548,7 +2548,7 @@ $("#qResetView").onclick = () => { const v = qView(); v.rx = -26; v.ry = -36; v.
   var m = /[?&]home=([^&]*)/.exec(location.search || ''); if (!m) return;
   var h; try { h = decodeURIComponent(m[1]); } catch (e) { return; }
   if (!/^[A-Za-z0-9._%~/-]+$/.test(h) || h.indexOf('//') >= 0) return;
-  var a = document.createElement('a'); a.href = h; a.textContent = '← 总览 Home';
+  var a = document.createElement('a'); a.href = h; a.textContent = '← Home';
   a.setAttribute('style', 'position:fixed;z-index:2147483647;box-sizing:border-box;display:inline-flex;align-items:center;min-height:44px;min-width:44px;padding:0 16px;background:#1f5f99;color:#fff;font:600 14px system-ui,sans-serif;border-radius:999px;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.35);opacity:.92');
   document.body.appendChild(a);
   /* The lessons keep their own buttons along the screen edges (Previous / Next in a footer, controls in a header), so a pill nailed to

@@ -221,7 +221,7 @@ render();
   var m = /[?&]home=([^&]*)/.exec(location.search || ''); if (!m) return;
   var h; try { h = decodeURIComponent(m[1]); } catch (e) { return; }
   if (!/^[A-Za-z0-9._%~/-]+$/.test(h) || h.indexOf('//') >= 0) return;
-  var a = document.createElement('a'); a.href = h; a.textContent = '← 总览 Home';
+  var a = document.createElement('a'); a.href = h; a.textContent = '← Home';
   a.setAttribute('style', 'position:fixed;z-index:2147483647;box-sizing:border-box;display:inline-flex;align-items:center;min-height:44px;min-width:44px;padding:0 16px;background:#1f5f99;color:#fff;font:600 14px system-ui,sans-serif;border-radius:999px;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.35);opacity:.92');
   document.body.appendChild(a);
   /* The lessons keep their own buttons along the screen edges (Previous / Next in a footer, controls in a header), so a pill nailed to

@@ -57,7 +57,8 @@ self.addEventListener('activate', (event) => {
     (async () => {
       const keep = [SHELL_CACHE, MEDIA_CACHE];
       const names = await caches.keys();
-      await Promise.all(names.map((n) => (keep.includes(n) ? null : caches.delete(n))));
+      // Only this lesson's own old copies. The whole site shares one list of caches, so never touch another game's.
+      await Promise.all(names.map((n) => (n.indexOf('splinter-') === 0 && !keep.includes(n) ? caches.delete(n) : null)));
       await self.clients.claim();
     })()
   );
