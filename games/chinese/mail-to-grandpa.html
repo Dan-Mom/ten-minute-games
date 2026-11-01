@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mail to Grandpa · 寄信给爷爷</title>
+<meta name="theme-color" content="#1b6fd1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Chinese game 1 (Book 4, lesson 1 characters). One idea: the 15 new characters of the lesson.
+   Level 1 meets and recognises them, level 2 builds words with them, level 3 uses them in sentences. About ten minutes a level.
+   All sentences and the story here are our own; only the characters and common words come from the lesson. */
+:root{
+  color-scheme:light;
+  --ink:#1d2b4f; --mute:#4a587a; --page:#eef6ff; --card:#fff;
+  --blue:#1b6fd1; --blue-s:#d5e9ff; --red:#d6246e; --red-s:#ffd8ea; --green:#1f8f45; --green-s:#d3f4dd; --gold:#ffd23f;
+  --display:"Baloo 2","Nunito","Trebuchet MS",system-ui,sans-serif;
+  --body:"Nunito","Trebuchet MS",system-ui,sans-serif;
+  --han:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC","Noto Sans CJK SC",sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--page);color:var(--ink);font:700 18px/1.5 var(--body);display:flex;flex-direction:column}
+h1,h2,h3{font-family:var(--display);margin:0;line-height:1.15}
+.han{font-family:var(--han);font-weight:700}
+.wrap{width:100%;max-width:760px;margin:0 auto;padding:16px}
+button{font:inherit;cursor:pointer}
+.top{display:flex;align-items:center;gap:10px;padding:10px 16px;background:#fff;border-bottom:3px solid var(--blue-s)}
+.top h1{font-size:22px;flex:1}
+.stamps{font:800 18px var(--display);background:var(--blue-s);color:var(--blue);border-radius:999px;padding:4px 14px;white-space:nowrap}
+.btn{min-height:52px;border:0;border-radius:16px;padding:8px 22px;font:800 20px var(--display);background:var(--blue);color:#fff;box-shadow:0 5px 0 #0f4d97}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #0f4d97}
+.btn.ghost{background:#fff;color:var(--blue);box-shadow:0 5px 0 var(--blue-s)}
+.speak{border:0;background:var(--blue-s);color:var(--blue);border-radius:999px;min-width:48px;min-height:48px;font-size:22px}
+
+/* level menu */
+.hero{text-align:center;padding:18px 0 6px}
+.hero .big{font-size:64px;line-height:1}
+.hero p{margin:8px auto 0;color:var(--mute);max-width:560px}
+.levels{display:grid;gap:14px;margin-top:18px}
+.lv{display:flex;align-items:center;gap:14px;text-align:left;border:3px solid var(--blue-s);background:#fff;border-radius:22px;padding:14px 16px;box-shadow:0 6px 0 var(--blue-s)}
+.lv .n{flex:0 0 auto;width:56px;height:56px;border-radius:16px;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font:800 26px var(--display)}
+.lv.done .n{background:var(--green)}
+.lv h3{font-size:21px}
+.lv p{margin:2px 0 0;color:var(--mute);font-size:16px}
+.lv .go{margin-left:auto;font-size:28px}
+
+/* play */
+.bar{height:12px;background:#fff;border-radius:999px;overflow:hidden;box-shadow:inset 0 0 0 2px var(--blue-s);margin:6px 0 14px}
+.bar i{display:block;height:100%;width:0;background:var(--blue);transition:width .3s}
+.panel{background:#fff;border-radius:26px;padding:20px;box-shadow:0 8px 0 var(--blue-s);text-align:center}
+.say{color:var(--mute);font-size:17px;margin:0 0 10px}
+.card-big{font-size:110px;line-height:1.1}
+.py{font:800 30px var(--display);color:var(--blue)}
+.mean{font-size:20px;color:var(--mute)}
+.word{font-size:64px;letter-spacing:6px}
+.slot{display:inline-block;min-width:1.1em;border-bottom:6px solid var(--red);color:var(--red)}
+.sentence{font-size:34px;line-height:1.6}
+.emoji{font-size:56px;line-height:1}
+.opts{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+.opt{position:relative;width:110px;height:92px;border:3px solid #e9c46a;border-radius:14px;background:#fffaf0;font-family:var(--han);font-size:52px;color:var(--ink);box-shadow:0 5px 0 #e9c46a;overflow:hidden}
+.opt::before{content:"";position:absolute;left:0;right:0;top:0;height:34px;background:linear-gradient(160deg,transparent 49%,#f3d9a4 50%),linear-gradient(200deg,transparent 49%,#f3d9a4 50%);background-size:50% 100%;background-repeat:no-repeat;background-position:left,right;opacity:.6}
+.opt span{position:relative}
+.opt.ok{border-color:var(--green);background:var(--green-s);box-shadow:0 5px 0 var(--green)}
+.opt.no{border-color:var(--red);background:var(--red-s);box-shadow:0 5px 0 var(--red);animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.fb{min-height:34px;margin-top:12px;font:800 20px var(--display)}
+.fb.ok{color:var(--green)}.fb.no{color:var(--red)}
+.row{display:flex;gap:12px;justify-content:center;align-items:center;flex-wrap:wrap;margin-top:12px}
+
+/* the letter at the end */
+.letter{max-width:520px;margin:10px auto 0;background:#fffdf6;border:3px solid #e9c46a;border-radius:18px;padding:18px 20px;text-align:left;font-family:var(--han);font-size:24px;line-height:1.8;position:relative}
+.letter .st{position:absolute;right:14px;top:12px;font-size:44px;transform:rotate(8deg)}
+.fly{animation:fly 1.6s ease-in forwards}
+@keyframes fly{to{transform:translate(60vw,-60vh) rotate(25deg) scale(.3);opacity:0}}
+</style>
+</head>
+<body>
+<header class="top"><h1>✉️ Mail to Grandpa <span class="han">寄信给爷爷</span></h1><span class="stamps" id="stamps">📮 0</span></header>
+<div class="wrap" id="app"></div>
+<script>
+/* ---------- content (characters and words from the lesson; all sentences are our own) ---------- */
+var CHARS = [
+  { c: '信', py: 'xìn', en: 'letter', e: '✉️' }, { c: '封', py: 'fēng', en: 'envelope; (a measure word for letters)', e: '📨' },
+  { c: '邮', py: 'yóu', en: 'mail, post', e: '📮' }, { c: '票', py: 'piào', en: 'ticket, stamp', e: '🎟️' },
+  { c: '城', py: 'chéng', en: 'city; city wall', e: '🏯' }, { c: '京', py: 'jīng', en: 'capital (as in Beijing)', e: '🏙️' },
+  { c: '广', py: 'guǎng', en: 'wide', e: '↔️' }, { c: '场', py: 'chǎng', en: 'open place, field', e: '🏟️' },
+  { c: '安', py: 'ān', en: 'safe, calm', e: '🛡️' }, { c: '全', py: 'quán', en: 'whole, all', e: '💯' },
+  { c: '平', py: 'píng', en: 'flat, even, calm', e: '➖' }, { c: '提', py: 'tí', en: 'lift; raise (a question)', e: '🙋' },
+  { c: '取', py: 'qǔ', en: 'take, pick up', e: '🤲' }, { c: '进', py: 'jìn', en: 'go in; move forward', e: '🚪' },
+  { c: '孙', py: 'sūn', en: 'grandchild', e: '👧' }
+];
+var GROUPS = [CHARS.slice(0, 5), CHARS.slice(5, 10), CHARS.slice(10, 15)];
+/* level 2: build a word. w = the word, k = which character is missing */
+var WORDS = [
+  { w: '信封', k: 1, py: 'xìnfēng', en: 'envelope', e: '✉️' }, { w: '邮票', k: 1, py: 'yóupiào', en: 'postage stamp', e: '📮' },
+  { w: '邮件', k: 0, py: 'yóujiàn', en: 'mail, email', e: '📧' }, { w: '城市', k: 0, py: 'chéngshì', en: 'city', e: '🏙️' },
+  { w: '长城', k: 1, py: 'Chángchéng', en: 'the Great Wall', e: '🧱' }, { w: '北京', k: 1, py: 'Běijīng', en: 'Beijing', e: '🏯' },
+  { w: '广场', k: 0, py: 'guǎngchǎng', en: 'town square', e: '🕊️' }, { w: '操场', k: 1, py: 'cāochǎng', en: 'playground', e: '⚽' },
+  { w: '安全', k: 0, py: 'ānquán', en: 'safe', e: '🦺' }, { w: '全家', k: 0, py: 'quánjiā', en: 'the whole family', e: '👨‍👩‍👧‍👦' },
+  { w: '平安', k: 0, py: 'píng\'ān', en: 'safe and sound', e: '🙏' }, { w: '提问', k: 0, py: 'tíwèn', en: 'ask a question', e: '✋' },
+  { w: '取票', k: 0, py: 'qǔpiào', en: 'pick up tickets', e: '🎫' }, { w: '进步', k: 0, py: 'jìnbù', en: 'get better, progress', e: '📈' },
+  { w: '孙女', k: 0, py: 'sūnnǚ', en: 'granddaughter', e: '👧' }, { w: '孙子', k: 0, py: 'sūnzi', en: 'grandson', e: '👦' }
+];
+/* level 3: our own letter, one blank per sentence, each of the 15 characters once. It starts after "亲爱的爷爷：" */
+var SENTENCES = [
+  { s: '这是我第一次给您写＿。', a: '信', en: 'This is the first letter I have ever written to you.' },
+  { s: '我把信装进了一个红色的信＿。', a: '封', en: 'I put it in a red envelope.' },
+  { s: '信封上贴着一张长城邮＿。', a: '票', en: 'There is a Great Wall stamp on the envelope.' },
+  { s: '妈妈说，这封信要走很远的路，才能到北＿。', a: '京', en: 'Mom says this letter has a long way to go to reach Beijing.' },
+  { s: '您住的＿市很大，有很多高楼。', a: '城', en: 'The city you live in is big, with lots of tall buildings.' },
+  { s: '听说您家旁边有一个大广＿。', a: '场', en: 'I heard there is a big square next to your home.' },
+  { s: '晚上，＿场上有很多人跳舞，对吗？', a: '广', en: 'In the evening lots of people dance in the square, right?' },
+  { s: '我想＿一个问题：北京冬天冷不冷？', a: '提', en: 'I want to ask a question: are winters in Beijing cold?' },
+  { s: '我的中文有了很大的＿步，老师夸我了。', a: '进', en: 'My Chinese got much better, and my teacher praised me.' },
+  { s: '放假的时候，我们＿家要去看您。', a: '全', en: 'In the holidays our whole family will come to see you.' },
+  { s: '妈妈订好了机票，到时候去机场＿票。', a: '取', en: 'Mom booked the flight and will pick up the tickets at the airport.' },
+  { s: '坐飞机很＿全，您不用担心。', a: '安', en: 'Flying is safe, so please do not worry.' },
+  { s: '我们会先给您发一封电子＿件。', a: '邮', en: 'We will send you an email first.' },
+  { s: '祝您身体健康，＿安快乐！', a: '平', en: 'Wishing you good health, safety and happiness!' },
+  { s: '爱您的小＿女', a: '孙', en: 'Love, your little granddaughter' }
+];
+
+/* ---------- small helpers ---------- */
+var app = document.getElementById('app');
+function E(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+function pick3(answer) { return shuffle([answer].concat(shuffle(CHARS.map(function (x) { return x.c; }).filter(function (c) { return c !== answer; })).slice(0, 2))); }
+var KEY = 'tmg.mail-to-grandpa.v1';
+var save = (function () { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } })();
+function store() { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) { /* private mode: progress just is not kept */ } }
+save.stamps = save.stamps || 0; save.done = save.done || {};
+function stamps(n) { save.stamps += n; store(); document.getElementById('stamps').textContent = '📮 ' + save.stamps; }
+stamps(0);
+
+/* voice: the device's own Chinese voice, when it has one */
+var zh = null;
+function findVoice() { try { var v = speechSynthesis.getVoices(); zh = v.filter(function (x) { return x.lang === 'zh-CN'; })[0] || v.filter(function (x) { return /^zh/.test(x.lang) && !/TW|HK/.test(x.lang); })[0] || null; } catch (e) { zh = null; } }
+if ('speechSynthesis' in window) { findVoice(); speechSynthesis.onvoiceschanged = findVoice; }
+function say(t) {
+  if (!('speechSynthesis' in window)) return;
+  try { speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(t.replace(/＿/g, '')); u.lang = 'zh-CN'; if (zh) u.voice = zh; u.rate = 0.8; speechSynthesis.speak(u); } catch (e) { /* no voice */ }
+}
+function speakBtn(t) { var b = E('button', 'speak', '🔊'); b.type = 'button'; b.setAttribute('aria-label', 'Listen'); b.onclick = function () { say(t); }; return b; }
+/* tiny sounds for right and wrong, no files needed */
+var ac = null;
+function beep(ok) {
+  try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); var o = ac.createOscillator(), g = ac.createGain(); o.connect(g); g.connect(ac.destination);
+    o.frequency.value = ok ? 880 : 220; g.gain.setValueAtTime(0.12, ac.currentTime); g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + (ok ? 0.25 : 0.35)); o.start(); o.stop(ac.currentTime + 0.4); } catch (e) { /* no sound */ }
+}
+
+/* ---------- the level menu ---------- */
+var LEVELS = [
+  { n: 1, title: 'Meet the characters', zh: '认生字', text: 'Meet 15 new characters, then find each one in the mailbag.', build: level1 },
+  { n: 2, title: 'Build the words', zh: '组词', text: 'Each word is missing one character. Pick the right envelope.', build: level2 },
+  { n: 3, title: 'Write the letter', zh: '写信', text: 'Finish our letter to Grandpa, one sentence at a time, then send it.', build: level3 }
+];
+function menu() {
+  app.innerHTML = '';
+  var h = E('div', 'hero');
+  h.appendChild(E('div', 'big', '👴🏻✉️'));
+  h.appendChild(E('h2', null, 'Help write a letter to Grandpa in Beijing'));
+  h.appendChild(E('p', null, 'Three levels, about ten minutes each. Every right answer earns a stamp 📮. Tap 🔊 to hear the Chinese.'));
+  app.appendChild(h);
+  var ls = E('div', 'levels');
+  LEVELS.forEach(function (L) {
+    var b = E('button', 'lv' + (save.done[L.n] ? ' done' : '')); b.type = 'button';
+    b.appendChild(E('span', 'n', save.done[L.n] ? '✓' : String(L.n)));
+    var t = E('div'); t.appendChild(E('h3', null, 'Level ' + L.n + ': ' + L.title + ' <span class="han">' + L.zh + '</span>')); t.appendChild(E('p', null, L.text)); b.appendChild(t);
+    b.appendChild(E('span', 'go', '▶'));
+    b.onclick = function () { play(L); };
+    ls.appendChild(b);
+  });
+  app.appendChild(ls);
+}
+
+/* ---------- one engine for every level: a queue of steps ---------- */
+function play(L) {
+  var steps = L.build(), total = steps.length, i = 0, again = {};
+  function next() {
+    if (i >= steps.length) return finish(L);
+    var s = steps[i++];
+    app.innerHTML = '';
+    var bar = E('div', 'bar'); var fill = E('i'); bar.appendChild(fill); app.appendChild(bar);
+    fill.style.width = Math.min(100, Math.round((i - 1) / total * 100)) + '%';
+    var p = E('div', 'panel'); app.appendChild(p);
+    if (s.type === 'meet') return meet(p, s);
+    ask(p, s);
+  }
+  function meet(p, s) {
+    p.appendChild(E('p', 'say', 'New character'));
+    p.appendChild(E('div', 'card-big han', s.c.c));
+    p.appendChild(E('div', 'py', s.c.py));
+    p.appendChild(E('div', 'mean', s.c.e + ' ' + s.c.en));
+    var r = E('div', 'row'); r.appendChild(speakBtn(s.c.c));
+    var go = E('button', 'btn', 'Got it ▶'); go.type = 'button'; go.onclick = next; r.appendChild(go); p.appendChild(r);
+    say(s.c.c);
+  }
+  function ask(p, s) {
+    p.appendChild(E('p', 'say', s.prompt));
+    if (s.top) p.appendChild(s.top());
+    var fb = E('div', 'fb'), opts = E('div', 'opts'), answered = false;
+    s.opts.forEach(function (o) {
+      var b = E('button', 'opt'); b.type = 'button'; b.appendChild(E('span', null, o));
+      b.onclick = function () {
+        if (answered) return;
+        if (o === s.answer) {
+          answered = true; b.classList.add('ok'); beep(true); stamps(1);
+          fb.className = 'fb ok'; fb.textContent = 'Right! +1 📮';
+          if (s.after) s.after(p);
+          say(s.sayAfter || o);
+          var r = E('div', 'row'); var go = E('button', 'btn', 'Next ▶'); go.type = 'button'; go.onclick = next; r.appendChild(go); p.appendChild(r); go.focus();
+        } else {
+          b.classList.add('no'); beep(false); fb.className = 'fb no'; fb.textContent = 'Not this one. Try another envelope.';
+          if (!again[s.id]) { again[s.id] = 1; steps.push(s); total++; }   // a missed question comes back once at the end
+        }
+      };
+      opts.appendChild(b);
+    });
+    p.appendChild(opts); p.appendChild(fb);
+    if (s.sayFirst) say(s.sayFirst);
+  }
+  next();
+}
+function finish(L) {
+  save.done[L.n] = 1; store();
+  app.innerHTML = '';
+  var p = E('div', 'panel');
+  p.appendChild(E('div', 'card-big', L.n === 3 ? '📬' : '🎉'));
+  p.appendChild(E('h2', null, 'Level ' + L.n + ' done!'));
+  if (L.n === 3) {
+    p.appendChild(E('p', 'say', 'Your letter is ready. Tap Send!'));
+    var letter = E('div', 'letter'); letter.appendChild(E('span', 'st', '📮'));
+    letter.appendChild(E('div', null, '亲爱的爷爷：'));
+    SENTENCES.forEach(function (s, n) { var d = E('div', null, s.s.replace('＿', s.a)); if (n === SENTENCES.length - 1) d.style.textAlign = 'right'; letter.appendChild(d); });
+    p.appendChild(letter);
+    var r = E('div', 'row'); var send = E('button', 'btn', 'Send ✈️'); send.type = 'button';
+    send.onclick = function () { letter.classList.add('fly'); beep(true); send.disabled = true; setTimeout(menu, 1700); };
+    r.appendChild(send); p.appendChild(r);
+  } else {
+    p.appendChild(E('p', 'say', 'You have ' + save.stamps + ' stamps. Ready for level ' + (L.n + 1) + '?'));
+    var r2 = E('div', 'row');
+    var nx = E('button', 'btn', 'Level ' + (L.n + 1) + ' ▶'); nx.type = 'button'; nx.onclick = function () { play(LEVELS[L.n]); };
+    var bk = E('button', 'btn ghost', 'All levels'); bk.type = 'button'; bk.onclick = menu;
+    r2.appendChild(nx); r2.appendChild(bk); p.appendChild(r2);
+  }
+  app.appendChild(p);
+}
+
+/* ---------- the three levels ---------- */
+function level1() {   // meet 5, find them by pinyin, find them by sound; three groups
+  var out = [];
+  GROUPS.forEach(function (g, gi) {
+    g.forEach(function (c) { out.push({ type: 'meet', c: c }); });
+    shuffle(g).forEach(function (c) {
+      out.push({ id: 'p' + c.c, prompt: 'Which envelope says…', answer: c.c, opts: pick3(c.c),
+        top: function () { var d = E('div'); d.appendChild(E('div', 'py', c.py)); d.appendChild(E('div', 'mean', c.e + ' ' + c.en)); return d; } });
+    });
+    shuffle(g).forEach(function (c) {
+      out.push({ id: 's' + c.c, prompt: 'Listen, then pick the character you hear.', answer: c.c, opts: pick3(c.c), sayFirst: c.c,
+        top: function () { var d = E('div', 'row'); d.appendChild(speakBtn(c.c)); return d; } });
+    });
+  });
+  return out;
+}
+function level2() {
+  return shuffle(WORDS).map(function (w) {
+    var miss = w.w.charAt(w.k), shown = w.w.split('').map(function (ch, i) { return i === w.k ? '<span class="slot">？</span>' : ch; }).join('');
+    return { id: 'w' + w.w, prompt: 'Which character finishes the word?', answer: miss, opts: pick3(miss), sayAfter: w.w,
+      top: function () { var d = E('div'); d.appendChild(E('div', 'emoji', w.e)); d.appendChild(E('div', 'word han', shown)); d.appendChild(E('div', 'mean', w.py + ' · ' + w.en)); return d; },
+      after: function (p) { var el = p.querySelector('.slot'); if (el) { el.textContent = miss; el.style.color = 'var(--green)'; el.style.borderColor = 'var(--green)'; } } };
+  });
+}
+function level3() {
+  return SENTENCES.map(function (s, n) {
+    return { id: 'x' + n, prompt: 'Fill in the missing character.', answer: s.a, opts: pick3(s.a), sayAfter: s.s.replace('＿', s.a),
+      top: function () { var d = E('div'); d.appendChild(E('div', 'sentence han', s.s.replace('＿', '<span class="slot">？</span>'))); d.appendChild(E('div', 'mean', s.en)); return d; },
+      after: function (p) { var el = p.querySelector('.slot'); if (el) { el.textContent = s.a; el.style.color = 'var(--green)'; el.style.borderColor = 'var(--green)'; } } };
+  });
+}
+
+menu();
+</script>
+<script>(function backPill() {
+  try { if (window.parent !== window) return; } catch (e) { return; }
+  var m = /[?&]home=([^&]*)/.exec(location.search || ''); if (!m) return;
+  var h; try { h = decodeURIComponent(m[1]); } catch (e) { return; }
+  if (!/^[A-Za-z0-9._%~/-]+$/.test(h) || h.indexOf('//') >= 0) return;
+  var a = document.createElement('a'); a.href = h; a.textContent = '← Home';
+  a.setAttribute('style', 'position:fixed;z-index:2147483647;box-sizing:border-box;display:inline-flex;align-items:center;min-height:44px;min-width:44px;padding:0 16px;background:#1f5f99;color:#fff;font:600 14px system-ui,sans-serif;border-radius:999px;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.35);opacity:.92');
+  document.body.appendChild(a);
+  /* The lessons keep their own buttons along the screen edges (Previous / Next in a footer, controls in a header), so a pill nailed to
+     one corner always sat on top of something. Keep the pill 44px tall (easy to tap) and, whenever the page layout changes, put it in
+     whichever of six edge spots does not cover a button, link or field (spots tried in this order: bottom-centre, bottom-left,
+     bottom-right, top-centre, top-left, top-right). Buttons that are always on screen (fixed or sticky) count much more than ones
+     that scroll away. It never moves while the child is just scrolling, and stays where it is as long as its spot is free. */
+  var SPOTS = ['bc', 'bl', 'br', 'tc', 'tl', 'tr'], cur = '', timer = 0;
+  var SEL = 'button,a[href],input,select,textarea,summary,label,[role=button],[role=tab],[tabindex]:not([tabindex="-1"])';
+  function put(s) {
+    var st = a.style, v = s.charAt(0) === 'b' ? 'bottom' : 'top', side = s.charAt(1);
+    st.top = st.bottom = st.left = st.right = 'auto'; st.transform = 'none';
+    st[v] = '10px'; st[v] = 'calc(10px + env(safe-area-inset-' + v + ', 0px))';
+    if (side === 'c') { st.left = '50%'; st.transform = 'translateX(-50%)'; }
+    else { var d = side === 'l' ? 'left' : 'right'; st[d] = '10px'; st[d] = 'calc(10px + env(safe-area-inset-' + d + ', 0px))'; }
+  }
+  function fixedish(e) {
+    for (var n = e; n && n.nodeType === 1; n = n.parentElement) { var p = getComputedStyle(n).position; if (p === 'fixed' || p === 'sticky') return true; }
+    return false;
+  }
+  function place() {
+    try {
+      var W = document.documentElement.clientWidth, H = window.innerHeight, items = [], all, i, j;
+      a.style.pointerEvents = 'none'; all = document.querySelectorAll(SEL);   /* (while measuring, the pill itself must not count as covering anything) */
+      for (i = 0; i < all.length; i++) {
+        var e = all[i]; if (e === a || a.contains(e) || e.querySelector(SEL)) continue;
+        var cs = getComputedStyle(e); if (cs.display === 'none' || cs.visibility === 'hidden' || cs.pointerEvents === 'none') continue;
+        var r = e.getBoundingClientRect(); if (r.width < 2 || r.height < 2 || r.bottom <= 0 || r.top >= H || r.right <= 0 || r.left >= W) continue;
+        var t = document.elementFromPoint(Math.min(Math.max(r.left + r.width / 2, 0), W - 1), Math.min(Math.max(r.top + r.height / 2, 0), H - 1));
+        if (t && !e.contains(t)) continue;   /* hidden behind something else right now (for example scrolled under the footer): not a button the pill can cover */
+        items.push({ r: r, hard: fixedish(e) });
+      }
+      var res = {};
+      SPOTS.forEach(function (s) {
+        put(s); var b = a.getBoundingClientRect(), hard = 0, soft = 0;
+        items.forEach(function (it) { var q = it.r; if (q.left < b.right - 1 && q.right > b.left + 1 && q.top < b.bottom - 1 && q.bottom > b.top + 1) { if (it.hard) hard++; else soft++; } });
+        res[s] = { hard: hard, soft: soft };
+      });
+      var best = '', c = res[cur];
+      for (j = 0; j < SPOTS.length; j++) { var x = res[SPOTS[j]]; if (!best || x.hard < res[best].hard || (x.hard === res[best].hard && x.soft < res[best].soft)) best = SPOTS[j]; }
+      if (!(c && c.hard === 0 && (c.soft === 0 || res[best].hard > 0 || res[best].soft > 0))) cur = best;
+      put(cur); a.style.pointerEvents = '';
+    } catch (e) { put(cur || 'bl'); a.style.pointerEvents = ''; }
+  }
+  function later() { clearTimeout(timer); timer = setTimeout(function () { place(); timer = setTimeout(place, 500); }, 120); }
+  put('bc'); cur = 'bc'; place();
+  window.addEventListener('resize', later); window.addEventListener('orientationchange', later); window.addEventListener('load', later);
+  try { new MutationObserver(function (ms) { for (var i = 0; i < ms.length; i++) if (!a.contains(ms[i].target)) { later(); return; } }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden', 'disabled', 'aria-hidden', 'open'] }); } catch (e) { /* no observer: the spot is only worked out at load and on resize */ }
+})()</script></body>
+</html>
