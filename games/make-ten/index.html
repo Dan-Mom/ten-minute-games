@@ -365,12 +365,37 @@ button{font-family:var(--display);cursor:pointer}
   function drawStars() { document.getElementById('starTotal').textContent = '⭐ ' + totalStars(); }
   function unlocked(i) { return i === 0 || st.stars[i - 1] != null; }
 
-  /* read aloud: the child may not read every word yet */
-  var voiceOn = true;
+  /* read aloud: the child may not read every word yet.
+     Every line is recorded in advance with a gentle voice (voice/<key>.mp3, made by 网站\make-voices.py; key = the same hash as
+     voice-lines.cjs). Only a line with no recording falls back to the device's own voice, picking its most natural female voice. */
+  var voiceOn = true, VKEYS = null, player = null, fallbackVoice = null;
+  try { fetch('voice/keys.json').then(function (r) { return r.json(); }).then(function (k) { VKEYS = {}; k.forEach(function (x) { VKEYS[x] = 1; }); }, function () {}); } catch (e) {}
+  function vkey(t) { t = String(t).replace(/＿/g, '').trim(); var h = 0x811c9dc5; for (var i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
+  function pickVoice() {
+    try {
+      var v = speechSynthesis.getVoices().filter(function (x) { return /^en(-|_)US/i.test(x.lang); });
+      var score = function (x) { return (/natural|neural|enhanced|premium/i.test(x.name) ? 4 : 0) + (/ava|jenny|aria|samantha|allison|susan|zoe|google us english/i.test(x.name) ? 2 : 0); };
+      fallbackVoice = v.sort(function (a, b) { return score(b) - score(a); })[0] || null;
+    } catch (e) {}
+  }
+  if (window.speechSynthesis) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+  function hush() { if (player) try { player.pause(); } catch (e) {} if (window.speechSynthesis) try { speechSynthesis.cancel(); } catch (e) {} }
+  function deviceSay(t) {
+    if (!window.speechSynthesis) return;
+    try { var u = new SpeechSynthesisUtterance(t.replace(/−/g, ' minus ').replace(/\+/g, ' plus ')); u.lang = 'en-US'; if (fallbackVoice) u.voice = fallbackVoice; u.rate = 0.88; u.pitch = 1.05; speechSynthesis.speak(u); } catch (e) {}
+  }
   function say(t) {
     lastSay = t;
-    if (!voiceOn || !window.speechSynthesis) return;
-    try { speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(t.replace(/−/g, ' minus ').replace(/\+/g, ' plus ')); u.lang = 'en-US'; u.rate = 0.9; speechSynthesis.speak(u); } catch (e) {}
+    if (!voiceOn) return;
+    hush();
+    var k = vkey(t);
+    if (VKEYS && VKEYS[k]) {
+      if (!player) player = new Audio();          // one player, reused, so iPad allows it to keep playing after the first tap
+      player.src = 'voice/' + k + '.mp3';
+      var p = player.play(); if (p && p.catch) p.catch(function () { deviceSay(t); });
+      return;
+    }
+    deviceSay(t);
   }
   document.getElementById('snd').onclick = function () { voiceOn = true; say(lastSay); };
 
@@ -426,7 +451,7 @@ button{font-family:var(--display);cursor:pointer}
 
   /* ---------- screens ---------- */
   function home() {
-    if (window.speechSynthesis) try { speechSynthesis.cancel(); } catch (e) {}
+    hush();
     drawStars(); app.replaceChildren();
     var g = E('div', 'levels');
     LEVELS.forEach(function (L, i) {
@@ -548,7 +573,7 @@ button{font-family:var(--display);cursor:pointer}
           f.stage.querySelector('.pad').remove();
           var h2 = f.stage.querySelector('.hint'); if (h2) h2.remove();
           cheer(f.stage, a + ' + ' + b + ' = ' + ten + (rest ? ' + ' + rest : '') + ' = <em>' + (a + b) + '</em>', function () { done(first && ok2); });
-        }, 'Start from ' + ten + ' and add ' + rest + '.');
+        }, rest ? 'Start from ' + ten + ' and add ' + rest + '.' : 'The car is full: ' + ten + '.');
       }, 'The car has ' + ones + '. How many empty seats?');
     }
     /* Level 4: take away through 10. a − b = (a − ones) − (b − ones) */

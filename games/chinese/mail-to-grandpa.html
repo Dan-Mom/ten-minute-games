@@ -380,13 +380,34 @@ save.stamps = save.stamps || 0; save.done = save.done || {};
 function stamps(n) { save.stamps += n; store(); document.getElementById('stamps').textContent = '📮 ' + save.stamps; }
 stamps(0);
 
-/* voice: the device's own Chinese voice, when it has one */
-var zh = null;
-function findVoice() { try { var v = speechSynthesis.getVoices(); zh = v.filter(function (x) { return x.lang === 'zh-CN'; })[0] || v.filter(function (x) { return /^zh/.test(x.lang) && !/TW|HK/.test(x.lang); })[0] || null; } catch (e) { zh = null; } }
+/* voice: every character, word and sentence is recorded in advance with a warm voice (mail-voice/<key>.mp3, made by
+   网站\make-voices.py; key = the same hash as voice-lines.cjs). Only text with no recording uses the device's own Chinese voice. */
+var zh = null, VKEYS = null, player = null;
+try { fetch('mail-voice/keys.json').then(function (r) { return r.json(); }).then(function (k) { VKEYS = {}; k.forEach(function (x) { VKEYS[x] = 1; }); }, function () {}); } catch (e) {}
+function vkey(t) { t = String(t).replace(/＿/g, '').trim(); var h = 0x811c9dc5; for (var i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
+function findVoice() {
+  try {
+    var v = speechSynthesis.getVoices().filter(function (x) { return /^zh/i.test(x.lang) && !/TW|HK/i.test(x.lang); });
+    var score = function (x) { return (/natural|neural|enhanced|premium/i.test(x.name) ? 4 : 0) + (/xiaoxiao|tingting|ting-ting|yaoyao|huihui|lili/i.test(x.name) ? 2 : 0); };
+    zh = v.sort(function (a, b) { return score(b) - score(a); })[0] || null;
+  } catch (e) { zh = null; }
+}
 if ('speechSynthesis' in window) { findVoice(); speechSynthesis.onvoiceschanged = findVoice; }
-function say(t) {
+function deviceSay(t) {
   if (!('speechSynthesis' in window)) return;
-  try { speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(t.replace(/＿/g, '')); u.lang = 'zh-CN'; if (zh) u.voice = zh; u.rate = 0.8; speechSynthesis.speak(u); } catch (e) { /* no voice */ }
+  try { var u = new SpeechSynthesisUtterance(t.replace(/＿/g, '')); u.lang = 'zh-CN'; if (zh) u.voice = zh; u.rate = 0.8; u.pitch = 1.05; speechSynthesis.speak(u); } catch (e) { /* no voice */ }
+}
+function say(t) {
+  if (player) try { player.pause(); } catch (e) {}
+  if ('speechSynthesis' in window) try { speechSynthesis.cancel(); } catch (e) {}
+  var k = vkey(t);
+  if (VKEYS && VKEYS[k]) {
+    if (!player) player = new Audio();            // one player, reused, so iPad keeps allowing it after the first tap
+    player.src = 'mail-voice/' + k + '.mp3';
+    var p = player.play(); if (p && p.catch) p.catch(function () { deviceSay(t); });
+    return;
+  }
+  deviceSay(t);
 }
 function speakBtn(t) { var b = E('button', 'speak', '🔊'); b.type = 'button'; b.setAttribute('aria-label', 'Listen'); b.onclick = function () { say(t); }; return b; }
 /* tiny sounds for right and wrong, no files needed */
