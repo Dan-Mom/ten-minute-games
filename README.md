@@ -1,3 +1,3 @@
-# Five-Minute Thinkers
+# Ten-Minute Games
 
-Five-minute games for curious kids. Open index.html or the GitHub Pages link.
+One idea per game. Ten minutes a level. Open index.html or the GitHub Pages link.

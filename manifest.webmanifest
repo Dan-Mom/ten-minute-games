@@ -1,7 +1,7 @@
 {
-  "name": "Five-Minute Thinkers",
-  "short_name": "Thinkers",
-  "description": "Five-minute games for curious kids.",
+  "name": "Ten-Minute Games",
+  "short_name": "10-Min Games",
+  "description": "One idea per game. Ten minutes a level.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
