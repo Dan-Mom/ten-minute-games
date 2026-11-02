@@ -271,7 +271,7 @@ body{margin:0;background:var(--page);color:var(--ink);font:800 18px/1.45 var(--b
 h1,h2,h3{font-family:var(--display);margin:0;line-height:1.1}
 button{font-family:var(--display);cursor:pointer;color:inherit}
 button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
-.wrap{max-width:880px;margin:0 auto;padding:14px 16px 90px}
+.wrap{max-width:1400px;margin:0 auto;padding:14px 16px 90px}
 .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .top h1{font-size:clamp(24px,4.5vw,34px);color:var(--blue);margin-right:auto}
 .stars{font:800 18px var(--display);color:#8a6400;background:var(--gold-s);border-radius:999px;padding:6px 14px}
@@ -283,11 +283,11 @@ button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
 .city .rise{animation:rise .9s cubic-bezier(.2,1.2,.4,1) both;transform-box:fill-box;transform-origin:bottom}
 @keyframes rise{from{transform:scaleY(0)}to{transform:scaleY(1)}}
 
-.tools{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:14px}
 .tool{border:0;border-radius:18px;min-height:64px;padding:8px 12px;background:var(--gold-s);box-shadow:0 5px 0 #e5cf7c;font-size:19px;color:#6d4f00}
 
 .levels{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:14px;margin-top:16px}
-.lv{text-align:left;border:0;background:var(--card);border-radius:22px;padding:14px 16px;min-height:118px;box-shadow:0 6px 0 var(--line);display:flex;flex-direction:column;gap:4px}
+.lv{position:relative;text-align:left;border:0;background:var(--card);border-radius:22px;padding:14px 16px;min-height:118px;box-shadow:0 6px 0 var(--line);display:flex;flex-direction:column;gap:4px}
 .lv:disabled{opacity:.55;cursor:not-allowed}
 .lv.now{outline:4px solid var(--orange);outline-offset:-2px}
 .lv b{font:800 21px var(--display);color:var(--blue)}
@@ -373,6 +373,41 @@ button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
 .chart button.known{background:var(--gold);color:#5f4500}
 .done{text-align:center}
 .done .big-e{font-size:60px}
+
+/* rewards the child types: a page of star goals, and a corner badge showing the next one */
+.rchip{margin-left:auto;max-width:min(100%,420px);padding:8px 14px;border-radius:999px;background:var(--gold-s);border:2px solid var(--gold);color:#6d4f00;font:800 17px var(--display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lv .rcorner{position:absolute;top:-8px;right:10px;max-width:70%;padding:3px 10px;border-radius:999px;background:var(--gold);color:#5f4500;font:800 13px var(--display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rlist{display:grid;gap:12px;margin-top:14px}
+.rrow{display:grid;grid-template-columns:78px minmax(0,1fr) 104px;align-items:center;gap:10px}
+.rrow b{font:800 22px var(--display);color:#8a6400}
+.rrow input{width:100%;min-height:56px;padding:0 14px;border:3px solid var(--line);border-radius:14px;background:#fff;color:var(--ink);font:800 20px var(--body)}
+.rrow input:focus{outline:0;border-color:var(--orange)}
+.rrow span{font:800 15px var(--display);color:var(--mute);text-align:right}
+.rrow.won{background:var(--gold-s);border-radius:16px;padding:6px 8px}
+.rrow.won span{color:var(--green)}
+@media (max-width:520px){.rrow{grid-template-columns:64px minmax(0,1fr)}.rrow span{grid-column:2;text-align:left}}
+.earned{margin:10px auto 0;max-width:640px;padding:12px 16px;border-radius:16px;background:var(--gold-s);border:3px solid var(--gold);font:800 22px var(--display);color:#6d4f00}
+
+/* tablets and computers: bigger words and buttons. The blocks grow in Stage's fit() */
+@media (min-width:700px){
+  .prompt{font-size:30px}
+  .big{font-size:60px}
+  .hint{font-size:20px}
+  .btn{min-height:64px;padding:0 30px;font-size:26px}
+  .btn.small{min-height:56px;font-size:22px}
+  .back{min-height:52px;font-size:20px}
+  .pad{width:100%;max-width:360px}
+  .pad button{min-height:68px;font-size:32px}
+  .city svg{max-height:34vh}
+  .chart{max-width:760px}
+}
+/* a wide screen: blocks on the left, answer keys on the right, so both fit without scrolling */
+@media (min-width:900px) and (orientation:landscape){
+  .split{display:grid;grid-template-columns:minmax(0,1fr) 360px;column-gap:20px;align-items:start}
+  .split > *{grid-column:2}
+  .split > .prompt{grid-column:1 / -1}
+  .split > .stagebox{grid-column:1;grid-row:2 / span 8}
+}
 </style>
 </head>
 <body>
@@ -577,6 +612,17 @@ button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
   function L(i) { return st.lv[i] || (st.lv[i] = {}); }
   function totalStars() { var n = 0; LEVELS.forEach(function (x, i) { n += (st.lv[i] && st.lv[i].stars) || 0; }); return n; }
   function drawStars() { document.getElementById('starTotal').textContent = '⭐ ' + totalStars(); }
+  /* Rewards: the child types one for every 6 stars. A child's own words stay on this device: the tmg. name keeps them out of the account sync. */
+  var REWARD_STEP = 6, REWARD_GOALS = 6;
+  function rewardKey() { return 'tmg.block-city.rewards.' + ((window.TMG && window.TMG.kid) || 'guest'); }
+  function rewards() { try { var r = JSON.parse(localStorage.getItem(rewardKey())); if (Array.isArray(r)) return r; } catch (e) {} return []; }
+  function saveRewards(r) { try { localStorage.setItem(rewardKey(), JSON.stringify(r)); } catch (e) {} }
+  function rewardText(i) { return String(rewards()[i] || '').trim(); }
+  function nextReward() {
+    var have = totalStars();
+    for (var i = 0; i < REWARD_GOALS; i++) { var goal = (i + 1) * REWARD_STEP; if (have < goal && rewardText(i)) return { text: rewardText(i), left: goal - have }; }
+    return null;
+  }
   function unlocked(i) { return i === 0 || (st.lv[i - 1] && st.lv[i - 1].stars != null); }
   function factKey(a, b) { return Math.min(a, b) + 'x' + Math.max(a, b); }
   function okCount(a, b) { return st.facts[factKey(a, b)] || 0; }
@@ -655,10 +701,17 @@ button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
   function extent(cells) { var w = 0, h = 0; cells.forEach(function (q) { w = Math.max(w, q.x + 1); h = Math.max(h, q.y + 1); }); return { w: w, h: h }; }
   function Stage(parent, maxH) {
     var el = E('div', 'stage'), blocks = {}, unit = 30, ox = 0;
-    parent.appendChild(el);
+    parent.appendChild(el); parent.classList.add('stagebox');
+    function roomH() {
+      if (maxH) return maxH;
+      var vh = window.innerHeight;
+      if (window.innerWidth < 700) return Math.min(330, Math.max(190, vh * 0.42));   // a phone: the keys sit under the blocks
+      var panel = parent.parentNode, split = panel && panel.classList.contains('split'), beside = split && getComputedStyle(panel).display === 'grid';
+      return Math.max(240, vh - (beside ? 260 : split ? 560 : 350));                  // what the heading, words, buttons and answer keys leave free
+    }
     function fit(w, h) {
-      var W = el.clientWidth || 300, H = maxH || Math.min(330, Math.max(190, window.innerHeight * 0.42));
-      unit = Math.max(12, Math.min(40, Math.floor(W / w), Math.floor(H / h)));
+      var W = el.clientWidth || 300, H = roomH();
+      unit = Math.max(12, Math.min(96, Math.floor(W / w), Math.floor(H / h)));
       ox = Math.floor((W - w * unit) / 2);
       el.style.height = Math.ceil(h * unit) + 'px';
     }
@@ -762,7 +815,7 @@ button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
       x += sh[0] * U + GAP;
     });
     W = x + 6;
-    return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Your block city, ' + LEVELS.filter(function (l, i) { return st.lv[i] && st.lv[i].stars != null; }).length + ' of 12 buildings built">' +
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMax slice" role="img" aria-label="Your block city, ' + LEVELS.filter(function (l, i) { return st.lv[i] && st.lv[i].stars != null; }).length + ' of 12 buildings built">' +
       '<rect width="' + W + '" height="' + H + '" fill="#cfeaff"/><circle cx="' + (W - 60) + '" cy="48" r="26" fill="#ffe27a" stroke="#ffc21f" stroke-width="4"/>' +
       '<ellipse cx="170" cy="48" rx="50" ry="14" fill="#fff" opacity=".9"/><ellipse cx="560" cy="66" rx="60" ry="15" fill="#fff" opacity=".85"/>' +
       '<rect y="' + ground + '" width="' + W + '" height="' + (H - ground) + '" fill="#8fc26b"/><rect y="' + (ground + 18) + '" width="' + W + '" height="' + (H - ground - 18) + '" fill="#d8bd8a"/>' + parts + '</svg>';
@@ -775,6 +828,7 @@ button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
     var tools = E('div', 'tools');
     tools.appendChild(B('tool', '🔬 Block Lab', function () { lab(4, 6); }));
     tools.appendChild(B('tool', '🗺️ Times Table Map', map));
+    tools.appendChild(B('tool', '🎁 My Rewards', rewardsPage));
     app.appendChild(tools);
     var g = E('div', 'levels'), nextUp = -1;
     LEVELS.forEach(function (lv, i) { if (nextUp < 0 && unlocked(i) && (!st.lv[i] || st.lv[i].stars == null)) nextUp = i; });
@@ -784,6 +838,8 @@ button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
       b.appendChild(E('span', null, lv.goal + '. ' + lv.blurb));
       var s = st.lv[i] && st.lv[i].stars;
       b.appendChild(E('i', null, s != null ? '⭐'.repeat(Math.max(s, 0)) + (s < 3 ? '☆'.repeat(3 - s) : '') : unlocked(i) ? 'About 10 minutes' : '🔒 Finish level ' + i + ' first'));
+      var goal = i === nextUp && nextReward();
+      if (goal) b.appendChild(E('em', 'rcorner', '🎁 ' + goal.text));
       g.appendChild(b);
     });
     app.appendChild(g);
@@ -798,7 +854,30 @@ button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
     b.appendChild(B('back', '← Back', onBack));
     b.appendChild(E('b', null, title));
     if (extra) b.appendChild(extra);
+    var goal = lv >= 0 && nextReward();
+    if (goal) b.appendChild(E('span', 'rchip', '🎁 ' + goal.text + ' · ' + goal.left + ' more ⭐'));
     app.appendChild(b);
+  }
+
+  function rewardsPage() {
+    newScreen(); lastSay = '';
+    bar(-1, '🎁 My Rewards', home);
+    var p = E('div', 'panel'), have = totalStars(), list = E('div', 'rlist');
+    p.appendChild(E('h2', null, 'You have ⭐ ' + have));
+    p.appendChild(E('p', 'goal', 'Finish levels to earn stars. Type a reward for each star goal, then ask a grown-up to say yes. Your next reward shows on your level. These stay on this device.'));
+    for (var i = 0; i < REWARD_GOALS; i++) (function (i) {
+      var goal = (i + 1) * REWARD_STEP, won = have >= goal, row = E('label', 'rrow' + (won ? ' won' : ''));
+      row.appendChild(E('b', null, '⭐ ' + goal));
+      var input = E('input'); input.type = 'text'; input.maxLength = 40; input.placeholder = 'Type a reward'; input.value = rewards()[i] || '';
+      input.setAttribute('aria-label', 'Reward at ' + goal + ' stars'); input.setAttribute('autocomplete', 'off');
+      input.oninput = function () { var r = rewards(); r[i] = input.value; saveRewards(r); };
+      row.appendChild(input);
+      row.appendChild(E('span', null, won ? '🎉 Earned!' : (goal - have) + ' more ⭐'));
+      list.appendChild(row);
+    })(i);
+    p.appendChild(list);
+    var r = E('div', 'row'); r.appendChild(B('btn', 'Done', home)); p.appendChild(r);
+    app.appendChild(p);
   }
 
   function hub(lv) {
@@ -873,7 +952,7 @@ button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
       newScreen();
       var dots = E('div', 'dots'); list.forEach(function (x, i) { dots.appendChild(E('span', i < marks.length ? (marks[i] ? 'ok' : 'try') : i === idx ? 'now' : '')); });
       bar(lv, '🧱 Build it', function () { hub(lv); }, dots);
-      var p = E('div', 'panel'); app.appendChild(p);
+      var p = E('div', 'panel split'); app.appendChild(p);
       if (d.loose) looseRound(p, q[0], q[1], cb);
       else if (d.turns) turnRound(p, q[0], q[1], cb);
       else moveRound(p, q[0], q[1], cb);
@@ -884,7 +963,7 @@ button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
   function looseRound(p, r, c, cb) {
     var text = E('div', 'prompt', looseLine(r, c)); p.appendChild(text);
     var box = E('div'); p.appendChild(box);
-    var stage = Stage(box, 340), n = r * c, cellsTarget = cellsOf(grid(r, c, null, { byIndex: true }));
+    var stage = Stage(box), n = r * c, cellsTarget = cellsOf(grid(r, c, null, { byIndex: true }));
     var pile = cellsOf({ scatter: n }).map(function (q) { return { id: q.id, x: q.x * Math.max(c, 5) / 6.1, y: r + 0.7 + q.y * 0.75, color: 0 }; });
     var W = Math.max(c, 5) + 1, H = r + 0.7 + 3;
     var offsetX = (W - c) / 2;
@@ -1047,16 +1126,19 @@ button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
     }
     function finish() {
       var n = firstRight, stars = n >= Math.ceil(total * 0.9) ? 3 : n >= Math.ceil(total * 0.65) ? 2 : 1;
-      var was = L(lv).stars;
+      var was = L(lv).stars, before = totalStars();
       L(lv).stars = Math.max(was || 0, stars); save(); newScreen();
+      var reached = Math.min(REWARD_GOALS, Math.floor(totalStars() / REWARD_STEP)), newGoal = reached > Math.floor(before / REWARD_STEP) ? reached : 0;
       bar(lv, 'Level ' + (lv + 1) + ' · ' + d.name, function () { hub(lv); });
       var c = E('div', 'city'); c.innerHTML = citySvg(lv); app.appendChild(c);
       var s = E('div', 'panel done');
       s.appendChild(E('h2', null, 'Level ' + (lv + 1) + ' done! ' + '⭐'.repeat(stars) + '☆'.repeat(3 - stars)));
       s.appendChild(E('p', 'hint', n + ' of ' + total + ' right the first time.'));
+      if (newGoal) s.appendChild(E('div', 'earned', '🎉 ' + (newGoal * REWARD_STEP) + ' stars! ' + (rewardText(newGoal - 1) ? 'You earned: ' + rewardText(newGoal - 1) : 'Type a reward for this goal.')));
       var r = E('div', 'row');
       r.appendChild(B('btn alt', 'Climb again', function () { tower(lv); }));
       if (lv < LEVELS.length - 1) r.appendChild(B('btn', 'Level ' + (lv + 2) + ' →', function () { hub(lv + 1); }));
+      r.appendChild(B('btn alt', '🎁 My Rewards', rewardsPage));
       r.appendChild(B('btn alt', 'My city', home));
       s.appendChild(r); app.appendChild(s);
       win(); say(doneLine(lv, stars));
@@ -1101,7 +1183,7 @@ button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
     bar(0, '🔬 Block Lab', home);
     var p = E('div', 'panel'), eq = E('div', 'equation'), text = E('div', 'hint'); text.textContent = SAY.lab;
     p.appendChild(eq); p.appendChild(text);
-    var W = Math.min((app.clientWidth || 340) - 64, 420), unit = Math.floor(W / 10), SIDE = unit * 10;
+    var W = Math.min((app.clientWidth || 340) - 64, Math.max(420, window.innerHeight - 330)), unit = Math.floor(W / 10), SIDE = unit * 10;
     var box = E('div', 'labbox'); box.style.width = SIDE + 'px'; box.style.height = SIDE + 'px';
     box.style.backgroundImage = 'linear-gradient(#dfe9f3 1px,transparent 1px),linear-gradient(90deg,#dfe9f3 1px,transparent 1px)'; box.style.backgroundSize = unit + 'px ' + unit + 'px';
     p.appendChild(box); app.appendChild(p);
@@ -1187,8 +1269,8 @@ button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
   var a = document.createElement('div');
   a.setAttribute('style', 'position:fixed;z-index:2147483647;box-sizing:border-box;display:inline-flex;align-items:center;gap:8px');
   if (h) {
-    var back = document.createElement('a'); back.href = h; back.textContent = '← Home';
-    back.setAttribute('style', 'box-sizing:border-box;display:inline-flex;align-items:center;min-height:44px;min-width:44px;padding:0 16px;background:#1f5f99;color:#fff;font:600 14px system-ui,sans-serif;border-radius:999px;white-space:nowrap;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.35)');
+    var back = document.createElement('a'); back.href = h; back.textContent = '🏠 Home';
+    back.setAttribute('style', 'box-sizing:border-box;display:inline-flex;align-items:center;min-height:56px;padding:0 22px;border:3px solid #fff;background:#1f5f99;color:#fff;font:800 20px system-ui,sans-serif;border-radius:999px;white-space:nowrap;text-decoration:none;box-shadow:0 2px 10px rgba(0,0,0,.45)');
     a.appendChild(back);
   }
   var upd = document.createElement('button'); upd.type = 'button';
