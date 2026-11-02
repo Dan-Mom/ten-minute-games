@@ -1,0 +1,932 @@
+<!doctype html>
+<html lang="en">
+<head><script>/* Ten-Minute Games accounts: a parent signs in with Google, adds children by nickname, and each child's game progress follows them
+   to any computer or iPad. Signing in is optional; without it every game works exactly as before (progress stays on this device).
+
+   How progress is kept: every game already saves its progress in this browser (localStorage) under its own names. This script,
+   which build.cjs puts at the very top of every page, keeps one copy of those values per player ("guest" = not signed in, or a
+   child). When the player changes, the values in the browser are swapped before the game reads them. When a child is playing,
+   their copy is also saved to Firebase (Firestore: families/<parent uid>/kids/<child id>), and loaded back on other devices.
+   Only values written by these game pages are kept; nothing else in the browser is read or sent.
+
+   Public Firebase web config: allowed on the public site by PRIVACY-RULE.md exception five. Access is guarded by the Firestore
+   rules (each parent can only read and write their own family), not by hiding this. */
+(function () {
+  'use strict';
+  if (window.TMG) return;
+  var CONFIG = {
+    apiKey: 'AIzaSyDC-kbJIExCfhIsUkkShVIO8VtBTe3D7WI',
+    authDomain: 'ten-minute-games.firebaseapp.com',
+    projectId: 'ten-minute-games',
+    storageBucket: 'ten-minute-games.firebasestorage.app',
+    messagingSenderId: '448551703283',
+    appId: '1:448551703283:web:7f0c2b75a166f1fcbb1d86'
+  };
+  var SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
+  var P = 'tmg.', GUEST = 'guest', MAX_VALUE = 200000;
+  var LS; try { LS = window.localStorage; LS.getItem(P + 'x'); } catch (e) { LS = null; }
+  if (!LS) { window.TMG = { kid: GUEST, ready: Promise.resolve(), mountHome: function () {} }; return; }
+  var rawSet = Storage.prototype.setItem, rawRemove = Storage.prototype.removeItem, rawGet = Storage.prototype.getItem;
+  function get(k) { return rawGet.call(LS, k); }
+  function put(k, v) { try { rawSet.call(LS, k, v); } catch (e) {} }
+  function del(k) { rawRemove.call(LS, k); }
+  function J(k, d) { try { var v = get(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
+  function W(k, o) { put(k, JSON.stringify(o)); }
+  function ours(k) { return typeof k === 'string' && (k.indexOf(P) === 0 || k.indexOf('firebase') === 0); }
+
+  function current() { return get(P + 'current') || GUEST; }
+  function store(id) { return J(P + 'kid.' + id, { data: {}, updated: 0 }); }
+  function saveStore(id, s) { W(P + 'kid.' + id, s); }
+  function known() { return J(P + 'known', []); }
+
+  /* Put player `id`'s values into the browser. The values sitting there now belong to `owner`: keep them first. */
+  function swap() {
+    var id = current(), owner = get(P + 'owner') || GUEST;
+    if (owner === id) return false;
+    var ks = known(), from = store(owner), to = store(id), changed = false;
+    ks.forEach(function (k) { var v = get(k); if (v === null) delete from.data[k]; else from.data[k] = v; });
+    saveStore(owner, from);
+    ks.forEach(function (k) {
+      var want = Object.prototype.hasOwnProperty.call(to.data, k) ? to.data[k] : null;
+      if (get(k) !== want) { changed = true; if (want === null) del(k); else put(k, want); }
+    });
+    put(P + 'owner', id);
+    return changed;
+  }
+  swap();
+
+  /* Every write a game makes is copied into the current player's store (and marked for upload when a child is playing). */
+  var dirtyTimer = 0;
+  function noteWrite(k, v) {
+    if (ours(k)) return;
+    if (v !== null && String(v).length > MAX_VALUE) return;
+    var ks = known(); if (ks.indexOf(k) < 0) { ks.push(k); W(P + 'known', ks); }
+    var id = current(), s = store(id);
+    if (v === null) delete s.data[k]; else s.data[k] = String(v);
+    s.updated = Date.now(); saveStore(id, s);
+    if (id !== GUEST) { put(P + 'dirty', '1'); clearTimeout(dirtyTimer); dirtyTimer = setTimeout(function () { cloud.push(); }, 3000); }
+  }
+  Storage.prototype.setItem = function (k, v) { rawSet.call(this, k, v); if (this === LS) noteWrite(String(k), String(v)); };
+  Storage.prototype.removeItem = function (k) { rawRemove.call(this, k); if (this === LS) noteWrite(String(k), null); };
+
+  /* ---------- Firebase (loaded only when it is needed) ---------- */
+  var fb = null;
+  function loadScript(src) { return new Promise(function (ok, no) { var s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); }
+  function firebaseReady() {
+    if (fb) return fb;
+    fb = loadScript(SDK + 'firebase-app-compat.js')
+      .then(function () { return Promise.all([loadScript(SDK + 'firebase-auth-compat.js'), loadScript(SDK + 'firebase-firestore-compat.js')]); })
+      .then(function () {
+        var app = window.firebase.apps.length ? window.firebase.app() : window.firebase.initializeApp(CONFIG);
+        return { auth: app.auth(), db: app.firestore() };
+      });
+    return fb;
+  }
+  function userNow(f) { return new Promise(function (ok) { var off = f.auth.onAuthStateChanged(function (u) { off(); ok(u); }); }); }
+  function kidsRef(f, uid) { return f.db.collection('families').doc(uid).collection('kids'); }
+
+  var cloud = {
+    /* upload the current child's copy */
+    push: function () {
+      var id = current(), uid = get(P + 'uid');
+      if (id === GUEST || !uid || get(P + 'dirty') !== '1') return Promise.resolve();
+      var s = store(id), name = (J(P + 'family', { kids: [] }).kids.filter(function (k) { return k.id === id; })[0] || {}).name || 'Player';
+      if (JSON.stringify(s.data).length > 900000) return Promise.resolve();   // a Firestore document holds at most 1 MB: keep it on this device only
+      return firebaseReady().then(function (f) {
+        return kidsRef(f, uid).doc(id).set({ name: name, data: s.data, updated: s.updated || Date.now() });
+      }).then(function () { if (store(id).updated === s.updated) del(P + 'dirty'); }, function () {});
+    },
+    /* download the current child's copy if the cloud has a newer one; returns true when the browser's values changed */
+    pull: function () {
+      var id = current(), uid = get(P + 'uid');
+      if (id === GUEST || !uid) return Promise.resolve(false);
+      return firebaseReady().then(function (f) { return kidsRef(f, uid).doc(id).get(); }).then(function (doc) {
+        if (!doc.exists) return false;
+        var c = doc.data(), s = store(id);
+        if ((c.updated || 0) <= (s.updated || 0)) { if ((s.updated || 0) > (c.updated || 0)) { put(P + 'dirty', '1'); cloud.push(); } return false; }
+        saveStore(id, { data: c.data || {}, updated: c.updated });
+        var ks = known(); Object.keys(c.data || {}).forEach(function (k) { if (ks.indexOf(k) < 0) ks.push(k); }); W(P + 'known', ks);
+        var changed = false;
+        if ((get(P + 'owner') || GUEST) === id) ks.forEach(function (k) {
+          var want = Object.prototype.hasOwnProperty.call(c.data || {}, k) ? c.data[k] : null;
+          if (get(k) !== want) { changed = true; if (want === null) del(k); else put(k, want); }
+        });
+        return changed;
+      }, function () { return false; });
+    }
+  };
+  window.addEventListener('pagehide', function () { cloud.push(); });
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') cloud.push(); });
+
+  /* On a game page with a child playing: fetch their newest progress; if it differs from what the game already read, reload once. */
+  var onHome = !!document.querySelector('meta[name="tmg-home"]');
+  var ready = Promise.resolve();
+  if (get(P + 'uid') && current() !== GUEST) {
+    ready = cloud.pull().then(function (changed) {
+      if (changed && !onHome) {
+        var flag = 'tmg.reloaded.' + location.pathname;
+        try { if (!sessionStorage.getItem(flag)) { sessionStorage.setItem(flag, '1'); location.reload(); } } catch (e) {}
+      }
+    });
+  }
+
+  /* ---------- the parent panel on the home page ---------- */
+  function E(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function newId() { var a = new Uint8Array(9); crypto.getRandomValues(a); return Array.prototype.map.call(a, function (b) { return ('0' + b.toString(16)).slice(-2); }).join(''); }
+  function cleanName(s) { return String(s || '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 20); }
+
+  function mountHome(box) {
+    var msg = '';
+    function render() {
+      box.replaceChildren();
+      var uid = get(P + 'uid'), fam = J(P + 'family', { kids: [] }), cur = current();
+      if (!uid) {
+        var b = E('button', 'acct-btn', 'Parent sign-in'); b.type = 'button'; b.onclick = signIn;
+        box.appendChild(b);
+        box.appendChild(E('span', 'acct-note', 'Optional: keep each child’s progress on every device.'));
+      } else {
+        var row = E('div', 'acct-kids');
+        fam.kids.forEach(function (k) {
+          var chip = E('button', 'acct-kid' + (k.id === cur ? ' on' : ''), (k.id === cur ? '▶ ' : '') + k.name); chip.type = 'button';
+          chip.setAttribute('aria-pressed', k.id === cur ? 'true' : 'false');
+          chip.onclick = function () { choose(k.id); };
+          row.appendChild(chip);
+        });
+        var g = E('button', 'acct-kid' + (cur === GUEST ? ' on' : ''), 'Just looking'); g.type = 'button'; g.onclick = function () { choose(GUEST); };
+        row.appendChild(g);
+        var add = E('button', 'acct-btn small', '+ Add child'); add.type = 'button'; add.onclick = addKid;
+        row.appendChild(add);
+        box.appendChild(row);
+        var tools = E('span', 'acct-tools');   // on the same row, right after "+ Add child"
+        var so = E('button', 'acct-link', 'Sign out'); so.type = 'button'; so.onclick = signOut; tools.appendChild(so);
+        var rm = E('button', 'acct-link', 'Remove a child'); rm.type = 'button'; rm.onclick = removeKid; tools.appendChild(rm);
+        var dl = E('button', 'acct-link danger', 'Delete account and all data'); dl.type = 'button'; dl.onclick = deleteAll; tools.appendChild(dl);
+        var pv = E('a', 'acct-link', 'Privacy'); pv.href = 'privacy.html'; tools.appendChild(pv);
+        row.appendChild(tools);
+      }
+      if (msg) box.appendChild(E('div', 'acct-msg', msg));
+    }
+    function say(t) { msg = t; render(); }
+    function loadFamily(f, uid) {
+      return kidsRef(f, uid).get().then(function (q) {
+        var kids = []; q.forEach(function (d) { kids.push({ id: d.id, name: cleanName(d.data().name) || 'Player' }); });
+        kids.sort(function (a, b) { return a.name.localeCompare(b.name); });
+        W(P + 'family', { kids: kids });
+        if (current() !== GUEST && !kids.some(function (k) { return k.id === current(); })) { put(P + 'current', GUEST); swap(); }
+        return kids;
+      });
+    }
+    function signIn() {
+      say('Opening Google sign-in…');
+      firebaseReady().then(function (f) {
+        var p = new window.firebase.auth.GoogleAuthProvider();
+        return f.auth.signInWithPopup(p).then(function (r) { put(P + 'uid', r.user.uid); return loadFamily(f, r.user.uid); });
+      }).then(function (kids) { msg = kids.length ? 'Signed in. Pick who is playing.' : 'Signed in. Add your first child (a nickname is enough).'; render(); },
+        function (e) { say(e && e.code === 'auth/popup-closed-by-user' ? '' : 'Sign-in did not work' + (e && e.code ? ' (' + e.code + ')' : '') + '. Please try again.'); });
+    }
+    function addKid() {
+      var name = cleanName(window.prompt('Child’s nickname (not their full name):', ''));
+      if (!name) return;
+      var uid = get(P + 'uid'), id = newId(), fam = J(P + 'family', { kids: [] });
+      var guest = store(GUEST), first = fam.kids.length === 0 && Object.keys(guest.data).length > 0;
+      var start = { data: {}, updated: Date.now() };
+      if (first && window.confirm('Move the progress already on this device to ' + name + '?')) {
+        swap(); start = { data: JSON.parse(JSON.stringify(store(GUEST).data)), updated: Date.now() };
+      }
+      say('Adding ' + name + '…');
+      firebaseReady().then(function (f) {
+        return kidsRef(f, uid).doc(id).set({ name: name, data: start.data, updated: start.updated }).then(function () { return loadFamily(f, uid); });
+      }).then(function () { saveStore(id, start); choose(id); }, function () { say('Could not add ' + name + '. Please try again.'); });
+    }
+    function choose(id) {
+      cloud.push().then(function () {
+        put(P + 'current', id); swap();
+        msg = id === GUEST ? 'Just looking: progress stays on this device.' : 'Now playing: ' + ((J(P + 'family', { kids: [] }).kids.filter(function (k) { return k.id === id; })[0] || {}).name || '');
+        render();
+        return cloud.pull();
+      });
+    }
+    function removeKid() {
+      var fam = J(P + 'family', { kids: [] }); if (!fam.kids.length) return;
+      var name = window.prompt('Type the nickname of the child to remove. Their progress is deleted everywhere.\n\n' + fam.kids.map(function (k) { return k.name; }).join(', '), '');
+      var k = fam.kids.filter(function (x) { return x.name === cleanName(name); })[0]; if (!k) return;
+      var uid = get(P + 'uid');
+      firebaseReady().then(function (f) { return kidsRef(f, uid).doc(k.id).delete().then(function () { return loadFamily(f, uid); }); })
+        .then(function () { del(P + 'kid.' + k.id); say(k.name + ' was removed.'); }, function () { say('Could not remove ' + k.name + '. Please try again.'); });
+    }
+    /* leave this device as a guest device: the children's copies are taken off it */
+    function forgetDevice() {
+      put(P + 'current', GUEST); swap();
+      J(P + 'family', { kids: [] }).kids.forEach(function (k) { del(P + 'kid.' + k.id); });
+      del(P + 'family'); del(P + 'uid'); del(P + 'dirty');
+    }
+    function signOut() {
+      cloud.push().then(firebaseReady).then(function (f) { return f.auth.signOut(); }).then(function () { forgetDevice(); say('Signed out. This device is back to guest play.'); },
+        function () { forgetDevice(); say('Signed out on this device.'); });
+    }
+    function deleteAll() {
+      if (!window.confirm('Delete your account, all your children and all their progress? This cannot be undone.')) return;
+      var uid = get(P + 'uid');
+      say('Deleting…');
+      firebaseReady().then(function (f) {
+        return kidsRef(f, uid).get().then(function (q) { var jobs = []; q.forEach(function (d) { jobs.push(d.ref.delete()); }); return Promise.all(jobs); })
+          .then(function () { var u = f.auth.currentUser; return u.delete().catch(function (e) {
+            if (e && e.code === 'auth/requires-recent-login') return u.reauthenticateWithPopup(new window.firebase.auth.GoogleAuthProvider()).then(function () { return u.delete(); });
+            throw e; }); });
+      }).then(function () { forgetDevice(); say('Your account and all its data were deleted.'); },
+        function () { say('Could not finish deleting. Please sign in again and retry.'); });
+    }
+    /* check the sign-in is still valid (it can end on another device) */
+    if (get(P + 'uid')) firebaseReady().then(function (f) { return userNow(f).then(function (u) {
+      if (!u) { forgetDevice(); render(); return; }
+      return loadFamily(f, u.uid).then(render);
+    }); }, function () {});
+    render();
+  }
+
+  window.TMG = { kid: current(), ready: ready, mountHome: mountHome, _swap: swap, _cloud: cloud };
+})();
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cookie Share</title>
+<meta name="theme-color" content="#a8622c">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<style>
+/* Cookie Share: one idea (dividing) in eight levels, each adding one new thing.
+   Children share cookies out and fill bags with their own fingers before answering from memory, then see that dividing undoes multiplying. */
+:root{
+  color-scheme:light;
+  --ink:#3b2417; --mute:#6d5748; --page:#fff4e6; --card:#fff; --line:#ecd9c3;
+  --red:#a8622c; --orange:#e8650a; --green:#1f8f45; --bad:#c43a3a; --gold:#ffcc33; --gold-s:#fff5cc; --soft:#ffe9d2; --wood:#b9824c; --wood-s:#f6dfc0;
+  --display:"Baloo 2","Nunito","Trebuchet MS",system-ui,sans-serif;
+  --body:"Nunito","Trebuchet MS",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font:800 18px/1.45 var(--body);min-height:100vh}
+h1,h2,h3{font-family:var(--display);margin:0;line-height:1.1}
+button{font-family:var(--display);cursor:pointer;color:inherit;touch-action:manipulation}
+button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
+.wrap{max-width:1400px;margin:0 auto;padding:14px 16px 90px}
+.top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.top h1{font-size:clamp(24px,4.5vw,34px);color:var(--red);margin-right:auto}
+.stars{font:800 18px var(--display);color:#8a6400;background:var(--gold-s);border-radius:999px;padding:6px 14px}
+.round{border:0;background:#fff;border-radius:999px;min-width:44px;min-height:44px;font-size:20px;box-shadow:0 3px 0 var(--line)}
+.tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:14px}
+.tool{border:0;border-radius:18px;min-height:64px;padding:8px 12px;background:var(--gold-s);box-shadow:0 5px 0 #e5cf7c;font-size:19px;color:#6d4f00}
+.levels{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:14px;margin-top:16px}
+.lv{position:relative;text-align:left;border:0;background:var(--card);border-radius:22px;padding:14px 16px;min-height:118px;box-shadow:0 6px 0 var(--line);display:flex;flex-direction:column;gap:4px}
+.lv:disabled{opacity:.55;cursor:not-allowed}
+.lv.now{outline:4px solid var(--orange);outline-offset:-2px}
+.lv b{font:800 21px var(--display);color:var(--red)}
+.lv span{font:700 15px var(--body);color:var(--mute)}
+.lv i{font-style:normal;font-size:15px;color:#8a6400;margin-top:auto}
+.why{margin-top:18px;background:#fff;border-radius:18px;padding:14px 16px;font:700 15px/1.5 var(--body);color:var(--mute)}
+.why b{color:var(--ink)}
+.bar{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
+.back{border:0;background:#fff;border-radius:14px;min-height:44px;padding:0 14px;font-size:16px;color:var(--red);box-shadow:0 3px 0 var(--line)}
+.dots{display:flex;gap:5px;flex-wrap:wrap}
+.dots span{width:13px;height:13px;border-radius:50%;background:#e7dccf}
+.dots span.ok{background:var(--gold)} .dots span.try{background:#e0b98f}
+.dots span.now{outline:3px solid var(--red);outline-offset:1px}
+.panel{margin-top:14px;background:var(--card);border-radius:26px;padding:16px;box-shadow:0 6px 0 var(--line)}
+.steps{display:grid;gap:12px;margin-top:12px}
+.step{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;border-radius:18px;padding:12px 14px;min-height:72px;background:var(--soft);box-shadow:0 4px 0 #e6c49d}
+.step:disabled{opacity:.5;cursor:not-allowed}
+.step.next{background:#ffd9ae;box-shadow:0 4px 0 #e0a877}
+.step em{font-style:normal;font-size:30px}
+.step b{display:block;font:800 20px var(--display)}
+.step small{font:700 15px var(--body);color:var(--mute)}
+.goal{font:700 16px/1.45 var(--body);color:var(--mute);margin-top:8px}
+.prompt{font:800 clamp(19px,3.4vw,25px)/1.28 var(--display);text-align:center;min-height:2.6em;display:flex;align-items:center;justify-content:center;gap:8px}
+.big{font:800 clamp(34px,7vw,50px)/1.1 var(--display);text-align:center;margin:6px 0}
+.big u{text-decoration:none;display:inline-block;min-width:1.5em;border-bottom:5px solid var(--red);color:var(--orange)}
+.big u.good{color:var(--green);border-color:var(--green)}
+.big u.bad{color:var(--bad);border-color:var(--bad);animation:shake .35s}
+.hint{margin-top:8px;text-align:center;font:700 17px var(--body);color:var(--mute)}
+.row{display:flex;justify-content:center;gap:10px;margin-top:14px;flex-wrap:wrap}
+.btn{border:0;border-radius:16px;min-height:52px;padding:0 22px;font-size:21px;color:#fff;background:var(--orange);box-shadow:0 5px 0 #a5450a}
+.btn:active{transform:translateY(2px)}
+.btn.alt{background:#fff;color:var(--red);box-shadow:0 4px 0 var(--line)}
+.btn.small{min-height:46px;font-size:18px;padding:0 14px}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+
+/* the cookies */
+.stall{display:flex;flex-direction:column;gap:12px;align-items:center;--a:40px}
+.pile{display:flex;flex-wrap:wrap;justify-content:center;width:100%;min-height:calc(var(--a) + 4px)}
+.plates{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;width:100%}
+.plate{display:grid;gap:0;justify-content:center;align-content:center;padding:8px;min-width:calc(var(--a) * 1.8);min-height:calc(var(--a) * 1.8);border-radius:50%;background:#fff;box-shadow:inset 0 0 0 4px #e3c9a6,0 3px 0 var(--line)}
+.plate.bag{border-radius:12px;background:var(--wood-s);box-shadow:inset 0 0 0 4px var(--wood),0 3px 0 #8d6236}
+.block{display:grid;justify-content:center;gap:0}
+.ap{display:flex;align-items:center;justify-content:center;width:var(--a);height:var(--a);font-size:calc(var(--a) * .82);line-height:1;border:0;background:none;padding:0}
+button.ap{cursor:pointer;border-radius:50%}
+button.ap.tapme{box-shadow:0 0 0 3px #f4b183}
+.pop{animation:pop .3s ease backwards}
+@keyframes pop{0%{transform:scale(.3)}70%{transform:scale(1.1)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.pop{animation:none}}
+.left{font:800 22px var(--display);color:var(--orange);text-align:center;margin-top:6px}
+
+/* number pad */
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:300px;margin:12px auto 0}
+.pad button{min-height:54px;border:0;border-radius:14px;background:var(--soft);color:var(--red);font-size:26px;box-shadow:0 4px 0 #e6c49d}
+.pad button:active,.pad button.on{transform:translateY(2px);filter:brightness(.92)}
+.done{text-align:center}
+.done .big-e{font-size:60px}
+
+/* rewards the child types */
+.rchip{margin-left:auto;max-width:min(100%,420px);padding:8px 14px;border-radius:999px;background:var(--gold-s);border:2px solid var(--gold);color:#6d4f00;font:800 17px var(--display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lv .rcorner{position:absolute;top:-8px;right:10px;max-width:70%;padding:3px 10px;border-radius:999px;background:var(--gold);color:#5f4500;font:800 13px var(--display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rlist{display:grid;gap:12px;margin-top:14px}
+.rrow{display:grid;grid-template-columns:78px minmax(0,1fr) 104px;align-items:center;gap:10px}
+.rrow b{font:800 22px var(--display);color:#8a6400}
+.rrow input{width:100%;min-height:56px;padding:0 14px;border:3px solid var(--line);border-radius:14px;background:#fff;color:var(--ink);font:800 20px var(--body)}
+.rrow input:focus{outline:0;border-color:var(--orange)}
+.rrow span{font:800 15px var(--display);color:var(--mute);text-align:right}
+.rrow.won{background:var(--gold-s);border-radius:16px;padding:6px 8px}
+.rrow.won span{color:var(--green)}
+@media (max-width:520px){.rrow{grid-template-columns:64px minmax(0,1fr)}.rrow span{grid-column:2;text-align:left}}
+.earned{margin:10px auto 0;max-width:640px;padding:12px 16px;border-radius:16px;background:var(--gold-s);border:3px solid var(--gold);font:800 22px var(--display);color:#6d4f00}
+
+/* tablets and computers: bigger words and buttons */
+@media (min-width:700px){
+  .prompt{font-size:30px}
+  .big{font-size:60px}
+  .hint{font-size:20px}
+  .btn{min-height:64px;padding:0 30px;font-size:26px}
+  .btn.small{min-height:56px;font-size:22px}
+  .back{min-height:52px;font-size:20px}
+  .pad{width:100%;max-width:360px}
+  .pad button{min-height:68px;font-size:32px}
+}
+/* a wide screen: cookies on the left, answer keys on the right, so both fit without scrolling */
+@media (min-width:900px) and (orientation:landscape){
+  .split{display:grid;grid-template-columns:minmax(0,1fr) 360px;column-gap:20px;align-items:start}
+  .split > *{grid-column:2}
+  .split > .prompt{grid-column:1 / -1}
+  .split > .stallbox{grid-column:1;grid-row:2 / span 8}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><h1>🍪 Cookie Share</h1>
+    <button class="round" id="snd" type="button" aria-label="Read it to me again">🔊</button>
+    <button class="round" id="mute" type="button" aria-label="Turn the voice off">🗣️</button>
+    <span class="stars" id="starTotal">⭐ 0</span></div>
+  <div id="app"></div>
+</div>
+<script>
+(function () {
+  "use strict";
+  /* The block between these two marks has no page code in it: 网站\voice-lines.cjs runs it to list every sentence for recording. */
+  /*LINES-BEGIN*/
+  function Sh(n, d, extra) { var q = { k: 'share', n: n, d: d }; for (var x in (extra || {})) q[x] = extra[x]; return q; }
+  function Gr(n, d, extra) { var q = { k: 'group', n: n, d: d }; for (var x in (extra || {})) q[x] = extra[x]; return q; }
+  function Le(n, d, extra) { var q = { k: 'left', n: n, d: d }; for (var x in (extra || {})) q[x] = extra[x]; return q; }
+  function each(fn, list, extra) { return list.map(function (p) { return fn(p[0], p[1], extra); }); }
+  function answerOf(q) { return q.k === 'mul' ? q.a * q.b : Math.floor(q.n / q.d); }
+  function restOf(q) { return q.n % q.d; }
+  function qLeft(q) { return q.k === 'mul' ? q.a + ' × ' + q.b : q.n + ' ÷ ' + q.d; }
+  function qLine(q) { return q.story || qLeft(q) + ' = ?'; }
+  function aLine(q) { var r = q.k === 'left' ? restOf(q) : 0; return qLeft(q) + ' = ' + answerOf(q) + (q.k === 'left' ? ', with ' + r + ' left over.' : ''); }
+  function timesHint(q) { return q.d + ' × ? = ' + (q.n - restOf(q)); }
+  function doneLine(lv, n) { return 'Level ' + (lv + 1) + ' done! ' + n + (n === 1 ? ' star. ' : ' stars. ') + (n === 3 ? 'Every cookie found a home!' : 'Good sharing! Play again for more stars.'); }
+  function shareStory(n, d) { return n + ' cookies, ' + d + ' friends. How many for each friend?'; }
+  function bagStory(n, d) { return n + ' cookies. Each bag holds ' + d + '. How many bags?'; }
+  function leftStory(n, d) { return n + ' cookies, ' + d + ' friends. How many for each friend?'; }
+  var SAY = {
+    home: 'Pick a level. The orange one is next.',
+    hub: 'First watch. Then share the cookies yourself.',
+    tap: 'Tap a cookie. It goes to the next plate.',
+    deal: 'Give one cookie to each plate. Keep going.',
+    fill: 'Fill a bag. Keep going until the cookies are gone.',
+    each: 'How many on each plate?',
+    bags: 'How many bags?',
+    leftover: 'Not enough for every plate. Those cookies are left over.',
+    howLeft: 'How many are left over?',
+    look: 'Look at the rows and columns.',
+    memory: 'Now from memory. If you need help, tap Show the cookies.',
+    hintShare: 'Share them out, one for each plate, and count one plate.',
+    hintGroup: 'Count how many bags you can fill.',
+    hintFact: 'The same three numbers make the times sentence and the divide sentences.',
+    hintLeft: 'Count the cookies that cannot go on every plate.'
+  };
+  /* a picture: { pile: cookies not given out yet, plates: [how many on each], bags: true if they are bags, rows and cols: a neat block of cookies } */
+  var LEVELS = [
+    { name: 'Share Fairly', goal: 'Sharing', blurb: 'Give out cookies one at a time until every plate has the same.', tap: true, hint: 'hintShare',
+      demo: [{ say: 'Here are 6 cookies and 2 plates.', pic: { pile: 6, plates: [0, 0] } }, { say: 'Give one to each plate, again and again.', pic: { pile: 2, plates: [2, 2] } }, { say: 'Each plate has 3. 6 ÷ 2 = 3.', pic: { pile: 0, plates: [3, 3] } }],
+      items: each(Sh, [[6, 2], [8, 2], [9, 3], [12, 3], [10, 2], [12, 4], [15, 3], [8, 4], [16, 4], [10, 5]]) },
+    { name: 'Fill the Bags', goal: 'Making equal groups', blurb: 'Each bag holds the same number. How many bags can you fill?', hint: 'hintGroup',
+      demo: [{ say: 'Here are 12 cookies. Each bag holds 3.', pic: { pile: 12, plates: [], bags: true } }, { say: 'Fill a bag, then another.', pic: { pile: 6, plates: [3, 3], bags: true } }, { say: 'That makes 4 bags. 12 ÷ 3 = 4.', pic: { pile: 0, plates: [3, 3, 3, 3], bags: true } }],
+      items: each(Gr, [[6, 3], [8, 2], [10, 5], [12, 3], [12, 2], [14, 7], [15, 5], [16, 4], [18, 3], [20, 5]]) },
+    { name: 'Times and Divide', goal: 'Dividing undoes multiplying', blurb: 'One block of cookies, three sentences. 3 × 4 = 12, so 12 ÷ 3 = 4.', hint: 'hintFact',
+      demo: [{ say: 'Here are 3 rows of 4.', pic: { rows: 3, cols: 4 } }, { say: '3 × 4 = 12.', pic: { rows: 3, cols: 4 } }, { say: 'Split 12 into 3 rows: 12 ÷ 3 = 4.', pic: { rows: 3, cols: 4 } }, { say: 'Split 12 into 4 columns: 12 ÷ 4 = 3.', pic: { rows: 3, cols: 4 } }],
+      items: [[3, 4], [2, 5], [3, 6], [4, 5]].reduce(function (o, p) { var w = p[0] * p[1], g = { rows: p[0], cols: p[1] }; return o.concat([{ k: 'mul', a: p[0], b: p[1], grid: g }, { k: 'div', n: w, d: p[0], grid: g }, { k: 'div', n: w, d: p[1], grid: g }]); }, []) },
+    { name: 'Use Your Times Tables', goal: 'Dividing by 2, 5 and 10', blurb: 'Turn it into a times question. 35 ÷ 5: 5 times what makes 35?', hint: 'times',
+      demo: [{ say: 'To divide, ask a times question.', pic: { pile: 35, plates: [0, 0, 0, 0, 0] } }, { say: '35 ÷ 5: 5 times what makes 35?', pic: { pile: 35, plates: [0, 0, 0, 0, 0] } }, { say: '5 × 7 = 35, so 35 ÷ 5 = 7.', pic: { pile: 0, plates: [7, 7, 7, 7, 7] } }],
+      items: each(Sh, [[14, 2], [18, 2], [25, 5], [35, 5], [40, 5], [30, 10], [50, 10], [16, 2], [45, 5], [20, 10]]) },
+    { name: 'Threes and Fours', goal: 'Dividing by 3 and 4', blurb: 'The same trick with 3 and 4. 24 ÷ 3: 3 times what makes 24?', hint: 'times',
+      demo: [{ say: '24 ÷ 3: 3 times what makes 24?', pic: { pile: 24, plates: [0, 0, 0] } }, { say: '3 × 8 = 24, so 24 ÷ 3 = 8.', pic: { pile: 0, plates: [8, 8, 8] } }],
+      items: each(Sh, [[21, 3], [27, 3], [24, 3], [18, 3], [28, 4], [36, 4], [32, 4], [24, 4], [30, 3], [40, 4]]) },
+    { name: 'The Big Tables', goal: 'Dividing by 6, 7, 8 and 9', blurb: 'The hardest facts. 56 ÷ 7: 7 times what makes 56?', hint: 'times',
+      demo: [{ say: '56 ÷ 7: 7 times what makes 56?', pic: { pile: 56, plates: [0, 0, 0, 0, 0, 0, 0] } }, { say: '7 × 8 = 56, so 56 ÷ 7 = 8.', pic: { pile: 0, plates: [8, 8, 8, 8, 8, 8, 8] } }],
+      items: each(Sh, [[36, 6], [42, 6], [54, 6], [49, 7], [56, 7], [63, 7], [48, 8], [64, 8], [72, 8], [81, 9]]) },
+    { name: 'Leftovers', goal: 'Remainders', blurb: 'Sometimes it does not share evenly. 17 ÷ 5 = 3, with 2 left over.', hint: 'hintLeft',
+      demo: [{ say: 'Here are 17 cookies and 5 plates.', pic: { pile: 17, plates: [0, 0, 0, 0, 0] } }, { say: 'Each plate gets 3.', pic: { pile: 2, plates: [3, 3, 3, 3, 3] } }, { say: '2 are left over. They cannot go on every plate.', pic: { pile: 2, plates: [3, 3, 3, 3, 3] } }, { say: '17 ÷ 5 = 3, with 2 left over.', pic: { pile: 2, plates: [3, 3, 3, 3, 3] } }],
+      items: each(Le, [[7, 2], [10, 3], [13, 4], [17, 5], [19, 3], [23, 4], [26, 5], [29, 6], [31, 7], [38, 9]]) },
+    { name: 'Bake Sale', goal: 'Stories, all mixed', blurb: 'Read the story. Are you sharing with friends or filling bags?', hintBy: true,
+      demo: [{ say: 'Now read the story first.', pic: { pile: 12, plates: [] } }, { say: 'Are you sharing with friends, or filling bags?', pic: { pile: 12, plates: [] } }],
+      items: [Sh(24, 6, { story: shareStory(24, 6) }), Gr(30, 5, { story: bagStory(30, 5) }), Sh(42, 7, { story: shareStory(42, 7) }), Gr(36, 9, { story: bagStory(36, 9) }), Le(25, 4, { story: leftStory(25, 4) }), Sh(56, 8, { story: shareStory(56, 8) }), Gr(48, 6, { story: bagStory(48, 6) }), Le(33, 5, { story: leftStory(33, 5) }), Sh(27, 3, { story: shareStory(27, 3) }), Gr(63, 7, { story: bagStory(63, 7) })] }
+  ];
+  function hintFor(lv, q) {
+    var d = LEVELS[lv];
+    if (q.k === 'left') return SAY.hintLeft;
+    if (d.hintBy || d.hint === 'times') return timesHint(q);
+    return SAY[d.hint];
+  }
+  function allLines() {
+    var out = Object.keys(SAY).map(function (k) { return SAY[k]; });
+    LEVELS.forEach(function (d, lv) {
+      d.demo.forEach(function (x) { out.push(x.say); });
+      for (var n = 1; n <= 3; n++) out.push(doneLine(lv, n));
+      d.items.forEach(function (q) { out.push(qLine(q)); out.push(aLine(q)); out.push(hintFor(lv, q)); });
+    });
+    return out;
+  }
+  /*LINES-END*/
+
+  var KEY = 'cookie-share.v1', REWARD_STEP = 6, REWARD_GOALS = 4;
+  var app = document.getElementById('app');
+  var st = load();
+  var lastSay = '', voiceOn = true, screen = 0, keyHandler = null;
+
+  function load() { try { var s = JSON.parse(localStorage.getItem(KEY)); if (s && s.lv) return s; } catch (e) {} return { lv: {} }; }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} }
+  function E(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function B(cls, text, fn) { var b = E('button', cls, text); b.type = 'button'; if (fn) b.onclick = fn; return b; }
+  function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function L(i) { return st.lv[i] || (st.lv[i] = {}); }
+  function totalStars() { var n = 0; LEVELS.forEach(function (x, i) { n += (st.lv[i] && st.lv[i].stars) || 0; }); return n; }
+  function drawStars() { document.getElementById('starTotal').textContent = '⭐ ' + totalStars(); }
+  function unlocked(i) { return i === 0 || (st.lv[i - 1] && st.lv[i - 1].stars != null); }
+  /* Rewards: the child types one for every 6 stars. A child's own words stay on this device: the tmg. name keeps them out of the account sync. */
+  function rewardKey() { return 'tmg.cookie-share.rewards.' + ((window.TMG && window.TMG.kid) || 'guest'); }
+  function rewards() { try { var r = JSON.parse(localStorage.getItem(rewardKey())); if (Array.isArray(r)) return r; } catch (e) {} return []; }
+  function saveRewards(r) { try { localStorage.setItem(rewardKey(), JSON.stringify(r)); } catch (e) {} }
+  function rewardText(i) { return String(rewards()[i] || '').trim(); }
+  function nextReward() {
+    var have = totalStars();
+    for (var i = 0; i < REWARD_GOALS; i++) { var goal = (i + 1) * REWARD_STEP; if (have < goal && rewardText(i)) return { text: rewardText(i), left: goal - have }; }
+    return null;
+  }
+  function newScreen() { screen++; keyHandler = null; hush(); app.replaceChildren(); drawStars(); window.scrollTo(0, 0); return screen; }
+  function later(fn, ms) { var s = screen; setTimeout(function () { if (s === screen) fn(); }, ms); }
+
+  /* read aloud: every line is recorded in advance (voice/<key>.mp3, made by 网站\make-voices.py). Only a line with no recording uses the device voice. */
+  var VKEYS = null, player = null, fallbackVoice = null, endTimer = 0;
+  try { fetch('voice/keys.json').then(function (r) { return r.json(); }).then(function (k) { VKEYS = {}; k.forEach(function (x) { VKEYS[x] = 1; }); }, function () {}); } catch (e) {}
+  function vkey(t) { t = String(t).replace(/＿/g, '').trim(); var h = 0x811c9dc5; for (var i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
+  function pickVoice() {
+    try {
+      var v = speechSynthesis.getVoices().filter(function (x) { return /^en(-|_)US/i.test(x.lang); });
+      var score = function (x) { return (/natural|neural|enhanced|premium/i.test(x.name) ? 4 : 0) + (/ava|jenny|aria|samantha|allison|susan|zoe|google us english/i.test(x.name) ? 2 : 0); };
+      fallbackVoice = v.sort(function (a, b) { return score(b) - score(a); })[0] || null;
+    } catch (e) {}
+  }
+  if (window.speechSynthesis) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+  function hush() { clearTimeout(endTimer); if (player) { player.onended = null; try { player.pause(); } catch (e) {} } if (window.speechSynthesis) try { speechSynthesis.cancel(); } catch (e) {} }
+  function deviceSay(t) {
+    if (!window.speechSynthesis || !t) return;
+    try { var u = new SpeechSynthesisUtterance(t.replace(/ = \?/g, '').replace(/÷/g, ' divided by ').replace(/×/g, ' times ').replace(/=/g, ' equals ').replace(/\+/g, ' plus ')); u.lang = 'en-US'; if (fallbackVoice) u.voice = fallbackVoice; u.rate = 0.88; u.pitch = 1.05; speechSynthesis.speak(u); } catch (e) {}
+  }
+  /* then (optional) runs when the sentence has finished, or after a safe wait if the sound is off or blocked */
+  function say(t, then) {
+    lastSay = t;
+    hush();
+    var once = false, s = screen, fin = function () { if (once) return; once = true; clearTimeout(endTimer); if (then && s === screen) then(); };
+    if (then) endTimer = setTimeout(fin, voiceOn ? 1000 + t.length * 95 : 700);
+    if (!voiceOn) return;
+    var k = vkey(t);
+    if (VKEYS && VKEYS[k]) {
+      if (!player) player = new Audio();             // one player, reused, so iPad allows it to keep playing after the first tap
+      player.src = 'voice/' + k + '.mp3';
+      if (then) player.onended = fin;
+      var p = player.play(); if (p && p.catch) p.catch(function () {});   // interrupted or blocked: stay quiet (🔊 replays it) rather than switch to the device voice
+      return;
+    }
+    if (!VKEYS) deviceSay(t);
+  }
+  document.getElementById('snd').onclick = function () { var v = voiceOn; voiceOn = true; say(lastSay); voiceOn = v; };
+  document.getElementById('mute').onclick = function () { voiceOn = !voiceOn; this.textContent = voiceOn ? '🗣️' : '🔇'; this.setAttribute('aria-label', voiceOn ? 'Turn the voice off' : 'Turn the voice on'); if (!voiceOn) hush(); };
+  var ctx = null;
+  function plop(f, len) {
+    try {
+      ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+      var o = ctx.createOscillator(), g = ctx.createGain(), t = ctx.currentTime;
+      o.type = 'triangle'; o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 0.7, t + (len || 0.12));
+      g.gain.setValueAtTime(0.16, t); g.gain.exponentialRampToValueAtTime(0.001, t + (len || 0.12));
+      o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + (len || 0.12));
+    } catch (e) {}
+  }
+  function win() { plop(520, 0.1); setTimeout(function () { plop(780, 0.16); }, 90); }
+
+  /* ---------- the number keys: they answer the moment a finger touches them ---------- */
+  function askNum(parent, opts) {
+    var line = E('div', 'big'), blank = E('u', null, ' '), val = '', locked = false, badTimer = 0, showingBad = false, want = String(opts.answer), wrong = 0;
+    line.appendChild(document.createTextNode((opts.left ? opts.left + ' = ' : '')));
+    line.appendChild(blank);
+    var pad = E('div', 'pad');
+    function paint(c) { blank.textContent = val || ' '; blank.className = c || ''; }
+    /* a wrong answer stays red for a moment, but the next key clears it at once, so no tap is ever lost */
+    function clearBad() { clearTimeout(badTimer); showingBad = false; val = ''; }
+    function press(d) {
+      if (locked) return;
+      if (showingBad) clearBad();
+      val += d; paint();
+      if (val.length < want.length) return;
+      if (val === want) { locked = true; keyHandler = null; paint('good'); win(); opts.done(wrong === 0); return; }
+      wrong++; showingBad = true; plop(180, 0.2); paint('bad');
+      badTimer = setTimeout(function () { clearBad(); paint(); }, 450);
+      if (opts.onWrong) opts.onWrong(wrong);
+    }
+    function back() { if (locked) return; if (showingBad) clearBad(); else val = val.slice(0, -1); paint(); }
+    function key(label, fn) {
+      var b = B(null, label), pressed = false;
+      b.onpointerdown = function (ev) {
+        ev.preventDefault(); pressed = true; b.classList.add('on'); fn();
+        setTimeout(function () { b.classList.remove('on'); }, 120);
+        setTimeout(function () { pressed = false; }, 1000);
+      };
+      b.onclick = function () { if (pressed) { pressed = false; return; } fn(); };
+      return b;
+    }
+    [1, 2, 3, 4, 5, 6, 7, 8, 9].forEach(function (d) { pad.appendChild(key(String(d), function () { press(String(d)); })); });
+    var del = key('⌫', back); del.setAttribute('aria-label', 'Delete');
+    pad.appendChild(del); pad.appendChild(key('0', function () { press('0'); })); pad.appendChild(E('span'));
+    parent.appendChild(line); parent.appendChild(pad);
+    keyHandler = function (e) { if (/^[0-9]$/.test(e.key)) press(e.key); else if (e.key === 'Backspace') back(); };
+    return { remove: function () { line.remove(); pad.remove(); keyHandler = null; } };
+  }
+  document.addEventListener('keydown', function (e) { if (keyHandler) keyHandler(e); });
+
+  /* ---------- the cookies ---------- */
+  var COOKIE = '🍪';
+  function cookie(pop) { return E('span', 'ap' + (pop ? ' pop' : ''), COOKIE); }
+  /* cookies are as big as the room allows: try big sizes first and keep the largest that fits */
+  function sizeFor(W, pic, finalPer) {
+    var vh = window.innerHeight, roomH = window.innerWidth < 700 ? 320 : Math.max(240, vh - 300), max = window.innerWidth < 700 ? 44 : 64, a;
+    if (pic.rows) { for (a = max; a > 16; a--) if (pic.cols * a <= W - 20 && pic.rows * a <= roomH) return a; return 16; }
+    var d = pic.plates.length || 0, per = Math.max(finalPer || 1, 1), inner = Math.ceil(Math.sqrt(per));
+    for (a = max; a > 16; a--) {
+      var plateW = Math.max(inner * a + 16, a * 1.8), plateH = Math.max(Math.ceil(per / inner) * a + 16, a * 1.8);
+      var across = Math.max(1, Math.floor((W - 10) / (plateW + 10))), rows = d ? Math.ceil(d / across) : 0;
+      var pileRows = pic.pile ? Math.ceil(pic.pile / Math.max(1, Math.floor((W - 10) / a))) : 0;
+      if (plateW <= W && rows * (plateH + 10) + pileRows * a + 24 <= roomH) return a;
+    }
+    return 16;
+  }
+  function drawCookies(box, pic, opts) {
+    opts = opts || {};
+    box.classList.add('stallbox'); box.replaceChildren();
+    var w = E('div', 'stall');
+    box.appendChild(w);
+    w.style.setProperty('--a', (opts.size || sizeFor(box.clientWidth || 320, pic, opts.per || Math.max.apply(null, (pic.plates || []).concat([1])))) + 'px');
+    if (pic.rows) {
+      var blk = E('div', 'block'); blk.style.gridTemplateColumns = 'repeat(' + pic.cols + ',var(--a))';
+      for (var i = 0; i < pic.rows * pic.cols; i++) blk.appendChild(cookie());
+      w.appendChild(blk);
+      return w;
+    }
+    if (pic.pile) {
+      var p = E('div', 'pile');
+      for (var j = 0; j < pic.pile; j++) {
+        if (opts.onTap) { var b = B('ap tapme', COOKIE, opts.onTap); b.setAttribute('aria-label', 'A cookie'); p.appendChild(b); }
+        else p.appendChild(cookie());
+      }
+      w.appendChild(p);
+    }
+    if (pic.plates && pic.plates.length) {
+      var ps = E('div', 'plates'), per = opts.per || Math.max.apply(null, pic.plates.concat([1])), inner = Math.ceil(Math.sqrt(per));
+      pic.plates.forEach(function (n, k) {
+        var pl = E('div', 'plate' + (pic.bags ? ' bag' : ''));
+        pl.style.gridTemplateColumns = 'repeat(' + Math.max(1, inner) + ',var(--a))';
+        for (var c = 0; c < n; c++) pl.appendChild(cookie(opts.fresh === k && c === n - 1));
+        ps.appendChild(pl);
+      });
+      w.appendChild(ps);
+    }
+    return w;
+  }
+  function fill(n, v) { var o = []; for (var i = 0; i < n; i++) o.push(v); return o; }
+
+  /* ---------- screens ---------- */
+  function home() {
+    newScreen();
+    var tools = E('div', 'tools');
+    tools.appendChild(B('tool', '🎁 My Rewards', rewardsPage));
+    app.appendChild(tools);
+    var g = E('div', 'levels'), nextUp = -1;
+    LEVELS.forEach(function (d, i) { if (nextUp < 0 && unlocked(i) && (!st.lv[i] || st.lv[i].stars == null)) nextUp = i; });
+    LEVELS.forEach(function (d, i) {
+      var b = B('lv' + (i === nextUp ? ' now' : ''), null, function () { hub(i); }); b.disabled = !unlocked(i);
+      b.appendChild(E('b', null, (i + 1) + ' · ' + d.name));
+      b.appendChild(E('span', null, d.goal + '. ' + d.blurb));
+      var s = st.lv[i] && st.lv[i].stars;
+      b.appendChild(E('i', null, s != null ? '⭐'.repeat(s) + '☆'.repeat(3 - s) : unlocked(i) ? 'About 10 minutes' : '🔒 Finish level ' + i + ' first'));
+      var goal = i === nextUp && nextReward();
+      if (goal) b.appendChild(E('em', 'rcorner', '🎁 ' + goal.text));
+      g.appendChild(b);
+    });
+    app.appendChild(g);
+    var w = E('div', 'why');
+    w.innerHTML = '<b>For grown-ups:</b> division has two meanings, and children need both: sharing out (how many on each plate?) and making groups (how many bags?). They do both with their hands first, then see that dividing undoes multiplying, so 35 ÷ 5 becomes "5 times what makes 35?". Half of every level is hands-on and half is from memory, with help one tap away. Ask your child to show you with the cookies how they knew an answer.';
+    app.appendChild(w);
+    lastSay = SAY.home;
+  }
+  function bar(lv, title, onBack, extra) {
+    var b = E('div', 'bar');
+    b.appendChild(B('back', '← Back', onBack));
+    b.appendChild(E('b', null, title));
+    if (extra) b.appendChild(extra);
+    var goal = lv >= 0 && nextReward();
+    if (goal) b.appendChild(E('span', 'rchip', '🎁 ' + goal.text + ' · ' + goal.left + ' more ⭐'));
+    app.appendChild(b);
+  }
+  function rewardsPage() {
+    newScreen(); lastSay = '';
+    bar(-1, '🎁 My Rewards', home);
+    var p = E('div', 'panel'), have = totalStars(), list = E('div', 'rlist');
+    p.appendChild(E('h2', null, 'You have ⭐ ' + have));
+    p.appendChild(E('p', 'goal', 'Finish levels to earn stars. Type a reward for each star goal, then ask a grown-up to say yes. Your next reward shows on your level. These stay on this device.'));
+    for (var i = 0; i < REWARD_GOALS; i++) (function (i) {
+      var goal = (i + 1) * REWARD_STEP, won = have >= goal, row = E('label', 'rrow' + (won ? ' won' : ''));
+      row.appendChild(E('b', null, '⭐ ' + goal));
+      var input = E('input'); input.type = 'text'; input.maxLength = 40; input.placeholder = 'Type a reward'; input.value = rewards()[i] || '';
+      input.setAttribute('aria-label', 'Reward at ' + goal + ' stars'); input.setAttribute('autocomplete', 'off');
+      input.oninput = function () { var r = rewards(); r[i] = input.value; saveRewards(r); };
+      row.appendChild(input);
+      row.appendChild(E('span', null, won ? '🎉 Earned!' : (goal - have) + ' more ⭐'));
+      list.appendChild(row);
+    })(i);
+    p.appendChild(list);
+    var r = E('div', 'row'); r.appendChild(B('btn', 'Done', home)); p.appendChild(r);
+    app.appendChild(p);
+  }
+  function hub(lv) {
+    newScreen();
+    var d = LEVELS[lv], s = L(lv);
+    bar(lv, 'Level ' + (lv + 1) + ' · ' + d.name, home);
+    var p = E('div', 'panel');
+    p.appendChild(E('h2', null, d.goal));
+    p.appendChild(E('p', 'goal', d.blurb));
+    var steps = E('div', 'steps');
+    function step(icon, name, sub, open, fn, isNext) {
+      var b = B('step' + (isNext ? ' next' : ''), null, fn); b.disabled = !open;
+      b.appendChild(E('em', null, icon));
+      var t = E('div'); t.appendChild(E('b', null, name)); t.appendChild(E('small', null, sub)); b.appendChild(t);
+      steps.appendChild(b);
+    }
+    step('👀', '1. Watch', s.watched ? '✓ Watch again any time' : 'See how the cookies move', true, function () { watch(lv); }, !s.watched);
+    step('🍪', '2. Play', s.stars != null ? 'Best: ' + '⭐'.repeat(s.stars) : s.watched ? 'Your turn with the cookies' : '🔒 Watch first', !!s.watched, function () { play(lv); }, !!s.watched && s.stars == null);
+    p.appendChild(steps); app.appendChild(p);
+    say(SAY.hub);
+  }
+  function watch(lv) {
+    newScreen();
+    var d = LEVELS[lv], i = 0;
+    bar(lv, '👀 Watch', function () { hub(lv); });
+    var p = E('div', 'panel'), text = E('div', 'prompt'), box = E('div'), row = E('div', 'row');
+    p.appendChild(text); p.appendChild(box); p.appendChild(row); app.appendChild(p);
+    /* one cookie size for the whole demo, so nothing jumps */
+    var size = Math.min.apply(null, d.demo.map(function (x) { return x.pic.rows ? sizeFor(box.clientWidth || 320, x.pic) : sizeFor(box.clientWidth || 320, x.pic, Math.max.apply(null, d.demo.map(function (y) { return Math.max.apply(null, (y.pic.plates || []).concat([1])); }))); }));
+    var per = Math.max.apply(null, d.demo.map(function (y) { return Math.max.apply(null, (y.pic.plates || []).concat([1])); }));
+    function draw() {
+      var x = d.demo[i];
+      text.textContent = x.say;
+      drawCookies(box, x.pic, { size: size, per: per });
+      plop(360 + i * 40);
+      say(x.say);
+      row.replaceChildren();
+      if (i > 0) row.appendChild(B('btn alt', '← Back', function () { i--; draw(); }));
+      if (i < d.demo.length - 1) row.appendChild(B('btn', 'Next →', function () { i++; draw(); }));
+      else {
+        row.appendChild(B('btn alt', '↺ Watch again', function () { i = 0; draw(); }));
+        row.appendChild(B('btn', 'Play →', function () { L(lv).watched = 1; save(); play(lv); }));
+      }
+    }
+    draw();
+  }
+
+  /* half of each level is hands-on, half is from memory (in a new order every time) */
+  function play(lv) {
+    var d = LEVELS[lv], items = d.items, marks = [], idx = 0, told = false;
+    L(lv).watched = 1; save();
+    if (!items[0].grid) items = shuffle(items);
+    var hands = Math.ceil(items.length / 2);
+    function next() {
+      if (idx >= items.length) return finish(lv, marks);
+      var q = items[idx], onHands = idx < hands;
+      newScreen();
+      var dots = E('div', 'dots'); items.forEach(function (x, i) { dots.appendChild(E('span', i < marks.length ? (marks[i] ? 'ok' : 'try') : i === idx ? 'now' : '')); });
+      bar(lv, 'Level ' + (lv + 1), function () { hub(lv); }, dots);
+      var p = E('div', 'panel split'); app.appendChild(p);
+      var cb = function (ok) { marks.push(ok); idx++; next(); };
+      if (q.grid) gridRound(p, lv, q, !onHands, !onHands && !told && (told = true), cb);
+      else if (onHands) handsRound(p, lv, q, cb);
+      else { var intro = !told; told = true; memoryRound(p, lv, q, intro, cb); }
+    }
+    next();
+  }
+  /* the answer: a hint on the first miss; after the second miss it shows the sentence so nobody gets stuck */
+  function answer(p, lv, q, text, cb) {
+    var hintLine = E('div', 'hint'), allRight = true;
+    function ask(left, want, nextStep) {
+      var a = askNum(p, { left: left, answer: want,
+        onWrong: function (n) { allRight = false; var h = n >= 2 ? aLine(q) : hintFor(lv, q); hintLine.textContent = h; say(h); },
+        done: function () { later(function () { a.remove(); nextStep(); }, 100); } });
+      p.appendChild(hintLine);
+    }
+    function finishUp() {
+      hintLine.remove();
+      var t = aLine(q); text.textContent = t;
+      say(t, function () { later(function () { cb(allRight); }, 100); });
+    }
+    ask(qLeft(q), answerOf(q), function () {
+      if (q.k !== 'left') return finishUp();
+      text.textContent = SAY.howLeft; say(SAY.howLeft);
+      ask('Left over', restOf(q), finishUp);
+    });
+  }
+  /* the hands-on cookies, which can also appear as help from memory. onEnd runs when the sharing is finished. */
+  function dealer(box, row, lv, q, text, onEnd, quiet) {
+    var bags = q.k === 'group', per = Math.floor(q.n / q.d), pile = q.n, plates = bags ? [] : fill(q.d, 0), turn = 0;
+    var finalCount = bags ? per : q.d, finalPic = { pile: q.k === 'left' ? q.n % q.d : 0, plates: fill(finalCount, bags ? q.d : per), bags: bags };
+    var startPic = { pile: q.n, plates: bags ? fill(finalCount, 0) : plates.slice(), bags: bags };
+    var size = Math.min(sizeFor(box.clientWidth || 320, finalPic, bags ? q.d : per), sizeFor(box.clientWidth || 320, startPic, bags ? q.d : per));
+    var inner = bags ? q.d : per;
+    function line(t) { if (!quiet) { text.textContent = t; say(t); } }
+    function draw(fresh) { drawCookies(box, { pile: pile, plates: plates, bags: bags }, { size: size, per: inner, fresh: fresh, onTap: LEVELS[lv].tap && pile > 0 ? tapOne : null }); }
+    function finished() { return bags ? pile === 0 : pile < q.d; }
+    function check() {
+      if (!finished()) return;
+      row.replaceChildren();
+      if (onEnd) onEnd();
+    }
+    function tapOne() { pile--; plates[turn]++; var at = turn; turn = (turn + 1) % q.d; plop(420 + turn * 30, 0.08); draw(at); check(); }
+    function dealRound() { for (var i = 0; i < q.d; i++) plates[i]++; pile -= q.d; plop(420); draw(); check(); }
+    function fillBag() { plates.push(q.d); pile -= q.d; plop(420); draw(plates.length - 1); check(); }
+    draw();
+    row.replaceChildren();
+    if (LEVELS[lv].tap) line(SAY.tap);
+    else if (bags) { line(SAY.fill); row.appendChild(B('btn', '🛍️ Fill a bag', fillBag)); }
+    else { line(SAY.deal); row.appendChild(B('btn', '🍪 One for each plate', dealRound)); }
+  }
+  function handsRound(p, lv, q, cb) {
+    var text = E('div', 'prompt'), box = E('div'), row = E('div', 'row');
+    p.appendChild(text); p.appendChild(box); p.appendChild(row);
+    var story = q.story;
+    function ask() {
+      row.remove();
+      var t = story ? story : q.k === 'group' ? SAY.bags : SAY.each;
+      if (q.k === 'left') { text.textContent = SAY.leftover; say(SAY.leftover, function () { text.textContent = story || SAY.each; answer(p, lv, q, text, cb); }); return; }
+      text.textContent = t; say(t); answer(p, lv, q, text, cb);
+    }
+    dealer(box, row, lv, q, text, function () { later(ask, 350); });
+    if (story) { text.textContent = story; say(story); }
+  }
+  function memoryRound(p, lv, q, intro, cb) {
+    var text = E('div', 'prompt', q.story || 'From memory!'), box = E('div'), row = E('div', 'row');
+    p.appendChild(text); p.appendChild(box); box.classList.add('stallbox');
+    answer(p, lv, q, text, cb);
+    p.appendChild(row);
+    var help = B('btn alt small', '💡 Show the cookies', function () { help.remove(); dealer(box, row, lv, q, text, null, true); });
+    row.appendChild(help);
+    if (intro) say(SAY.memory, function () { say(qLine(q)); }); else say(qLine(q));
+  }
+  function gridRound(p, lv, q, memory, intro, cb) {
+    var text = E('div', 'prompt', memory ? 'From memory!' : SAY.look), box = E('div');
+    p.appendChild(text); p.appendChild(box);
+    box.classList.add('stallbox');
+    if (!memory) drawCookies(box, q.grid);
+    answer(p, lv, q, text, cb);
+    if (memory) {
+      var row = E('div', 'row'), help = B('btn alt small', '💡 Show the cookies', function () { row.remove(); drawCookies(box, q.grid); });
+      row.appendChild(help); p.appendChild(row);
+    }
+    if (intro) say(SAY.memory, function () { say(qLine(q)); }); else say(qLine(q));
+  }
+  function finish(lv, marks) {
+    var n = marks.filter(Boolean).length, total = marks.length, stars = n >= Math.ceil(total * 0.9) ? 3 : n >= Math.ceil(total * 0.65) ? 2 : 1;
+    var before = totalStars();
+    L(lv).stars = Math.max(L(lv).stars || 0, stars); save(); newScreen();
+    var reached = Math.min(REWARD_GOALS, Math.floor(totalStars() / REWARD_STEP)), newGoal = reached > Math.floor(before / REWARD_STEP) ? reached : 0;
+    bar(lv, 'Level ' + (lv + 1) + ' · ' + LEVELS[lv].name, function () { hub(lv); });
+    var s = E('div', 'panel done');
+    s.appendChild(E('div', 'big-e', '🍪'));
+    s.appendChild(E('h2', null, 'Level ' + (lv + 1) + ' done! ' + '⭐'.repeat(stars) + '☆'.repeat(3 - stars)));
+    s.appendChild(E('p', 'hint', n + ' of ' + total + ' right the first time.'));
+    if (newGoal) s.appendChild(E('div', 'earned', '🎉 ' + (newGoal * REWARD_STEP) + ' stars! ' + (rewardText(newGoal - 1) ? 'You earned: ' + rewardText(newGoal - 1) : 'Type a reward for this goal.')));
+    var r = E('div', 'row');
+    r.appendChild(B('btn alt', 'Play again', function () { play(lv); }));
+    if (lv < LEVELS.length - 1) r.appendChild(B('btn', 'Level ' + (lv + 2) + ' →', function () { hub(lv + 1); }));
+    r.appendChild(B('btn alt', '🎁 My Rewards', rewardsPage));
+    r.appendChild(B('btn alt', 'All levels', home));
+    s.appendChild(r); app.appendChild(s);
+    win(); say(doneLine(lv, stars));
+  }
+  if (window.TMG && window.TMG.ready) window.TMG.ready.then(function () { var fresh = load(); if (JSON.stringify(fresh) !== JSON.stringify(st)) { st = fresh; if (app.querySelector('.levels')) home(); } }, function () {});
+  home();
+})();
+</script>
+<script>(function backPill() {
+  try { if (window.parent !== window) return; } catch (e) { return; }
+  var h = '', m = /[?&]home=([^&]*)/.exec(location.search || '');
+  if (m) { try { h = decodeURIComponent(m[1]); } catch (e) { h = ''; } }
+  if (h && (!/^[A-Za-z0-9._%~/-]+$/.test(h) || h.indexOf('//') >= 0)) h = '';
+  var a = document.createElement('div');
+  a.setAttribute('style', 'position:fixed;z-index:2147483647;box-sizing:border-box;display:inline-flex;align-items:center;gap:8px');
+  if (h) {
+    var back = document.createElement('a'); back.href = h; back.textContent = '🏠 Home';
+    back.setAttribute('style', 'box-sizing:border-box;display:inline-flex;align-items:center;min-height:56px;padding:0 22px;border:3px solid #fff;background:#1f5f99;color:#fff;font:800 20px system-ui,sans-serif;border-radius:999px;white-space:nowrap;text-decoration:none;box-shadow:0 2px 10px rgba(0,0,0,.45)');
+    a.appendChild(back);
+  }
+  var upd = document.createElement('button'); upd.type = 'button';
+  upd.setAttribute('style', 'box-sizing:border-box;min-height:56px;padding:0 22px;border:3px solid #fff;background:#E8590C;color:#fff;font:800 20px system-ui,sans-serif;border-radius:999px;cursor:pointer;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,.45)');
+  a.appendChild(upd);
+  document.body.appendChild(a);
+  /* Update: get the newest copy of the site from the internet. With no internet nothing is touched, so offline games keep working.
+     Progress lives in localStorage and is never touched. Only this site's offline copies are cleared: other apps share this web address. */
+  var LABEL = '🔄 Update', busy = false, KEY = 'tmg.justUpdated';
+  upd.textContent = LABEL;
+  function say(t) { upd.textContent = t; setTimeout(function () { upd.textContent = LABEL; }, 2500); }
+  function clearOffline(base) {
+    var jobs = [];
+    if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) {
+      return Promise.all(rs.filter(function (r) { return r.scope.indexOf(location.origin + base) === 0; }).map(function (r) { return r.unregister(); }));
+    }));
+    if (window.caches) jobs.push(caches.keys().then(function (ks) {
+      return Promise.all(ks.filter(function (k) { return /^(ttc-cache-\d|rnk-roman-numeral-kingdom-|splinter-)/.test(k); }).map(function (k) { return caches.delete(k); }));
+    }));
+    return Promise.all(jobs);
+  }
+  upd.addEventListener('click', function () {
+    if (busy) return; busy = true; upd.textContent = 'Updating…';
+    var ROOT = '/ten-minute-games/', p = location.pathname, i = p.indexOf(ROOT), base = i >= 0 ? p.slice(0, i + ROOT.length) : '/';
+    function fresh(u) { return fetch(u, { cache: 'reload' }).catch(function () {}); }
+    fetch(base + 'version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error('no copy'); })
+      .then(function () { return clearOffline(base); })
+      .then(function () { return Promise.all([fresh(location.href), fresh(base + 'index.html')]); })
+      .then(function () { try { sessionStorage.setItem(KEY, '1'); } catch (e) {} location.reload(); },
+            function () { busy = false; say('No internet'); });
+  });
+  try { if (sessionStorage.getItem(KEY)) { sessionStorage.removeItem(KEY); say('Updated ✓'); } } catch (e) {}
+  /* The lessons keep their own buttons along the screen edges (Previous / Next in a footer, controls in a header), so a pill nailed to
+     one corner always sat on top of something. Keep the pill 44px tall (easy to tap) and, whenever the page layout changes, put it in
+     whichever of six edge spots does not cover a button, link or field (spots tried in this order: bottom-centre, bottom-left,
+     bottom-right, top-centre, top-left, top-right). Buttons that are always on screen (fixed or sticky) count much more than ones
+     that scroll away. It never moves while the child is just scrolling, and stays where it is as long as its spot is free. */
+  var SPOTS = ['bc', 'bl', 'br', 'tc', 'tl', 'tr'], cur = '', timer = 0;
+  var SEL = 'button,a[href],input,select,textarea,summary,label,[role=button],[role=tab],[tabindex]:not([tabindex="-1"])';
+  function put(s) {
+    var st = a.style, v = s.charAt(0) === 'b' ? 'bottom' : 'top', side = s.charAt(1);
+    st.top = st.bottom = st.left = st.right = 'auto'; st.transform = 'none';
+    st[v] = '10px'; st[v] = 'calc(10px + env(safe-area-inset-' + v + ', 0px))';
+    if (side === 'c') { st.left = '50%'; st.transform = 'translateX(-50%)'; }
+    else { var d = side === 'l' ? 'left' : 'right'; st[d] = '10px'; st[d] = 'calc(10px + env(safe-area-inset-' + d + ', 0px))'; }
+  }
+  function fixedish(e) {
+    for (var n = e; n && n.nodeType === 1; n = n.parentElement) { var p = getComputedStyle(n).position; if (p === 'fixed' || p === 'sticky') return true; }
+    return false;
+  }
+  function place() {
+    try {
+      var W = document.documentElement.clientWidth, H = window.innerHeight, items = [], all, i, j;
+      a.style.pointerEvents = 'none'; all = document.querySelectorAll(SEL);   /* (while measuring, the pill itself must not count as covering anything) */
+      for (i = 0; i < all.length; i++) {
+        var e = all[i]; if (e === a || a.contains(e) || e.querySelector(SEL)) continue;
+        var cs = getComputedStyle(e); if (cs.display === 'none' || cs.visibility === 'hidden' || cs.pointerEvents === 'none') continue;
+        var r = e.getBoundingClientRect(); if (r.width < 2 || r.height < 2 || r.bottom <= 0 || r.top >= H || r.right <= 0 || r.left >= W) continue;
+        var t = document.elementFromPoint(Math.min(Math.max(r.left + r.width / 2, 0), W - 1), Math.min(Math.max(r.top + r.height / 2, 0), H - 1));
+        if (t && !e.contains(t)) continue;   /* hidden behind something else right now (for example scrolled under the footer): not a button the pill can cover */
+        items.push({ r: r, hard: fixedish(e) });
+      }
+      var res = {};
+      SPOTS.forEach(function (s) {
+        put(s); var b = a.getBoundingClientRect(), hard = 0, soft = 0;
+        items.forEach(function (it) { var q = it.r; if (q.left < b.right - 1 && q.right > b.left + 1 && q.top < b.bottom - 1 && q.bottom > b.top + 1) { if (it.hard) hard++; else soft++; } });
+        res[s] = { hard: hard, soft: soft };
+      });
+      var best = '', c = res[cur];
+      for (j = 0; j < SPOTS.length; j++) { var x = res[SPOTS[j]]; if (!best || x.hard < res[best].hard || (x.hard === res[best].hard && x.soft < res[best].soft)) best = SPOTS[j]; }
+      if (!(c && c.hard === 0 && (c.soft === 0 || res[best].hard > 0 || res[best].soft > 0))) cur = best;
+      put(cur); a.style.pointerEvents = '';
+    } catch (e) { put(cur || 'bl'); a.style.pointerEvents = ''; }
+  }
+  function later() { clearTimeout(timer); timer = setTimeout(function () { place(); timer = setTimeout(place, 500); }, 120); }
+  put('bc'); cur = 'bc'; place();
+  window.addEventListener('resize', later); window.addEventListener('orientationchange', later); window.addEventListener('load', later);
+  try { new MutationObserver(function (ms) { for (var i = 0; i < ms.length; i++) if (!a.contains(ms[i].target)) { later(); return; } }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden', 'disabled', 'aria-hidden', 'open'] }); } catch (e) { /* no observer: the spot is only worked out at load and on resize */ }
+})()</script></body>
+</html>
