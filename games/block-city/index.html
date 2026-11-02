@@ -269,7 +269,7 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--page);color:var(--ink);font:800 18px/1.45 var(--body);min-height:100vh}
 h1,h2,h3{font-family:var(--display);margin:0;line-height:1.1}
-button{font-family:var(--display);cursor:pointer;color:inherit}
+button{font-family:var(--display);cursor:pointer;color:inherit;touch-action:manipulation}
 button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
 .wrap{max-width:1400px;margin:0 auto;padding:14px 16px 90px}
 .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -344,7 +344,7 @@ button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
 /* number pad */
 .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:300px;margin:12px auto 0}
 .pad button{min-height:54px;border:0;border-radius:14px;background:var(--blue-s);color:var(--blue);font-size:26px;box-shadow:0 4px 0 #a9c9ea}
-.pad button:active{transform:translateY(2px)}
+.pad button:active,.pad button.on{transform:translateY(2px);filter:brightness(.9)}
 
 /* the tower */
 .climb{display:grid;grid-template-columns:1fr 62px;gap:10px;align-items:stretch}
@@ -772,24 +772,39 @@ button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
   /* ---------- number pad ---------- */
   function askNum(parent, opts) {
     // opts: left (text before the blank), answer, hint (text), onHint(), done(firstTry)
-    var line = E('div', 'big'), blank = E('u', null, ' '), val = '', wrong = 0, locked = false, want = String(opts.answer);
+    var line = E('div', 'big'), blank = E('u', null, ' '), val = '', wrong = 0, locked = false, badTimer = 0, showingBad = false, want = String(opts.answer);
     line.appendChild(document.createTextNode(opts.left + ' = ')); line.appendChild(blank);
     var pad = E('div', 'pad');
     function paint(c) { blank.textContent = val || ' '; blank.className = c || ''; }
+    /* a wrong answer stays red for a moment, but the next key clears it at once, so no tap is ever lost */
+    function clearBad() { clearTimeout(badTimer); showingBad = false; val = ''; }
     function press(d) {
       if (locked) return;
+      if (showingBad) clearBad();
       val += d; paint();
       if (val.length < want.length) return;
       if (val === want) { locked = true; keyHandler = null; paint('good'); win(); opts.done(wrong === 0); return; }
-      wrong++; locked = true; plop(180, 0.2); paint('bad');
-      setTimeout(function () { val = ''; locked = false; paint(); }, 450);
+      wrong++; showingBad = true; plop(180, 0.2); paint('bad');
+      badTimer = setTimeout(function () { clearBad(); paint(); }, 450);
       if (opts.onWrong) opts.onWrong(wrong);
     }
-    [1, 2, 3, 4, 5, 6, 7, 8, 9].forEach(function (d) { pad.appendChild(B(null, String(d), function () { press(String(d)); })); });
-    var del = B(null, '⌫', function () { if (!locked) { val = val.slice(0, -1); paint(); } }); del.setAttribute('aria-label', 'Delete');
-    pad.appendChild(del); pad.appendChild(B(null, '0', function () { press('0'); })); pad.appendChild(E('span'));
+    function back() { if (locked) return; if (showingBad) clearBad(); else val = val.slice(0, -1); paint(); }
+    /* keys answer the moment a finger touches them, not when it lifts. The click is for anything that is not a finger or a mouse. */
+    function key(label, fn) {
+      var b = B(null, label), pressed = false;
+      b.onpointerdown = function (ev) {
+        ev.preventDefault(); pressed = true; b.classList.add('on'); fn();
+        setTimeout(function () { b.classList.remove('on'); }, 120);
+        setTimeout(function () { pressed = false; }, 1000);
+      };
+      b.onclick = function () { if (pressed) { pressed = false; return; } fn(); };
+      return b;
+    }
+    [1, 2, 3, 4, 5, 6, 7, 8, 9].forEach(function (d) { pad.appendChild(key(String(d), function () { press(String(d)); })); });
+    var del = key('⌫', back); del.setAttribute('aria-label', 'Delete');
+    pad.appendChild(del); pad.appendChild(key('0', function () { press('0'); })); pad.appendChild(E('span'));
     parent.appendChild(line); parent.appendChild(pad);
-    keyHandler = function (e) { if (/^[0-9]$/.test(e.key)) press(e.key); else if (e.key === 'Backspace') { if (!locked) { val = val.slice(0, -1); paint(); } } };
+    keyHandler = function (e) { if (/^[0-9]$/.test(e.key)) press(e.key); else if (e.key === 'Backspace') back(); };
     return { remove: function () { line.remove(); pad.remove(); keyHandler = null; } };
   }
   document.addEventListener('keydown', function (e) { if (keyHandler) keyHandler(e); });
@@ -979,7 +994,7 @@ button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
       if (placed === n) {
         stage.el.onpointerdown = null;
         text.textContent = SAY.howMany; say(SAY.howMany);
-        var a = askNum(p, { left: r + ' × ' + c, answer: n, onWrong: function () { hintLine.textContent = countHint(c); say(countHint(c)); }, done: function (first) { later(function () { a.remove(); say(aLine(r, c), function () { later(function () { cb(first); }, 250); }); text.textContent = aLine(r, c); }, 300); } });
+        var a = askNum(p, { left: r + ' × ' + c, answer: n, onWrong: function () { hintLine.textContent = countHint(c); say(countHint(c)); }, done: function (first) { later(function () { a.remove(); say(aLine(r, c), function () { later(function () { cb(first); }, 100); }); text.textContent = aLine(r, c); }, 100); } });
         var hintLine = E('div', 'hint'); p.appendChild(hintLine);
       }
     }
@@ -1015,7 +1030,7 @@ button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
       var t = turnLine(b, a); text.textContent = t; say(t);
       var hintLine = E('div', 'hint'); p.appendChild(hintLine);
       var ask = askNum(p, { left: b + ' × ' + a, answer: a * b, onWrong: function () { var h = strategy(b, a).line; hintLine.textContent = h; say(h); }, done: function (first) {
-        later(function () { var t2 = aLine(a, b); text.textContent = t2; say(t2, function () { later(function () { cb(first); }, 250); }); ask.remove(); hintLine.remove(); }, 300);
+        later(function () { var t2 = aLine(a, b); text.textContent = t2; say(t2, function () { later(function () { cb(first); }, 100); }); ask.remove(); hintLine.remove(); }, 100);
       } });
     }));
   }
@@ -1041,7 +1056,7 @@ button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
       var t = qLine(r === 10 ? c : r, r === 10 ? 10 : c); text.textContent = S.line; say(t);
       p.appendChild(hintLine);
       var ask = askNum(p, { left: left, answer: ans, onWrong: function () { first = false; hintLine.textContent = S.line; say(S.line); }, done: function (ok) {
-        later(function () { var t2 = r === 10 ? aLine(c, 10) : aLine(r, c); text.textContent = t2; ask.remove(); hintLine.remove(); say(t2, function () { later(function () { cb(first && ok); }, 250); }); }, 300);
+        later(function () { var t2 = r === 10 ? aLine(c, 10) : aLine(r, c); text.textContent = t2; ask.remove(); hintLine.remove(); say(t2, function () { later(function () { cb(first && ok); }, 100); }); }, 100);
       } });
     }
     function drag() {
