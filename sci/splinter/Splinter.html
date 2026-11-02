@@ -501,6 +501,17 @@
       background: #eaf7ff;
     }
 
+    .safety-note {
+      width: 100%;
+      margin: 0;
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: #fff3d6;
+      color: #5a3d00;
+      font-weight: 700;
+      line-height: 1.4;
+    }
+
     .video-actions {
       width: 100%;
       display: flex;
@@ -754,6 +765,7 @@
             <div class="video-stage">
               <video id="lessonVideo" src="out/bio-01-splinter-en.mp4" poster="out/bio-01-splinter-poster.jpg" controls playsinline preload="metadata"></video>
             </div>
+            <p class="safety-note" id="safetyNote"></p>
             <div class="video-actions">
               <button type="button" class="secondary-action" id="startPractice">开始练习</button>
             </div>
@@ -830,8 +842,8 @@
           "It means the wound has gone bad"
         ],
         answer: 0,
-        whyZh: "轻微红肿是免疫反应的正常表现。",
-        whyEn: "Mild redness and swelling is a normal sign of the immune response."
+        whyZh: "轻微红肿可能是身体在反应。如果越来越严重，要告诉大人。",
+        whyEn: "Mild redness can be the body responding. If it gets worse, tell a grown-up."
       }
     ];
 
@@ -911,6 +923,7 @@
       zh: {
         lang: "语言", sound: "声音", mutedWord: "静音",
         title: "手指上的倒刺去哪儿了？",
+        safety: "真实生活里：木刺通常要取出来，请大人帮忙。如果扎得深、取不出来，或者越来越红、肿、疼，要去看医生。影片讲的是身体会怎么反应，身体不一定能自己解决木刺。",
         stageLearn: "学习", stageQuiz: "练习", stageDone: "完成",
         start: "开始练习", resume: "继续练习", backToVideo: "⬅ 回到视频",
         hintShow: "看提示", hintHide: "收起提示", hintReplay: "回看这一段",
@@ -923,6 +936,7 @@
       en: {
         lang: "Language", sound: "Sound", mutedWord: "Muted",
         title: "Where Does a Splinter Go?",
+        safety: "Real life: a wood splinter usually needs to come out. Ask a grown-up to help. See a doctor if it is deep, won't come out, or the spot gets more red, swollen or sore. This film shows how the body responds. The body can't always clear a splinter by itself.",
         stageLearn: "Learn", stageQuiz: "Practice", stageDone: "Complete",
         start: "Start Practice", resume: "Continue Practice", backToVideo: "⬅ Back to Video",
         hintShow: "Show Hint", hintHide: "Hide Hint", hintReplay: "Replay This Part",
@@ -1020,6 +1034,7 @@
       muteToggle.firstChild.nodeValue = muted ? ICON_MUTED : ICON_SOUND;
       muteToggle.setAttribute("aria-pressed", String(muted));
       lessonTitleText.textContent = d.title;
+      document.getElementById("safetyNote").textContent = d.safety;
       startPracticeBtn.textContent = quizVisited ? d.resume : d.start;
       videoDot.title = d.stageLearn;
       quizDot.title = d.stageQuiz;

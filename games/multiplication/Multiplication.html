@@ -657,11 +657,11 @@
   }
   /* who is playing (the Dozen Galaxy app's first screen) */
   .dz-who{ max-width:560px; margin:0 auto; text-align:center; }
-  .dz-whogrid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin:14px 0; }
+  .dz-whogrid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); grid-auto-rows:1fr; gap:10px; margin:14px 0; }
   .dz-whogrid:empty{ display:none; }
   .dz-whobtn{ min-height:72px; padding:8px; display:flex; align-items:center; justify-content:center; gap:8px; font-family:'Baloo 2',cursive; font-weight:700; font-size:20px; color:#fff; background:#1B2A6B; border:3px solid #8FA2FF; border-radius:14px; cursor:pointer; overflow-wrap:anywhere; touch-action:manipulation; }
   .dz-whobtn:hover{ background:#24369A; }
-  .dz-whobtn .e{ font-size:32px; line-height:1; }
+  .dz-whobtn .e{ font-size:32px; line-height:1; } .dz-whobtn{ flex-direction:column; gap:2px; min-height:104px; white-space:nowrap; } .dz-whobtn small{ font-size:14px; font-weight:700; }
   .dz-whoform{ margin-top:14px; display:flex; flex-direction:column; gap:10px; align-items:center; }
   .dz-whoform .name-input{ max-width:320px; }
   .dz-whomsg{ min-height:22px; margin:0; font-weight:800; color:#FFD0A8; }
@@ -693,7 +693,6 @@
 // 1) If the Google Sheet roster can't be reached (offline, or no URL set below),
 //    this fallback list is shown instead. Leave it empty so only names kids
 //    have actually added themselves show up.
-const KID_NAMES = [];
 
 // 2) Paste your deployed Google Apps Script Web App URL here (see SETUP.md).
 //    Leave blank ("") to run in local-only mode with no dashboard sync.
@@ -856,126 +855,31 @@ function makeLevelQueue(level){
 }
 
 /* =========================================================
-   RENDER: HOME (name list lives in the Google Sheet "Names" tab,
-   plus a local backup so an added name never disappears)
+   RENDER: WHO'S PLAYING. A child taps an animal and never types anything about themselves.
    ========================================================= */
-let rosterCache = null; // array of names once loaded
-
-const LOCAL_ROSTER_KEY = "mathfacts_local_roster_v1";
-function loadLocalRoster(){
-  try{ return ttCleanNames(JSON.parse(localStorage.getItem(LOCAL_ROSTER_KEY))); }catch(e){ return []; }
-}
-function saveLocalRoster(list){ try{ localStorage.setItem(LOCAL_ROSTER_KEY, JSON.stringify(list)); }catch(e){ storeNote(false); } }
-function addToLocalRoster(name){
-  const list = loadLocalRoster();
-  if(!list.some(n=>n.toLowerCase()===name.toLowerCase())){
-    list.push(name);
-    saveLocalRoster(list);
-  }
-}
-
-function mergeNameLists(...lists){
-  const merged = [];
-  lists.forEach(list=>{
-    list.forEach(n=>{
-      if(!merged.some(m=>m.toLowerCase()===n.toLowerCase())) merged.push(n);
+const LOCAL_ROSTER_KEY = "mathfacts_local_roster_v1";   // only read to clear it: older versions kept typed names here
+const TT_ANIMALS = [{e:"🦁",n:"Lion"},{e:"🦊",n:"Fox"},{e:"🐼",n:"Panda"},{e:"🦉",n:"Owl"},{e:"🐸",n:"Frog"},{e:"🐧",n:"Penguin"}];
+function ttIsPlayerName(n){ return TT_ANIMALS.some(a=>a.n === n) || /^Player \d+$/.test(n); }
+function ttTypedNames(){ const all = readStoredAll(); return all ? Object.keys(all).filter(n=>!ttIsPlayerName(n)) : []; }
+/* Older versions asked a child to type a name, and it was kept as the label on their progress. Progress moves to a free animal so nothing is lost, and the name itself is removed. */
+function ttRetireTypedNames(){
+  const all = readStoredAll(), typed = ttTypedNames();
+  if(all && typed.length){
+    const free = TT_ANIMALS.map(a=>a.n).filter(n=>!dzOwn(all, n)), empty = JSON.stringify(freshKidRecord());
+    let k = 1;
+    typed.forEach(n=>{
+      const rec = all[n];
+      delete all[n];
+      if(JSON.stringify(rec) === empty) return;              // typed but never played: nothing to keep
+      let to = free.shift();
+      while(!to){ const c = "Player " + (k++); if(!dzOwn(all, c)) to = c; }
+      all[to] = rec;
     });
-  });
-  return merged.sort((a,b)=>a.localeCompare(b));
-}
-
-async function fetchRoster(){
-  const local = loadLocalRoster();
-  if(!APPS_SCRIPT_URL) return mergeNameLists(local, KID_NAMES);
-  try{
-    const res = await fetch(APPS_SCRIPT_URL + "?action=names");
-    const names = await res.json();
-    const remote = ttCleanNames(names);
-    return mergeNameLists(remote, local, KID_NAMES);
-  }catch(e){
-    // Sheet unreachable right now — still show names added on this device
-    return mergeNameLists(local, KID_NAMES);
+    if(!saveAllProgress(all)) return;
   }
+  try{ localStorage.removeItem(LOCAL_ROSTER_KEY); }catch(e){}
 }
 
-function renderNameOptions(selectEl, names, selected){
-  const opts = names.map(n=>`<option value="${esc(n)}" ${n===selected?"selected":""}>${esc(n)}</option>`).join("");
-  selectEl.innerHTML = `
-    <option value="">— choose your name —</option>
-    ${opts}
-    <option value="__add__">➕ Add my name</option>`;
-}
-
-async function renderHome(){
-  const app = document.getElementById("app");
-  app.innerHTML = `
-    <div class="card home-card">
-      <h2>Who's playing?</h2>
-      <p class="sub">${DZ_DIRECT ? "Pick your name to start your mission." : "Pick your name to see your rounds and best time."}</p>
-      <select id="nameSelect" disabled><option>Loading names…</option></select>
-      <div id="addNameBox" style="display:none; margin-top:14px;">
-        <input type="text" id="newNameInput" class="name-input" placeholder="Type your name" maxlength="30">
-        <p class="sub" id="nameMsg" style="margin:8px 0 0;"></p>
-        <div class="row">
-          <button class="btn small" id="saveNameBtn">Save my name</button>
-          <button class="btn secondary small" id="cancelNameBtn">Cancel</button>
-        </div>
-      </div>
-      <div class="row">
-        <button class="btn" id="goBtn" disabled>Let's go!</button>
-      </div>
-    </div>`;
-
-  const sel = document.getElementById("nameSelect");
-  const go = document.getElementById("goBtn");
-  const addBox = document.getElementById("addNameBox");
-
-  rosterCache = await fetchRoster();
-  sel.disabled = false;
-  renderNameOptions(sel, rosterCache, "");
-
-  sel.addEventListener("change", ()=>{
-    if(sel.value === "__add__"){
-      addBox.style.display = "block";
-      go.disabled = true;
-      document.getElementById("newNameInput").focus();
-    } else {
-      addBox.style.display = "none";
-      go.disabled = !sel.value;
-    }
-  });
-
-  document.getElementById("cancelNameBtn").addEventListener("click", ()=>{
-    addBox.style.display = "none";
-    sel.value = "";
-    go.disabled = true;
-  });
-
-  document.getElementById("saveNameBtn").addEventListener("click", async ()=>{
-    const input = document.getElementById("newNameInput");
-    const name = input.value.trim();
-    const dup = rosterCache.find(n=>n.toLowerCase()===name.toLowerCase());
-    const refused = dup ? "" : ttNameProblem(name);
-    document.getElementById("nameMsg").textContent = refused;
-    if(refused || !name) return;
-    const finalName = dup || name;
-    if(!dup){
-      rosterCache.push(finalName);
-      rosterCache.sort((a,b)=>a.localeCompare(b));
-      addToLocalRoster(finalName);
-      syncEvent({ name:finalName, event:"add_name", timestamp:new Date().toISOString() });
-    }
-    renderNameOptions(sel, rosterCache, finalName);
-    addBox.style.display = "none";
-    go.disabled = false;
-  });
-
-  go.addEventListener("click", async ()=>{
-    go.disabled = true;
-    go.textContent = "Loading…";
-    await playAsName(sel.value);
-  });
-}
 async function fetchRemoteProgress(name){
   if(!APPS_SCRIPT_URL) return null;
   try{
@@ -985,7 +889,7 @@ async function fetchRemoteProgress(name){
     return null;
   }
 }
-/* a child chose or typed a name (not a passport animal): no learning events, progress under that name */
+/* a child chose an animal: progress is kept under it */
 async function playAsName(name){
   setPlayer(name);
   const remote = await fetchRemoteProgress(name);
@@ -995,51 +899,21 @@ async function playAsName(name){
 }
 /* Back to the first screen ("Switch kid"). */
 function switchKid(){ if(!FMT.fixed) FMT.profile = null; session.name = null; session.rec = null; session.inStore = false; renderStart(); }
-function renderStart(){ if(DZ_DIRECT) dzRenderWho(); else renderHome(); }
-
-/* ---- the first screen of the Dozen Galaxy app. One tap on an animal or a name starts the game; on a fresh device the name box is already open and "Let's go!" takes what is typed.
-   The animals are the ones this device's passport already has, read from fmt_passport_v1 and never written to: playing as one feeds that child's passport through the normal event queue. ---- */
-const DZ_PASSPORT_ANIMALS = [{id:"lion",e:"🦁",n:"Lion"},{id:"fox",e:"🦊",n:"Fox"},{id:"panda",e:"🐼",n:"Panda"},{id:"owl",e:"🦉",n:"Owl"},{id:"frog",e:"🐸",n:"Frog"},{id:"penguin",e:"🐧",n:"Penguin"}];   // same six as passport.js
-function passportAnimals(){
-  try{
-    const p = JSON.parse(localStorage.getItem("fmt_passport_v1")), kids = p && p.kids;
-    if(!kids || typeof kids !== "object") return [];
-    return DZ_PASSPORT_ANIMALS.filter(a=>dzOwn(kids, a.id) && kids[a.id] && typeof kids[a.id] === "object");
-  }catch(e){ return []; }
-}
-function playAsAnimal(a){ FMT.profile = a.id; setPlayer(a.n); dzEnter(); }
-function dzRenderWho(){
+function renderStart(){
   dzFlying(false);
-  const animals = passportAnimals(), isAnimal = (n)=>animals.some(a=>a.n.toLowerCase() === n.toLowerCase());
-  const nameBtns = (list)=>list.filter(n=>!isAnimal(n)).map(n=>'<button type="button" class="dz-whobtn" data-name="'+esc(n)+'">'+esc(n)+'</button>').join("");
-  const local = loadLocalRoster();
-  const sub = animals.length ? "Tap your animal to start your mission." : local.length ? "Tap your name, or type a new one." : "Type a name or nickname to start your mission.";
-  document.getElementById("app").innerHTML = '<div class="dz dz-who"><div class="card dz-card"><h2 id="dzTitle" tabindex="-1">Who\'s playing?</h2><p>'+sub+'</p>'
-    + (animals.length ? '<div class="dz-whogrid">'+animals.map(a=>'<button type="button" class="dz-whobtn" data-animal="'+a.id+'"><span class="e" aria-hidden="true">'+a.e+'</span>'+a.n+'</button>').join("")+'</div>' : "")
-    + '<div class="dz-whogrid" id="dzNames">'+nameBtns(local)+'</div>'
-    + (animals.length ? '<button type="button" class="btn secondary small" id="dzUseName">Use a name instead</button>' : "")
-    + '<form class="dz-whoform" id="dzNameForm" novalidate'+(animals.length ? ' style="display:none"' : "")+'><input type="text" id="newNameInput" class="name-input" placeholder="A name or nickname" maxlength="30" autocomplete="off" aria-label="A name or nickname">'
-    + '<button type="submit" class="btn" id="goBtn">Let\'s go!</button><p class="dz-whomsg" id="nameMsg" role="status"></p></form></div></div>';
-  const app = document.getElementById("app"), form = $dz("dzNameForm"), input = $dz("newNameInput"), msg = $dz("nameMsg");
+  const all = loadAllProgress();
+  const note = (n)=>{
+    if(!dzOwn(all, n)) return "";
+    const rounds = Object.keys(all[n].levelBestTimes).length, stars = dzTotalStars(dzNormalise(all[n].dozen));
+    const words = DZ_DIRECT ? (stars ? stars + " ★" : "") : (rounds ? rounds + (rounds === 1 ? " round" : " rounds") : "");
+    return words ? ' <small>' + words + '</small>' : "";
+  };
+  const btn = (n, e)=>'<button type="button" class="dz-whobtn" data-player="'+esc(n)+'">'+(e ? '<span class="e" aria-hidden="true">'+e+'</span>' : "")+esc(n)+note(n)+'</button>';
+  const others = Object.keys(all).filter(n=>/^Player \d+$/.test(n));
+  document.getElementById("app").innerHTML = '<div class="dz dz-who"><div class="card dz-card"><h2 id="dzTitle" tabindex="-1">Who\'s playing?</h2><p>'+(DZ_DIRECT ? "Tap your animal to start your mission." : "Tap your animal to see your rounds and best time.")+'</p>'
+    + '<div class="dz-whogrid">'+TT_ANIMALS.map(a=>btn(a.n, a.e)).join("")+others.map(n=>btn(n)).join("")+'</div></div></div>';
   let starting = false;
-  const useName = (n)=>{ if(starting) return; starting = true; playAsName(n); };
-  app.querySelectorAll("[data-animal]").forEach(b=>b.addEventListener("click", ()=>{ playAsAnimal(DZ_PASSPORT_ANIMALS.filter(a=>a.id === b.dataset.animal)[0]); }));
-  const wireNames = ()=>$dz("dzNames").querySelectorAll("[data-name]").forEach(b=>b.addEventListener("click", ()=>useName(b.dataset.name)));
-  wireNames();
-  if($dz("dzUseName")) $dz("dzUseName").addEventListener("click", ()=>{ $dz("dzUseName").style.display = "none"; form.style.display = ""; input.focus(); });
-  form.addEventListener("submit", (e)=>{
-    e.preventDefault();
-    const name = input.value.trim(), roster = loadLocalRoster();
-    if(!name){ msg.textContent = "Type a name first, then tap Let's go!"; input.focus(); return; }
-    const animal = animals.filter(a=>a.n.toLowerCase() === name.toLowerCase())[0];
-    if(animal){ playAsAnimal(animal); return; }                                     // typing "Fox" on a device with passport Fox simply is Fox
-    const dup = roster.find(n=>n.toLowerCase() === name.toLowerCase());
-    const refused = dup ? "" : ttNameProblem(name);
-    if(refused){ msg.textContent = refused; input.focus(); return; }
-    if(!dup){ addToLocalRoster(name); syncEvent({ name:name, event:"add_name", timestamp:new Date().toISOString() }); }
-    useName(dup || name);
-  });
-  if(APPS_SCRIPT_URL) fetchRoster().then(list=>{ if($dz("dzNames") && !starting){ $dz("dzNames").innerHTML = nameBtns(list); wireNames(); } });   // the private family sheet only; the public site has no address here
+  document.querySelectorAll("#app [data-player]").forEach(b=>b.addEventListener("click", ()=>{ if(starting) return; starting = true; playAsName(b.dataset.player); }));
   window.scrollTo(0, 0);
 }
 
@@ -1666,20 +1540,6 @@ function ttNormaliseAll(p){
   if(p && typeof p === "object" && !Array.isArray(p)) Object.keys(p).forEach(k=>{ if(k !== "__proto__") out[k] = ttNormaliseRecord(p[k]); });
   return out;
 }
-/* typed names: what is refused, and why, in a child's words ("" = fine). Passport animals are kept apart from typed names so a typed "Fox" can not share passport Fox's record. */
-const TT_ANIMAL_NAMES = ["lion","fox","panda","owl","frog","penguin"];
-function ttNameProblem(name){
-  const s = String(name === undefined || name === null ? "" : name).trim();
-  if(!s) return "";
-  if(/^(__proto__|constructor|prototype|__add__)$/i.test(s)) return "Please try a different name.";
-  if(TT_ANIMAL_NAMES.indexOf(s.toLowerCase()) >= 0) return "That name belongs to a passport animal. Please try a different name.";
-  return "";
-}
-function ttCleanNames(list){
-  if(!Array.isArray(list)) return [];
-  return list.filter(n=>typeof n === "string" && n.trim() !== "" && n.length <= 60 && !/^(__proto__|constructor|prototype|__add__)$/i.test(n.trim()));
-}
-
 /* ---- self-test: returns {pass, fail, results:[{name, ok, info}]} ---- */
 function dzSelfTest(){
   const results = [];
@@ -1810,8 +1670,6 @@ function dzSelfTest(){
   t("merge: a side with no Dozen Galaxy loses nothing, and neither side having it adds nothing", ttMergeRecords({}, pa).dozen.pods === 12 && !dzOwn(ttMergeRecords({ levelPoints:{1:1} }, { levelPoints:{2:2} }), "dozen"));
   const odd = ttNormaliseAll(JSON.parse('{"__proto__":{"dozen":{"pods":5}},"toString":{"levelPoints":{"1":7}},"Fox":null}'));
   t("odd names: __proto__ is dropped, toString is an ordinary name, nothing leaks onto every object", !dzOwn(odd, "__proto__") && odd.toString.levelPoints[1] === 7 && !dzOwn(odd, "valueOf") && odd.valueOf === undefined && ({}).dozen === undefined && odd.Fox.timesFullyCompleted === 0);
-  t("typed names: reserved words and passport animals are refused, ordinary names are not", ttNameProblem("__proto__") !== "" && ttNameProblem("constructor") !== "" && ttNameProblem("__add__") !== "" && ttNameProblem("fox") !== "" && ttNameProblem("Penguin") !== "" && ttNameProblem("toString") === "" && ttNameProblem("Mia") === "");
-  t("name lists: anything that is not a usable name is dropped", ttCleanNames("x").length === 0 && ttCleanNames([1, null, "", "__proto__", "Mia"]).join() === "Mia");
   const pass = results.filter(r=>r.ok).length;
   return { pass:pass, fail:results.length - pass, results:results };
 }
@@ -2290,7 +2148,12 @@ else if(FMT.guest){                                                          // 
 else if(FMT.profile){
   setPlayer(FMT.profile.charAt(0).toUpperCase()+FMT.profile.slice(1));       // the passport animal, never a typed name
   dzEnter();
-} else renderStart();
+} else {
+  const begin = ()=>{ ttRetireTypedNames(); renderStart(); };
+  /* with an old typed name to clear, wait for the account's newest copy first (a slow connection gets 2.5 seconds), so this change can not overwrite it */
+  if(ttTypedNames().length && window.TMG && window.TMG.ready) Promise.race([window.TMG.ready, new Promise(r=>setTimeout(r, 2500))]).then(begin, begin);
+  else begin();
+}
 </script>
 <script>(function backPill() {
   try { if (window.parent !== window) return; } catch (e) { return; }

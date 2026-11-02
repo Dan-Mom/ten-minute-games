@@ -508,7 +508,7 @@ var HOOK = {
   question:{zh:"你的第一个想法是：",en:"My first idea is:"},
   choices:[
     {id:"printing-mistake",label:{zh:"工厂放错了毒药，包装印错了",en:"The factory must have put poison in by mistake — it's a printing error"}},
-    {id:"trace-rule",label:{zh:"加州规定，只要食物里查到一点点这种化学物质，就要贴警告——就算这个量非常非常小",en:"California requires this warning whenever even a tiny amount of certain chemicals is detected — even an amount that is very, very small"}},
+    {id:"trace-rule",label:{zh:"加州规定，名单上的化学物质要贴警告，除非商家能说明它的量低于规定的线——而这条线定得很低",en:"California requires this warning for chemicals on its list, unless the business can show the amount is below a limit — and that limit is set very low"}},
     {id:"poisonous",label:{zh:"这个食物有毒，绝对不能碰",en:"This food is poisonous and must never be touched"}},
     {id:"ignore-it",label:{zh:"这个标签只是吓唬人的，完全不用管",en:"The label is just a scare tactic — you can completely ignore it"}}
   ]
@@ -536,7 +536,7 @@ var OBSERVATION = {
      text:{zh:"这个食物一定有毒，吃一口就会生病。",en:"This food must be poisonous — eating even one bite will make you sick."},
      feedback:{zh:"我们还没有证实“吃一口就会生病”，这是我们想的原因。这是猜测。",en:"We haven't shown that eating one bite would actually make someone sick — that's a reason we imagined. That is a guess."}},
     {id:"trace-rule-explanation",kind:"explanation",levelBOnly:true,
-     text:{zh:"这个标签是因为食物里测到了一点点某种化学物质——哪怕这个量非常小，加州法律也要求贴警告，这跟“食物有没有毒”不是一回事。",en:"The label is there because a trace amount of a certain chemical was detected — even a very small amount — and California law requires the warning regardless; that's a different question from whether the food is actually poisonous."},
+     text:{zh:"这个标签表示食物里可能有加州名单上的化学物质，而商家没有说明它的量低于规定的线。这跟“食物有没有毒”不是一回事。",en:"The label means the food may contain a chemical on California's list, and the business has not shown the amount is below the state's limit. That's a different question from whether the food is actually poisonous."},
      feedback:{zh:"这是关于加州规定和量的关系的一种解释，可能是对的，但对这一包零食来说，我们还没有亲自查过具体的量。这是可能的解释。",en:"This is an explanation about California's rule and the amount involved — it may be right, but we haven't personally checked the exact amount for this snack. It is a possible explanation."}},
     {id:"coffee-chocolate-chips",kind:"observation",
      text:{zh:"咖啡、巧克力、薯片也常常有一样的警告标签。",en:"Coffee, chocolate, and potato chips often carry this same warning label."},
@@ -598,17 +598,17 @@ var COMPARE = {
   triggerLabel:{zh:"触发标签的量",en:"The label's trigger amount"},
   harmLabel:{zh:"研究里有影响的量",en:"The harm-study amount"},
   explain:{
-    A:{zh:"触发标签的量非常靠近尺子的起点，研究里真正有影响的量在尺子很远很远的地方。加州故意把线画得很靠前，这样更安全、更谨慎。",en:"The trigger amount sits very close to the start of the ruler, and the harm-study amount is much, much farther along. California drew the line early on purpose, to be extra cautious and safe."},
-    B:{zh:"这把尺子上，触发线离“0”非常近；研究里真正看到健康影响的量，在尺子上远得多。这个差距是加州故意设计的谨慎安全边界，不代表这个量本身很接近危险。",en:"On this ruler, the trigger line sits very close to “zero”; the amount studies found could actually cause a health effect is far along the ruler. That gap is a deliberately cautious safety margin California built in — it doesn't mean the trigger amount itself is close to dangerous."}
+    A:{zh:"这把尺子只是一张示意图，不是真实的测量。触发线画得靠近起点，因为加州故意把线定得很低，这样更谨慎。真实差多少，要看是哪种化学物质。",en:"This ruler is only a picture, not a real measurement. The trigger line sits near the start because California set it low on purpose, to be cautious. The real gap depends on the chemical."},
+    B:{zh:"这把尺子只是示意图。加州的线定得很低：致癌物大约是接触 70 年、10 万人里最多多 1 例；生殖伤害是没观察到影响的量再除以 1000。标签不能告诉我们一种食物到底有多大风险。",en:"This ruler is only a picture. California sets its limits low: for cancer, about 1 extra case in 100,000 people exposed for 70 years; for reproductive harm, 1,000 times below the level with no observed effect. A label can't tell us how risky one food is."}
   },
-  resultCheckPrompt:{zh:"加州为什么要把警告标签的“触发线”设得离研究里的危险区那么远？",en:"Why would California set the warning label's “trigger line” so far from the actual danger zone studies found?"},
+  resultCheckPrompt:{zh:"加州为什么把警告标签的“触发线”定得这么低？",en:"Why did California set the warning label's “trigger line” so low?"},
   resultChoices:[
     {id:"coincidence",correct:false,label:{zh:"只是碰巧这样",en:"It's just a coincidence"}},
-    {id:"extra-cautious",correct:true,label:{zh:"这样更谨慎、更安全——就算测到的量还差得很远，也提前提醒大家",en:"To be extra cautious and safe — it gives people a heads-up well before any real danger zone"}},
+    {id:"extra-cautious",correct:true,label:{zh:"这样更谨慎——让大家早一点知道",en:"To be cautious — so people hear about it early"}},
     {id:"no-reason",correct:false,label:{zh:"没有什么特别的原因",en:"There's no particular reason"}}
   ],
   wrongResult:{zh:"再看看尺子上两个记号的位置——哪个记号离“0”更近？",en:"Look at the two marks on the ruler again — which one is closer to “zero”?"},
-  readout:{zh:"同一把尺子上——触发线：非常靠近起点 · 研究影响线：在尺子很远的地方",en:"On this one ruler — trigger line: very close to the start · harm-study line: much farther along"}
+  readout:{zh:"示意图，不是真实测量——触发线：靠近起点 · 研究影响线：远一些",en:"A picture, not a measurement — trigger line: near the start · harm-study line: farther along"}
 };
 
 var FAIRTEST = {
@@ -689,13 +689,13 @@ var TRANSFER = {
   aWrongOrder:{zh:"顺序还不对。先说没有标签，再说烤焦和化学物质的关系，最后说该怎么吃。",en:"The order isn't right yet. First say there's no sticker, then the browning/chemical link, then what's best to do."},
   bEvidencePrompt:{zh:"哪一个是最好的证据？",en:"Which one is the best evidence?"},
   bEvidenceChoices:[
-    {id:"no-sticker-because-homemade",correct:true,label:{zh:"包装食品的警告标签是因为查到了微量化学物质就要贴，不代表家里做的就一定没有。",en:"A packaged food's warning label is required once a trace amount is detected — that doesn't mean homemade food is guaranteed to have none."}},
+    {id:"no-sticker-because-homemade",correct:true,label:{zh:"包装食品有没有警告标签，不代表家里做的就一定没有这种化学物质。",en:"Whether or not a packaged food has a warning label, homemade food isn't guaranteed to have none of this chemical."}},
     {id:"grandma-careful",correct:false,label:{zh:"奶奶做饭一向很小心，所以肯定没问题。",en:"Grandma is always careful when cooking, so it must be fine."}},
     {id:"homemade-always-safe",correct:false,label:{zh:"自己家做的食物本来就比店里卖的更安全。",en:"Homemade food is inherently safer than store-bought food."}}
   ],
   bBecausePrompt:{zh:"因为……",en:"Because …"},
   bBecauseChoices:[
-    {id:"label-is-retail-rule",correct:true,label:{zh:"标签只贴在符合加州规定的包装食品上，机制本身（加热变焦）跟有没有贴标签没有关系",en:"the label is only required on qualifying packaged retail food — the underlying mechanism (heat causing browning) happens regardless of whether a label is required"}},
+    {id:"label-is-retail-rule",correct:true,label:{zh:"警告是对卖东西的商家的规定，家里做饭不用贴；加热变焦这件事跟有没有标签没有关系",en:"the warning rule is for businesses, not home cooking — browning from heat happens whether or not there is a label"}},
     {id:"grandma-uses-less-oil",correct:false,label:{zh:"奶奶用的油比工厂少",en:"Grandma uses less oil than a factory"}},
     {id:"homemade-cooked-faster",correct:false,label:{zh:"自己家做的煮得比较快",en:"Homemade food cooks faster"}}
   ],
