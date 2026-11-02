@@ -1,0 +1,1271 @@
+<!doctype html>
+<html lang="en">
+<head><script>/* Ten-Minute Games accounts: a parent signs in with Google, adds children by nickname, and each child's game progress follows them
+   to any computer or iPad. Signing in is optional; without it every game works exactly as before (progress stays on this device).
+
+   How progress is kept: every game already saves its progress in this browser (localStorage) under its own names. This script,
+   which build.cjs puts at the very top of every page, keeps one copy of those values per player ("guest" = not signed in, or a
+   child). When the player changes, the values in the browser are swapped before the game reads them. When a child is playing,
+   their copy is also saved to Firebase (Firestore: families/<parent uid>/kids/<child id>), and loaded back on other devices.
+   Only values written by these game pages are kept; nothing else in the browser is read or sent.
+
+   Public Firebase web config: allowed on the public site by PRIVACY-RULE.md exception five. Access is guarded by the Firestore
+   rules (each parent can only read and write their own family), not by hiding this. */
+(function () {
+  'use strict';
+  if (window.TMG) return;
+  var CONFIG = {
+    apiKey: 'AIzaSyDC-kbJIExCfhIsUkkShVIO8VtBTe3D7WI',
+    authDomain: 'ten-minute-games.firebaseapp.com',
+    projectId: 'ten-minute-games',
+    storageBucket: 'ten-minute-games.firebasestorage.app',
+    messagingSenderId: '448551703283',
+    appId: '1:448551703283:web:7f0c2b75a166f1fcbb1d86'
+  };
+  var SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
+  var P = 'tmg.', GUEST = 'guest', MAX_VALUE = 200000;
+  var LS; try { LS = window.localStorage; LS.getItem(P + 'x'); } catch (e) { LS = null; }
+  if (!LS) { window.TMG = { kid: GUEST, ready: Promise.resolve(), mountHome: function () {} }; return; }
+  var rawSet = Storage.prototype.setItem, rawRemove = Storage.prototype.removeItem, rawGet = Storage.prototype.getItem;
+  function get(k) { return rawGet.call(LS, k); }
+  function put(k, v) { try { rawSet.call(LS, k, v); } catch (e) {} }
+  function del(k) { rawRemove.call(LS, k); }
+  function J(k, d) { try { var v = get(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
+  function W(k, o) { put(k, JSON.stringify(o)); }
+  function ours(k) { return typeof k === 'string' && (k.indexOf(P) === 0 || k.indexOf('firebase') === 0); }
+
+  function current() { return get(P + 'current') || GUEST; }
+  function store(id) { return J(P + 'kid.' + id, { data: {}, updated: 0 }); }
+  function saveStore(id, s) { W(P + 'kid.' + id, s); }
+  function known() { return J(P + 'known', []); }
+
+  /* Put player `id`'s values into the browser. The values sitting there now belong to `owner`: keep them first. */
+  function swap() {
+    var id = current(), owner = get(P + 'owner') || GUEST;
+    if (owner === id) return false;
+    var ks = known(), from = store(owner), to = store(id), changed = false;
+    ks.forEach(function (k) { var v = get(k); if (v === null) delete from.data[k]; else from.data[k] = v; });
+    saveStore(owner, from);
+    ks.forEach(function (k) {
+      var want = Object.prototype.hasOwnProperty.call(to.data, k) ? to.data[k] : null;
+      if (get(k) !== want) { changed = true; if (want === null) del(k); else put(k, want); }
+    });
+    put(P + 'owner', id);
+    return changed;
+  }
+  swap();
+
+  /* Every write a game makes is copied into the current player's store (and marked for upload when a child is playing). */
+  var dirtyTimer = 0;
+  function noteWrite(k, v) {
+    if (ours(k)) return;
+    if (v !== null && String(v).length > MAX_VALUE) return;
+    var ks = known(); if (ks.indexOf(k) < 0) { ks.push(k); W(P + 'known', ks); }
+    var id = current(), s = store(id);
+    if (v === null) delete s.data[k]; else s.data[k] = String(v);
+    s.updated = Date.now(); saveStore(id, s);
+    if (id !== GUEST) { put(P + 'dirty', '1'); clearTimeout(dirtyTimer); dirtyTimer = setTimeout(function () { cloud.push(); }, 3000); }
+  }
+  Storage.prototype.setItem = function (k, v) { rawSet.call(this, k, v); if (this === LS) noteWrite(String(k), String(v)); };
+  Storage.prototype.removeItem = function (k) { rawRemove.call(this, k); if (this === LS) noteWrite(String(k), null); };
+
+  /* ---------- Firebase (loaded only when it is needed) ---------- */
+  var fb = null;
+  function loadScript(src) { return new Promise(function (ok, no) { var s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); }
+  function firebaseReady() {
+    if (fb) return fb;
+    fb = loadScript(SDK + 'firebase-app-compat.js')
+      .then(function () { return Promise.all([loadScript(SDK + 'firebase-auth-compat.js'), loadScript(SDK + 'firebase-firestore-compat.js')]); })
+      .then(function () {
+        var app = window.firebase.apps.length ? window.firebase.app() : window.firebase.initializeApp(CONFIG);
+        return { auth: app.auth(), db: app.firestore() };
+      });
+    return fb;
+  }
+  function userNow(f) { return new Promise(function (ok) { var off = f.auth.onAuthStateChanged(function (u) { off(); ok(u); }); }); }
+  function kidsRef(f, uid) { return f.db.collection('families').doc(uid).collection('kids'); }
+
+  var cloud = {
+    /* upload the current child's copy */
+    push: function () {
+      var id = current(), uid = get(P + 'uid');
+      if (id === GUEST || !uid || get(P + 'dirty') !== '1') return Promise.resolve();
+      var s = store(id), name = (J(P + 'family', { kids: [] }).kids.filter(function (k) { return k.id === id; })[0] || {}).name || 'Player';
+      if (JSON.stringify(s.data).length > 900000) return Promise.resolve();   // a Firestore document holds at most 1 MB: keep it on this device only
+      return firebaseReady().then(function (f) {
+        return kidsRef(f, uid).doc(id).set({ name: name, data: s.data, updated: s.updated || Date.now() });
+      }).then(function () { if (store(id).updated === s.updated) del(P + 'dirty'); }, function () {});
+    },
+    /* download the current child's copy if the cloud has a newer one; returns true when the browser's values changed */
+    pull: function () {
+      var id = current(), uid = get(P + 'uid');
+      if (id === GUEST || !uid) return Promise.resolve(false);
+      return firebaseReady().then(function (f) { return kidsRef(f, uid).doc(id).get(); }).then(function (doc) {
+        if (!doc.exists) return false;
+        var c = doc.data(), s = store(id);
+        if ((c.updated || 0) <= (s.updated || 0)) { if ((s.updated || 0) > (c.updated || 0)) { put(P + 'dirty', '1'); cloud.push(); } return false; }
+        saveStore(id, { data: c.data || {}, updated: c.updated });
+        var ks = known(); Object.keys(c.data || {}).forEach(function (k) { if (ks.indexOf(k) < 0) ks.push(k); }); W(P + 'known', ks);
+        var changed = false;
+        if ((get(P + 'owner') || GUEST) === id) ks.forEach(function (k) {
+          var want = Object.prototype.hasOwnProperty.call(c.data || {}, k) ? c.data[k] : null;
+          if (get(k) !== want) { changed = true; if (want === null) del(k); else put(k, want); }
+        });
+        return changed;
+      }, function () { return false; });
+    }
+  };
+  window.addEventListener('pagehide', function () { cloud.push(); });
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') cloud.push(); });
+
+  /* On a game page with a child playing: fetch their newest progress; if it differs from what the game already read, reload once. */
+  var onHome = !!document.querySelector('meta[name="tmg-home"]');
+  var ready = Promise.resolve();
+  if (get(P + 'uid') && current() !== GUEST) {
+    ready = cloud.pull().then(function (changed) {
+      if (changed && !onHome) {
+        var flag = 'tmg.reloaded.' + location.pathname;
+        try { if (!sessionStorage.getItem(flag)) { sessionStorage.setItem(flag, '1'); location.reload(); } } catch (e) {}
+      }
+    });
+  }
+
+  /* ---------- the parent panel on the home page ---------- */
+  function E(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function newId() { var a = new Uint8Array(9); crypto.getRandomValues(a); return Array.prototype.map.call(a, function (b) { return ('0' + b.toString(16)).slice(-2); }).join(''); }
+  function cleanName(s) { return String(s || '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 20); }
+
+  function mountHome(box) {
+    var msg = '';
+    function render() {
+      box.replaceChildren();
+      var uid = get(P + 'uid'), fam = J(P + 'family', { kids: [] }), cur = current();
+      if (!uid) {
+        var b = E('button', 'acct-btn', 'Parent sign-in'); b.type = 'button'; b.onclick = signIn;
+        box.appendChild(b);
+        box.appendChild(E('span', 'acct-note', 'Optional: keep each child’s progress on every device.'));
+      } else {
+        var row = E('div', 'acct-kids');
+        fam.kids.forEach(function (k) {
+          var chip = E('button', 'acct-kid' + (k.id === cur ? ' on' : ''), (k.id === cur ? '▶ ' : '') + k.name); chip.type = 'button';
+          chip.setAttribute('aria-pressed', k.id === cur ? 'true' : 'false');
+          chip.onclick = function () { choose(k.id); };
+          row.appendChild(chip);
+        });
+        var g = E('button', 'acct-kid' + (cur === GUEST ? ' on' : ''), 'Just looking'); g.type = 'button'; g.onclick = function () { choose(GUEST); };
+        row.appendChild(g);
+        var add = E('button', 'acct-btn small', '+ Add child'); add.type = 'button'; add.onclick = addKid;
+        row.appendChild(add);
+        box.appendChild(row);
+        var tools = E('span', 'acct-tools');   // on the same row, right after "+ Add child"
+        var so = E('button', 'acct-link', 'Sign out'); so.type = 'button'; so.onclick = signOut; tools.appendChild(so);
+        var rm = E('button', 'acct-link', 'Remove a child'); rm.type = 'button'; rm.onclick = removeKid; tools.appendChild(rm);
+        var dl = E('button', 'acct-link danger', 'Delete account and all data'); dl.type = 'button'; dl.onclick = deleteAll; tools.appendChild(dl);
+        var pv = E('a', 'acct-link', 'Privacy'); pv.href = 'privacy.html'; tools.appendChild(pv);
+        row.appendChild(tools);
+      }
+      if (msg) box.appendChild(E('div', 'acct-msg', msg));
+    }
+    function say(t) { msg = t; render(); }
+    function loadFamily(f, uid) {
+      return kidsRef(f, uid).get().then(function (q) {
+        var kids = []; q.forEach(function (d) { kids.push({ id: d.id, name: cleanName(d.data().name) || 'Player' }); });
+        kids.sort(function (a, b) { return a.name.localeCompare(b.name); });
+        W(P + 'family', { kids: kids });
+        if (current() !== GUEST && !kids.some(function (k) { return k.id === current(); })) { put(P + 'current', GUEST); swap(); }
+        return kids;
+      });
+    }
+    function signIn() {
+      say('Opening Google sign-in…');
+      firebaseReady().then(function (f) {
+        var p = new window.firebase.auth.GoogleAuthProvider();
+        return f.auth.signInWithPopup(p).then(function (r) { put(P + 'uid', r.user.uid); return loadFamily(f, r.user.uid); });
+      }).then(function (kids) { msg = kids.length ? 'Signed in. Pick who is playing.' : 'Signed in. Add your first child (a nickname is enough).'; render(); },
+        function (e) { say(e && e.code === 'auth/popup-closed-by-user' ? '' : 'Sign-in did not work' + (e && e.code ? ' (' + e.code + ')' : '') + '. Please try again.'); });
+    }
+    function addKid() {
+      var name = cleanName(window.prompt('Child’s nickname (not their full name):', ''));
+      if (!name) return;
+      var uid = get(P + 'uid'), id = newId(), fam = J(P + 'family', { kids: [] });
+      var guest = store(GUEST), first = fam.kids.length === 0 && Object.keys(guest.data).length > 0;
+      var start = { data: {}, updated: Date.now() };
+      if (first && window.confirm('Move the progress already on this device to ' + name + '?')) {
+        swap(); start = { data: JSON.parse(JSON.stringify(store(GUEST).data)), updated: Date.now() };
+      }
+      say('Adding ' + name + '…');
+      firebaseReady().then(function (f) {
+        return kidsRef(f, uid).doc(id).set({ name: name, data: start.data, updated: start.updated }).then(function () { return loadFamily(f, uid); });
+      }).then(function () { saveStore(id, start); choose(id); }, function () { say('Could not add ' + name + '. Please try again.'); });
+    }
+    function choose(id) {
+      cloud.push().then(function () {
+        put(P + 'current', id); swap();
+        msg = id === GUEST ? 'Just looking: progress stays on this device.' : 'Now playing: ' + ((J(P + 'family', { kids: [] }).kids.filter(function (k) { return k.id === id; })[0] || {}).name || '');
+        render();
+        return cloud.pull();
+      });
+    }
+    function removeKid() {
+      var fam = J(P + 'family', { kids: [] }); if (!fam.kids.length) return;
+      var name = window.prompt('Type the nickname of the child to remove. Their progress is deleted everywhere.\n\n' + fam.kids.map(function (k) { return k.name; }).join(', '), '');
+      var k = fam.kids.filter(function (x) { return x.name === cleanName(name); })[0]; if (!k) return;
+      var uid = get(P + 'uid');
+      firebaseReady().then(function (f) { return kidsRef(f, uid).doc(k.id).delete().then(function () { return loadFamily(f, uid); }); })
+        .then(function () { del(P + 'kid.' + k.id); say(k.name + ' was removed.'); }, function () { say('Could not remove ' + k.name + '. Please try again.'); });
+    }
+    /* leave this device as a guest device: the children's copies are taken off it */
+    function forgetDevice() {
+      put(P + 'current', GUEST); swap();
+      J(P + 'family', { kids: [] }).kids.forEach(function (k) { del(P + 'kid.' + k.id); });
+      del(P + 'family'); del(P + 'uid'); del(P + 'dirty');
+    }
+    function signOut() {
+      cloud.push().then(firebaseReady).then(function (f) { return f.auth.signOut(); }).then(function () { forgetDevice(); say('Signed out. This device is back to guest play.'); },
+        function () { forgetDevice(); say('Signed out on this device.'); });
+    }
+    function deleteAll() {
+      if (!window.confirm('Delete your account, all your children and all their progress? This cannot be undone.')) return;
+      var uid = get(P + 'uid');
+      say('Deleting…');
+      firebaseReady().then(function (f) {
+        return kidsRef(f, uid).get().then(function (q) { var jobs = []; q.forEach(function (d) { jobs.push(d.ref.delete()); }); return Promise.all(jobs); })
+          .then(function () { var u = f.auth.currentUser; return u.delete().catch(function (e) {
+            if (e && e.code === 'auth/requires-recent-login') return u.reauthenticateWithPopup(new window.firebase.auth.GoogleAuthProvider()).then(function () { return u.delete(); });
+            throw e; }); });
+      }).then(function () { forgetDevice(); say('Your account and all its data were deleted.'); },
+        function () { say('Could not finish deleting. Please sign in again and retry.'); });
+    }
+    /* check the sign-in is still valid (it can end on another device) */
+    if (get(P + 'uid')) firebaseReady().then(function (f) { return userNow(f).then(function (u) {
+      if (!u) { forgetDevice(); render(); return; }
+      return loadFamily(f, u.uid).then(render);
+    }); }, function () {});
+    render();
+  }
+
+  window.TMG = { kid: current(), ready: ready, mountHome: mountHome, _swap: swap, _cloud: cloud };
+})();
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Block City Times Tables</title>
+<meta name="theme-color" content="#2f7dd1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<style>
+/* Block City: one idea (the times tables, as rows of blocks) in twelve levels, each adding one new block move.
+   Every level: Watch the blocks move, Build it by moving them yourself, then Climb a tower from memory.
+   Blocks keep their identity between pictures, so a child SEES them move instead of seeing a new picture. */
+:root{
+  color-scheme:light;
+  --ink:#1d2b4f; --mute:#4a587a; --page:#eaf5ff; --card:#fff; --line:#c9dbef;
+  --blue:#2f7dd1; --blue-s:#d5e9ff; --orange:#e8650a; --green:#1f8f45; --green-s:#d3f4dd; --red:#c43a3a; --red-s:#fde0e0; --gold:#ffcc33; --gold-s:#fff5cc;
+  --b0:#ff8a3d; --b0d:#c95f18; --b1:#3db0ff; --b1d:#1b7cc2; --b2:#4fc974; --b2d:#2c8f4b;
+  --display:"Baloo 2","Nunito","Trebuchet MS",system-ui,sans-serif;
+  --body:"Nunito","Trebuchet MS",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font:800 18px/1.45 var(--body);min-height:100vh}
+h1,h2,h3{font-family:var(--display);margin:0;line-height:1.1}
+button{font-family:var(--display);cursor:pointer;color:inherit}
+button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
+.wrap{max-width:880px;margin:0 auto;padding:14px 16px 90px}
+.top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.top h1{font-size:clamp(24px,4.5vw,34px);color:var(--blue);margin-right:auto}
+.stars{font:800 18px var(--display);color:#8a6400;background:var(--gold-s);border-radius:999px;padding:6px 14px}
+.round{border:0;background:#fff;border-radius:999px;min-width:44px;min-height:44px;font-size:20px;box-shadow:0 3px 0 var(--line)}
+
+/* the city: one building for every level finished */
+.city{margin-top:12px;border-radius:22px;overflow:hidden;box-shadow:0 6px 0 var(--line);background:#fff}
+.city svg{display:block;width:100%;height:auto}
+.city .rise{animation:rise .9s cubic-bezier(.2,1.2,.4,1) both;transform-box:fill-box;transform-origin:bottom}
+@keyframes rise{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+
+.tools{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.tool{border:0;border-radius:18px;min-height:64px;padding:8px 12px;background:var(--gold-s);box-shadow:0 5px 0 #e5cf7c;font-size:19px;color:#6d4f00}
+
+.levels{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:14px;margin-top:16px}
+.lv{text-align:left;border:0;background:var(--card);border-radius:22px;padding:14px 16px;min-height:118px;box-shadow:0 6px 0 var(--line);display:flex;flex-direction:column;gap:4px}
+.lv:disabled{opacity:.55;cursor:not-allowed}
+.lv.now{outline:4px solid var(--orange);outline-offset:-2px}
+.lv b{font:800 21px var(--display);color:var(--blue)}
+.lv span{font:700 15px var(--body);color:var(--mute)}
+.lv i{font-style:normal;font-size:15px;color:#8a6400;margin-top:auto}
+.why{margin-top:18px;background:#fff;border-radius:18px;padding:14px 16px;font:700 15px/1.5 var(--body);color:var(--mute)}
+.why b{color:var(--ink)}
+
+/* level screen */
+.bar{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
+.back{border:0;background:#fff;border-radius:14px;min-height:44px;padding:0 14px;font-size:16px;color:var(--blue);box-shadow:0 3px 0 var(--line)}
+.dots{display:flex;gap:5px;flex-wrap:wrap}
+.dots span{width:13px;height:13px;border-radius:50%;background:#d6e2ef}
+.dots span.ok{background:var(--gold)} .dots span.try{background:#9fc3e8}
+.dots span.now{outline:3px solid var(--blue);outline-offset:1px}
+.panel{margin-top:14px;background:var(--card);border-radius:26px;padding:16px;box-shadow:0 6px 0 var(--line)}
+.steps{display:grid;gap:12px;margin-top:12px}
+.step{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;border-radius:18px;padding:12px 14px;min-height:72px;background:var(--blue-s);box-shadow:0 4px 0 #a9c9ea}
+.step:disabled{opacity:.5;cursor:not-allowed}
+.step.next{background:#ffe2c4;box-shadow:0 4px 0 #e0a877}
+.step em{font-style:normal;font-size:30px}
+.step b{display:block;font:800 20px var(--display)}
+.step small{font:700 15px var(--body);color:var(--mute)}
+.goal{font:700 16px/1.45 var(--body);color:var(--mute);margin-top:8px}
+
+.prompt{font:800 clamp(19px,3.4vw,25px)/1.28 var(--display);text-align:center;min-height:2.6em;display:flex;align-items:center;justify-content:center;gap:8px}
+.big{font:800 clamp(34px,7vw,50px)/1.1 var(--display);text-align:center;margin:6px 0}
+.big u{text-decoration:none;display:inline-block;min-width:1.5em;border-bottom:5px solid var(--blue);color:var(--orange)}
+.big u.good{color:var(--green);border-color:var(--green)}
+.big u.bad{color:var(--red);border-color:var(--red);animation:shake .35s}
+.hint{margin-top:8px;text-align:center;font:700 17px var(--body);color:var(--mute)}
+.row{display:flex;justify-content:center;gap:10px;margin-top:14px;flex-wrap:wrap}
+.btn{border:0;border-radius:16px;min-height:52px;padding:0 22px;font-size:21px;color:#fff;background:var(--orange);box-shadow:0 5px 0 #a5450a}
+.btn:active{transform:translateY(2px)}
+.btn.alt{background:#fff;color:var(--blue);box-shadow:0 4px 0 var(--line)}
+.btn.small{min-height:46px;font-size:18px;padding:0 14px}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+
+/* the blocks */
+.stage{position:relative;margin:10px auto 0;width:100%;transition:height .35s;user-select:none;-webkit-user-select:none}
+.b{position:absolute;left:0;top:0;border-radius:22%;transition:transform .6s cubic-bezier(.3,1.1,.4,1),background .3s,opacity .35s;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18),inset 0 2px 0 rgba(255,255,255,.35)}
+.b.c0{background:var(--b0)} .b.c1{background:var(--b1)} .b.c2{background:var(--b2)}
+.b.ghost{background:transparent;box-shadow:none;border:2px dashed #b3c1d1}
+.b.pop{animation:pop .4s ease backwards}
+.b.out{opacity:0}
+.b.mv{cursor:grab;touch-action:none;animation:nudge 1.2s ease-in-out infinite}
+.b.drag{transition:none;animation:none;cursor:grabbing;z-index:5}
+.b.loose{cursor:grab;touch-action:none}
+.slot{position:absolute;left:0;top:0;border:2px dashed #b3c1d1;border-radius:22%}
+@keyframes pop{0%{transform:translate(var(--x),var(--y)) scale(.2)}70%{transform:translate(var(--x),var(--y)) scale(1.12)}100%{transform:translate(var(--x),var(--y)) scale(1)}}
+@keyframes nudge{50%{filter:brightness(1.18)}}
+@media (prefers-reduced-motion:reduce){.b,.stage{transition-duration:.01s}.b.pop,.b.mv,.city .rise{animation:none}}
+
+/* number pad */
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:300px;margin:12px auto 0}
+.pad button{min-height:54px;border:0;border-radius:14px;background:var(--blue-s);color:var(--blue);font-size:26px;box-shadow:0 4px 0 #a9c9ea}
+.pad button:active{transform:translateY(2px)}
+
+/* the tower */
+.climb{display:grid;grid-template-columns:1fr 62px;gap:10px;align-items:stretch}
+.tower{display:flex;flex-direction:column-reverse;align-items:center;gap:2px;background:linear-gradient(#eaf5ff,#fff);border-radius:12px;border-bottom:6px solid #c9b48a;padding:4px;min-height:240px}
+.floor{width:100%;height:13px;border-radius:4px;animation:drop .45s cubic-bezier(.3,1.3,.5,1) both}
+.floor.c0{background:var(--b0)} .floor.c1{background:var(--b1)} .floor.c2{background:var(--b2)}
+.floor.soft{opacity:.45}
+@keyframes drop{from{transform:translateY(-40px);opacity:0}to{transform:none;opacity:1}}
+.clock{text-align:center;font:800 22px var(--display);color:var(--blue)}
+
+/* block lab */
+.equation{text-align:center;font:800 clamp(28px,6vw,40px) var(--display);margin:4px 0}
+.labbox{position:relative;margin:10px auto 0;background-color:#f6fafe;border-radius:10px;touch-action:pan-y}
+.handle{position:absolute;width:44px;height:44px;border-radius:50%;background:#fff;border:3px solid var(--orange);color:var(--orange);display:flex;align-items:center;justify-content:center;font-size:20px;touch-action:none;cursor:nwse-resize;box-shadow:0 3px 8px rgba(0,0,0,.25);z-index:6;margin:-22px 0 0 -22px}
+.steppers{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin-top:12px}
+.stepper{display:flex;align-items:center;gap:6px;font:800 16px var(--display)}
+.stepper button{width:44px;height:44px;border:0;border-radius:12px;background:var(--blue-s);color:var(--blue);font-size:24px;box-shadow:0 3px 0 #a9c9ea}
+
+/* the times table map */
+.chartwrap{overflow-x:auto}
+.chart{border-collapse:separate;border-spacing:3px;margin:10px auto 0;width:100%;max-width:520px;table-layout:fixed}
+.chart th{font:800 15px var(--display);color:var(--mute)}
+.chart td{padding:0}
+.chart button{width:100%;aspect-ratio:1;min-height:28px;border:0;border-radius:7px;background:#e6edf5;color:var(--mute);font:800 clamp(12px,2.6vw,17px) var(--display);padding:0}
+.chart button.seen{background:var(--blue-s);color:var(--blue)}
+.chart button.known{background:var(--gold);color:#5f4500}
+.done{text-align:center}
+.done .big-e{font-size:60px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><h1>🧱 Block City</h1>
+    <button class="round" id="snd" type="button" aria-label="Read it to me again">🔊</button>
+    <button class="round" id="mute" type="button" aria-label="Turn the voice off">🗣️</button>
+    <span class="stars" id="starTotal">⭐ 0</span></div>
+  <div id="app"></div>
+</div>
+<script>
+(function () {
+  "use strict";
+  /* The block between these two marks has no page code in it: 网站\voice-lines.cjs runs it to list every sentence for recording. */
+  /*LINES-BEGIN*/
+  var RANK = [1, 2, 10, 5, 3, 4, 6, 9, 8, 7];             // the order the tables are learned, easiest move first
+  function rowsWord(n) { return n + (n === 1 ? ' row' : ' rows'); }
+  function grid(r, c, groups, extra) { var s = { r: r, c: c, groups: groups || null }; for (var k in (extra || {})) s[k] = extra[k]; return s; }
+  /* How a child can work out r rows of c from what they already know. `line` never says the final answer. */
+  function strategyFor(r, c) {
+    var v;
+    if (r === 1) return { spec: grid(1, c), line: '1 row of ' + c + ' is just ' + c + '.' };
+    if (r === 2) return { spec: grid(2, c, [{ n: 1 }, { n: 1 }]), line: '2 rows of ' + c + ': ' + c + ' + ' + c + '.' };
+    if (r === 10) return { spec: grid(c, 10), line: rowsWord(c) + ' of 10 is ' + c + (c === 1 ? ' ten.' : ' tens.') };
+    if (r === 3) { v = 2 * c; return { spec: grid(3, c, [{ n: 2 }, { n: 1 }]), line: '2 rows of ' + c + ' is ' + v + '. Add one more row of ' + c + '.' }; }
+    if (r === 4) { v = 2 * c; return { spec: grid(4, c, [{ n: 2 }, { n: 2 }]), line: '2 rows of ' + c + ' is ' + v + '. Double it.' }; }
+    if (r === 5) { v = 10 * c; return { spec: grid(10, c, [{ n: 5 }, { n: 5, ghost: true }]), line: '10 rows of ' + c + ' is ' + v + '. You need half of that.' }; }
+    if (r === 6) { v = 5 * c; return { spec: grid(6, c, [{ n: 5 }, { n: 1 }]), line: '5 rows of ' + c + ' is ' + v + '. Add one more row of ' + c + '.' }; }
+    if (r === 7) { v = 5 * c; return { spec: grid(7, c, [{ n: 5 }, { n: 2 }]), line: '5 rows of ' + c + ' is ' + v + '. 2 more rows is ' + (2 * c) + '. Put them together.' }; }
+    if (r === 8) { v = 4 * c; return { spec: grid(8, c, [{ n: 4 }, { n: 4 }]), line: '4 rows of ' + c + ' is ' + v + '. Double it.' }; }
+    v = 10 * c;
+    return { spec: grid(10, c, [{ n: 9 }, { n: 1, ghost: true }]), line: '10 rows of ' + c + ' is ' + v + '. Take away one row of ' + c + '.' };
+  }
+  function strategy(a, b) {
+    var r, c, turned;
+    if (a === 1 || b === 1) { r = 1; c = a === 1 ? b : a; turned = a !== 1; }
+    else if (a === 10 || b === 10) { c = a === 10 ? b : a; return { spec: grid(c, 10), line: (a === 10 && b !== 10 ? 'Turn it: ' + c + ' × 10 is the same. ' : '') + strategyFor(10, c).line }; }
+    else { r = RANK.indexOf(a) <= RANK.indexOf(b) ? a : b; c = r === a ? b : a; turned = a !== r; }
+    var s = strategyFor(r, c);
+    return { spec: s.spec, line: (turned ? 'Turn it: ' + r + ' × ' + c + ' is the same. ' : '') + s.line };
+  }
+  function qLine(a, b) { return a + ' × ' + b + ' = ?'; }
+  function aLine(a, b) { return a + ' × ' + b + ' = ' + (a * b); }
+  function countHint(c) { return 'Count by ' + c + '.'; }
+  function knownLine(k, c) { return rowsWord(k) + ' of ' + c + ' is how many?'; }
+  function looseLine(r, c) { return 'Put the blocks in ' + rowsWord(r) + ' of ' + c + '. Drag them, or tap them.'; }
+  function turnLine(r, c) { return r + ' × ' + c + ' is the same. How many blocks?'; }
+  function doneLine(lv, n) { return 'Level ' + (lv + 1) + ' done! ' + n + (n === 1 ? ' star. ' : ' stars. ') + (n === 3 ? 'Your building is the tallest it can be!' : 'A new building for your city! Climb again to make it taller.'); }
+  var SAY = {
+    home: 'Pick a level. The orange one is next.',
+    hub: 'First watch the blocks. Then build it yourself. Then climb the tower.',
+    watched: 'Now it is your turn to move the blocks.',
+    built: 'Great building! Now climb the tower.',
+    moveRow: 'Drag the new row onto the blocks.',
+    moveRows: 'Drag the new rows onto the blocks.',
+    awayRow: 'Drag one row away.',
+    awayHalf: 'Drag half of the rows away.',
+    turn: 'Turn the blocks!',
+    howMany: 'How many blocks?',
+    notYet: 'Not yet. Look at the blocks.',
+    lab: 'Drag the round handle to change the blocks. Then turn them, or split them.',
+    map: 'Gold squares are the ones you know by heart. Tap any square to see its blocks.',
+    quick: 'Quick Climb done! Try to beat your own time.'
+  };
+  var LEVELS = [
+    { name: 'Equal Rows', goal: 'What × means', blurb: '3 × 4 means 3 rows of 4 blocks. Move loose blocks into rows.',
+      loose: [[2, 3], [2, 4], [3, 4]],
+      facts: [[1, 4], [1, 6], [2, 3], [2, 5], [3, 2], [3, 4], [2, 4], [3, 3], [1, 8], [3, 5], [2, 2], [2, 6]],
+      demo: [
+        { spec: { scatter: 12 }, say: 'Here are 12 blocks in a messy pile. Counting them one by one is slow.' },
+        { spec: grid(3, 4, null, { byIndex: true }), say: 'Let us line them up: 3 rows, with 4 blocks in each row.' },
+        { spec: grid(3, 4, null, { byIndex: true }), say: 'That is what 3 × 4 means: 3 rows of 4. Count by rows: 4, 8, 12. 3 × 4 = 12.' },
+        { spec: grid(2, 6, null, { byIndex: true }), say: 'The same 12 blocks can move again: 2 rows of 6. 2 × 6 = 12.' },
+        { spec: grid(1, 5, null, { byIndex: true }), say: 'Just 1 row of 5? 1 × 5 = 5. One row is the easiest of all.' }
+      ] },
+    { name: 'Double Rows', goal: 'The 2 times table', table: 2, blurb: 'Two rows are always a double. 2 × 7 is 7 + 7.',
+      rounds: [[2, 3], [2, 6], [2, 8]],
+      demo: [
+        { spec: grid(1, 7), say: 'Here is 1 row of 7.' },
+        { spec: grid(2, 7, [{ n: 1 }, { n: 1 }]), say: 'Add a second row of 7. Now it is 2 × 7.' },
+        { spec: grid(2, 7, [{ n: 1 }, { n: 1 }]), say: '2 rows are a double: 7 + 7. 2 × 7 = 14.' },
+        { spec: grid(2, 4, [{ n: 1 }, { n: 1 }]), say: 'Try 2 rows of 4: 4 + 4. 2 × 4 = 8.' }
+      ] },
+    { name: 'Rows of Ten', goal: 'The 10 times table', table: 10, blurb: 'A row of 10 is one ten. 6 rows of 10 is 6 tens.',
+      rounds: [[10, 3], [10, 5], [10, 8]],
+      demo: [
+        { spec: grid(1, 10), say: 'One row of 10 is one ten.' },
+        { spec: grid(2, 10), say: '2 rows of 10 is 2 tens. 2 × 10 = 20.' },
+        { spec: grid(6, 10), say: '6 rows of 10 is 6 tens. 6 × 10 = 60.' }
+      ] },
+    { name: 'Turn It', goal: 'Turn the blocks around', flipLevel: true, blurb: '7 × 2 and 2 × 7 are the same blocks, turned. Now you know twice as many!',
+      turns: [[7, 2], [8, 2], [10, 6]],
+      demo: [
+        { spec: grid(3, 7), say: 'Here are 3 rows of 7. 3 × 7 = 21.' },
+        { spec: grid(3, 7, null, { flip: true }), say: 'Turn the blocks. Not one block is added or lost.' },
+        { spec: grid(3, 7, null, { flip: true }), say: 'Now it looks like 7 rows of 3. 7 × 3 = 21. The same answer!' },
+        { spec: grid(9, 2), say: '9 × 2 looks hard. It is 9 rows of 2.' },
+        { spec: grid(9, 2, null, { flip: true }), say: 'Turn it, and it is 2 rows of 9. You know that one! 2 × 9 = 18.' }
+      ] },
+    { name: 'Half of Ten', goal: 'The 5 times table', table: 5, blurb: '5 rows are half of 10 rows. 5 × 6 is half of 60.',
+      rounds: [[5, 4], [5, 7], [5, 8]],
+      demo: [
+        { spec: grid(10, 6), say: 'Here are 10 rows of 6. 10 × 6 = 60.' },
+        { spec: grid(10, 6, [{ n: 5 }, { n: 5, color: 1 }]), say: 'Split them in the middle. 5 rows on top, 5 rows below.' },
+        { spec: grid(10, 6, [{ n: 5 }, { n: 5, ghost: true }]), say: '5 rows are half of 10 rows. Half of 60 is 30. So 5 × 6 = 30.' },
+        { spec: grid(10, 3, [{ n: 5 }, { n: 5, ghost: true }]), say: 'Try 5 × 3. 10 × 3 = 30, and half of 30 is 15. So 5 × 3 = 15.' }
+      ] },
+    { name: 'One More Row', goal: 'The 3 times table', table: 3, blurb: '3 rows are 2 rows and one more. 3 × 7 is 14 and 7 more.',
+      rounds: [[3, 4], [3, 6], [3, 8]],
+      demo: [
+        { spec: grid(2, 6), say: 'You know 2 rows of 6. 2 × 6 = 12.' },
+        { spec: grid(3, 6, [{ n: 2 }, { n: 1 }]), say: 'Slide in one more row of 6. Now it is 3 rows.' },
+        { spec: grid(3, 6, [{ n: 2 }, { n: 1 }]), say: '12 and 6 more is 18. So 3 × 6 = 18.' },
+        { spec: grid(3, 8, [{ n: 2 }, { n: 1 }]), say: 'Try 3 × 8. 2 × 8 = 16, and 8 more is 24. So 3 × 8 = 24.' }
+      ] },
+    { name: 'Double Double', goal: 'The 4 times table', table: 4, blurb: '4 rows are 2 rows, doubled. 4 × 6 is 12 and 12.',
+      rounds: [[4, 6], [4, 7], [4, 8]],
+      demo: [
+        { spec: grid(2, 6), say: 'Start with 2 rows of 6. 2 × 6 = 12.' },
+        { spec: grid(4, 6, [{ n: 2 }, { n: 2 }]), say: 'Bring in 2 more rows, just the same. Now it is 4 rows.' },
+        { spec: grid(4, 6, [{ n: 2 }, { n: 2 }]), say: 'Double 12 is 24. So 4 × 6 = 24.' },
+        { spec: grid(4, 9, [{ n: 2 }, { n: 2 }]), say: 'Try 4 × 9. 2 × 9 = 18, and double 18 is 36. So 4 × 9 = 36.' }
+      ] },
+    { name: 'Five Plus One', goal: 'The 6 times table', table: 6, blurb: '6 rows are 5 rows and one more. 6 × 7 is 35 and 7 more.',
+      rounds: [[6, 4], [6, 6], [6, 8]],
+      demo: [
+        { spec: grid(5, 7), say: 'You know 5 rows of 7. 5 × 7 = 35.' },
+        { spec: grid(6, 7, [{ n: 5 }, { n: 1 }]), say: 'Slide in one more row of 7. Now it is 6 rows.' },
+        { spec: grid(6, 7, [{ n: 5 }, { n: 1 }]), say: '35 and 7 more is 42. So 6 × 7 = 42.' },
+        { spec: grid(6, 4, [{ n: 5 }, { n: 1 }]), say: 'Try 6 × 4. 5 × 4 = 20, and 4 more is 24. So 6 × 4 = 24.' }
+      ] },
+    { name: 'Ten Take One', goal: 'The 9 times table', table: 9, blurb: '9 rows are 10 rows, take away one. 9 × 6 is 60 take away 6.',
+      rounds: [[9, 3], [9, 6], [9, 8]],
+      demo: [
+        { spec: grid(10, 6), say: 'Here are 10 rows of 6. 10 × 6 = 60.' },
+        { spec: grid(10, 6, [{ n: 9 }, { n: 1, color: 1 }]), say: 'We only want 9 rows, so one row has to go.' },
+        { spec: grid(10, 6, [{ n: 9 }, { n: 1, ghost: true }]), say: '60 take away 6 is 54. So 9 × 6 = 54.' },
+        { spec: grid(10, 8, [{ n: 9 }, { n: 1, ghost: true }]), say: 'Try 9 × 8. 10 × 8 = 80, take away 8 is 72. So 9 × 8 = 72.' }
+      ] },
+    { name: 'Double the Fours', goal: 'The 8 times table', table: 8, blurb: '8 rows are 4 rows, doubled. 8 × 6 is 24 and 24.',
+      rounds: [[8, 6], [8, 7], [8, 8]],
+      demo: [
+        { spec: grid(4, 6), say: 'You know 4 rows of 6. 4 × 6 = 24.' },
+        { spec: grid(8, 6, [{ n: 4 }, { n: 4 }]), say: 'Bring in 4 more rows, just the same. Now it is 8 rows.' },
+        { spec: grid(8, 6, [{ n: 4 }, { n: 4 }]), say: 'Double 24 is 48. So 8 × 6 = 48.' },
+        { spec: grid(8, 7, [{ n: 4 }, { n: 4 }]), say: 'Try 8 × 7. 4 × 7 = 28, and double 28 is 56. So 8 × 7 = 56.' }
+      ] },
+    { name: 'Five and Two', goal: 'The 7 times table', table: 7, blurb: '7 rows are 5 rows and 2 rows. Turning means only a few are new!',
+      rounds: [[7, 6], [7, 7], [7, 8]],
+      demo: [
+        { spec: grid(5, 6), say: 'You know 5 rows of 6. 5 × 6 = 30.' },
+        { spec: grid(7, 6, [{ n: 5 }, { n: 2 }]), say: 'Bring in 2 more rows of 6. 2 × 6 = 12.' },
+        { spec: grid(7, 6, [{ n: 5 }, { n: 2 }]), say: '30 and 12 is 42. So 7 × 6 = 42.' },
+        { spec: grid(7, 8, [{ n: 5 }, { n: 2 }]), say: 'Try 7 × 8. 5 × 8 = 40, and 2 × 8 = 16. Together that is 56. So 7 × 8 = 56.' }
+      ] },
+    { name: 'The Grand Tower', goal: 'Every table, mixed', grand: true, blurb: 'All the moves, all mixed up. Pick the move you like best.',
+      demo: [
+        { spec: grid(6, 8, [{ n: 5 }, { n: 1 }]), say: 'Add a row: 6 × 8 is 5 rows and one more.' },
+        { spec: grid(4, 8, [{ n: 2 }, { n: 2 }]), say: 'Double: 4 × 8 is 2 rows, doubled.' },
+        { spec: grid(10, 8, [{ n: 9 }, { n: 1, ghost: true }]), say: 'Take away: 9 × 8 is 10 rows, take away one.' },
+        { spec: grid(3, 8, null, { flip: true }), say: 'And turn it: 8 × 3 is the same as 3 × 8. You know all the moves!' }
+      ] }
+  ];
+  /* What a level's Build step moves. keep rows stay, move rows slide in (or slide away when away is true). */
+  function plan(r, c) {
+    if (r === 2) return { keep: 1, move: 1, say: SAY.moveRow };
+    if (r === 10) return { rows: c, cols: 10, keep: c - 1, move: 1, say: SAY.moveRow };
+    if (r === 3) return { keep: 2, move: 1, ask: 2, say: SAY.moveRow };
+    if (r === 4) return { keep: 2, move: 2, ask: 2, say: SAY.moveRows };
+    if (r === 6) return { keep: 5, move: 1, ask: 5, say: SAY.moveRow };
+    if (r === 7) return { keep: 5, move: 2, ask: 5, say: SAY.moveRows };
+    if (r === 8) return { keep: 4, move: 4, ask: 4, say: SAY.moveRows };
+    if (r === 5) return { keep: 5, move: 5, ask: 10, away: true, say: SAY.awayHalf };
+    return { keep: 9, move: 1, ask: 10, away: true, say: SAY.awayRow };
+  }
+  function allLines() {
+    var out = [], a, b, k;
+    for (k in SAY) out.push(SAY[k]);
+    for (a = 1; a <= 10; a++) for (b = 1; b <= 10; b++) { out.push(qLine(a, b), aLine(a, b), strategy(a, b).line); }
+    for (a = 1; a <= 10; a++) out.push(countHint(a));
+    LEVELS.forEach(function (L, lv) {
+      L.demo.forEach(function (d) { out.push(d.say); });
+      for (var n = 1; n <= 3; n++) out.push(doneLine(lv, n));
+      (L.loose || []).forEach(function (p) { out.push(looseLine(p[0], p[1])); });
+      (L.turns || []).forEach(function (p) { out.push(turnLine(p[1], p[0])); });
+      (L.rounds || []).forEach(function (p) { var P = plan(p[0], p[1]), S = strategyFor(p[0], p[1]); out.push(S.line); if (P.ask) out.push(knownLine(P.ask, p[1])); });
+    });
+    return out;
+  }
+  /*LINES-END*/
+
+  var KEY = 'block-city.v1';
+  var app = document.getElementById('app');
+  var st = load();
+  var lastSay = '', voiceOn = true, screen = 0, keyHandler = null;
+
+  function load() { try { var s = JSON.parse(localStorage.getItem(KEY)); if (s && s.lv && s.facts) return s; } catch (e) {} return { lv: {}, facts: {} }; }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} }
+  function E(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function B(cls, text, fn) { var b = E('button', cls, text); b.type = 'button'; if (fn) b.onclick = fn; return b; }
+  function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function L(i) { return st.lv[i] || (st.lv[i] = {}); }
+  function totalStars() { var n = 0; LEVELS.forEach(function (x, i) { n += (st.lv[i] && st.lv[i].stars) || 0; }); return n; }
+  function drawStars() { document.getElementById('starTotal').textContent = '⭐ ' + totalStars(); }
+  function unlocked(i) { return i === 0 || (st.lv[i - 1] && st.lv[i - 1].stars != null); }
+  function factKey(a, b) { return Math.min(a, b) + 'x' + Math.max(a, b); }
+  function okCount(a, b) { return st.facts[factKey(a, b)] || 0; }
+  function credit(a, b) { var k = factKey(a, b); st.facts[k] = (st.facts[k] || 0) + 1; }
+  function newScreen() { screen++; keyHandler = null; hush(); app.replaceChildren(); drawStars(); window.scrollTo(0, 0); return screen; }
+  function later(fn, ms) { var s = screen; setTimeout(function () { if (s === screen) fn(); }, ms); }
+
+  /* read aloud: every line is recorded in advance (voice/<key>.mp3, made by 网站\make-voices.py). Only a line with no recording uses the device voice. */
+  var VKEYS = null, player = null, fallbackVoice = null, endTimer = 0;
+  try { fetch('voice/keys.json').then(function (r) { return r.json(); }).then(function (k) { VKEYS = {}; k.forEach(function (x) { VKEYS[x] = 1; }); }, function () {}); } catch (e) {}
+  function vkey(t) { t = String(t).replace(/＿/g, '').trim(); var h = 0x811c9dc5; for (var i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
+  function pickVoice() {
+    try {
+      var v = speechSynthesis.getVoices().filter(function (x) { return /^en(-|_)US/i.test(x.lang); });
+      var score = function (x) { return (/natural|neural|enhanced|premium/i.test(x.name) ? 4 : 0) + (/ava|jenny|aria|samantha|allison|susan|zoe|google us english/i.test(x.name) ? 2 : 0); };
+      fallbackVoice = v.sort(function (a, b) { return score(b) - score(a); })[0] || null;
+    } catch (e) {}
+  }
+  if (window.speechSynthesis) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+  function hush() { clearTimeout(endTimer); if (player) { player.onended = null; try { player.pause(); } catch (e) {} } if (window.speechSynthesis) try { speechSynthesis.cancel(); } catch (e) {} }
+  function deviceSay(t) {
+    if (!window.speechSynthesis) return;
+    try { var u = new SpeechSynthesisUtterance(t.replace(/ = \?/g, '').replace(/×/g, ' times ').replace(/=/g, ' is ').replace(/\+/g, ' plus ')); u.lang = 'en-US'; if (fallbackVoice) u.voice = fallbackVoice; u.rate = 0.88; u.pitch = 1.05; speechSynthesis.speak(u); } catch (e) {}
+  }
+  /* then (optional) runs when the sentence has finished, or after a safe wait if the sound is off or blocked */
+  function say(t, then) {
+    lastSay = t;
+    hush();
+    var once = false, s = screen, fin = function () { if (once) return; once = true; clearTimeout(endTimer); if (then && s === screen) then(); };
+    if (then) endTimer = setTimeout(fin, voiceOn ? 1000 + t.length * 95 : 900);
+    if (!voiceOn) return;
+    var k = vkey(t);
+    if (window.__sayLog) window.__sayLog.push(t);
+    if (VKEYS && VKEYS[k]) {
+      if (!player) player = new Audio();             // one player, reused, so iPad allows it to keep playing after the first tap
+      player.src = 'voice/' + k + '.mp3';
+      if (then) player.onended = fin;
+      var p = player.play(); if (p && p.catch) p.catch(function () {});   // interrupted or blocked: stay quiet (🔊 replays it) rather than switch to the device voice
+      return;
+    }
+    deviceSay(t);
+  }
+  document.getElementById('snd').onclick = function () { var v = voiceOn; voiceOn = true; say(lastSay); voiceOn = v; };
+  document.getElementById('mute').onclick = function () { voiceOn = !voiceOn; this.textContent = voiceOn ? '🗣️' : '🔇'; this.setAttribute('aria-label', voiceOn ? 'Turn the voice off' : 'Turn the voice on'); if (!voiceOn) hush(); };
+
+  /* tiny block sounds, made on the spot, so there is nothing to download */
+  var ctx = null;
+  function plop(f, len) {
+    try {
+      ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+      var o = ctx.createOscillator(), g = ctx.createGain(), t = ctx.currentTime;
+      o.type = 'triangle'; o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 0.7, t + (len || 0.12));
+      g.gain.setValueAtTime(0.16, t); g.gain.exponentialRampToValueAtTime(0.001, t + (len || 0.12));
+      o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + (len || 0.12));
+    } catch (e) {}
+  }
+  function win() { plop(520, 0.1); setTimeout(function () { plop(780, 0.16); }, 90); }
+
+  /* ---------- the block stage: blocks are kept by id, so changing the picture makes them travel ---------- */
+  var GROUP_GAP = 0.45;
+  function cellsOf(s) {
+    var out = [], i;
+    if (s.scatter) {                                     // a fixed messy pile, the same every time
+      for (i = 0; i < s.scatter; i++) out.push({ id: i, x: (i * 37 % 61) / 10, y: (i * 23 % 29) / 9, color: 0 });
+      return out;
+    }
+    var row = 0, gs = s.groups || [{ n: s.r }];
+    gs.forEach(function (g, gi) {
+      for (var k = 0; k < g.n; k++, row++) for (var j = 0; j < s.c; j++) {
+        var px = j, py = row + gi * GROUP_GAP;
+        out.push({ id: s.byIndex ? out.length : row + '-' + j, x: s.flip ? py : px, y: s.flip ? px : py, color: g.color != null ? g.color : Math.min(gi, 2), ghost: !!g.ghost });
+      }
+    });
+    return out;
+  }
+  function extent(cells) { var w = 0, h = 0; cells.forEach(function (q) { w = Math.max(w, q.x + 1); h = Math.max(h, q.y + 1); }); return { w: w, h: h }; }
+  function Stage(parent, maxH) {
+    var el = E('div', 'stage'), blocks = {}, unit = 30, ox = 0;
+    parent.appendChild(el);
+    function fit(w, h) {
+      var W = el.clientWidth || 300, H = maxH || Math.min(330, Math.max(190, window.innerHeight * 0.42));
+      unit = Math.max(12, Math.min(40, Math.floor(W / w), Math.floor(H / h)));
+      ox = Math.floor((W - w * unit) / 2);
+      el.style.height = Math.ceil(h * unit) + 'px';
+    }
+    function place(b, q) { var px = (ox + q.x * unit) + 'px', py = (q.y * unit) + 'px'; b.style.setProperty('--x', px); b.style.setProperty('--y', py); b.style.transform = 'translate(' + px + ',' + py + ')'; }
+    function style(b, q, extra) { var s = unit - Math.max(2, Math.round(unit * 0.09)); b.style.width = b.style.height = s + 'px'; b.className = 'b c' + (q.color || 0) + (q.ghost ? ' ghost' : '') + (extra || ''); }
+    return {
+      el: el,
+      /* opts.size = [w, h] keeps one block size for a whole sequence */
+      show: function (cells, opts) {
+        opts = opts || {};
+        var e = opts.size ? { w: opts.size[0], h: opts.size[1] } : extent(cells); fit(e.w, e.h);
+        var keep = {};
+        cells.forEach(function (q, n) {
+          keep[q.id] = 1;
+          var b = blocks[q.id];
+          if (!b) {
+            b = blocks[q.id] = E('div'); style(b, q, ' pop'); b.style.animationDelay = Math.min(n * 8, 200) + 'ms';
+            place(b, q); el.appendChild(b);
+          } else { style(b, q, ''); b.style.transitionDelay = Math.min(n * 7, 280) + 'ms'; place(b, q); }
+        });
+        Object.keys(blocks).forEach(function (id) {
+          if (keep[id]) return;
+          var b = blocks[id]; delete blocks[id]; b.classList.add('out'); setTimeout(function () { b.remove(); }, 400);
+        });
+      },
+      clear: function () { el.replaceChildren(); blocks = {}; },
+      /* whole groups of blocks the child slides to a target. Dragging most of the way, or a simple tap, finishes the move. */
+      movable: function (cells, targets, done) {
+        var ids = cells.map(function (q) { return q.id; }), els = ids.map(function (id) { return blocks[id]; }), down = null, finished = false;
+        var dx = targets[0].x - cells[0].x, dy = targets[0].y - cells[0].y, dist = Math.hypot(dx, dy) * unit;
+        els.forEach(function (b) { b.classList.add('mv'); b.style.transitionDelay = '0ms'; });
+        function at(ox2, oy2) { els.forEach(function (b, i) { b.style.transform = 'translate(' + (ox + cells[i].x * unit + ox2) + 'px,' + (cells[i].y * unit + oy2) + 'px)'; }); }
+        function up(ev) {
+          window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up);
+          if (!down) return;
+          var mx = ev.clientX - down.x, my = ev.clientY - down.y, along = (mx * dx * unit + my * dy * unit) / (dist * dist), small = Math.hypot(mx, my) < 8;
+          down = null; els.forEach(function (b) { b.classList.remove('drag'); });
+          if (small || along > 0.4) {
+            finished = true;
+            els.forEach(function (b, i) { b.classList.remove('mv'); place(b, targets[i]); });
+            plop(420); done();
+          } else at(0, 0);
+        }
+        function move(ev) { if (!down) return; ev.preventDefault(); at(ev.clientX - down.x, ev.clientY - down.y); }
+        el.onpointerdown = function (ev) {
+          if (finished || !ev.target.classList.contains('mv')) return;
+          ev.preventDefault(); down = { x: ev.clientX, y: ev.clientY };
+          els.forEach(function (b) { b.classList.add('drag'); });
+          window.addEventListener('pointermove', move, { passive: false }); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
+        };
+      },
+      unit: function () { return unit; }, ox: function () { return ox; },
+      place: place, get: function (id) { return blocks[id]; }
+    };
+  }
+  function sizeOf(specs) { var w = 0, h = 0; specs.forEach(function (s) { var e = extent(cellsOf(s)); w = Math.max(w, e.w); h = Math.max(h, e.h); }); return [w, h]; }
+
+  /* ---------- number pad ---------- */
+  function askNum(parent, opts) {
+    // opts: left (text before the blank), answer, hint (text), onHint(), done(firstTry)
+    var line = E('div', 'big'), blank = E('u', null, ' '), val = '', wrong = 0, locked = false, want = String(opts.answer);
+    line.appendChild(document.createTextNode(opts.left + ' = ')); line.appendChild(blank);
+    var pad = E('div', 'pad');
+    function paint(c) { blank.textContent = val || ' '; blank.className = c || ''; }
+    function press(d) {
+      if (locked) return;
+      val += d; paint();
+      if (val.length < want.length) return;
+      if (val === want) { locked = true; keyHandler = null; paint('good'); win(); opts.done(wrong === 0); return; }
+      wrong++; locked = true; plop(180, 0.2); paint('bad');
+      setTimeout(function () { val = ''; locked = false; paint(); }, 450);
+      if (opts.onWrong) opts.onWrong(wrong);
+    }
+    [1, 2, 3, 4, 5, 6, 7, 8, 9].forEach(function (d) { pad.appendChild(B(null, String(d), function () { press(String(d)); })); });
+    var del = B(null, '⌫', function () { if (!locked) { val = val.slice(0, -1); paint(); } }); del.setAttribute('aria-label', 'Delete');
+    pad.appendChild(del); pad.appendChild(B(null, '0', function () { press('0'); })); pad.appendChild(E('span'));
+    parent.appendChild(line); parent.appendChild(pad);
+    keyHandler = function (e) { if (/^[0-9]$/.test(e.key)) press(e.key); else if (e.key === 'Backspace') { if (!locked) { val = val.slice(0, -1); paint(); } } };
+    return { remove: function () { line.remove(); pad.remove(); keyHandler = null; } };
+  }
+  document.addEventListener('keydown', function (e) { if (keyHandler) keyHandler(e); });
+
+  /* ---------- the city ---------- */
+  var SHAPES = [[3, 3], [4, 3], [5, 3], [3, 5], [5, 4], [4, 5], [3, 6], [6, 3], [5, 5], [4, 6], [3, 7], [6, 6]];
+  var TONES = [['#ff8a3d', '#c95f18'], ['#3db0ff', '#1b7cc2'], ['#4fc974', '#2c8f4b'], ['#b57bff', '#7c47c9'], ['#ff6f91', '#c63f62'], ['#ffc233', '#c4900f']];
+  function citySvg(riseLv) {
+    var U = 15, GAP = 16, W = 0, H = 290, ground = 250, parts = '', x = 22;
+    LEVELS.forEach(function (lv, i) {
+      var sh = SHAPES[i], stars = st.lv[i] && st.lv[i].stars;
+      if (stars == null) {                               // an empty plot waiting for this level
+        parts += '<rect x="' + x + '" y="' + (ground - 8) + '" width="' + (sh[0] * U) + '" height="8" rx="3" fill="#b8975a" opacity=".55"/>';
+        x += sh[0] * U + GAP; return;
+      }
+      var rows = sh[1] + Math.max(0, stars - 1) * 2, tone = TONES[i % TONES.length], g = '';
+      for (var r = 0; r < rows; r++) for (var c = 0; c < sh[0]; c++) {
+        var lit = (r % 2 === 1 && c % 2 === 0);
+        g += '<rect x="' + (x + c * U) + '" y="' + (ground - (r + 1) * U) + '" width="' + (U - 2) + '" height="' + (U - 2) + '" rx="3" fill="' + (lit ? '#fff2b8' : tone[0]) + '" stroke="' + tone[1] + '"/>';
+      }
+      if (stars >= 3) g += '<path d="M' + (x + sh[0] * U / 2) + ' ' + (ground - rows * U) + 'v-20l16 7-16 7" fill="#ffcc33" stroke="#8a6400" stroke-width="2"/>';
+      parts += '<g' + (riseLv === i ? ' class="rise"' : '') + '>' + g + '</g>';
+      x += sh[0] * U + GAP;
+    });
+    W = x + 6;
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Your block city, ' + LEVELS.filter(function (l, i) { return st.lv[i] && st.lv[i].stars != null; }).length + ' of 12 buildings built">' +
+      '<rect width="' + W + '" height="' + H + '" fill="#cfeaff"/><circle cx="' + (W - 60) + '" cy="48" r="26" fill="#ffe27a" stroke="#ffc21f" stroke-width="4"/>' +
+      '<ellipse cx="170" cy="48" rx="50" ry="14" fill="#fff" opacity=".9"/><ellipse cx="560" cy="66" rx="60" ry="15" fill="#fff" opacity=".85"/>' +
+      '<rect y="' + ground + '" width="' + W + '" height="' + (H - ground) + '" fill="#8fc26b"/><rect y="' + (ground + 18) + '" width="' + W + '" height="' + (H - ground - 18) + '" fill="#d8bd8a"/>' + parts + '</svg>';
+  }
+
+  /* ---------- screens ---------- */
+  function home() {
+    newScreen();
+    var c = E('div', 'city'); c.innerHTML = citySvg(); app.appendChild(c);
+    var tools = E('div', 'tools');
+    tools.appendChild(B('tool', '🔬 Block Lab', function () { lab(4, 6); }));
+    tools.appendChild(B('tool', '🗺️ Times Table Map', map));
+    app.appendChild(tools);
+    var g = E('div', 'levels'), nextUp = -1;
+    LEVELS.forEach(function (lv, i) { if (nextUp < 0 && unlocked(i) && (!st.lv[i] || st.lv[i].stars == null)) nextUp = i; });
+    LEVELS.forEach(function (lv, i) {
+      var b = B('lv' + (i === nextUp ? ' now' : ''), null, function () { hub(i); }); b.disabled = !unlocked(i);
+      b.appendChild(E('b', null, (i + 1) + ' · ' + lv.name));
+      b.appendChild(E('span', null, lv.goal + '. ' + lv.blurb));
+      var s = st.lv[i] && st.lv[i].stars;
+      b.appendChild(E('i', null, s != null ? '⭐'.repeat(Math.max(s, 0)) + (s < 3 ? '☆'.repeat(3 - s) : '') : unlocked(i) ? 'About 10 minutes' : '🔒 Finish level ' + i + ' first'));
+      g.appendChild(b);
+    });
+    app.appendChild(g);
+    var w = E('div', 'why');
+    w.innerHTML = '<b>For grown-ups:</b> a times table fact is a picture before it is a sentence: 3 × 4 is 3 rows of 4. Each level adds one block move that builds a new table from an easier one (double it, add a row, take a row away, turn it around), so children can work out any fact they forget instead of guessing. The tower then moves those facts into memory, with earlier tables mixed back in. Ask your child to show you how they knew an answer.';
+    app.appendChild(w);
+    lastSay = SAY.home;
+  }
+
+  function bar(lv, title, onBack, extra) {
+    var b = E('div', 'bar');
+    b.appendChild(B('back', '← Back', onBack));
+    b.appendChild(E('b', null, title));
+    if (extra) b.appendChild(extra);
+    app.appendChild(b);
+  }
+
+  function hub(lv) {
+    newScreen();
+    var d = LEVELS[lv], s = L(lv);
+    bar(lv, 'Level ' + (lv + 1) + ' · ' + d.name, home);
+    var p = E('div', 'panel');
+    p.appendChild(E('h2', null, d.goal));
+    p.appendChild(E('p', 'goal', d.blurb));
+    var steps = E('div', 'steps');
+    function step(icon, name, sub, open, fn, isNext) {
+      var b = B('step' + (isNext ? ' next' : ''), null, fn); b.disabled = !open;
+      b.appendChild(E('em', null, icon));
+      var t = E('div'); t.appendChild(E('b', null, name)); t.appendChild(E('small', null, sub)); b.appendChild(t);
+      steps.appendChild(b);
+    }
+    var hasBuild = !d.grand;
+    var towerOpen = !!s.watched && (!hasBuild || !!s.built);
+    step('👀', '1. Watch the blocks', s.watched ? '✓ Watch again any time' : 'See how the blocks move', true, function () { watch(lv); }, !s.watched);
+    if (hasBuild) step('🧱', '2. Build it', s.built ? '✓ Build it again any time' : s.watched ? 'Move the blocks yourself' : '🔒 Watch first', !!s.watched, function () { build(lv); }, !!s.watched && !s.built);
+    step('🏗️', (hasBuild ? '3' : '2') + '. Climb the tower', s.stars != null ? 'Best: ' + '⭐'.repeat(s.stars) + (s.stars === 0 ? 'try again for a star' : '') : towerOpen ? 'Answer from memory' : '🔒 ' + (hasBuild ? 'Build' : 'Watch') + ' first', towerOpen, function () { tower(lv); }, towerOpen && s.stars == null);
+    if (s.stars != null && !d.loose) step('⏱️', 'Quick Climb', s.best ? 'Your best: ' + fmt(s.best) : 'Beat your own time. Only you can win.', true, function () { quick(lv); }, false);
+    p.appendChild(steps); app.appendChild(p);
+    say(SAY.hub);
+  }
+  function fmt(ms) { var t = Math.round(ms / 1000), m = Math.floor(t / 60), x = t % 60; return m + ':' + (x < 10 ? '0' : '') + x; }
+
+  /* 1. Watch: the blocks move on their own, one tap at a time, like a film the child controls */
+  function watch(lv) {
+    newScreen();
+    var d = LEVELS[lv], i = 0, specs = d.demo.map(function (x) { return x.spec; }), size = sizeOf(specs);
+    bar(lv, '👀 Watch the blocks', function () { hub(lv); });
+    var p = E('div', 'panel'), text = E('div', 'prompt'), box = E('div'), row = E('div', 'row');
+    p.appendChild(text); p.appendChild(box); p.appendChild(row); app.appendChild(p);
+    var stage = Stage(box);
+    function draw() {
+      var x = d.demo[i];
+      text.textContent = x.say;
+      stage.show(cellsOf(x.spec), { size: size });
+      plop(360 + i * 40);
+      say(x.say);
+      row.replaceChildren();
+      if (i > 0) row.appendChild(B('btn alt', '← Back', function () { i--; draw(); }));
+      if (i < d.demo.length - 1) row.appendChild(B('btn', 'Next →', function () { i++; draw(); }));
+      else {
+        row.appendChild(B('btn alt', '↺ Watch again', function () { i = 0; stage.clear(); draw(); }));
+        row.appendChild(B('btn', d.grand ? 'Climb the tower →' : 'Build it →', function () {
+          L(lv).watched = 1; save();
+          if (d.grand) tower(lv); else build(lv);
+        }));
+      }
+    }
+    draw();
+  }
+
+  /* 2. Build: the child moves the blocks */
+  function build(lv) {
+    var d = LEVELS[lv], list = d.loose || d.turns || d.rounds, idx = 0, marks = [];
+    L(lv).watched = 1; save();
+    function next() {
+      if (idx >= list.length) {
+        L(lv).built = 1; save();
+        newScreen();
+        bar(lv, '🧱 Build it', function () { hub(lv); });
+        var p = E('div', 'panel done'); p.appendChild(E('div', 'big-e', '🧱'));
+        p.appendChild(E('h2', null, 'Great building!'));
+        var r = E('div', 'row'); r.appendChild(B('btn alt', 'Build again', function () { build(lv); }));
+        r.appendChild(B('btn', 'Climb the tower →', function () { tower(lv); })); p.appendChild(r);
+        app.appendChild(p); say(SAY.built); return;
+      }
+      var q = list[idx], cb = function (ok) { marks.push(ok); idx++; next(); };
+      newScreen();
+      var dots = E('div', 'dots'); list.forEach(function (x, i) { dots.appendChild(E('span', i < marks.length ? (marks[i] ? 'ok' : 'try') : i === idx ? 'now' : '')); });
+      bar(lv, '🧱 Build it', function () { hub(lv); }, dots);
+      var p = E('div', 'panel'); app.appendChild(p);
+      if (d.loose) looseRound(p, q[0], q[1], cb);
+      else if (d.turns) turnRound(p, q[0], q[1], cb);
+      else moveRound(p, q[0], q[1], cb);
+    }
+    next();
+  }
+  /* level 1: every block is moved by hand into an empty space (or tapped, and it flies to the next space) */
+  function looseRound(p, r, c, cb) {
+    var text = E('div', 'prompt', looseLine(r, c)); p.appendChild(text);
+    var box = E('div'); p.appendChild(box);
+    var stage = Stage(box, 340), n = r * c, cellsTarget = cellsOf(grid(r, c, null, { byIndex: true }));
+    var pile = cellsOf({ scatter: n }).map(function (q) { return { id: q.id, x: q.x * Math.max(c, 5) / 6.1, y: r + 0.7 + q.y * 0.75, color: 0 }; });
+    var W = Math.max(c, 5) + 1, H = r + 0.7 + 3;
+    var offsetX = (W - c) / 2;
+    var slots = cellsTarget.map(function (q) { return { x: q.x + offsetX, y: q.y, used: false }; });
+    stage.show(pile, { size: [W, H] });
+    var unit = stage.unit(), ox = stage.ox();
+    slots.forEach(function (s) { var e = E('div', 'slot'); var z = unit - Math.max(2, Math.round(unit * 0.09)); e.style.width = e.style.height = z + 'px'; e.style.transform = 'translate(' + (ox + s.x * unit) + 'px,' + (s.y * unit) + 'px)'; stage.el.insertBefore(e, stage.el.firstChild); });
+    var placed = 0, down = null;
+    pile.forEach(function (q) { var b = stage.get(q.id); b.classList.add('loose'); q.home = { x: q.x, y: q.y }; });
+    function settle(q, slot) {
+      slot.used = true; q.done = true; var b = stage.get(q.id); b.classList.remove('loose', 'drag'); b.style.zIndex = '';
+      b.style.transitionDelay = '0ms'; stage.place(b, { x: slot.x, y: slot.y }); plop(380 + placed * 12); placed++;
+      if (placed === n) {
+        stage.el.onpointerdown = null;
+        text.textContent = SAY.howMany; say(SAY.howMany);
+        var a = askNum(p, { left: r + ' × ' + c, answer: n, onWrong: function () { hintLine.textContent = countHint(c); say(countHint(c)); }, done: function (first) { later(function () { a.remove(); say(aLine(r, c), function () { later(function () { cb(first); }, 250); }); text.textContent = aLine(r, c); }, 300); } });
+        var hintLine = E('div', 'hint'); p.appendChild(hintLine);
+      }
+    }
+    function nearest(x, y) { var best = null, bd = 1e9; slots.forEach(function (s) { if (s.used) return; var dd = Math.hypot(s.x - x, s.y - y); if (dd < bd) { bd = dd; best = s; } }); return { s: best, d: bd }; }
+    stage.el.onpointerdown = function (ev) {
+      var t = ev.target; if (!t.classList.contains('loose')) return;
+      var q = pile.filter(function (v) { return stage.get(v.id) === t; })[0]; if (!q) return;
+      ev.preventDefault(); down = { q: q, x: ev.clientX, y: ev.clientY, b: t };
+      t.classList.add('drag'); t.style.zIndex = 5;
+      window.addEventListener('pointermove', move, { passive: false }); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
+    };
+    function move(ev) { if (!down) return; ev.preventDefault(); var q = down.q; down.b.style.transform = 'translate(' + (ox + q.x * unit + ev.clientX - down.x) + 'px,' + (q.y * unit + ev.clientY - down.y) + 'px)'; }
+    function up(ev) {
+      window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up);
+      if (!down) return;
+      var q = down.q, mx = ev.clientX - down.x, my = ev.clientY - down.y, b = down.b; down = null;
+      if (Math.hypot(mx, my) < 8) { var free = slots.filter(function (s) { return !s.used; })[0]; settle(q, free); return; }   // a tap: next empty space
+      var nx = q.x + mx / unit, ny = q.y + my / unit, f = nearest(nx, ny);
+      if (f.s && f.d < 1.1) settle(q, f.s);
+      else { b.classList.remove('drag'); b.style.zIndex = ''; stage.place(b, q); }
+    }
+  }
+  /* "Turn It": turn the blocks to reach the easier fact */
+  function turnRound(p, a, b, cb) {
+    var text = E('div', 'prompt', qLine(a, b) + ' ' + SAY.turn); p.appendChild(text);
+    var box = E('div'); p.appendChild(box);
+    var stage = Stage(box), plain = grid(a, b), turned = grid(a, b, null, { flip: true }), size = sizeOf([plain, turned]);
+    stage.show(cellsOf(plain), { size: size });
+    say(SAY.turn);
+    var row = E('div', 'row'); p.appendChild(row);
+    row.appendChild(B('btn', '🔄 Turn the blocks', function () {
+      row.remove(); stage.show(cellsOf(turned), { size: size }); plop(420);
+      var t = turnLine(b, a); text.textContent = t; say(t);
+      var hintLine = E('div', 'hint'); p.appendChild(hintLine);
+      var ask = askNum(p, { left: b + ' × ' + a, answer: a * b, onWrong: function () { var h = strategy(b, a).line; hintLine.textContent = h; say(h); }, done: function (first) {
+        later(function () { var t2 = aLine(a, b); text.textContent = t2; say(t2, function () { later(function () { cb(first); }, 250); }); ask.remove(); hintLine.remove(); }, 300);
+      } });
+    }));
+  }
+  /* every other level: slide whole rows, the block move this level teaches */
+  function moveRound(p, r, c, cb) {
+    var P = plan(r, c), rows = P.rows || (P.away ? 10 : r), cols = P.cols || c, wholeLeft = r === 10 ? c + ' × 10' : r + ' × ' + c;
+    var S = strategyFor(r, c), first = true;
+    var text = E('div', 'prompt', wholeLeft + ' = ?'); p.appendChild(text);
+    var box = E('div'); p.appendChild(box);
+    var stage = Stage(box);
+    var cells = [], rest = [], target = [], keepN = P.keep, off = P.away ? 1.5 : P.move + 0.8;
+    for (var y = 0; y < rows; y++) for (var x = 0; x < cols; x++) {
+      if (y < keepN) { cells.push({ id: y + '-' + x, x: x, y: y, color: 0 }); continue; }
+      var home = { id: y + '-' + x, x: x, y: P.away ? y + 0.45 : y + off, color: 1 };
+      var goal = { id: y + '-' + x, x: x, y: P.away ? y + 0.45 + off : y + 0.45, color: 1 };
+      cells.push(home); rest.push(home); target.push(goal);
+    }
+    var size = [cols, rows + off + 0.45];
+    stage.show(cells, { size: size });
+    var hintLine = E('div', 'hint');
+    function total() {
+      var left = wholeLeft, ans = r === 10 ? c * 10 : r * c;
+      var t = qLine(r === 10 ? c : r, r === 10 ? 10 : c); text.textContent = S.line; say(t);
+      p.appendChild(hintLine);
+      var ask = askNum(p, { left: left, answer: ans, onWrong: function () { first = false; hintLine.textContent = S.line; say(S.line); }, done: function (ok) {
+        later(function () { var t2 = r === 10 ? aLine(c, 10) : aLine(r, c); text.textContent = t2; ask.remove(); hintLine.remove(); say(t2, function () { later(function () { cb(first && ok); }, 250); }); }, 300);
+      } });
+    }
+    function drag() {
+      text.textContent = P.say; say(P.say);
+      stage.movable(rest, target, function () {
+        if (P.away) later(function () { rest.forEach(function (q) { var b = stage.get(q.id); if (b) b.classList.add('out'); }); }, 500);
+        later(total, 650);
+      });
+    }
+    if (P.ask) {
+      var kq = knownLine(P.ask, c); text.textContent = kq; say(kq);
+      p.appendChild(hintLine);
+      var ask = askNum(p, { left: rowsWord(P.ask) + ' of ' + c, answer: P.ask * c, onWrong: function () { first = false; hintLine.textContent = countHint(c); say(countHint(c)); }, done: function () {
+        later(function () { ask.remove(); hintLine.remove(); hintLine.textContent = ''; drag(); }, 500);
+      } });
+    } else drag();
+  }
+
+  /* 3. The tower: from memory. Wrong or helped facts come back later in the climb. */
+  function poolFor(lv) {
+    var d = LEVELS[lv], out = [], b;
+    if (d.facts) return d.facts.map(function (x) { return [x[0], x[1]]; });
+    var flips = lv >= 3;
+    function pushFact(t, n) { out.push(flips && Math.random() < 0.5 ? [n, t] : [t, n]); }
+    if (d.flipLevel) { shuffle([2, 3, 4, 5, 6, 7, 8, 9]).slice(0, 6).forEach(function (n) { out.push([n, 2]); }); shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]).slice(0, 2).forEach(function (n) { out.push([n, 10]); }); }
+    else if (d.table === 10) { for (b = 2; b <= 9; b++) out.push([b, 10]); }
+    else if (d.table) { for (b = 2; b <= 9; b++) pushFact(d.table, b); }
+    else {                                               // the grand tower: every pair, the ones not yet known first
+      var all = []; for (var a = 2; a <= 9; a++) for (b = a; b <= 9; b++) all.push(Math.random() < 0.5 ? [a, b] : [b, a]);
+      shuffle(all).sort(function (x, y) { return okCount(x[0], x[1]) - okCount(y[0], y[1]); });
+      return all.slice(0, 20);
+    }
+    return shuffle(out);
+  }
+  function reviewFor(lv, have, n) {
+    var seen = {}, known = [], i, a, b; have.forEach(function (x) { seen[factKey(x[0], x[1])] = 1; });
+    for (i = 1; i < lv; i++) {
+      var d = LEVELS[i], t = d.table; if (!t || t === 10) continue;
+      for (b = 2; b <= 9; b++) { if (!seen[factKey(t, b)]) { seen[factKey(t, b)] = 1; known.push(lv >= 3 && Math.random() < 0.5 ? [b, t] : [t, b]); } }
+    }
+    shuffle(known).sort(function (x, y) { return okCount(x[0], x[1]) - okCount(y[0], y[1]); });
+    return known.slice(0, n);
+  }
+  function factsFor(lv) { var p = poolFor(lv); return lv > 1 && !LEVELS[lv].grand ? shuffle(p.concat(reviewFor(lv, p, 12 - p.length > 0 ? 12 - p.length : 4))) : p; }
+  function floorsFor(n, tower) { var f = E('div', 'floor c' + (n % 3)); tower.appendChild(f); return f; }
+
+  function tower(lv) {
+    newScreen();
+    var d = LEVELS[lv], facts = factsFor(lv), total = facts.length, idx = 0, firstRight = 0, tries = {};
+    var dots = E('div', 'dots'); bar(lv, '🏗️ Climb the tower', function () { hub(lv); }, dots);
+    var p = E('div', 'panel'), climb = E('div', 'climb'), left = E('div'), tw = E('div', 'tower');
+    climb.appendChild(left); climb.appendChild(tw); p.appendChild(climb); app.appendChild(p);
+    var marks = [];
+    function paintDots() { dots.replaceChildren(); for (var i = 0; i < total; i++) dots.appendChild(E('span', i < marks.length ? (marks[i] ? 'ok' : 'try') : i === marks.length ? 'now' : '')); }
+    function ask() {
+      if (idx >= facts.length) return finish();
+      paintDots(); left.replaceChildren();
+      var f = facts[idx], a = f[0], b = f[1], key = a + 'x' + b, again = tries[key], usedHelp = false;
+      var picBox = E('div'); left.appendChild(picBox);
+      var stage = null;
+      var showPic = !!d.loose || marks.length < 3 && !LEVELS[lv].grand;
+      function pic(spec) { if (!stage) stage = Stage(picBox, 200); stage.show(cellsOf(spec)); }
+      if (showPic) pic(grid(a, b));
+      var hintLine = E('div', 'hint');
+      var q = askNum(left, { left: a + ' × ' + b, answer: a * b, onWrong: function () { usedHelp = true; help(); }, done: function (ok) {
+        var clean = ok && !usedHelp && !again;
+        q.remove(); helpBtn.remove(); hintLine.remove();
+        var c = E('div', 'big'); c.textContent = aLine(a, b); left.appendChild(c);
+        floorsFor(marks.length, tw).className += clean ? '' : ' soft';
+        if (clean) { firstRight++; if (!d.loose || a === 1 || b === 1) credit(a, b); }
+        else if (!again) { facts.push([a, b]); }                                      // it comes back once, later in the climb
+        if (!again) marks.push(clean);
+        tries[key] = (tries[key] || 0) + 1;
+        save();
+        idx++;
+        say(aLine(a, b), function () { later(ask, 200); });
+      } });
+      var helpBtn = B('btn alt small', '💡 Show me the blocks', function () { usedHelp = true; help(); helpBtn.disabled = true; });
+      var row = E('div', 'row'); row.appendChild(helpBtn); left.appendChild(row); left.appendChild(hintLine);
+      function help() { var s = strategy(a, b); pic(s.spec); hintLine.textContent = s.line; say(s.line); }
+      say(qLine(a, b));
+    }
+    function finish() {
+      var n = firstRight, stars = n >= Math.ceil(total * 0.9) ? 3 : n >= Math.ceil(total * 0.65) ? 2 : 1;
+      var was = L(lv).stars;
+      L(lv).stars = Math.max(was || 0, stars); save(); newScreen();
+      bar(lv, 'Level ' + (lv + 1) + ' · ' + d.name, function () { hub(lv); });
+      var c = E('div', 'city'); c.innerHTML = citySvg(lv); app.appendChild(c);
+      var s = E('div', 'panel done');
+      s.appendChild(E('h2', null, 'Level ' + (lv + 1) + ' done! ' + '⭐'.repeat(stars) + '☆'.repeat(3 - stars)));
+      s.appendChild(E('p', 'hint', n + ' of ' + total + ' right the first time.'));
+      var r = E('div', 'row');
+      r.appendChild(B('btn alt', 'Climb again', function () { tower(lv); }));
+      if (lv < LEVELS.length - 1) r.appendChild(B('btn', 'Level ' + (lv + 2) + ' →', function () { hub(lv + 1); }));
+      r.appendChild(B('btn alt', 'My city', home));
+      s.appendChild(r); app.appendChild(s);
+      win(); say(doneLine(lv, stars));
+    }
+    ask();
+  }
+
+  /* Quick Climb: the same facts, no pictures, against your own best time only. Wrong answers just try again. */
+  function quick(lv) {
+    newScreen();
+    var d = LEVELS[lv], facts = shuffle(factsFor(lv)).slice(0, 12), idx = 0, start = Date.now();
+    var clock = E('span', 'clock', '0:00'); bar(lv, '⏱️ Quick Climb', function () { hub(lv); }, clock);
+    var p = E('div', 'panel'), climb = E('div', 'climb'), left = E('div'), tw = E('div', 'tower');
+    climb.appendChild(left); climb.appendChild(tw); p.appendChild(climb); app.appendChild(p);
+    var s0 = screen, tick = setInterval(function () { if (s0 !== screen) return clearInterval(tick); clock.textContent = fmt(Date.now() - start); }, 500);
+    function ask() {
+      if (idx >= facts.length) return finish();
+      left.replaceChildren();
+      var f = facts[idx], clean = true;
+      askNum(left, { left: f[0] + ' × ' + f[1], answer: f[0] * f[1], onWrong: function () { clean = false; }, done: function () {
+        if (clean) credit(f[0], f[1]); save();
+        floorsFor(idx, tw); idx++; later(ask, 220);
+      } });
+    }
+    function finish() {
+      var ms = Date.now() - start, s = L(lv), beat = !s.best || ms < s.best;
+      if (beat) s.best = ms; save(); newScreen();
+      bar(lv, '⏱️ Quick Climb', function () { hub(lv); });
+      var e = E('div', 'panel done'); e.appendChild(E('div', 'big-e', beat ? '🏆' : '🧱'));
+      e.appendChild(E('h2', null, 'Your time: ' + fmt(ms)));
+      e.appendChild(E('p', 'hint', beat ? 'That is your best time!' : 'Your best: ' + fmt(s.best)));
+      var r = E('div', 'row'); r.appendChild(B('btn', 'Go again', function () { quick(lv); })); r.appendChild(B('btn alt', 'Back', function () { hub(lv); }));
+      e.appendChild(r); app.appendChild(e); say(SAY.quick);
+    }
+    ask();
+  }
+
+  /* Block Lab: free play with any fact from 1 × 1 to 10 × 10 */
+  function lab(a0, b0) {
+    newScreen();
+    var a = a0, b = b0, split = false;
+    bar(0, '🔬 Block Lab', home);
+    var p = E('div', 'panel'), eq = E('div', 'equation'), text = E('div', 'hint'); text.textContent = SAY.lab;
+    p.appendChild(eq); p.appendChild(text);
+    var W = Math.min((app.clientWidth || 340) - 64, 420), unit = Math.floor(W / 10), SIDE = unit * 10;
+    var box = E('div', 'labbox'); box.style.width = SIDE + 'px'; box.style.height = SIDE + 'px';
+    box.style.backgroundImage = 'linear-gradient(#dfe9f3 1px,transparent 1px),linear-gradient(90deg,#dfe9f3 1px,transparent 1px)'; box.style.backgroundSize = unit + 'px ' + unit + 'px';
+    p.appendChild(box); app.appendChild(p);
+    var blocks = {}, handle = E('div', 'handle', '⤡'); handle.setAttribute('aria-hidden', 'true'); box.appendChild(handle);
+    function paint() {
+      eq.textContent = aLine(a, b);
+      var cells;
+      if (split) { var s = strategy(a, b); cells = cellsOf(s.spec); text.textContent = s.line; }
+      else { cells = cellsOf(grid(a, b)); }
+      var keep = {}, sz = unit - 2, sc = 1;
+      var e = extent(cells); sc = Math.min(1, 10 / e.w, 10 / e.h);
+      cells.forEach(function (q) {
+        keep[q.id] = 1; var el = blocks[q.id];
+        if (!el) { el = blocks[q.id] = E('div'); box.insertBefore(el, handle); }
+        el.className = 'b c' + (q.color || 0) + (q.ghost ? ' ghost' : '');
+        el.style.width = el.style.height = Math.floor(sz * sc) + 'px';
+        el.style.transform = 'translate(' + (q.x * unit * sc + 1) + 'px,' + (q.y * unit * sc + 1) + 'px)';
+      });
+      Object.keys(blocks).forEach(function (id) { if (!keep[id]) { blocks[id].remove(); delete blocks[id]; } });
+      handle.style.left = (b * unit) + 'px'; handle.style.top = (a * unit) + 'px'; handle.style.display = split ? 'none' : 'flex';
+    }
+    function setFact(na, nb, quiet) {
+      na = Math.max(1, Math.min(10, na)); nb = Math.max(1, Math.min(10, nb));
+      var changed = na !== a || nb !== b; a = na; b = nb; split = false; text.textContent = SAY.lab; paint();
+      if (changed) plop(360 + a * b * 3, 0.06);
+      if (!quiet) say(aLine(a, b));
+    }
+    var dragging = false;
+    handle.onpointerdown = function (ev) { ev.preventDefault(); dragging = true; try { handle.setPointerCapture(ev.pointerId); } catch (e) {} };
+    handle.onpointermove = function (ev) { if (!dragging) return; var r = box.getBoundingClientRect(); setFact(Math.round((ev.clientY - r.top) / unit), Math.round((ev.clientX - r.left) / unit), true); };
+    handle.onpointerup = handle.onpointercancel = function () { if (dragging) { dragging = false; say(aLine(a, b)); } };
+    var steppers = E('div', 'steppers');
+    function stepper(label, get, set) {
+      var s = E('div', 'stepper');
+      var m = B(null, '−', function () { set(get() - 1); }); m.setAttribute('aria-label', 'Fewer ' + label);
+      var q = B(null, '+', function () { set(get() + 1); }); q.setAttribute('aria-label', 'More ' + label);
+      s.appendChild(m); s.appendChild(E('span', null, label)); s.appendChild(q); return s;
+    }
+    steppers.appendChild(stepper('rows', function () { return a; }, function (v) { setFact(v, b); }));
+    steppers.appendChild(stepper('in each row', function () { return b; }, function (v) { setFact(a, v); }));
+    p.appendChild(steppers);
+    var row = E('div', 'row');
+    row.appendChild(B('btn small', '🔄 Turn it', function () { var t = a; a = b; b = t; split = false; text.textContent = SAY.lab; paint(); plop(420); say(aLine(a, b)); }));
+    row.appendChild(B('btn small', '✂️ Show the trick', function () { split = !split; if (!split) text.textContent = SAY.lab; paint(); plop(420); say(split ? strategy(a, b).line : aLine(a, b)); }));
+    row.appendChild(B('btn alt small', '🗺️ Map', map));
+    p.appendChild(row);
+    paint();
+    say(SAY.lab);
+  }
+
+  /* The map: the whole table on one page, filling in with gold as facts are known */
+  function map() {
+    newScreen();
+    bar(0, '🗺️ Times Table Map', home);
+    var p = E('div', 'panel'), known = 0, seen = 0, a, b;
+    for (a = 1; a <= 9; a++) for (b = a; b <= 9; b++) { var ok = okCount(a, b); if (ok >= 3) known++; else if (ok) seen++; }
+    p.appendChild(E('h2', null, known + ' of 45 known by heart'));
+    p.appendChild(E('p', 'goal', 'A square turns gold after 3 first-time answers. 3 × 7 and 7 × 3 are the same blocks, so there are only 45 to learn, not 81.'));
+    var wrap = E('div', 'chartwrap'), t = E('table', 'chart'), head = E('tr'); head.appendChild(E('th', null, '×'));
+    for (b = 1; b <= 9; b++) head.appendChild(E('th', null, String(b)));
+    t.appendChild(head);
+    for (a = 1; a <= 9; a++) {
+      var tr = E('tr'); tr.appendChild(E('th', null, String(a)));
+      for (b = 1; b <= 9; b++) (function (x, y) {
+        var td = E('td'), n = okCount(x, y);
+        var c = B(n >= 3 ? 'known' : n ? 'seen' : '', String(x * y), function () { lab(x, y); });
+        c.setAttribute('aria-label', x + ' times ' + y + ' is ' + (x * y)); td.appendChild(c); tr.appendChild(td);
+      })(a, b);
+      t.appendChild(tr);
+    }
+    wrap.appendChild(t); p.appendChild(wrap); app.appendChild(p);
+    say(SAY.map);
+  }
+
+  home();
+})();
+</script>
+<script>(function backPill() {
+  try { if (window.parent !== window) return; } catch (e) { return; }
+  var h = '', m = /[?&]home=([^&]*)/.exec(location.search || '');
+  if (m) { try { h = decodeURIComponent(m[1]); } catch (e) { h = ''; } }
+  if (h && (!/^[A-Za-z0-9._%~/-]+$/.test(h) || h.indexOf('//') >= 0)) h = '';
+  var a = document.createElement('div');
+  a.setAttribute('style', 'position:fixed;z-index:2147483647;box-sizing:border-box;display:inline-flex;align-items:center;gap:8px');
+  if (h) {
+    var back = document.createElement('a'); back.href = h; back.textContent = '← Home';
+    back.setAttribute('style', 'box-sizing:border-box;display:inline-flex;align-items:center;min-height:44px;min-width:44px;padding:0 16px;background:#1f5f99;color:#fff;font:600 14px system-ui,sans-serif;border-radius:999px;white-space:nowrap;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.35)');
+    a.appendChild(back);
+  }
+  var upd = document.createElement('button'); upd.type = 'button';
+  upd.setAttribute('style', 'box-sizing:border-box;min-height:56px;padding:0 22px;border:3px solid #fff;background:#E8590C;color:#fff;font:800 20px system-ui,sans-serif;border-radius:999px;cursor:pointer;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,.45)');
+  a.appendChild(upd);
+  document.body.appendChild(a);
+  /* Update: get the newest copy of the site from the internet. With no internet nothing is touched, so offline games keep working.
+     Progress lives in localStorage and is never touched. Only this site's offline copies are cleared: other apps share this web address. */
+  var LABEL = '🔄 Update', busy = false, KEY = 'tmg.justUpdated';
+  upd.textContent = LABEL;
+  function say(t) { upd.textContent = t; setTimeout(function () { upd.textContent = LABEL; }, 2500); }
+  function clearOffline(base) {
+    var jobs = [];
+    if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) {
+      return Promise.all(rs.filter(function (r) { return r.scope.indexOf(location.origin + base) === 0; }).map(function (r) { return r.unregister(); }));
+    }));
+    if (window.caches) jobs.push(caches.keys().then(function (ks) {
+      return Promise.all(ks.filter(function (k) { return /^(ttc-cache-\d|rnk-roman-numeral-kingdom-|splinter-)/.test(k); }).map(function (k) { return caches.delete(k); }));
+    }));
+    return Promise.all(jobs);
+  }
+  upd.addEventListener('click', function () {
+    if (busy) return; busy = true; upd.textContent = 'Updating…';
+    var ROOT = '/ten-minute-games/', p = location.pathname, i = p.indexOf(ROOT), base = i >= 0 ? p.slice(0, i + ROOT.length) : '/';
+    function fresh(u) { return fetch(u, { cache: 'reload' }).catch(function () {}); }
+    fetch(base + 'version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error('no copy'); })
+      .then(function () { return clearOffline(base); })
+      .then(function () { return Promise.all([fresh(location.href), fresh(base + 'index.html')]); })
+      .then(function () { try { sessionStorage.setItem(KEY, '1'); } catch (e) {} location.reload(); },
+            function () { busy = false; say('No internet'); });
+  });
+  try { if (sessionStorage.getItem(KEY)) { sessionStorage.removeItem(KEY); say('Updated ✓'); } } catch (e) {}
+  /* The lessons keep their own buttons along the screen edges (Previous / Next in a footer, controls in a header), so a pill nailed to
+     one corner always sat on top of something. Keep the pill 44px tall (easy to tap) and, whenever the page layout changes, put it in
+     whichever of six edge spots does not cover a button, link or field (spots tried in this order: bottom-centre, bottom-left,
+     bottom-right, top-centre, top-left, top-right). Buttons that are always on screen (fixed or sticky) count much more than ones
+     that scroll away. It never moves while the child is just scrolling, and stays where it is as long as its spot is free. */
+  var SPOTS = ['bc', 'bl', 'br', 'tc', 'tl', 'tr'], cur = '', timer = 0;
+  var SEL = 'button,a[href],input,select,textarea,summary,label,[role=button],[role=tab],[tabindex]:not([tabindex="-1"])';
+  function put(s) {
+    var st = a.style, v = s.charAt(0) === 'b' ? 'bottom' : 'top', side = s.charAt(1);
+    st.top = st.bottom = st.left = st.right = 'auto'; st.transform = 'none';
+    st[v] = '10px'; st[v] = 'calc(10px + env(safe-area-inset-' + v + ', 0px))';
+    if (side === 'c') { st.left = '50%'; st.transform = 'translateX(-50%)'; }
+    else { var d = side === 'l' ? 'left' : 'right'; st[d] = '10px'; st[d] = 'calc(10px + env(safe-area-inset-' + d + ', 0px))'; }
+  }
+  function fixedish(e) {
+    for (var n = e; n && n.nodeType === 1; n = n.parentElement) { var p = getComputedStyle(n).position; if (p === 'fixed' || p === 'sticky') return true; }
+    return false;
+  }
+  function place() {
+    try {
+      var W = document.documentElement.clientWidth, H = window.innerHeight, items = [], all, i, j;
+      a.style.pointerEvents = 'none'; all = document.querySelectorAll(SEL);   /* (while measuring, the pill itself must not count as covering anything) */
+      for (i = 0; i < all.length; i++) {
+        var e = all[i]; if (e === a || a.contains(e) || e.querySelector(SEL)) continue;
+        var cs = getComputedStyle(e); if (cs.display === 'none' || cs.visibility === 'hidden' || cs.pointerEvents === 'none') continue;
+        var r = e.getBoundingClientRect(); if (r.width < 2 || r.height < 2 || r.bottom <= 0 || r.top >= H || r.right <= 0 || r.left >= W) continue;
+        var t = document.elementFromPoint(Math.min(Math.max(r.left + r.width / 2, 0), W - 1), Math.min(Math.max(r.top + r.height / 2, 0), H - 1));
+        if (t && !e.contains(t)) continue;   /* hidden behind something else right now (for example scrolled under the footer): not a button the pill can cover */
+        items.push({ r: r, hard: fixedish(e) });
+      }
+      var res = {};
+      SPOTS.forEach(function (s) {
+        put(s); var b = a.getBoundingClientRect(), hard = 0, soft = 0;
+        items.forEach(function (it) { var q = it.r; if (q.left < b.right - 1 && q.right > b.left + 1 && q.top < b.bottom - 1 && q.bottom > b.top + 1) { if (it.hard) hard++; else soft++; } });
+        res[s] = { hard: hard, soft: soft };
+      });
+      var best = '', c = res[cur];
+      for (j = 0; j < SPOTS.length; j++) { var x = res[SPOTS[j]]; if (!best || x.hard < res[best].hard || (x.hard === res[best].hard && x.soft < res[best].soft)) best = SPOTS[j]; }
+      if (!(c && c.hard === 0 && (c.soft === 0 || res[best].hard > 0 || res[best].soft > 0))) cur = best;
+      put(cur); a.style.pointerEvents = '';
+    } catch (e) { put(cur || 'bl'); a.style.pointerEvents = ''; }
+  }
+  function later() { clearTimeout(timer); timer = setTimeout(function () { place(); timer = setTimeout(place, 500); }, 120); }
+  put('bc'); cur = 'bc'; place();
+  window.addEventListener('resize', later); window.addEventListener('orientationchange', later); window.addEventListener('load', later);
+  try { new MutationObserver(function (ms) { for (var i = 0; i < ms.length; i++) if (!a.contains(ms[i].target)) { later(); return; } }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden', 'disabled', 'aria-hidden', 'open'] }); } catch (e) { /* no observer: the spot is only worked out at load and on resize */ }
+})()</script></body>
+</html>
