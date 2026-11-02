@@ -58,19 +58,56 @@
   }
   swap();
 
-  /* Every write a game makes is copied into the current player's store (and marked for upload when a child is playing). */
-  var dirtyTimer = 0;
+  /* Every write a game makes is copied into the current player's store. For a child, the name is also listed under `changed` until it has reached the cloud.
+     Until this page has heard from the cloud, writes only wait: a game saving as it opens must not make an out-of-date device look newest. */
+  var dirtyTimer = 0, syncing = false, waiting = {}, onHome = !!document.querySelector('meta[name="tmg-home"]');
+  if (get(P + 'dirty') === '1') {          // left by an older version of this script: everything this child has here may be unsent
+    if (current() !== GUEST) { var old = store(current()); old.changed = {}; Object.keys(old.data).forEach(function (k) { old.changed[k] = 1; }); saveStore(current(), old); }
+    del(P + 'dirty');
+  }
+  function later() { clearTimeout(dirtyTimer); dirtyTimer = setTimeout(function () { cloud.push(); }, 3000); }
   function noteWrite(k, v) {
     if (ours(k)) return;
     if (v !== null && String(v).length > MAX_VALUE) return;
     var ks = known(); if (ks.indexOf(k) < 0) { ks.push(k); W(P + 'known', ks); }
-    var id = current(), s = store(id);
+    var id = current(), s = store(id), had = Object.prototype.hasOwnProperty.call(s.data, k) ? s.data[k] : null;
+    if (had === (v === null ? null : String(v))) return;   // nothing new
     if (v === null) delete s.data[k]; else s.data[k] = String(v);
-    s.updated = Date.now(); saveStore(id, s);
-    if (id !== GUEST) { put(P + 'dirty', '1'); clearTimeout(dirtyTimer); dirtyTimer = setTimeout(function () { cloud.push(); }, 3000); }
+    if (id === GUEST) { s.updated = Date.now(); saveStore(id, s); return; }
+    if (syncing) { waiting[k] = 1; saveStore(id, s); return; }
+    (s.changed = s.changed || {})[k] = 1; s.updated = Date.now(); saveStore(id, s);
+    later();
   }
   Storage.prototype.setItem = function (k, v) { rawSet.call(this, k, v); if (this === LS) noteWrite(String(k), String(v)); };
   Storage.prototype.removeItem = function (k) { rawRemove.call(this, k); if (this === LS) noteWrite(String(k), null); };
+  /* the writes that were waiting now count as this child's changes */
+  function settle() {
+    syncing = false;
+    var ks = Object.keys(waiting), id = current(); waiting = {};
+    if (!ks.length || id === GUEST) return;
+    var s = store(id); s.changed = s.changed || {};
+    ks.forEach(function (k) { s.changed[k] = 1; });
+    s.updated = Date.now(); saveStore(id, s); later();
+  }
+  function reloadPage() {
+    try {
+      var flag = 'tmg.reloaded.' + location.pathname, last = Number(sessionStorage.getItem(flag)) || 0;
+      if (Date.now() - last > 30000) { sessionStorage.setItem(flag, String(Date.now())); location.reload(); }
+    } catch (e) {}
+  }
+  /* A child's copies on this device: progress and the reward words. */
+  function dropKid(id) {
+    del(P + 'kid.' + id);
+    var end = '.rewards.' + id;
+    Object.keys(LS).forEach(function (k) { if (k.indexOf(P) === 0 && k.slice(-end.length) === end) del(k); });
+  }
+  /* The child was removed on another device: this device lets go too, and never writes them back. */
+  function childGone(id) {
+    if (current() === id) { put(P + 'current', GUEST); swap(); }
+    dropKid(id);
+    var fam = J(P + 'family', null);
+    if (fam && fam.kids) { fam.kids = fam.kids.filter(function (k) { return k.id !== id; }); W(P + 'family', fam); }
+  }
 
   /* ---------- Firebase (loaded only when it is needed) ---------- */
   var fb = null;
@@ -89,48 +126,69 @@
   function kidsRef(f, uid) { return f.db.collection('families').doc(uid).collection('kids'); }
 
   var cloud = {
-    /* upload the current child's copy */
-    push: function () {
-      var id = current(), uid = get(P + 'uid');
-      if (id === GUEST || !uid || get(P + 'dirty') !== '1') return Promise.resolve();
-      var s = store(id), name = (J(P + 'family', { kids: [] }).kids.filter(function (k) { return k.id === id; })[0] || {}).name || 'Player';
-      if (JSON.stringify(s.data).length > 900000) return Promise.resolve();   // a Firestore document holds at most 1 MB: keep it on this device only
+    /* upload a child's copy if it has changes. true = nothing is left unsent. `update`, not `set`: it fails on a child who has been removed instead of bringing them back. */
+    push: function (id) {
+      id = id || current();
+      var uid = get(P + 'uid');
+      if (id === GUEST || !uid) return Promise.resolve(true);
+      if (syncing && id === current()) return ready.then(function () { return cloud.push(id); });
+      var s = store(id);
+      if (!Object.keys(s.changed || {}).length) return Promise.resolve(true);
+      var name = (J(P + 'family', { kids: [] }).kids.filter(function (k) { return k.id === id; })[0] || {}).name || 'Player';
+      if (JSON.stringify(s.data).length > 900000) return Promise.resolve(false);   // a Firestore document holds at most 1 MB: keep it on this device only
       return firebaseReady().then(function (f) {
-        return kidsRef(f, uid).doc(id).set({ name: name, data: s.data, updated: s.updated || Date.now() });
-      }).then(function () { if (store(id).updated === s.updated) del(P + 'dirty'); }, function () {});
+        return kidsRef(f, uid).doc(id).update({ name: name, data: s.data, updated: s.updated || Date.now() });
+      }).then(function () {
+        var now = store(id);
+        now.base = s.updated;   // the cloud now holds this version
+        if (now.updated === s.updated) now.changed = {};
+        saveStore(id, now);
+        return true;
+      }, function (e) {
+        if (e && e.code === 'not-found') { childGone(id); if (!onHome) reloadPage(); return true; }
+        return false;
+      });
     },
-    /* download the current child's copy if the cloud has a newer one; returns true when the browser's values changed */
+    /* compare with the cloud; returns true when the values in the browser changed */
     pull: function () {
       var id = current(), uid = get(P + 'uid');
       if (id === GUEST || !uid) return Promise.resolve(false);
       return firebaseReady().then(function (f) { return kidsRef(f, uid).doc(id).get(); }).then(function (doc) {
-        if (!doc.exists) return false;
-        var c = doc.data(), s = store(id);
-        if ((c.updated || 0) <= (s.updated || 0)) { if ((s.updated || 0) > (c.updated || 0)) { put(P + 'dirty', '1'); cloud.push(); } return false; }
-        saveStore(id, { data: c.data || {}, updated: c.updated });
-        var ks = known(); Object.keys(c.data || {}).forEach(function (k) { if (ks.indexOf(k) < 0) ks.push(k); }); W(P + 'known', ks);
+        if (!doc.exists) { childGone(id); return true; }
+        var c = doc.data(), s = store(id), cu = c.updated || 0, mine = s.changed || {};
+        var news = s.base != null ? cu !== s.base : cu > (s.updated || 0);   // has the cloud changed since this device last synced?
+        if (!news) {
+          if (cu < (s.updated || 0) && !Object.keys(mine).length) { s.changed = {}; Object.keys(s.data).forEach(function (k) { s.changed[k] = 1; }); saveStore(id, s); }
+          return false;
+        }
+        /* the cloud is newer: take it, keeping only what this device changed and has not sent yet */
+        var data = JSON.parse(JSON.stringify(c.data || {})), mineKeys = Object.keys(mine);
+        mineKeys.forEach(function (k) { if (Object.prototype.hasOwnProperty.call(s.data, k)) data[k] = s.data[k]; else delete data[k]; });
+        saveStore(id, { data: data, updated: mineKeys.length ? Math.max(Date.now(), cu + 1) : cu, changed: mine, base: cu });
+        waiting = {};
+        var ks = known(); Object.keys(data).forEach(function (k) { if (ks.indexOf(k) < 0) ks.push(k); }); W(P + 'known', ks);
         var changed = false;
         if ((get(P + 'owner') || GUEST) === id) ks.forEach(function (k) {
-          var want = Object.prototype.hasOwnProperty.call(c.data || {}, k) ? c.data[k] : null;
+          var want = Object.prototype.hasOwnProperty.call(data, k) ? data[k] : null;
           if (get(k) !== want) { changed = true; if (want === null) del(k); else put(k, want); }
         });
         return changed;
       }, function () { return false; });
     }
   };
+  /* hear from the cloud, then send whatever is left to send */
+  function syncNow() {
+    syncing = true;
+    setTimeout(function () { if (syncing) settle(); }, 20000);   // no answer for this long: what the child has been doing counts
+    return cloud.pull().then(function (changed) { settle(); cloud.push(); return changed; });
+  }
   window.addEventListener('pagehide', function () { cloud.push(); });
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') cloud.push(); });
 
-  /* On a game page with a child playing: fetch their newest progress; if it differs from what the game already read, reload once. */
-  var onHome = !!document.querySelector('meta[name="tmg-home"]');
+  /* On a game page with a child playing: fetch their newest progress; if it differs from what the game already read, reload. */
   var ready = Promise.resolve();
   if (get(P + 'uid') && current() !== GUEST) {
-    ready = cloud.pull().then(function (changed) {
-      if (changed && !onHome) {
-        var flag = 'tmg.reloaded.' + location.pathname;
-        try { if (!sessionStorage.getItem(flag)) { sessionStorage.setItem(flag, '1'); location.reload(); } } catch (e) {}
-      }
-    });
+    ready = syncNow().then(function (changed) { if (changed && !onHome) reloadPage(); });
   }
 
   /* ---------- the parent panel on the home page ---------- */
@@ -174,8 +232,10 @@
       return kidsRef(f, uid).get().then(function (q) {
         var kids = []; q.forEach(function (d) { kids.push({ id: d.id, name: cleanName(d.data().name) || 'Player' }); });
         kids.sort(function (a, b) { return a.name.localeCompare(b.name); });
+        var before = J(P + 'family', { kids: [] }).kids;
         W(P + 'family', { kids: kids });
         if (current() !== GUEST && !kids.some(function (k) { return k.id === current(); })) { put(P + 'current', GUEST); swap(); }
+        before.forEach(function (o) { if (!kids.some(function (k) { return k.id === o.id; })) dropKid(o.id); });
         return kids;
       });
     }
@@ -199,14 +259,14 @@
       say('Adding ' + name + '…');
       firebaseReady().then(function (f) {
         return kidsRef(f, uid).doc(id).set({ name: name, data: start.data, updated: start.updated }).then(function () { return loadFamily(f, uid); });
-      }).then(function () { saveStore(id, start); choose(id); }, function () { say('Could not add ' + name + '. Please try again.'); });
+      }).then(function () { start.base = start.updated; saveStore(id, start); choose(id); }, function () { say('Could not add ' + name + '. Please try again.'); });
     }
     function choose(id) {
       cloud.push().then(function () {
         put(P + 'current', id); swap();
         msg = id === GUEST ? 'Just looking: progress stays on this device.' : 'Now playing: ' + ((J(P + 'family', { kids: [] }).kids.filter(function (k) { return k.id === id; })[0] || {}).name || '');
         render();
-        return cloud.pull();
+        if (id !== GUEST) ready = syncNow();
       });
     }
     function removeKid() {
@@ -215,17 +275,27 @@
       var k = fam.kids.filter(function (x) { return x.name === cleanName(name); })[0]; if (!k) return;
       var uid = get(P + 'uid');
       firebaseReady().then(function (f) { return kidsRef(f, uid).doc(k.id).delete().then(function () { return loadFamily(f, uid); }); })
-        .then(function () { del(P + 'kid.' + k.id); say(k.name + ' was removed.'); }, function () { say('Could not remove ' + k.name + '. Please try again.'); });
+        .then(function () { dropKid(k.id); say(k.name + ' was removed.'); }, function () { say('Could not remove ' + k.name + '. Please try again.'); });
     }
-    /* leave this device as a guest device: the children's copies are taken off it */
-    function forgetDevice() {
+    /* leave this device as a guest device: the children's copies are taken off it. keepUnsent keeps any copy that has not reached the cloud yet. */
+    function forgetDevice(keepUnsent) {
       put(P + 'current', GUEST); swap();
-      J(P + 'family', { kids: [] }).kids.forEach(function (k) { del(P + 'kid.' + k.id); });
-      del(P + 'family'); del(P + 'uid'); del(P + 'dirty');
+      J(P + 'family', { kids: [] }).kids.forEach(function (k) {
+        if (keepUnsent && Object.keys(store(k.id).changed || {}).length) return;
+        del(P + 'kid.' + k.id);
+      });
+      if (!keepUnsent) del(P + 'family');
+      del(P + 'uid');
     }
+    /* never sign out while something has not reached the cloud: signing out takes the only copy off this device */
     function signOut() {
-      cloud.push().then(firebaseReady).then(function (f) { return f.auth.signOut(); }).then(function () { forgetDevice(); say('Signed out. This device is back to guest play.'); },
-        function () { forgetDevice(); say('Signed out on this device.'); });
+      var ids = J(P + 'family', { kids: [] }).kids.map(function (k) { return k.id; });
+      say('Saving…');
+      ready.then(function () { return Promise.all(ids.map(function (id) { return cloud.push(id); })); }).then(function (done) {
+        if (done.indexOf(false) >= 0) { say('Not signed out: some progress has not been saved yet. Check the internet and try again.'); return; }
+        return firebaseReady().then(function (f) { return f.auth.signOut(); }).then(function () { forgetDevice(); say('Signed out. This device is back to guest play.'); },
+          function () { forgetDevice(); say('Signed out on this device.'); });
+      });
     }
     function deleteAll() {
       if (!window.confirm('Delete your account, all your children and all their progress? This cannot be undone.')) return;
@@ -236,12 +306,12 @@
           .then(function () { var u = f.auth.currentUser; return u.delete().catch(function (e) {
             if (e && e.code === 'auth/requires-recent-login') return u.reauthenticateWithPopup(new window.firebase.auth.GoogleAuthProvider()).then(function () { return u.delete(); });
             throw e; }); });
-      }).then(function () { forgetDevice(); say('Your account and all its data were deleted.'); },
+      }).then(function () { var ids = J(P + 'family', { kids: [] }).kids.map(function (k) { return k.id; }); forgetDevice(); ids.forEach(dropKid); say('Your account and all its data were deleted.'); },
         function () { say('Could not finish deleting. Please sign in again and retry.'); });
     }
     /* check the sign-in is still valid (it can end on another device) */
     if (get(P + 'uid')) firebaseReady().then(function (f) { return userNow(f).then(function (u) {
-      if (!u) { forgetDevice(); render(); return; }
+      if (!u) { forgetDevice(true); render(); return; }
       return loadFamily(f, u.uid).then(render);
     }); }, function () {});
     render();
@@ -362,7 +432,7 @@ footer a{color:inherit}
 <footer><div class="wrap" id="foot"></div></footer>
 <div id="upd" hidden role="status"><span>New games are ready</span><button type="button" id="updBtn">Refresh</button></div>
 <script>
-var DATA = {"v":1793595531113,"site":{"title":"Ten-Minute Games","tagline":"","sub":"","categories":[{"id":"math","name":"Math","emoji":"🧮","color":"orange","blurb":"Games for numbers, Roman numerals and times tables."},{"id":"chinese","name":"Chinese 中文","emoji":"🏮","color":"blue","blurb":"Chinese characters, one lesson at a time: meet them, build words, use them in sentences."},{"id":"science","name":"Science and the World","emoji":"🔬","color":"green","blurb":"The human body, history mysteries and our planet."},{"id":"food","name":"Food and Health Detectives","emoji":"🕵️","color":"pink","blurb":"Reading labels and spotting what packages really say."},{"id":"steam","name":"Little STEAM Lab","emoji":"🧊","color":"purple","blurb":"Puzzles and things to build with your hands."},{"id":"money","name":"Money Smarts","emoji":"🐷","color":"teal","blurb":"Saving, interest and how money grows."}],"promises":[],"about":{"title":"Made for two kids first, then shared with yours","text":"We make these games at home for our own two curious kids, building them with AI and testing them together as we go. Now we are sharing them with yours."},"disclaimer":"For learning at home. Signing in is optional: we keep only a parent’s sign-in, the nicknames they type and the game progress."},"games":[{"id":"make-ten-express","category":"math","title":"Make Ten Express","emoji":"🚂","blurb":"Every train car holds 10. Fill the car first, then add or take away: 8 + 5 = 10 + 3. Five levels, about ten minutes each.","note":"","href":"games/make-ten/index.html?home=..%2F..%2Findex.html"},{"id":"apple-crates","category":"math","title":"Apple Crates","emoji":"🍎","blurb":"Add and take away with crates of 10 apples. Pack a full crate, open one when you need more. Nine levels, about ten minutes each.","note":"","href":"games/apple-crates/index.html?home=..%2F..%2Findex.html"},{"id":"block-city","category":"math","title":"Block City","emoji":"🧱","blurb":"See the times tables as rows of blocks, move them yourself, then climb towers to build a city. Twelve levels, about ten minutes each.","note":"","href":"games/block-city/index.html?home=..%2F..%2Findex.html"},{"id":"roman-numerals","category":"math","title":"Roman Numeral Kingdom","emoji":"🏰","blurb":"A kingdom-building game that trains Roman numerals after your child has met tens and ones. Explore, build and unlock, with short gentle checkpoints.","note":"","href":"games/roman/index.html?home=..%2F..%2Findex.html"},{"id":"times-tables","category":"math","title":"Times Tables Challenge","emoji":"✖️","blurb":"Practice the multiplication facts: 20 rounds from the easy tables to the tricky ones. Your child chases their own best time and points, never anyone else’s.","note":"","href":"games/multiplication/Multiplication.html?home=..%2F..%2Findex.html"},{"id":"dozen-galaxy","category":"math","title":"Dozen Galaxy","emoji":"🚀","blurb":"A space game for the 12 times table. Every cargo pod holds 10 blue and 2 pink crystals, so 12 × any number is easy to build: 10 of them plus 2 of them. Three short flights, with stars and badges for getting it right, never for being fast.","note":"","href":"games/multiplication/dozen-galaxy.html?home=..%2F..%2Findex.html"},{"id":"cookie-share","category":"math","title":"Cookie Share","emoji":"🍪","blurb":"Share cookies fairly, fill bags, and see how dividing undoes multiplying. Leftovers too. Eight levels, about ten minutes each.","note":"","href":"games/cookie-share/index.html?home=..%2F..%2Findex.html"},{"id":"mail-to-grandpa","category":"chinese","title":"Mail to Grandpa 寄信给爷爷","emoji":"✉️","blurb":"Learn 15 Chinese characters about letters and mail, then write and send a letter to Grandpa. Three levels, about ten minutes each.","note":"","href":"games/chinese/mail-to-grandpa.html?home=..%2F..%2Findex.html"},{"id":"vitamin-c","category":"science","title":"The Scurvy Mystery","emoji":"🍊","blurb":"Why did sailors get sick on long voyages, and why did fruit make them better? A true story that teaches fair testing.","note":"","href":"sci/vitamin-c.html?home=..%2Findex.html"},{"id":"tooth-timeline","category":"science","title":"The Tooth Timeline","emoji":"🦷","blurb":"Why did her first tooth fall out at 8 when friends lost theirs at 5? Kids learn the order of baby teeth and how much the timing can vary. Worried about timing? A dentist can check.","note":"","href":"sci/tooth-timeline.html?home=..%2Findex.html"},{"id":"continents-and-oceans","category":"science","title":"The Invisible Borders of Continents and Oceans","emoji":"🌍","blurb":"Where does one continent end and an ocean begin? Kids test the rules behind the 7 continents and 4 oceans.","note":"","href":"sci/continents-and-oceans.html?home=..%2Findex.html"},{"id":"splinter","category":"science","title":"Where Did the Splinter Go?","emoji":"🪵","blurb":"A splinter in a fingertip: a short tour of how skin renews itself and how the body's guards respond, and when a grown-up should help. Includes narrated video.","note":"","href":"sci/splinter/Splinter.html?home=..%2F..%2Findex.html"},{"id":"sugar-label-detective","category":"food","title":"The Sugar Detective","emoji":"🍬","blurb":"Is the sweetest food the one with the most sugar? Kids learn to read the nutrition label instead of trusting taste or words like \"natural\".","note":"","href":"sci/sugar-label-detective.html?home=..%2Findex.html"},{"id":"fat-label-detective","category":"food","title":"The Fat Detective","emoji":"🥑","blurb":"Not all fat is the same. Kids sort \"friendlier\" fats from \"go-easy\" fats and learn what the fat lines on a label really tell you.","note":"","href":"sci/fat-label-detective.html?home=..%2Findex.html"},{"id":"color-label-detective","category":"food","title":"The Color Detective","emoji":"🫐","blurb":"Why is a \"blue raspberry\" popsicle blue? Kids find the colour on the ingredient list and learn what the dye names mean.","note":"","href":"sci/color-label-detective.html?home=..%2Findex.html"},{"id":"warning-label-detective","category":"food","title":"The Warning Label Detective","emoji":"⚠️","blurb":"What does a California \"cancer warning\" sticker really mean? A calm look at why the label exists: the limits are set low on purpose, and the label alone cannot tell you how risky a food is.","note":"","href":"sci/warning-label-detective.html?home=..%2Findex.html"},{"id":"package-claims-detective","category":"food","title":"The Package Claims Detective","emoji":"📦","blurb":"\"Tree ripened\", \"sun-dried\", \"natural\": what does a package claim actually promise? Kids practice telling a claim from a fact. Includes a narrated video and two parts, Starter and Stretch.","note":"The explainer film loads when you press play.","href":"sci/package-claims-detective.html?home=..%2Findex.html"},{"id":"cube","category":"steam","title":"Little Cube Quest","emoji":"🧊","blurb":"Twenty guided lessons on the screen and a day-by-day plan to solve a real 2x2 and then a 3x3. Guess first, try it, check it, and learn why each move works.","note":"The voice clips load only when played.","href":"games/cube.html?home=..%2Findex.html"},{"id":"travel-piggy-bank","category":"money","title":"The Travel Piggy Bank","emoji":"🐷","blurb":"How does interest earn interest? Kids watch a travel piggy bank grow and discover compounding, with no percentages needed at first.","note":"","href":"sci/travel-piggy-bank.html?home=..%2Findex.html"}]};
+var DATA = {"v":1793623210907,"site":{"title":"Ten-Minute Games","tagline":"","sub":"","categories":[{"id":"math","name":"Math","emoji":"🧮","color":"orange","blurb":"Games for numbers, Roman numerals and times tables."},{"id":"chinese","name":"Chinese 中文","emoji":"🏮","color":"blue","blurb":"Chinese characters, one lesson at a time: meet them, build words, use them in sentences."},{"id":"science","name":"Science and the World","emoji":"🔬","color":"green","blurb":"The human body, history mysteries and our planet."},{"id":"food","name":"Food and Health Detectives","emoji":"🕵️","color":"pink","blurb":"Reading labels and spotting what packages really say."},{"id":"steam","name":"Little STEAM Lab","emoji":"🧊","color":"purple","blurb":"Puzzles and things to build with your hands."},{"id":"money","name":"Money Smarts","emoji":"🐷","color":"teal","blurb":"Saving, interest and how money grows."}],"promises":[],"about":{"title":"Made for two kids first, then shared with yours","text":"We make these games at home for our own two curious kids, building them with AI and testing them together as we go. Now we are sharing them with yours."},"disclaimer":"For learning at home. Signing in is optional: we keep only a parent’s sign-in, the nicknames they type and the game progress."},"games":[{"id":"make-ten-express","category":"math","title":"Make Ten Express","emoji":"🚂","blurb":"Every train car holds 10. Fill the car first, then add or take away: 8 + 5 = 10 + 3. Five levels, about ten minutes each.","note":"","href":"games/make-ten/index.html?home=..%2F..%2Findex.html"},{"id":"apple-crates","category":"math","title":"Apple Crates","emoji":"🍎","blurb":"Add and take away with crates of 10 apples. Pack a full crate, open one when you need more. Nine levels, about ten minutes each.","note":"","href":"games/apple-crates/index.html?home=..%2F..%2Findex.html"},{"id":"block-city","category":"math","title":"Block City","emoji":"🧱","blurb":"See the times tables as rows of blocks, move them yourself, then climb towers to build a city. Twelve levels, about ten minutes each.","note":"","href":"games/block-city/index.html?home=..%2F..%2Findex.html"},{"id":"roman-numerals","category":"math","title":"Roman Numeral Kingdom","emoji":"🏰","blurb":"A kingdom-building game that trains Roman numerals after your child has met tens and ones. Explore, build and unlock, with short gentle checkpoints.","note":"","href":"games/roman/index.html?home=..%2F..%2Findex.html"},{"id":"times-tables","category":"math","title":"Times Tables Challenge","emoji":"✖️","blurb":"Practice the multiplication facts: 20 rounds from the easy tables to the tricky ones. Your child chases their own best time and points, never anyone else’s.","note":"","href":"games/multiplication/Multiplication.html?home=..%2F..%2Findex.html"},{"id":"dozen-galaxy","category":"math","title":"Dozen Galaxy","emoji":"🚀","blurb":"A space game for the 12 times table. Every cargo pod holds 10 blue and 2 pink crystals, so 12 × any number is easy to build: 10 of them plus 2 of them. Three short flights, with stars and badges for getting it right, never for being fast.","note":"","href":"games/multiplication/dozen-galaxy.html?home=..%2F..%2Findex.html"},{"id":"cookie-share","category":"math","title":"Cookie Share","emoji":"🍪","blurb":"Share cookies fairly, fill bags, and see how dividing undoes multiplying. Leftovers too. Eight levels, about ten minutes each.","note":"","href":"games/cookie-share/index.html?home=..%2F..%2Findex.html"},{"id":"mail-to-grandpa","category":"chinese","title":"Mail to Grandpa 寄信给爷爷","emoji":"✉️","blurb":"Learn 15 Chinese characters about letters and mail, then write and send a letter to Grandpa. Three levels, about ten minutes each.","note":"","href":"games/chinese/mail-to-grandpa.html?home=..%2F..%2Findex.html"},{"id":"vitamin-c","category":"science","title":"The Scurvy Mystery","emoji":"🍊","blurb":"Why did sailors get sick on long voyages, and why did fruit make them better? A true story that teaches fair testing.","note":"","href":"sci/vitamin-c.html?home=..%2Findex.html"},{"id":"tooth-timeline","category":"science","title":"The Tooth Timeline","emoji":"🦷","blurb":"Why did her first tooth fall out at 8 when friends lost theirs at 5? Kids learn the order of baby teeth and how much the timing can vary. Worried about timing? A dentist can check.","note":"","href":"sci/tooth-timeline.html?home=..%2Findex.html"},{"id":"continents-and-oceans","category":"science","title":"The Invisible Borders of Continents and Oceans","emoji":"🌍","blurb":"Where does one continent end and an ocean begin? Kids test the rules behind the 7 continents and 4 oceans.","note":"","href":"sci/continents-and-oceans.html?home=..%2Findex.html"},{"id":"splinter","category":"science","title":"Where Did the Splinter Go?","emoji":"🪵","blurb":"A splinter in a fingertip: a short tour of how skin renews itself and how the body's guards respond, and when a grown-up should help. Includes narrated video.","note":"","href":"sci/splinter/Splinter.html?home=..%2F..%2Findex.html"},{"id":"sugar-label-detective","category":"food","title":"The Sugar Detective","emoji":"🍬","blurb":"Is the sweetest food the one with the most sugar? Kids learn to read the nutrition label instead of trusting taste or words like \"natural\".","note":"","href":"sci/sugar-label-detective.html?home=..%2Findex.html"},{"id":"fat-label-detective","category":"food","title":"The Fat Detective","emoji":"🥑","blurb":"Not all fat is the same. Kids sort \"friendlier\" fats from \"go-easy\" fats and learn what the fat lines on a label really tell you.","note":"","href":"sci/fat-label-detective.html?home=..%2Findex.html"},{"id":"color-label-detective","category":"food","title":"The Color Detective","emoji":"🫐","blurb":"Why is a \"blue raspberry\" popsicle blue? Kids find the colour on the ingredient list and learn what the dye names mean.","note":"","href":"sci/color-label-detective.html?home=..%2Findex.html"},{"id":"warning-label-detective","category":"food","title":"The Warning Label Detective","emoji":"⚠️","blurb":"What does a California \"cancer warning\" sticker really mean? A calm look at why the label exists: the limits are set low on purpose, and the label alone cannot tell you how risky a food is.","note":"","href":"sci/warning-label-detective.html?home=..%2Findex.html"},{"id":"package-claims-detective","category":"food","title":"The Package Claims Detective","emoji":"📦","blurb":"\"Tree ripened\", \"sun-dried\", \"natural\": what does a package claim actually promise? Kids practice telling a claim from a fact. Includes a narrated video and two parts, Starter and Stretch.","note":"The explainer film loads when you press play.","href":"sci/package-claims-detective.html?home=..%2Findex.html"},{"id":"cube","category":"steam","title":"Little Cube Quest","emoji":"🧊","blurb":"Twenty guided lessons on the screen and a day-by-day plan to solve a real 2x2 and then a 3x3. Guess first, try it, check it, and learn why each move works.","note":"The voice clips load only when played.","href":"games/cube.html?home=..%2Findex.html"},{"id":"travel-piggy-bank","category":"money","title":"The Travel Piggy Bank","emoji":"🐷","blurb":"How does interest earn interest? Kids watch a travel piggy bank grow and discover compounding, with no percentages needed at first.","note":"","href":"sci/travel-piggy-bank.html?home=..%2Findex.html"}]};
 var S = DATA.site, G = DATA.games;
 function E(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 if (S.tagline) document.getElementById('tagline').textContent = S.tagline; else document.getElementById('tagline').remove();
