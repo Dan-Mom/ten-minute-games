@@ -476,8 +476,9 @@ button{font:inherit;cursor:pointer}
 /* a new-character card on a sideways iPad: the character on the left, how it is built on the right, so "Got it" stays on screen */
 @media (min-width:900px) and (min-aspect-ratio:5/4){
 .big .panel.meetp{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.7fr);grid-template-rows:auto auto auto auto;column-gap:28px;align-content:center;align-items:center}
-.big .meetp>.say{grid-column:1;grid-row:1}.big .meetp>.card-big{grid-column:1;grid-row:2}.big .meetp>.py{grid-column:1;grid-row:3}.big .meetp>.mean{grid-column:1;grid-row:4;align-self:start}
+.big .meetp>.say{grid-column:1;grid-row:1}.big .meetp>.charrow{grid-column:1;grid-row:2}.big .meetp>.py{grid-column:1;grid-row:3}.big .meetp>.mean{grid-column:1;grid-row:4;align-self:start}
 .big .meetp>.built{grid-column:2;grid-row:1 / 5;margin:0}.big .meetp>.row{grid-column:1 / 3;grid-row:5}
+.big .meetp .charrow{flex-wrap:nowrap;gap:10px}.big .meetp .card-big{font-size:104px}.big .meetp .old{max-width:150px}.big .meetp .old img{width:78px;height:78px}.big .meetp .old .cap{font-size:12.5px}   /* sideways: the old form beside the character, so the card keeps its height */
 .big .pat{font-size:42px;margin:0 0 4px}.big .exs{gap:6px;margin-top:8px}.big .ex{padding:4px 12px}   /* the sentence-pattern card, sideways: a little tighter so "Got it" stays on screen */
 }
 .tile{touch-action:none;-webkit-user-select:none;user-select:none;cursor:grab}
@@ -511,6 +512,15 @@ button{font:inherit;cursor:pointer}
 .bpanel>.bback{grid-column:1;grid-row:5}
 .bpanel>.bgrid{grid-column:2;grid-row:1 / 6;margin:0;width:min(600px,calc(100vh - 200px));width:min(600px,calc(100dvh - 200px))}
 }
+/* the character long ago */
+.charrow{display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap}
+.old{display:flex;flex-direction:column;align-items:center;max-width:200px}
+.old img{width:86px;height:86px;background:#fff;border:3px solid #e9c46a;border-radius:14px;padding:4px}
+.old .cap{font-size:13px;color:var(--mute);line-height:1.35;text-align:center;margin-top:4px}
+.big .old img{width:100px;height:100px}
+.big .old .cap{font-size:15px}
+.big .old{max-width:290px}   /* a wider caption takes fewer lines, so an upright card stays on screen */
+.credit{font-size:13px;color:var(--mute);text-align:center;margin-top:14px}
 </style>
 </head>
 <body>
@@ -547,6 +557,26 @@ var PARTS = [
   { c: '进', parts: ['井', '辶'], r: 1, rad: '辶', name: '走之底', npy: 'zǒu zhī dǐ', means: 'walking, going somewhere. It wraps around the bottom of the character.', see: '这 过 还 送 远', how: 'Walking (辶) and 井 (jǐng), which helps with the sound: to go in, to move forward. 进步 is getting better.' },
   { c: '孙', parts: ['子', '小'], r: 0, rad: '子', name: '子字旁', npy: 'zǐ zì páng', means: 'a child. It is in characters about children.', see: '孩 字 学 孔', how: 'A little (小) child (子): a grandchild. 孙女 is a granddaughter, 孙子 a grandson.' }
 ];
+/* level 1: each character long ago (public-domain drawings from Wikimedia Commons, Ancient Chinese characters project, in ancient/).
+   kind = which old script; rad = when the character itself has no old form, its radical is shown instead (form = the old character drawn);
+   pic = what the old drawing shows, only where that is well known */
+var ANCIENT = {
+  '信': { f: 'ancient/4eba-oracle.svg', kind: 'oracle', rad: '亻', form: '人', pic: 'a person standing, seen from the side' },
+  '封': { f: 'ancient/5c01-oracle.svg', kind: 'oracle', rad: '', form: '封', pic: 'a plant on a mound of earth: planting a border' },
+  '邮': { f: 'ancient/90f5-seal.svg', kind: 'seal', rad: '', form: '郵', pic: '' },
+  '票': { f: 'ancient/7968-seal.svg', kind: 'seal', rad: '', form: '票', pic: '' },
+  '城': { f: 'ancient/57ce-bronze.svg', kind: 'bronze', rad: '', form: '城', pic: '' },
+  '京': { f: 'ancient/4eac-oracle.svg', kind: 'oracle', rad: '', form: '京', pic: 'a tall building on a high base' },
+  '广': { f: 'ancient/5e7f-bronze.svg', kind: 'bronze', rad: '', form: '广', pic: 'a roof and one wall: a shelter open on one side' },
+  '场': { f: 'ancient/571f-oracle.svg', kind: 'oracle', rad: '土', form: '土', pic: 'a lump of earth on the ground' },
+  '安': { f: 'ancient/5b89-oracle.svg', kind: 'oracle', rad: '', form: '安', pic: 'a woman under a roof' },
+  '全': { f: 'ancient/5168-seal.svg', kind: 'seal', rad: '', form: '全', pic: '' },
+  '平': { f: 'ancient/5e73-bronze.svg', kind: 'bronze', rad: '', form: '平', pic: '' },
+  '提': { f: 'ancient/624b-bronze.svg', kind: 'bronze', rad: '扌', form: '手', pic: 'a hand with five fingers' },
+  '取': { f: 'ancient/53d6-oracle.svg', kind: 'oracle', rad: '', form: '取', pic: 'a hand holding an ear' },
+  '进': { f: 'ancient/9032-oracle.svg', kind: 'oracle', rad: '', form: '進', pic: 'a bird above a foot: going forward' },
+  '孙': { f: 'ancient/5b59-oracle.svg', kind: 'oracle', rad: '', form: '孙', pic: 'a child with a thread: a family going on and on' }
+};
 var GROUPS = [CHARS.slice(0, 5), CHARS.slice(5, 10), CHARS.slice(10, 15)];
 /* level 2: build a word. w = the word, k = which character is missing, no = characters that would also make a real word, so they are never offered */
 var WORDS = [
@@ -643,6 +673,15 @@ function levelTexts(steps) {   // every line a level can say: characters, radica
   });
   return out;
 }
+/* the character long ago, shown next to the big character on a new-character card */
+var SCRIPT = { oracle: ['甲骨文', 'oracle bone script', 'about 3,000 years ago'], bronze: ['金文', 'bronze script', 'about 2,800 years ago'], seal: ['篆书', 'seal script', 'about 2,200 years ago'] };
+function oldForm(ch, a) {
+  var k = SCRIPT[a.kind], box = E('div', 'old'), img = E('img');
+  img.src = a.f; img.alt = (a.rad ? a.form : ch) + ', ' + k[1]; box.appendChild(img);
+  var what = a.rad ? 'its radical <span class="han">' + a.rad + '</span> (<span class="han">' + a.form + '</span>), ' : (a.form !== ch ? 'old form <span class="han">' + a.form + '</span>, ' : '');
+  box.appendChild(E('div', 'cap', '<b>Long ago <span class="han">古时候</span></b><br>' + what + '<span class="han">' + k[0] + '</span> · ' + k[2] + (a.pic ? '<br><i>' + a.pic + '</i>' : '')));
+  return box;
+}
 function speakBtn(t) { var b = E('button', 'speak', '🔊'); b.type = 'button'; b.setAttribute('aria-label', 'Listen'); b.onclick = function () { say(t); }; return b; }
 /* the "how it is built" box on a new-character card: its pieces, its radical and what that radical usually means */
 function built(x) {
@@ -700,6 +739,7 @@ function menu() {
     ls.appendChild(b);
   });
   app.appendChild(ls);
+  app.appendChild(E('p', 'credit', 'Old character drawings: Wikimedia Commons (Ancient Chinese characters project), public domain.'));
 }
 
 /* start a level; if it already has a score and is not half way, first say that the new score will take its place */
@@ -759,7 +799,9 @@ function play(L, redo) {   // redo = { steps }: a second try at the questions mi
   function meet(p, s) {
     p.classList.add('meetp');
     p.appendChild(E('p', 'say', 'New character'));
-    p.appendChild(E('div', 'card-big han', s.c.c));
+    var cr = E('div', 'charrow'); cr.appendChild(E('div', 'card-big han', s.c.c));
+    if (typeof ANCIENT !== 'undefined' && ANCIENT[s.c.c]) cr.appendChild(oldForm(s.c.c, ANCIENT[s.c.c]));
+    p.appendChild(cr);
     p.appendChild(E('div', 'py', s.c.py));
     p.appendChild(E('div', 'mean', s.c.e + ' ' + s.c.en));
     var part = PARTS.filter(function (x) { return x.c === s.c.c; })[0];
