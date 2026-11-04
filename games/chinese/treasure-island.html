@@ -372,6 +372,21 @@ button{font:inherit;cursor:pointer}
 .py{font:800 30px var(--display);color:var(--blue)}
 .mean{font-size:20px;color:var(--mute)}
 .word{font-size:64px;letter-spacing:6px}
+.built{max-width:560px;margin:14px auto 0;background:#f4f8ff;border:3px solid var(--blue-s);border-radius:18px;padding:12px 16px;text-align:left;font-size:17px;line-height:1.5}
+.built .bt{font:800 18px var(--display);color:var(--blue);text-align:center}
+.built p{margin:8px 0 0}
+.built .how{border-top:2px dashed var(--blue-s);padding-top:8px}
+.pieces{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:8px}
+.piece{min-width:56px;height:56px;padding:0 6px;border-radius:12px;background:#fff;border:3px solid var(--blue-s);display:inline-flex;align-items:center;justify-content:center;font-size:36px}
+.piece.rad{border-color:var(--red);color:var(--red);background:var(--red-s)}
+.piece.rest{font:700 15px var(--body);color:var(--mute);max-width:150px;text-align:center;line-height:1.2}
+.plus{font:800 20px var(--display);color:var(--mute)}
+.rline{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:10px;text-align:center}
+.rline i{color:var(--blue);font-style:normal}
+.rg{color:var(--red);font-size:1.25em}
+.see{letter-spacing:4px;font-size:1.15em}
+.speak.small{min-width:44px;min-height:44px;font-size:18px}
+@media (max-width:480px){.card-big{font-size:88px}.built{font-size:16px;padding:10px 12px}}
 .slot{display:inline-block;min-width:1.1em;border-bottom:6px solid var(--red);color:var(--red)}
 .sentence{font-size:34px;line-height:1.6}
 .emoji{font-size:56px;line-height:1}
@@ -480,6 +495,25 @@ var CHARS = [
   { c: '狮', py: 'shī', en: 'lion', e: '🦁' }, { c: '分', py: 'fēn', en: 'divide; (in 十分) very', e: '🍰' },
   { c: '啊', py: 'a', en: 'ah! (a happy ending sound)', e: '😮' }
 ];
+/* level 1: how each character is built. parts = the pieces (r = which piece is the radical; rest = a piece described in words),
+   rad = the radical (部首) with its name, what it usually means, and other characters where you can see it; how = the meaning */
+var PARTS = [
+  { c: '美', parts: ['羊', '大'], r: 0, rad: '羊', name: '羊字头', npy: 'yáng zì tóu', means: 'a sheep. On top, its tail is cut short.', see: '着 差 羔', how: 'A big (大) sheep (羊): long ago that was a fine and lovely thing to have. 美 means beautiful, and 美丽 too.' },
+  { c: '丽', parts: ['丽'], r: 0, rad: '一', name: '横', npy: 'héng', means: 'just one stroke across. As a radical it does not add a meaning.', see: '上 下 七 不', how: '丽 is one whole shape; dictionaries put it under its top stroke, 一. Its old form 麗 was a deer with a fine pair of antlers. 美丽 means beautiful.' },
+  { c: '完', parts: ['宀', '元'], r: 0, rad: '宀', name: '宝盖头', npy: 'bǎo gài tóu', means: 'a roof, a house. It is in characters about homes and rooms.', see: '家 字 室 宝 安', how: 'A roof (宀) and 元 (yuán), which helps with the sound. A house with nothing missing is whole: 完 means whole, finished. 做完 is "finished doing".' },
+  { c: '登', parts: ['癶', '豆'], r: 0, rad: '癶', name: '登字头', npy: 'dēng zì tóu', means: 'two feet, walking. It is on top of characters about stepping.', see: '癸 凳 蹬', how: 'Two feet (癶) stepping up onto 豆, which long ago was a tall stand: to climb up. 登山 is to climb a mountain.' },
+  { c: '景', parts: ['日', '京'], r: 0, rad: '日', name: '日字头', npy: 'rì zì tóu', means: 'the sun. It is in characters about sunshine, days and time.', see: '早 星 春 晴', how: 'The sun (日) over 京 (jīng), which helps with the sound. Sunlight shows you everything around: 风景 is the scenery.' },
+  { c: '色', parts: ['色'], r: 0, rad: '色', name: '色字旁', npy: 'sè zì páng', means: 'color. It is a radical in only a few characters.', see: '艳', how: '色 is one whole shape, and a radical too. It means color: 颜色 is color, and 景色 is the view.' },
+  { c: '岸', parts: ['山', '厂', '干'], r: 0, rad: '山', name: '山字头', npy: 'shān zì tóu', means: 'a mountain or a hill. It is in characters about mountains.', see: '岛 岩 峰 崖', how: 'A mountain (山) over a steep cliff (厂), with 干 (gàn) helping with the sound: the high bank of a river, lake or sea. 岸边 is by the shore.' },
+  { c: '岛', parts: ['', '山'], rest: 'top: 鸟 (a bird) without its last stroke', r: 1, rad: '山', name: '山字底', npy: 'shān zì dǐ', means: 'a mountain or a hill. It is in characters about mountains.', see: '岸 岩 峰 崖', how: 'A bird (鸟) resting on a mountain (山) out in the sea: an island. 小岛 is a small island.' },
+  { c: '沿', parts: ['氵', ''], rest: 'right side, as in 船 铅', r: 0, rad: '氵', name: '三点水', npy: 'sān diǎn shuǐ', means: 'water. It is in characters about water, rivers and the sea.', see: '河 湖 海 洗 游', how: 'Water (氵): going along the edge of a river or lake. 沿着 means along.' },
+  { c: '座', parts: ['广', '坐'], r: 0, rad: '广', name: '广字旁', npy: 'guǎng zì páng', means: 'a house with one side open. It is in characters about buildings.', see: '床 店 庄 底', how: 'A building (广) where people sit (坐): a seat. It also counts big things: 一座桥 is one bridge, 一座山 one mountain.' },
+  { c: '桥', parts: ['木', '乔'], r: 0, rad: '木', name: '木字旁', npy: 'mù zì páng', means: 'a tree, wood. It is in characters about trees and things made of wood.', see: '树 林 桌 椅', how: 'Wood (木) and 乔 (qiáo), which gives the sound. Long ago bridges were made of wood. 大桥 is a big bridge.' },
+  { c: '柱', parts: ['木', '主'], r: 0, rad: '木', name: '木字旁', npy: 'mù zì páng', means: 'a tree, wood. It is in characters about trees and things made of wood.', see: '树 林 桌 椅', how: 'Wood (木) and 主 (zhǔ), which helps with the sound: a post or a pillar, once a tree trunk. 柱子 is a pillar.' },
+  { c: '狮', parts: ['犭', '师'], r: 0, rad: '犭', name: '反犬旁', npy: 'fǎn quǎn páng', means: 'an animal. 犭 comes from 犬, a dog.', see: '猫 狗 猪 猴', how: 'An animal (犭) and 师 (shī), which gives the sound: a lion. 狮子 is a lion.' },
+  { c: '分', parts: ['八', '刀'], r: 0, rad: '八', name: '八字头', npy: 'bā zì tóu', means: 'two parts going apart. Long ago 八 meant "to split".', see: '公 共 兵', how: 'A knife (刀) cutting something into two parts (八): to divide. 十分 means very, completely.' },
+  { c: '啊', parts: ['口', '阿'], r: 0, rad: '口', name: '口字旁', npy: 'kǒu zì páng', means: 'a mouth. It is in characters about talking, eating and sounds we make.', see: '吃 喝 唱 叫 吗', how: 'A mouth (口) and 阿 (ā), which gives the sound: a sound you make when you feel something. 好高啊！ means "So high!"' }
+];
 var GROUPS = [CHARS.slice(0, 5), CHARS.slice(5, 10), CHARS.slice(10, 15)];
 /* level 2: build a word. w = the word, k = which character is missing, no = characters that would also make a real word, so they are never offered */
 var WORDS = [
@@ -575,6 +609,25 @@ function say(t) {
   deviceSay(t);
 }
 function speakBtn(t) { var b = E('button', 'speak', '🔊'); b.type = 'button'; b.setAttribute('aria-label', 'Listen'); b.onclick = function () { say(t); }; return b; }
+/* the "how it is built" box on a new-character card: its pieces, its radical and what that radical usually means */
+function built(x) {
+  var box = E('div', 'built');
+  box.appendChild(E('div', 'bt', 'How it is built <span class="han">字的结构</span>'));
+  var pr = E('div', 'pieces');
+  if (x.parts.length === 1) { pr.appendChild(E('span', 'piece han' + (x.parts[0] === x.rad ? ' rad' : ''), x.parts[0])); pr.appendChild(E('span', 'plus', 'one whole shape <span class="han">独体字</span>')); }
+  else x.parts.forEach(function (q, n) {
+    if (n) pr.appendChild(E('span', 'plus', '+'));
+    pr.appendChild(q ? E('span', 'piece han' + (n === x.r ? ' rad' : ''), q) : E('span', 'piece rest', x.rest));
+  });
+  box.appendChild(pr);
+  var rl = E('div', 'rline');
+  rl.appendChild(E('span', null, 'Radical <span class="han">部首</span>: <b class="han rg">' + x.rad + '</b> <span class="han">' + x.name + '</span> <i>' + x.npy + '</i>'));
+  var sb = speakBtn(x.name); sb.classList.add('small'); sb.setAttribute('aria-label', 'Listen to the radical name'); rl.appendChild(sb);
+  box.appendChild(rl);
+  box.appendChild(E('p', null, '<b class="han rg">' + x.rad + '</b> usually means ' + x.means + ' You can see it in <span class="han see">' + x.see + '</span>'));
+  box.appendChild(E('p', 'how', '<b class="han">' + x.c + '</b>: ' + x.how));
+  return box;
+}
 /* tiny sounds for right and wrong, no files needed */
 var ac = null;
 function beep(ok) {
@@ -639,10 +692,13 @@ function play(L) {
     ask(p, s);
   }
   function meet(p, s) {
+    p.classList.add('meetp');
     p.appendChild(E('p', 'say', 'New character'));
     p.appendChild(E('div', 'card-big han', s.c.c));
     p.appendChild(E('div', 'py', s.c.py));
     p.appendChild(E('div', 'mean', s.c.e + ' ' + s.c.en));
+    var part = PARTS.filter(function (x) { return x.c === s.c.c; })[0];
+    if (part) p.appendChild(built(part));
     var r = E('div', 'row'); r.appendChild(speakBtn(s.c.c));
     var go = E('button', 'btn', 'Got it ▶'); go.type = 'button'; go.onclick = next; r.appendChild(go); p.appendChild(r);
     say(s.c.c);
