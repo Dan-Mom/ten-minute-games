@@ -318,7 +318,7 @@
 })();
 </script>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 
   <!-- ===== 装到 iPad 桌面上用的（PWA）。原课件没有这一段。 ===== -->
   <link rel="manifest" href="manifest.webmanifest" />
@@ -1443,7 +1443,14 @@
   var upd = document.createElement('button'); upd.type = 'button';
   upd.setAttribute('style', 'box-sizing:border-box;min-height:56px;padding:0 22px;border:3px solid #fff;background:#E8590C;color:#fff;font:800 20px system-ui,sans-serif;border-radius:999px;cursor:pointer;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,.45)');
   a.appendChild(upd);
-  document.body.appendChild(a);
+  /* A page with a top bar keeps a spot for the buttons in it (<span data-pill-slot>): there they sit in the bar's own row, a little smaller,
+     and can never cover the title. Every other page gets the floating pill below. */
+  var slot = document.querySelector('[data-pill-slot]');
+  if (slot) {
+    a.setAttribute('style', 'box-sizing:border-box;display:inline-flex;align-items:center;flex-wrap:wrap;gap:6px');
+    [back, upd].forEach(function (el) { if (el) { el.style.minHeight = '44px'; el.style.padding = '0 14px'; el.style.fontSize = '17px'; el.style.borderWidth = '2px'; el.style.boxShadow = 'none'; } });
+  }
+  (slot || document.body).appendChild(a);
   /* Update: get the newest copy of the site from the internet. With no internet nothing is touched, so offline games keep working.
      Progress lives in localStorage and is never touched. Only this site's offline copies are cleared: other apps share this web address. */
   var LABEL = '🔄 Update', busy = false, KEY = 'tmg.justUpdated';
@@ -1470,6 +1477,7 @@
             function () { busy = false; say('No internet'); });
   });
   try { if (sessionStorage.getItem(KEY)) { sessionStorage.removeItem(KEY); say('Updated ✓'); } } catch (e) {}
+  if (slot) return;   // in a top bar: nothing to move around
   /* The lessons keep their own buttons along the screen edges (Previous / Next in a footer, controls in a header), so a pill nailed to
      one corner always sat on top of something. Keep the pill 44px tall (easy to tap) and, whenever the page layout changes, put it in
      whichever of six edge spots does not cover a button, link or field (spots tried in this order: bottom-centre, bottom-left,
@@ -1516,5 +1524,13 @@
   put('bc'); cur = 'bc'; place();
   window.addEventListener('resize', later); window.addEventListener('orientationchange', later); window.addEventListener('load', later);
   try { new MutationObserver(function (ms) { for (var i = 0; i < ms.length; i++) if (!a.contains(ms[i].target)) { later(); return; } }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden', 'disabled', 'aria-hidden', 'open'] }); } catch (e) { /* no observer: the spot is only worked out at load and on resize */ }
+})()</script><script>(function noZoom() {
+  var st = document.createElement('style');
+  // text-size-adjust: Safari enlarges text after a turn to landscape; manipulation: no double-tap zoom (rules that set their own touch-action, such as drag areas, still win)
+  st.textContent = 'html{-webkit-text-size-adjust:100%;text-size-adjust:100%}*{touch-action:manipulation}';
+  (document.head || document.documentElement).appendChild(st);
+  var stop = function (e) { e.preventDefault(); };
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (t) { document.addEventListener(t, stop, { passive: false }); });   // Safari's pinch
+  document.addEventListener('touchmove', function (e) { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });   // two fingers: no pinch
 })()</script></body>
 </html>

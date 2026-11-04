@@ -318,7 +318,7 @@
 })();
 </script>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Mail to Grandpa · 寄信给爷爷</title>
 <meta name="theme-color" content="#1b6fd1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -342,8 +342,8 @@ h1,h2,h3{font-family:var(--display);margin:0;line-height:1.15}
 .han{font-family:var(--han);font-weight:700}
 .wrap{width:100%;max-width:760px;margin:0 auto;padding:16px}
 button{font:inherit;cursor:pointer}
-.top{display:flex;align-items:center;gap:10px;padding:10px 16px;background:#fff;border-bottom:3px solid var(--blue-s)}
-.top h1{font-size:22px;flex:1}
+.top{display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:10px 16px;background:#fff;border-bottom:3px solid var(--blue-s)}
+.top h1{font-size:22px;flex:1 1 240px}
 .stamps{font:800 18px var(--display);background:var(--blue-s);color:var(--blue);border-radius:999px;padding:4px 14px;white-space:nowrap}
 .btn{min-height:52px;border:0;border-radius:16px;padding:8px 22px;font:800 20px var(--display);background:var(--blue);color:#fff;box-shadow:0 5px 0 #0f4d97}
 .btn:active{transform:translateY(3px);box-shadow:0 2px 0 #0f4d97}
@@ -360,6 +360,7 @@ button{font:inherit;cursor:pointer}
 .lv.done .n{background:var(--green)}
 .lv h3{font-size:21px}
 .lv p{margin:2px 0 0;color:var(--mute);font-size:16px}
+.lv .cont{color:var(--blue);font-weight:800}
 .lv .go{margin-left:auto;font-size:28px}
 
 /* play */
@@ -443,7 +444,7 @@ button{font:inherit;cursor:pointer}
 </style>
 </head>
 <body>
-<header class="top"><h1>✉️ Mail to Grandpa <span class="han">寄信给爷爷</span></h1><span class="stamps" id="stamps">📮 0</span></header>
+<header class="top"><h1>✉️ Mail to Grandpa <span class="han">寄信给爷爷</span></h1><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">📮 0</span></header>
 <div class="wrap" id="app"></div>
 <script>
 /* ---------- content (characters and words from the lesson; all sentences are our own) ---------- */
@@ -616,7 +617,9 @@ function menu() {
   LEVELS.forEach(function (L) {
     var b = E('button', 'lv' + (save.done[L.n] ? ' done' : '')); b.type = 'button';
     b.appendChild(E('span', 'n', save.done[L.n] ? '✓' : String(L.n)));
-    var t = E('div'); t.appendChild(E('h3', null, 'Level ' + L.n + ': ' + L.title + ' <span class="han">' + L.zh + '</span>')); t.appendChild(E('p', null, L.text)); b.appendChild(t);
+    var t = E('div'); t.appendChild(E('h3', null, 'Level ' + L.n + ': ' + L.title + ' <span class="han">' + L.zh + '</span>')); t.appendChild(E('p', null, L.text));
+    if (L.run ? save.bingo : save.at && save.at[L.n]) t.appendChild(E('p', 'cont', '⏯ Continue where you left off'));
+    b.appendChild(t);
     b.appendChild(E('span', 'go', '▶'));
     b.onclick = function () { if (L.run) L.run(L); else play(L); };
     ls.appendChild(b);
@@ -626,10 +629,20 @@ function menu() {
 
 /* ---------- one engine for every level: a queue of steps ---------- */
 function play(L) {
-  var steps = L.build(), total = steps.length, i = 0, again = {};
+  var steps = L.build(), total, i = 0, again = {};
+  function key(s) { return s.id || (s.c ? 'm' + s.c.c : s.type); }
+  var was = save.at && save.at[L.n];
+  if (was) {   // came back to a level left half way: rebuild it in the saved order and go on from the saved step
+    var byKey = {}; steps.forEach(function (s) { byKey[key(s)] = s; });
+    var back = was.keys.map(function (k) { return byKey[k]; });
+    if (back.every(Boolean)) { steps = back; i = was.i; again = was.again || {}; }
+  }
+  total = steps.length;
+  function keep() { save.at = save.at || {}; save.at[L.n] = { keys: steps.map(key), i: i - 1, again: again }; store(); }   // saved at every step
   function next() {
     if (i >= steps.length) return finish(L);
     var s = steps[i++];
+    keep();
     app.innerHTML = '';
     var bar = E('div', 'bar'); var fill = E('i'); bar.appendChild(fill); app.appendChild(bar);
     fill.style.width = Math.min(100, Math.round((i - 1) / total * 100)) + '%';
@@ -717,6 +730,8 @@ function play(L) {
   next();
 }
 function finish(L) {
+  if (save.at) delete save.at[L.n];
+  if (L.run) delete save.bingo;
   save.done[L.n] = 1; store();
   app.innerHTML = '';
   var p = E('div', 'panel');
@@ -756,9 +771,18 @@ function bingoItems() {   // every one of the 15 characters, plus 9 of the words
     .concat(shuffle(WORDS).slice(0, 9).map(function (x) { return { t: x.w, py: x.py, en: x.en }; }));
 }
 function bingo(L) {
-  var cardNo = 0;
+  var cardNo = save.bingo && save.bingo.cardNo < BINGO_GOALS.length ? save.bingo.cardNo : 0;
   function start() {
-    var goal = BINGO_GOALS[cardNo], items = shuffle(bingoItems()), calls = shuffle(items), ci = 0, now = null, wrong = 0, over = false;
+    var goal = BINGO_GOALS[cardNo], items = null, calls = null, ci = 0, now = null, wrong = 0, over = false, marked = {};
+    var was = save.bingo && save.bingo.cardNo === cardNo && save.bingo.cells ? save.bingo : null;
+    if (was) {   // came back to a card left half way
+      var pool = {};
+      CHARS.forEach(function (x) { pool[x.c] = { t: x.c, py: x.py, en: x.en }; }); WORDS.forEach(function (x) { pool[x.w] = { t: x.w, py: x.py, en: x.en }; });
+      items = was.cells.map(function (t) { return pool[t]; }); calls = was.calls.map(function (t) { return pool[t]; });
+      if (items.every(Boolean) && calls.every(Boolean)) { ci = was.ci || 0; (was.marked || []).forEach(function (k) { marked[k] = 1; }); } else items = null;
+    }
+    if (!items) { items = shuffle(bingoItems()); calls = shuffle(items); }
+    function keepCard(at) { save.bingo = { cardNo: cardNo, cells: items.map(function (x) { return x.t; }), calls: calls.map(function (x) { return x.t; }), ci: at, marked: Object.keys(marked).map(Number) }; store(); }
     var cells = items.slice(0, 12).concat([{ free: true }], items.slice(12));
     app.innerHTML = '';
     var bar = E('div', 'bar'), fill = E('i'); fill.style.width = Math.round(cardNo / BINGO_GOALS.length * 100) + '%'; bar.appendChild(fill); app.appendChild(bar);
@@ -769,9 +793,9 @@ function bingo(L) {
     p.appendChild(top);
     var hint = E('div', 'bhint'); p.appendChild(hint);
     var grid = E('div', 'bgrid'); p.appendChild(grid);
-    var marked = {}, btns = [];
+    var btns = [];
     cells.forEach(function (c, i) {
-      var b = E('button', 'bcell' + (c.free ? ' free on' : '')); b.type = 'button'; b.textContent = c.free ? '📮' : c.t;
+      var b = E('button', 'bcell' + (c.free || marked[i] ? ' on' : '') + (c.free ? ' free' : '')); b.type = 'button'; b.textContent = c.free ? '📮' : c.t;
       if (c.free) { marked[i] = 1; b.setAttribute('aria-label', 'Free space'); b.disabled = true; }
       else b.onclick = function () { tap(c, i, b); };
       btns.push(b); grid.appendChild(b);
@@ -781,7 +805,7 @@ function bingo(L) {
     function peekOff() { btns.forEach(function (x) { x.classList.remove('peek'); }); }
     function call() {
       if (over || ci >= calls.length) return;
-      now = calls[ci++]; wrong = 0; hint.textContent = ''; peekOff();
+      now = calls[ci++]; wrong = 0; hint.textContent = ''; peekOff(); keepCard(ci - 1);
       say(now.t);
     }
     function linesDone() {
@@ -798,7 +822,7 @@ function bingo(L) {
         else { hint.textContent = now.py + ' · ' + now.en; btns.forEach(function (x, k) { if (cells[k].t === now.t) x.classList.add('peek'); }); }
         return;
       }
-      marked[i] = 1; b.classList.remove('peek'); b.classList.add('on'); beep(true); if (wrong === 0) stamps(1);
+      marked[i] = 1; keepCard(ci); b.classList.remove('peek'); b.classList.add('on'); beep(true); if (wrong === 0) stamps(1);
       hint.textContent = '';
       var done = linesDone();
       if (done >= goal.lines) return win();
@@ -808,11 +832,13 @@ function bingo(L) {
       over = true; now = null; hint.textContent = ''; stamps(5); top.remove(); back.remove();
       end.appendChild(E('div', 'bwin', '🎉 BINGO! +5 📮'));
       var r = E('div', 'row'), last = cardNo === BINGO_GOALS.length - 1;
+      if (last) { delete save.bingo; save.done[L.n] = 1; } else save.bingo = { cardNo: cardNo + 1 }; store();   // coming back starts the next card
       var go = E('button', 'btn', last ? 'Finish ▶' : 'Next card ▶'); go.type = 'button';
       go.onclick = function () { if (last) finish(L); else { cardNo++; start(); } };
       r.appendChild(go); end.appendChild(r);
       say('Bingo!'); go.focus();
     }
+    linesDone();   // a card picked up again shows its finished lines
     call();
   }
   start();
@@ -876,7 +902,14 @@ menu();
   var upd = document.createElement('button'); upd.type = 'button';
   upd.setAttribute('style', 'box-sizing:border-box;min-height:56px;padding:0 22px;border:3px solid #fff;background:#E8590C;color:#fff;font:800 20px system-ui,sans-serif;border-radius:999px;cursor:pointer;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,.45)');
   a.appendChild(upd);
-  document.body.appendChild(a);
+  /* A page with a top bar keeps a spot for the buttons in it (<span data-pill-slot>): there they sit in the bar's own row, a little smaller,
+     and can never cover the title. Every other page gets the floating pill below. */
+  var slot = document.querySelector('[data-pill-slot]');
+  if (slot) {
+    a.setAttribute('style', 'box-sizing:border-box;display:inline-flex;align-items:center;flex-wrap:wrap;gap:6px');
+    [back, upd].forEach(function (el) { if (el) { el.style.minHeight = '44px'; el.style.padding = '0 14px'; el.style.fontSize = '17px'; el.style.borderWidth = '2px'; el.style.boxShadow = 'none'; } });
+  }
+  (slot || document.body).appendChild(a);
   /* Update: get the newest copy of the site from the internet. With no internet nothing is touched, so offline games keep working.
      Progress lives in localStorage and is never touched. Only this site's offline copies are cleared: other apps share this web address. */
   var LABEL = '🔄 Update', busy = false, KEY = 'tmg.justUpdated';
@@ -903,6 +936,7 @@ menu();
             function () { busy = false; say('No internet'); });
   });
   try { if (sessionStorage.getItem(KEY)) { sessionStorage.removeItem(KEY); say('Updated ✓'); } } catch (e) {}
+  if (slot) return;   // in a top bar: nothing to move around
   /* The lessons keep their own buttons along the screen edges (Previous / Next in a footer, controls in a header), so a pill nailed to
      one corner always sat on top of something. Keep the pill 44px tall (easy to tap) and, whenever the page layout changes, put it in
      whichever of six edge spots does not cover a button, link or field (spots tried in this order: bottom-centre, bottom-left,
@@ -949,5 +983,13 @@ menu();
   put('bc'); cur = 'bc'; place();
   window.addEventListener('resize', later); window.addEventListener('orientationchange', later); window.addEventListener('load', later);
   try { new MutationObserver(function (ms) { for (var i = 0; i < ms.length; i++) if (!a.contains(ms[i].target)) { later(); return; } }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden', 'disabled', 'aria-hidden', 'open'] }); } catch (e) { /* no observer: the spot is only worked out at load and on resize */ }
+})()</script><script>(function noZoom() {
+  var st = document.createElement('style');
+  // text-size-adjust: Safari enlarges text after a turn to landscape; manipulation: no double-tap zoom (rules that set their own touch-action, such as drag areas, still win)
+  st.textContent = 'html{-webkit-text-size-adjust:100%;text-size-adjust:100%}*{touch-action:manipulation}';
+  (document.head || document.documentElement).appendChild(st);
+  var stop = function (e) { e.preventDefault(); };
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (t) { document.addEventListener(t, stop, { passive: false }); });   // Safari's pinch
+  document.addEventListener('touchmove', function (e) { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });   // two fingers: no pinch
 })()</script></body>
 </html>
