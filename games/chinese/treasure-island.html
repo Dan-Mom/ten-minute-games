@@ -426,6 +426,43 @@ button{font:inherit;cursor:pointer}
 .bwin{font:800 clamp(34px,8vw,52px)/1.1 var(--display);color:var(--green);margin-top:12px}
 @media (max-width:480px){.wrap{padding:12px}.panel.bpanel{padding:14px 10px}}
 @media (prefers-reduced-motion:reduce){.bcell.on,.bcell.peek{animation:none}.bcell.peek{background:var(--gold)}}
+/* levels 1-4 on a tablet or computer: everything 20% bigger (phones keep the sizes above) */
+@media (min-width:600px){
+.wrap.big{max-width:912px}
+.big .panel{min-height:calc(100vh - 150px);min-height:calc(100dvh - 150px);display:flex;flex-direction:column;justify-content:center}   /* the card fills the screen, its content in the middle: no empty half below */
+.big .say{font-size:20px}
+.big .card-big{font-size:132px}
+.big .py{font-size:36px}
+.big .mean{font-size:24px}
+.big .word{font-size:77px}
+.big .sentence{font-size:41px}
+.big .emoji{font-size:67px}
+.big .opt{width:132px;height:110px;font-size:62px}
+.big .opt.wide{width:100%;max-width:672px;height:auto;font-size:31px}
+.big .opt.word{width:auto;min-width:180px;font-size:53px}
+.big .fb{font-size:24px;min-height:41px}
+.big .btn{min-height:62px;font-size:24px;padding:8px 26px}
+.big .speak{min-width:58px;min-height:58px;font-size:26px}
+.big .built{max-width:672px;font-size:20px}
+.big .built .bt{font-size:22px}
+.big .piece{min-width:67px;height:67px;font-size:43px}
+.big .piece.rest{font-size:18px;max-width:180px}
+.big .plus{font-size:24px}
+.big .pat{font-size:48px}
+.big .exs{max-width:672px}
+.big .ex .han{font-size:31px}
+.big .ex .mean{font-size:19px}
+.big .tile{min-height:67px;font-size:34px;padding:6px 17px}
+.big .endmark{font-size:36px}
+.big .bline{min-height:91px;max-width:744px}
+.big .letter{max-width:624px;font-size:29px}
+}
+/* a new-character card on a sideways iPad: the character on the left, how it is built on the right, so "Got it" stays on screen */
+@media (min-width:900px) and (min-aspect-ratio:5/4){
+.big .panel.meetp{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.7fr);grid-template-rows:auto auto auto auto;column-gap:28px;align-content:center;align-items:center}
+.big .meetp>.say{grid-column:1;grid-row:1}.big .meetp>.card-big{grid-column:1;grid-row:2}.big .meetp>.py{grid-column:1;grid-row:3}.big .meetp>.mean{grid-column:1;grid-row:4;align-self:start}
+.big .meetp>.built{grid-column:2;grid-row:1 / 5;margin:0}.big .meetp>.row{grid-column:1 / 3;grid-row:5}
+}
 </style>
 </head>
 <body>
@@ -554,6 +591,7 @@ var LEVELS = [
   { n: 5, title: 'Island Bingo', zh: '宝岛 Bingo', text: 'Listen, then mark what you hear on your card. Make a line, then two lines, then fill the card.', run: bingo }
 ];
 function menu() {
+  app.classList.remove('big');
   app.innerHTML = '';
   var h = E('div', 'hero');
   h.appendChild(E('div', 'big', '🏝️🌉'));
@@ -576,6 +614,7 @@ function menu() {
 
 /* ---------- one engine for every level: a queue of steps ---------- */
 function play(L) {
+  app.classList.add('big');   // levels 1-4 use the bigger sizes on a tablet
   var steps = L.build(), total, i = 0, again = {};
   function key(s) { return s.id || (s.c ? 'm' + s.c.c : s.type); }
   var was = save.at && save.at[L.n];
@@ -718,6 +757,7 @@ function bingoItems() {   // every one of the 15 characters, plus 9 of the words
 function bingo(L) {
   var cardNo = save.bingo && save.bingo.cardNo < BINGO_GOALS.length ? save.bingo.cardNo : 0;
   function start() {
+    app.classList.remove('big');   // the bingo card already fills the width
     var goal = BINGO_GOALS[cardNo], items = null, calls = null, ci = 0, now = null, wrong = 0, over = false, marked = {};
     var was = save.bingo && save.bingo.cardNo === cardNo && save.bingo.cells ? save.bingo : null;
     if (was) {   // came back to a card left half way
