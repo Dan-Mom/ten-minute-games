@@ -438,6 +438,7 @@ button{font:inherit;cursor:pointer}
 .tile{min-height:56px;padding:6px 14px;border:3px solid #e9c46a;border-radius:14px;background:#fffaf0;color:var(--ink);font-family:var(--han);font-weight:700;font-size:28px;box-shadow:0 4px 0 #e9c46a;touch-action:manipulation}
 .tile.key{border-color:var(--red);box-shadow:0 4px 0 var(--red)}
 .bline .tile{background:#fff}
+.bleft{font:800 18px var(--display);color:var(--mute);margin-top:4px}
 .bwin{font:800 clamp(34px,8vw,52px)/1.1 var(--display);color:var(--green);margin-top:12px}
 @media (max-width:480px){.wrap{padding:12px}.panel.bpanel{padding:14px 10px}}
 @media (prefers-reduced-motion:reduce){.bcell.on,.bcell.peek{animation:none}.bcell.peek{background:var(--gold)}}
@@ -500,7 +501,7 @@ button{font:inherit;cursor:pointer}
 .btn.redo{background:#e8a317;box-shadow:0 5px 0 #b37a0c}
 .ask-box h3{font-size:24px;margin-bottom:8px}
 /* bingo on a sideways screen: everything but the card in a column on the left, the card on the right */
-@media (min-width:700px) and (min-aspect-ratio:5/4){
+@media (min-width:700px) and (min-height:600px) and (min-aspect-ratio:5/4){
 .wrap.bwide{max-width:1120px}
 .bpanel{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto auto 1fr auto;column-gap:28px;align-items:start;text-align:center}
 .bpanel>.bgoal{grid-column:1;grid-row:1;margin-top:8px}
@@ -598,6 +599,7 @@ var KEY = 'tmg.treasure-island.v1';
 var save = (function () { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } })();
 function store() { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) { /* private mode: progress just is not kept */ } }
 save.done = save.done || {}; save.score = save.score || {};
+Object.keys(save.score).forEach(function (k) { var s = save.score[k] || {}; save.score[k] = { got: +s.got || 0, of: +s.of || 0, half: +s.half || 0 }; });   // numbers only: they are shown on the page
 if ('stamps' in save) { delete save.stamps; store(); }   // the old pile of stamps grew with every replay; scores per level replace it
 if (!save.v) {   // a sentence-pattern level was added as level 3, so levels 3 and 4 moved up one
   var moved = {}; Object.keys(save.done).forEach(function (k) { moved[+k >= 3 ? +k + 1 : k] = save.done[k]; }); save.done = moved; save.v = 2; store();
@@ -920,8 +922,9 @@ function redoRow(L, ids) {
 function redoSteps(L, ids) {
   if (L.run) {   // bingo: each missed word comes back as "listen, then pick it"
     var pool = CHARS.map(function (c) { return c.c; }).concat(WORDS.map(function (w) { return w.w; }));
-    return ids.map(function (t) {
-      return { id: t, label: t, prompt: 'Listen, then pick what you hear.', answer: t, word: true, sayFirst: t,
+    return ids.map(function (id) {
+      var t = id.slice(id.indexOf(':') + 1);   // id = card:word
+      return { id: id, label: t, prompt: 'Listen, then pick what you hear.', answer: t, word: true, sayFirst: t,
         opts: shuffle([t].concat(shuffle(pool.filter(function (x) { return x !== t; })).slice(0, 2))),
         top: function () { var d = E('div', 'row'); d.appendChild(speakBtn(t)); return d; } };
     });
@@ -965,9 +968,15 @@ function bingo(L) {
   function start() {
     app.classList.remove('big'); app.classList.add('bwide');   // the bingo card fills the width; sideways, the page is wider for the left column
     var goal = BINGO_GOALS[cardNo], items = null, calls = null, ci = 0, now = null, wrong = 0, over = false, marked = {};
-    var res = (save.bingo && save.bingo.res) || {};   // card:word -> 1 found on the first try, 0 not; adds up over the three cards
+    var res = {}, known = {}, kept = (save.bingo && save.bingo.res) || {};   // card:word -> 1 found on the first try, 0 not; adds up over the three cards
+    CHARS.forEach(function (x) { known[x.c] = 1; }); WORDS.forEach(function (x) { known[x.w] = 1; });
+    Object.keys(kept).forEach(function (k) { if (known[k.slice(k.indexOf(':') + 1)]) res[k] = kept[k] ? 1 : 0; });   // only real lesson words count (and are shown)
     function firstTap(ok) { var k = cardNo + ':' + now.t; if (!(k in res)) res[k] = ok ? 1 : 0; tally(); }
-    function bingoResult() { var got = 0, miss = []; Object.keys(res).forEach(function (k) { if (res[k]) got++; else miss.push(k.slice(k.indexOf(':') + 1)); }); return { got: got, of: Object.keys(res).length, miss: miss, ids: miss }; }
+    function bingoResult() {   // ids: every missed call (card:word); miss: the words to show, "京 ×2" when missed on two cards
+      var got = 0, ids = [], count = {}, order = [];
+      Object.keys(res).forEach(function (k) { if (res[k]) { got++; return; } ids.push(k); var t = k.slice(k.indexOf(':') + 1); if (!count[t]) { count[t] = 0; order.push(t); } count[t]++; });
+      return { got: got, of: Object.keys(res).length, miss: order.map(function (t) { return count[t] > 1 ? t + ' ×' + count[t] : t; }), ids: ids };
+    }
     var was = save.bingo && save.bingo.cardNo === cardNo && save.bingo.cells ? save.bingo : null;
     if (was) {   // came back to a card left half way
       var pool = {};
@@ -982,12 +991,12 @@ function bingo(L) {
     app.innerHTML = '';
     var bar = E('div', 'bar'), fill = E('i'); fill.style.width = Math.round(cardNo / BINGO_GOALS.length * 100) + '%'; bar.appendChild(fill); app.appendChild(bar);
     var p = E('div', 'panel bpanel'); app.appendChild(p);
-    p.appendChild(E('div', 'bgoal', 'Card ' + (cardNo + 1) + ' of 3: ' + goal.text));
+    var gl = E('div', 'bgoal', 'Card ' + (cardNo + 1) + ' of 3: ' + goal.text), left = E('div', 'bleft'); gl.appendChild(left); p.appendChild(gl);
     var top = E('div', 'row btop');
     var hear = E('button', 'btn hear', '🔊 Listen again <span class="han">再听一次</span>'); hear.setAttribute('aria-label', 'Listen again'); hear.type = 'button'; hear.onclick = function () { if (now) say(now.t); }; top.appendChild(hear);
     p.appendChild(top);
     var counter = E('div', 'tally'); top.appendChild(counter);
-    function tally() { var r = bingoResult(); counter.innerHTML = '<b class="tr">✓ ' + r.got + '</b><b class="tw">✗ ' + r.miss.length + '</b>'; }
+    function tally() { var r = bingoResult(); counter.innerHTML = '<b class="tr">✓ ' + r.got + '</b><b class="tw">✗ ' + r.ids.length + '</b>'; }
     tally();
     var hint = E('div', 'bhint'); p.appendChild(hint);
     var grid = E('div', 'bgrid'); p.appendChild(grid);
@@ -1009,6 +1018,8 @@ function bingo(L) {
     function linesDone() {
       var n = 0;
       BINGO_LINES.forEach(function (ln) { if (ln.every(function (i) { return marked[i]; })) { n++; ln.forEach(function (i) { btns[i].classList.add('line'); }); } });
+      var togo = btns.length - Object.keys(marked).length;   // how far the card is, shown under the goal
+      left.textContent = goal.lines >= BINGO_LINES.length ? togo + (togo === 1 ? ' square' : ' squares') + ' to go · 还差 ' + togo + ' 个' : 'Lines: ' + Math.min(n, goal.lines) + ' of ' + goal.lines;
       return n;
     }
     function tap(c, i, b) {
@@ -1032,7 +1043,7 @@ function bingo(L) {
       var r = E('div', 'row'), last = cardNo === BINGO_GOALS.length - 1;
       var old = save.score[L.n], sc = bingoResult();
       if (last) { delete save.bingo; save.done[L.n] = 1; save.score[L.n] = { got: sc.got, of: sc.of }; } else save.bingo = { cardNo: cardNo + 1, res: res }; store();   // coming back starts the next card
-      end.appendChild(E('div', 'tally', '<b class="tr">✓ ' + sc.got + '</b><b class="tw">✗ ' + sc.miss.length + '</b>'));
+      end.appendChild(E('div', 'tally', '<b class="tr">✓ ' + sc.got + '</b><b class="tw">✗ ' + sc.ids.length + '</b>'));
       var go = E('button', 'btn', last ? 'Finish ▶' : 'Next card ▶'); go.type = 'button';
       go.onclick = function () { if (last) finish(L, sc, old); else { cardNo++; start(); } };
       r.appendChild(go); end.appendChild(r);
