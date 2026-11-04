@@ -497,6 +497,7 @@ button{font:inherit;cursor:pointer}
 .result .han{letter-spacing:3px}
 .ask-over{position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px}
 .ask-box{background:#fff;border-radius:22px;padding:22px;max-width:460px;text-align:center;font-size:19px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.btn.redo{background:#e8a317;box-shadow:0 5px 0 #b37a0c}
 .ask-box h3{font-size:24px;margin-bottom:8px}
 </style>
 </head>
@@ -592,8 +593,10 @@ if (!save.v) {   // a sentence-pattern level was added as level 3, so levels 3 a
 }
 /* score: each level keeps the result of its latest finished play (one shell per question right the first time); the lesson total adds them up */
 var UNIT = '🐚';
-function lessonTotal() { var t = 0; Object.keys(save.score).forEach(function (k) { t += save.score[k].got || 0; }); return t; }
-function showTotal() { document.getElementById('stamps').textContent = UNIT + ' ' + lessonTotal(); }
+function lessonTotal() { var t = 0; Object.keys(save.score).forEach(function (k) { t += (save.score[k].got || 0) + (save.score[k].half || 0) / 2; }); return t; }
+function fmt(x) { var w = Math.floor(x); return (w || x === 0 ? String(w) : '') + (x % 1 ? '½' : ''); }   // 3.5 -> 3½
+function levelScore(sc) { return fmt(sc.got + (sc.half || 0) / 2); }
+function showTotal() { document.getElementById('stamps').textContent = UNIT + ' ' + fmt(lessonTotal()); }
 showTotal();
 
 /* voice: every character, word and sentence is recorded in advance with a warm voice (island-voice/<key>.mp3, made by
@@ -676,7 +679,7 @@ function menu() {
     b.appendChild(E('span', 'n', save.done[L.n] ? '✓' : String(L.n)));
     var t = E('div'); t.appendChild(E('h3', null, 'Level ' + L.n + ': ' + L.title + ' <span class="han">' + L.zh + '</span>')); t.appendChild(E('p', null, L.text));
     var sc = save.score[L.n];
-    if (sc) t.appendChild(E('p', 'sc', UNIT + ' ' + sc.got + ' of ' + sc.of + ' right the first time'));
+    if (sc) t.appendChild(E('p', 'sc', UNIT + ' ' + levelScore(sc) + ' of ' + sc.of));
     if (L.run ? save.bingo : save.at && save.at[L.n]) t.appendChild(E('p', 'cont', '⏯ Continue where you left off'));
     b.appendChild(t);
     b.appendChild(E('span', 'go', '▶'));
@@ -692,7 +695,7 @@ function open(L) {
   if (!sc || going) return L.run ? L.run(L) : play(L);
   var o = E('div', 'ask-over'), box = E('div', 'ask-box');
   box.appendChild(E('h3', null, 'Play level ' + L.n + ' again?'));
-  box.appendChild(E('p', null, 'Your score now: <b>' + sc.got + ' of ' + sc.of + ' ' + UNIT + '</b>. When you finish, your new score takes its place, higher or lower.'));
+  box.appendChild(E('p', null, 'Your score now: <b>' + levelScore(sc) + ' of ' + sc.of + ' ' + UNIT + '</b>. When you finish, your new score takes its place, higher or lower.'));
   var r = E('div', 'row'), yes = E('button', 'btn', 'Play again'), no = E('button', 'btn ghost', 'Not now');
   yes.type = no.type = 'button';
   yes.onclick = function () { o.remove(); if (L.run) L.run(L); else play(L); };
@@ -701,19 +704,19 @@ function open(L) {
 }
 
 /* ---------- one engine for every level: a queue of steps ---------- */
-function play(L) {
+function play(L, redo) {   // redo = { steps }: a second try at the questions missed the first time
   app.classList.add('big');   // levels 1-4 use the bigger sizes on a tablet
-  var steps = L.build(), total, i = 0, again = {}, res = {}, counter = null;   // res: question id -> 1 right the first time, 0 not
+  var steps = redo ? redo.steps : L.build(), total, i = 0, again = {}, res = {}, counter = null;   // res: question id -> 1 right the first time, 0 not
   function first(s, ok) { var isFirst = !(s.id in res); if (isFirst) { res[s.id] = ok ? 1 : 0; keep(); tally(); } return isFirst && ok; }   // only the first try counts
   function tally() { if (!counter) return; var r = 0, w = 0; Object.keys(res).forEach(function (k) { if (res[k]) r++; else w++; }); counter.innerHTML = '<b class="tr">✓ ' + r + '</b><b class="tw">✗ ' + w + '</b>'; }
   function result() {   // this play: how many questions were right the first time, and which were not
-    var seen = {}, got = 0, miss = [];
-    steps.forEach(function (s) { if (!s.id || seen[s.id]) return; seen[s.id] = 1; if (res[s.id] === 1) got++; else { var l = s.label || s.answer || (s.x && s.x.ok[0]) || ''; if (miss.indexOf(l) < 0) miss.push(l); } });
-    return { got: got, of: Object.keys(seen).length, miss: miss };
+    var seen = {}, got = 0, miss = [], ids = [];
+    steps.forEach(function (s) { if (!s.id || seen[s.id]) return; seen[s.id] = 1; if (res[s.id] === 1) got++; else { ids.push(s.id); var l = s.label || s.answer || (s.x && s.x.ok[0]) || ''; if (miss.indexOf(l) < 0) miss.push(l); } });
+    return { got: got, of: Object.keys(seen).length, miss: miss, ids: ids };
   }
-  function rightText(s) { return first(s, true) ? 'Right! +1 ' + UNIT : res[s.id] ? 'Right!' : 'Right! No ' + UNIT + ' this time: the first try was wrong.'; }
+  function rightText(s) { return first(s, true) ? (redo ? 'Right! +½ ' : 'Right! +1 ') + UNIT : res[s.id] ? 'Right!' : 'Right! No ' + UNIT + ' this time: the first try was wrong.'; }
   function key(s) { return s.id || (s.c ? 'm' + s.c.c : s.type); }
-  var was = save.at && save.at[L.n];
+  var was = !redo && save.at && save.at[L.n];
   if (was) {   // came back to a level left half way: rebuild it in the saved order and go on from the saved step
     var byKey = {}; steps.forEach(function (s) { byKey[key(s)] = s; });
     var back = was.keys.map(function (k) { return byKey[k]; });
@@ -721,9 +724,9 @@ function play(L) {
   }
   total = steps.length;
   warm(levelTexts(steps));
-  function keep() { save.at = save.at || {}; save.at[L.n] = { keys: steps.map(key), i: i - 1, again: again, res: res }; store(); }   // saved at every step
+  function keep() { if (redo) return; save.at = save.at || {}; save.at[L.n] = { keys: steps.map(key), i: i - 1, again: again, res: res }; store(); }   // saved at every step
   function next() {
-    if (i >= steps.length) return finish(L, result());
+    if (i >= steps.length) return redo ? redone(L, result()) : finish(L, result());
     var s = steps[i++];
     keep();
     app.innerHTML = '';
@@ -848,7 +851,7 @@ function play(L) {
           var r = E('div', 'row'); var go = E('button', 'btn', 'Next ▶'); go.type = 'button'; go.onclick = next; r.appendChild(go); p.appendChild(r); go.focus();
         } else {
           b.classList.add('no'); first(s, false); beep(false); fb.className = 'fb no'; fb.textContent = s.wide ? 'Not this one. Look at where 可真 and 啊 go, and try another.' : 'Not this one. Try another chest.';
-          if (!again[s.id] && !s.wide) { again[s.id] = 1; steps.push(s); total++; }   // a missed question comes back once at the end (not in the sentence-pattern level)
+          if (!again[s.id] && !s.wide && !redo) { again[s.id] = 1; steps.push(s); total++; }   // a missed question comes back once at the end (not in the sentence-pattern level)
         }
       };
       opts.appendChild(b);
@@ -870,10 +873,11 @@ function finish(L, r, old) {   // r = this play's result; old = the score it rep
   if (r) {
     var box = E('div', 'result');
     box.appendChild(E('div', 'big1', r.got + ' of ' + r.of + ' right the first time: ' + r.got + ' ' + UNIT));
-    if (old) box.appendChild(E('div', null, 'This takes the place of your old score, ' + old.got + ' ' + UNIT + '.'));
+    if (old) box.appendChild(E('div', null, 'This takes the place of your old score, ' + levelScore(old) + ' ' + UNIT + '.'));
     if (r.miss.length) box.appendChild(E('div', 'miss', 'Not right the first time: <span class="han">' + r.miss.join(' · ') + '</span>'));
-    box.appendChild(E('div', null, 'Lesson total: ' + lessonTotal() + ' ' + UNIT));
+    box.appendChild(E('div', null, 'Lesson total: ' + fmt(lessonTotal()) + ' ' + UNIT));
     p.appendChild(box);
+    if (r.ids && r.ids.length) p.appendChild(redoRow(L, r.ids));
   }
   if (L.letter) {
     p.appendChild(E('p', 'say', 'Your postcard is ready. Tap Send!'));
@@ -896,6 +900,43 @@ function finish(L, r, old) {   // r = this play's result; old = the score it rep
   app.appendChild(p);
 }
 
+/* after a level: the questions missed the first time can be tried again, for half a stamp each */
+function redoRow(L, ids) {
+  var r = E('div', 'row'), b = E('button', 'btn redo', '🔁 Try the ' + ids.length + ' missed again (½ ' + UNIT + ' each)'); b.type = 'button';
+  b.onclick = function () { play(L, { steps: redoSteps(L, ids) }); };
+  r.appendChild(b); return r;
+}
+function redoSteps(L, ids) {
+  if (L.run) {   // bingo: each missed word comes back as "listen, then pick it"
+    var pool = CHARS.map(function (c) { return c.c; }).concat(WORDS.map(function (w) { return w.w; }));
+    return ids.map(function (t) {
+      return { id: t, label: t, prompt: 'Listen, then pick what you hear.', answer: t, word: true, sayFirst: t,
+        opts: shuffle([t].concat(shuffle(pool.filter(function (x) { return x !== t; })).slice(0, 2))),
+        top: function () { var d = E('div', 'row'); d.appendChild(speakBtn(t)); return d; } };
+    });
+  }
+  var seen = {};
+  return L.build().filter(function (s) { if (!s.id || seen[s.id] || ids.indexOf(s.id) < 0) return false; seen[s.id] = 1; return true; });
+}
+function redone(L, r) {   // the end of a second try: half a stamp for each one right this time
+  var sc = save.score[L.n]; if (sc) { sc.half = (sc.half || 0) + r.got; store(); showTotal(); }
+  app.innerHTML = '';
+  var p = E('div', 'panel');
+  p.appendChild(E('div', 'card-big', '🔁'));
+  p.appendChild(E('h2', null, 'Second try done!'));
+  var box = E('div', 'result');
+  box.appendChild(E('div', 'big1', r.got + ' of ' + r.of + ' right this time: +' + fmt(r.got / 2) + ' ' + UNIT));
+  if (r.miss.length) box.appendChild(E('div', 'miss', 'Still not right: <span class="han">' + r.miss.join(' · ') + '</span>'));
+  if (sc) box.appendChild(E('div', null, 'Level ' + L.n + ' score: ' + fmt(sc.got + sc.half / 2) + ' of ' + sc.of + ' ' + UNIT));
+  box.appendChild(E('div', null, 'Lesson total: ' + fmt(lessonTotal()) + ' ' + UNIT));
+  p.appendChild(box);
+  if (r.ids.length) p.appendChild(redoRow(L, r.ids));
+  var nextL = LEVELS[L.n], r2 = E('div', 'row');
+  if (nextL) { var nx = E('button', 'btn', 'Level ' + nextL.n + ' ▶'); nx.type = 'button'; nx.onclick = function () { open(nextL); }; r2.appendChild(nx); }
+  var bk = E('button', 'btn ghost', 'All levels'); bk.type = 'button'; bk.onclick = menu; r2.appendChild(bk);
+  p.appendChild(r2); app.appendChild(p);
+}
+
 /* ---------- level 4: bingo. Hear it, find it, mark it. Three cards, each asking a little more. ---------- */
 var BINGO_LINES = (function () {
   var out = [], i, j;
@@ -915,7 +956,7 @@ function bingo(L) {
     var goal = BINGO_GOALS[cardNo], items = null, calls = null, ci = 0, now = null, wrong = 0, over = false, marked = {};
     var res = (save.bingo && save.bingo.res) || {};   // card:word -> 1 found on the first try, 0 not; adds up over the three cards
     function firstTap(ok) { var k = cardNo + ':' + now.t; if (!(k in res)) res[k] = ok ? 1 : 0; tally(); }
-    function bingoResult() { var got = 0, miss = []; Object.keys(res).forEach(function (k) { if (res[k]) got++; else miss.push(k.slice(k.indexOf(':') + 1)); }); return { got: got, of: Object.keys(res).length, miss: miss }; }
+    function bingoResult() { var got = 0, miss = []; Object.keys(res).forEach(function (k) { if (res[k]) got++; else miss.push(k.slice(k.indexOf(':') + 1)); }); return { got: got, of: Object.keys(res).length, miss: miss, ids: miss }; }
     var was = save.bingo && save.bingo.cardNo === cardNo && save.bingo.cells ? save.bingo : null;
     if (was) {   // came back to a card left half way
       var pool = {};
