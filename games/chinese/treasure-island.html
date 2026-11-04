@@ -487,6 +487,17 @@ button{font:inherit;cursor:pointer}
 .nav .btn{min-height:48px;font-size:18px;padding:4px 18px}
 .nav .btn:disabled{opacity:.35;cursor:default}
 @media (min-width:600px){.big .nav .btn{min-height:56px;font-size:21px}}
+/* scores */
+.tally{font:800 20px var(--display);align-self:center;white-space:nowrap}
+.tally .tr{color:var(--green)}.tally .tw{color:var(--red);margin-left:12px}
+.lv .sc{color:var(--green);font-weight:800}
+.result{max-width:560px;margin:12px auto 0;background:#fffaf0;border:3px solid #e9c46a;border-radius:18px;padding:12px 16px;font-size:19px}
+.result .big1{font:800 26px var(--display);color:var(--green)}
+.result .miss{color:var(--red);margin-top:6px}
+.result .han{letter-spacing:3px}
+.ask-over{position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px}
+.ask-box{background:#fff;border-radius:22px;padding:22px;max-width:460px;text-align:center;font-size:19px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.ask-box h3{font-size:24px;margin-bottom:8px}
 </style>
 </head>
 <body>
@@ -574,12 +585,16 @@ function pick3(answer, no) { return shuffle([answer].concat(shuffle(CHARS.map(fu
 var KEY = 'tmg.treasure-island.v1';
 var save = (function () { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } })();
 function store() { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) { /* private mode: progress just is not kept */ } }
-save.stamps = save.stamps || 0; save.done = save.done || {};
+save.done = save.done || {}; save.score = save.score || {};
+if ('stamps' in save) { delete save.stamps; store(); }   // the old pile of stamps grew with every replay; scores per level replace it
 if (!save.v) {   // a sentence-pattern level was added as level 3, so levels 3 and 4 moved up one
   var moved = {}; Object.keys(save.done).forEach(function (k) { moved[+k >= 3 ? +k + 1 : k] = save.done[k]; }); save.done = moved; save.v = 2; store();
 }
-function stamps(n) { save.stamps += n; store(); document.getElementById('stamps').textContent = '🐚 ' + save.stamps; }
-stamps(0);
+/* score: each level keeps the result of its latest finished play (one shell per question right the first time); the lesson total adds them up */
+var UNIT = '🐚';
+function lessonTotal() { var t = 0; Object.keys(save.score).forEach(function (k) { t += save.score[k].got || 0; }); return t; }
+function showTotal() { document.getElementById('stamps').textContent = UNIT + ' ' + lessonTotal(); }
+showTotal();
 
 /* voice: every character, word and sentence is recorded in advance with a warm voice (island-voice/<key>.mp3, made by
    网站\make-voices.py; key = the same hash as voice-lines.cjs). Text with no recording stays silent: the device's own voice is never used. */
@@ -635,45 +650,69 @@ function menu() {
   var h = E('div', 'hero');
   h.appendChild(E('div', 'big', '🏝️🌉'));
   h.appendChild(E('h2', null, 'Spend a day on Treasure Island'));
-  h.appendChild(E('p', null, 'Five levels, about ten minutes each. Every right answer earns a shell 🐚. Tap 🔊 to hear the Chinese.'));
+  h.appendChild(E('p', null, 'Five levels, about ten minutes each. Each answer right the first time earns a shell 🐚. Play a level again to beat your score. Tap 🔊 to hear the Chinese.'));
   app.appendChild(h);
   var ls = E('div', 'levels');
   LEVELS.forEach(function (L) {
     var b = E('button', 'lv' + (save.done[L.n] ? ' done' : '')); b.type = 'button';
     b.appendChild(E('span', 'n', save.done[L.n] ? '✓' : String(L.n)));
     var t = E('div'); t.appendChild(E('h3', null, 'Level ' + L.n + ': ' + L.title + ' <span class="han">' + L.zh + '</span>')); t.appendChild(E('p', null, L.text));
+    var sc = save.score[L.n];
+    if (sc) t.appendChild(E('p', 'sc', UNIT + ' ' + sc.got + ' of ' + sc.of + ' right the first time'));
     if (L.run ? save.bingo : save.at && save.at[L.n]) t.appendChild(E('p', 'cont', '⏯ Continue where you left off'));
     b.appendChild(t);
     b.appendChild(E('span', 'go', '▶'));
-    b.onclick = function () { if (L.run) L.run(L); else play(L); };
+    b.onclick = function () { open(L); };
     ls.appendChild(b);
   });
   app.appendChild(ls);
 }
 
+/* start a level; if it already has a score and is not half way, first say that the new score will take its place */
+function open(L) {
+  var going = L.run ? save.bingo : save.at && save.at[L.n], sc = save.score[L.n];
+  if (!sc || going) return L.run ? L.run(L) : play(L);
+  var o = E('div', 'ask-over'), box = E('div', 'ask-box');
+  box.appendChild(E('h3', null, 'Play level ' + L.n + ' again?'));
+  box.appendChild(E('p', null, 'Your score now: <b>' + sc.got + ' of ' + sc.of + ' ' + UNIT + '</b>. When you finish, your new score takes its place, higher or lower.'));
+  var r = E('div', 'row'), yes = E('button', 'btn', 'Play again'), no = E('button', 'btn ghost', 'Not now');
+  yes.type = no.type = 'button';
+  yes.onclick = function () { o.remove(); if (L.run) L.run(L); else play(L); };
+  no.onclick = function () { o.remove(); };
+  r.appendChild(yes); r.appendChild(no); box.appendChild(r); o.appendChild(box); document.body.appendChild(o); yes.focus();
+}
+
 /* ---------- one engine for every level: a queue of steps ---------- */
 function play(L) {
   app.classList.add('big');   // levels 1-4 use the bigger sizes on a tablet
-  var steps = L.build(), total, i = 0, again = {}, paid = {};
-  function pay(s) { if (paid[s.id]) return false; paid[s.id] = 1; stamps(1); return true; }   // one stamp per question, even after going back to it
+  var steps = L.build(), total, i = 0, again = {}, res = {}, counter = null;   // res: question id -> 1 right the first time, 0 not
+  function first(s, ok) { var isFirst = !(s.id in res); if (isFirst) { res[s.id] = ok ? 1 : 0; keep(); tally(); } return isFirst && ok; }   // only the first try counts
+  function tally() { if (!counter) return; var r = 0, w = 0; Object.keys(res).forEach(function (k) { if (res[k]) r++; else w++; }); counter.innerHTML = '<b class="tr">✓ ' + r + '</b><b class="tw">✗ ' + w + '</b>'; }
+  function result() {   // this play: how many questions were right the first time, and which were not
+    var seen = {}, got = 0, miss = [];
+    steps.forEach(function (s) { if (!s.id || seen[s.id]) return; seen[s.id] = 1; if (res[s.id] === 1) got++; else { var l = s.label || s.answer || (s.x && s.x.ok[0]) || ''; if (miss.indexOf(l) < 0) miss.push(l); } });
+    return { got: got, of: Object.keys(seen).length, miss: miss };
+  }
+  function rightText(s) { return first(s, true) ? 'Right! +1 ' + UNIT : res[s.id] ? 'Right!' : 'Right! No ' + UNIT + ' this time: the first try was wrong.'; }
   function key(s) { return s.id || (s.c ? 'm' + s.c.c : s.type); }
   var was = save.at && save.at[L.n];
   if (was) {   // came back to a level left half way: rebuild it in the saved order and go on from the saved step
     var byKey = {}; steps.forEach(function (s) { byKey[key(s)] = s; });
     var back = was.keys.map(function (k) { return byKey[k]; });
-    if (back.every(Boolean)) { steps = back; i = was.i; again = was.again || {}; paid = was.paid || {}; }
+    if (back.every(Boolean)) { steps = back; i = was.i; again = was.again || {}; res = was.res || {}; }
   }
   total = steps.length;
-  function keep() { save.at = save.at || {}; save.at[L.n] = { keys: steps.map(key), i: i - 1, again: again, paid: paid }; store(); }   // saved at every step
+  function keep() { save.at = save.at || {}; save.at[L.n] = { keys: steps.map(key), i: i - 1, again: again, res: res }; store(); }   // saved at every step
   function next() {
-    if (i >= steps.length) return finish(L);
+    if (i >= steps.length) return finish(L, result());
     var s = steps[i++];
     keep();
     app.innerHTML = '';
     var nav = E('div', 'nav');   // go back one step, or leave for the level list (the place is saved either way)
     var bk = E('button', 'btn ghost', '◀ Back'); bk.type = 'button'; bk.disabled = i <= 1; bk.onclick = function () { i = Math.max(0, i - 2); next(); };
     var ls = E('button', 'btn ghost', 'All levels'); ls.type = 'button'; ls.onclick = menu;
-    nav.appendChild(bk); nav.appendChild(ls); app.appendChild(nav);
+    counter = E('span', 'tally'); tally();
+    nav.appendChild(bk); nav.appendChild(counter); nav.appendChild(ls); app.appendChild(nav);
     var bar = E('div', 'bar'); var fill = E('i'); bar.appendChild(fill); app.appendChild(bar);
     fill.style.width = Math.min(100, Math.round((i - 1) / total * 100)) + '%';
     var p = E('div', 'panel'); app.appendChild(p);
@@ -766,11 +805,11 @@ function play(L) {
       if (picked.length < x.tiles.length) return;
       var said = picked.map(function (i) { return x.tiles[i]; }).join('') + P.end;
       if (x.ok.indexOf(said) >= 0) {
-        done = true; line.classList.add('ok'); beep(true); fb.className = 'fb ok'; fb.textContent = pay(s) ? 'Right! +1 🐚' : 'Right!'; say(said);
+        done = true; line.classList.add('ok'); beep(true); fb.className = 'fb ok'; fb.textContent = rightText(s); say(said);
         var r = E('div', 'row'); var go = E('button', 'btn', 'Next ▶'); go.type = 'button'; go.onclick = next; r.appendChild(go); p.appendChild(r); go.focus();
         return;
       }
-      wrong++; beep(false); line.classList.add('no'); fb.className = 'fb no';
+      wrong++; first(s, false); beep(false); line.classList.add('no'); fb.className = 'fb no';
       fb.textContent = wrong < 2 ? 'Not quite. Drag a word to a new place, or tap it to take it back.' : 'Try this order: ' + x.ok[0];
     }
     draw();
@@ -785,12 +824,12 @@ function play(L) {
         if (answered) return;
         if (o === s.answer) {
           answered = true; b.classList.add('ok'); beep(true);
-          fb.className = 'fb ok'; fb.textContent = pay(s) ? 'Right! +1 🐚' : 'Right!';
+          fb.className = 'fb ok'; fb.textContent = rightText(s);
           if (s.after) s.after(p);
           say(s.sayAfter || o);
           var r = E('div', 'row'); var go = E('button', 'btn', 'Next ▶'); go.type = 'button'; go.onclick = next; r.appendChild(go); p.appendChild(r); go.focus();
         } else {
-          b.classList.add('no'); beep(false); fb.className = 'fb no'; fb.textContent = s.wide ? 'Not this one. Look at where 可真 and 啊 go, and try another.' : 'Not this one. Try another chest.';
+          b.classList.add('no'); first(s, false); beep(false); fb.className = 'fb no'; fb.textContent = s.wide ? 'Not this one. Look at where 可真 and 啊 go, and try another.' : 'Not this one. Try another chest.';
           if (!again[s.id] && !s.wide) { again[s.id] = 1; steps.push(s); total++; }   // a missed question comes back once at the end (not in the sentence-pattern level)
         }
       };
@@ -801,14 +840,23 @@ function play(L) {
   }
   next();
 }
-function finish(L) {
+function finish(L, r, old) {   // r = this play's result; old = the score it replaces (bingo saves its score itself and passes the old one)
+  if (arguments.length < 3) { old = save.score[L.n]; if (r) save.score[L.n] = { got: r.got, of: r.of }; }
   if (save.at) delete save.at[L.n];
   if (L.run) delete save.bingo;
-  save.done[L.n] = 1; store();
+  save.done[L.n] = 1; store(); showTotal();
   app.innerHTML = '';
   var p = E('div', 'panel');
   p.appendChild(E('div', 'card-big', L.letter ? '📬' : '🎉'));
   p.appendChild(E('h2', null, 'Level ' + L.n + ' done!'));
+  if (r) {
+    var box = E('div', 'result');
+    box.appendChild(E('div', 'big1', r.got + ' of ' + r.of + ' right the first time: ' + r.got + ' ' + UNIT));
+    if (old) box.appendChild(E('div', null, 'This takes the place of your old score, ' + old.got + ' ' + UNIT + '.'));
+    if (r.miss.length) box.appendChild(E('div', 'miss', 'Not right the first time: <span class="han">' + r.miss.join(' · ') + '</span>'));
+    box.appendChild(E('div', null, 'Lesson total: ' + lessonTotal() + ' ' + UNIT));
+    p.appendChild(box);
+  }
   if (L.letter) {
     p.appendChild(E('p', 'say', 'Your postcard is ready. Tap Send!'));
     var letter = E('div', 'letter'); letter.appendChild(E('span', 'st', '🐚'));
@@ -820,10 +868,10 @@ function finish(L) {
     r.appendChild(send); p.appendChild(r);
   } else {
     var nextL = LEVELS[L.n];
-    p.appendChild(E('p', 'say', 'You have ' + save.stamps + ' shells.' + (nextL ? ' Ready for level ' + nextL.n + '?' : '')));
+    if (nextL) p.appendChild(E('p', 'say', 'Ready for level ' + nextL.n + '?'));
     var r2 = E('div', 'row');
-    if (nextL) { var nx = E('button', 'btn', 'Level ' + nextL.n + ' ▶'); nx.type = 'button'; nx.onclick = function () { if (nextL.run) nextL.run(nextL); else play(nextL); }; r2.appendChild(nx); }
-    else { var ag = E('button', 'btn', 'Play bingo again'); ag.type = 'button'; ag.onclick = function () { L.run(L); }; r2.appendChild(ag); }
+    if (nextL) { var nx = E('button', 'btn', 'Level ' + nextL.n + ' ▶'); nx.type = 'button'; nx.onclick = function () { open(nextL); }; r2.appendChild(nx); }
+    else { var ag = E('button', 'btn', 'Play bingo again'); ag.type = 'button'; ag.onclick = function () { open(L); }; r2.appendChild(ag); }
     var bk = E('button', 'btn ghost', 'All levels'); bk.type = 'button'; bk.onclick = menu;
     r2.appendChild(bk); p.appendChild(r2);
   }
@@ -847,6 +895,9 @@ function bingo(L) {
   function start() {
     app.classList.remove('big');   // the bingo card already fills the width
     var goal = BINGO_GOALS[cardNo], items = null, calls = null, ci = 0, now = null, wrong = 0, over = false, marked = {};
+    var res = (save.bingo && save.bingo.res) || {};   // card:word -> 1 found on the first try, 0 not; adds up over the three cards
+    function firstTap(ok) { var k = cardNo + ':' + now.t; if (!(k in res)) res[k] = ok ? 1 : 0; tally(); }
+    function bingoResult() { var got = 0, miss = []; Object.keys(res).forEach(function (k) { if (res[k]) got++; else miss.push(k.slice(k.indexOf(':') + 1)); }); return { got: got, of: Object.keys(res).length, miss: miss }; }
     var was = save.bingo && save.bingo.cardNo === cardNo && save.bingo.cells ? save.bingo : null;
     if (was) {   // came back to a card left half way
       var pool = {};
@@ -855,7 +906,7 @@ function bingo(L) {
       if (items.every(Boolean) && calls.every(Boolean)) { ci = was.ci || 0; (was.marked || []).forEach(function (k) { marked[k] = 1; }); } else items = null;
     }
     if (!items) { items = shuffle(bingoItems()); calls = shuffle(items); }
-    function keepCard(at) { save.bingo = { cardNo: cardNo, cells: items.map(function (x) { return x.t; }), calls: calls.map(function (x) { return x.t; }), ci: at, marked: Object.keys(marked).map(Number) }; store(); }
+    function keepCard(at) { save.bingo = { cardNo: cardNo, cells: items.map(function (x) { return x.t; }), calls: calls.map(function (x) { return x.t; }), ci: at, marked: Object.keys(marked).map(Number), res: res }; store(); }
     var cells = items.slice(0, 12).concat([{ free: true }], items.slice(12));
     app.innerHTML = '';
     var bar = E('div', 'bar'), fill = E('i'); fill.style.width = Math.round(cardNo / BINGO_GOALS.length * 100) + '%'; bar.appendChild(fill); app.appendChild(bar);
@@ -864,6 +915,9 @@ function bingo(L) {
     var top = E('div', 'row');
     var hear = E('button', 'btn hear', '🔊 Listen again <span class="han">再听一次</span>'); hear.setAttribute('aria-label', 'Listen again'); hear.type = 'button'; hear.onclick = function () { if (now) say(now.t); }; top.appendChild(hear);
     p.appendChild(top);
+    var counter = E('div', 'tally'); top.appendChild(counter);
+    function tally() { var r = bingoResult(); counter.innerHTML = '<b class="tr">✓ ' + r.got + '</b><b class="tw">✗ ' + r.miss.length + '</b>'; }
+    tally();
     var hint = E('div', 'bhint'); p.appendChild(hint);
     var grid = E('div', 'bgrid'); p.appendChild(grid);
     var btns = [];
@@ -889,25 +943,27 @@ function bingo(L) {
     function tap(c, i, b) {
       if (over || !now || marked[i]) return;
       if (c.t !== now.t) {
-        wrong++; beep(false); b.classList.add('no'); setTimeout(function () { b.classList.remove('no'); }, 350);
+        wrong++; firstTap(false); keepCard(ci - 1); beep(false); b.classList.add('no'); setTimeout(function () { b.classList.remove('no'); }, 350);
         if (wrong === 1) { hint.textContent = 'Not this one. Listen again.'; say(now.t); }
         else if (wrong === 2) hint.textContent = now.py + ' · ' + now.en;
         else { hint.textContent = now.py + ' · ' + now.en; btns.forEach(function (x, k) { if (cells[k].t === now.t) x.classList.add('peek'); }); }
         return;
       }
-      marked[i] = 1; keepCard(ci); b.classList.remove('peek'); b.classList.add('on'); beep(true); if (wrong === 0) stamps(1);
+      marked[i] = 1; keepCard(ci); b.classList.remove('peek'); b.classList.add('on'); beep(true); firstTap(true); keepCard(ci);
       hint.textContent = '';
       var done = linesDone();
       if (done >= goal.lines) return win();
       now = null; setTimeout(call, 750);
     }
     function win() {
-      over = true; now = null; hint.textContent = ''; stamps(5); top.remove(); back.remove();
-      end.appendChild(E('div', 'bwin', '🎉 BINGO! +5 🐚'));
+      over = true; now = null; hint.textContent = ''; top.remove(); back.remove();
+      end.appendChild(E('div', 'bwin', '🎉 BINGO!'));
       var r = E('div', 'row'), last = cardNo === BINGO_GOALS.length - 1;
-      if (last) { delete save.bingo; save.done[L.n] = 1; } else save.bingo = { cardNo: cardNo + 1 }; store();   // coming back starts the next card
+      var old = save.score[L.n], sc = bingoResult();
+      if (last) { delete save.bingo; save.done[L.n] = 1; save.score[L.n] = { got: sc.got, of: sc.of }; } else save.bingo = { cardNo: cardNo + 1, res: res }; store();   // coming back starts the next card
+      end.appendChild(E('div', 'tally', '<b class="tr">✓ ' + sc.got + '</b><b class="tw">✗ ' + sc.miss.length + '</b>'));
       var go = E('button', 'btn', last ? 'Finish ▶' : 'Next card ▶'); go.type = 'button';
-      go.onclick = function () { if (last) finish(L); else { cardNo++; start(); } };
+      go.onclick = function () { if (last) finish(L, sc, old); else { cardNo++; start(); } };
       r.appendChild(go); end.appendChild(r);
       say('Bingo!'); go.focus();
     }
@@ -936,7 +992,7 @@ function level1() {   // meet 5, find them by pinyin, find them by sound; three 
 function level2() {
   return shuffle(WORDS).map(function (w) {
     var miss = w.w.charAt(w.k), shown = w.w.split('').map(function (ch, i) { return i === w.k ? '<span class="slot">？</span>' : ch; }).join('');
-    return { id: 'w' + w.w, prompt: 'Which character finishes the word?', answer: miss, opts: pick3(miss, w.no), sayAfter: w.w,
+    return { id: 'w' + w.w, label: w.w, prompt: 'Which character finishes the word?', answer: miss, opts: pick3(miss, w.no), sayAfter: w.w,
       top: function () { var d = E('div'); d.appendChild(E('div', 'emoji', w.e)); d.appendChild(E('div', 'word han', shown)); d.appendChild(E('div', 'mean', w.py + ' · ' + w.en)); return d; },
       after: function (p) { var el = p.querySelector('.slot'); if (el) { el.textContent = miss; el.style.color = 'var(--green)'; el.style.borderColor = 'var(--green)'; } } };
   });
