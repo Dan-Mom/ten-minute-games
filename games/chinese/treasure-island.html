@@ -606,8 +606,26 @@ function say(t) {
   var k = vkey(t);
   if (VKEYS && !VKEYS[k]) return;               // no recording for this text: stay quiet, never the device's robot voice
   if (!player) player = new Audio();            // one player, reused, so iPad keeps allowing it after the first tap
-  player.src = 'island-voice/' + k + '.mp3';        // also before the list has arrived: the file is simply tried
+  player.src = READY[k] || 'island-voice/' + k + '.mp3';   // downloaded already: plays at once; else fetched now (also before the list has arrived)
   var p = player.play(); if (p && p.catch) p.catch(function () {});   // interrupted, blocked or missing: stay quiet (🔊 replays it)
+}
+/* download the recordings a level will need as soon as it starts, so a tap plays them from memory with no wait */
+var READY = {}, ASKED = {};
+function warm(texts) {
+  texts.forEach(function (t) {
+    if (!t) return; var k = vkey(t); if (ASKED[k] || (VKEYS && !VKEYS[k])) return; ASKED[k] = 1;
+    try { fetch('island-voice/' + k + '.mp3').then(function (r) { if (!r.ok) throw 0; return r.blob(); }).then(function (b) { READY[k] = URL.createObjectURL(b); }, function () { delete ASKED[k]; }); } catch (e) { delete ASKED[k]; }
+  });
+}
+function levelTexts(steps) {   // every line a level can say: characters, radical names, examples, answers, options
+  var out = [];
+  steps.forEach(function (s) {
+    if (s.c) { out.push(s.c.c); PARTS.forEach(function (x) { if (x.c === s.c.c) out.push(x.name); }); }
+    if (s.type === 'show') PATTERN[0].ex.forEach(function (e) { out.push(e.s); });
+    if (s.x) out = out.concat(s.x.ok);
+    out = out.concat([s.answer, s.sayAfter, s.sayFirst], s.opts || []);
+  });
+  return out;
 }
 function speakBtn(t) { var b = E('button', 'speak', '🔊'); b.type = 'button'; b.setAttribute('aria-label', 'Listen'); b.onclick = function () { say(t); }; return b; }
 /* the "how it is built" box on a new-character card: its pieces, its radical and what that radical usually means */
@@ -702,6 +720,7 @@ function play(L) {
     if (back.every(Boolean)) { steps = back; i = was.i; again = was.again || {}; res = was.res || {}; }
   }
   total = steps.length;
+  warm(levelTexts(steps));
   function keep() { save.at = save.at || {}; save.at[L.n] = { keys: steps.map(key), i: i - 1, again: again, res: res }; store(); }   // saved at every step
   function next() {
     if (i >= steps.length) return finish(L, result());
@@ -823,10 +842,9 @@ function play(L) {
       b.onclick = function () {
         if (answered) return;
         if (o === s.answer) {
-          answered = true; b.classList.add('ok'); beep(true);
+          answered = true; say(s.sayAfter || o); b.classList.add('ok'); beep(true);   // the sound first, then the rest
           fb.className = 'fb ok'; fb.textContent = rightText(s);
           if (s.after) s.after(p);
-          say(s.sayAfter || o);
           var r = E('div', 'row'); var go = E('button', 'btn', 'Next ▶'); go.type = 'button'; go.onclick = next; r.appendChild(go); p.appendChild(r); go.focus();
         } else {
           b.classList.add('no'); first(s, false); beep(false); fb.className = 'fb no'; fb.textContent = s.wide ? 'Not this one. Look at where 可真 and 啊 go, and try another.' : 'Not this one. Try another chest.';
@@ -906,6 +924,7 @@ function bingo(L) {
       if (items.every(Boolean) && calls.every(Boolean)) { ci = was.ci || 0; (was.marked || []).forEach(function (k) { marked[k] = 1; }); } else items = null;
     }
     if (!items) { items = shuffle(bingoItems()); calls = shuffle(items); }
+    warm(calls.map(function (x) { return x.t; }).concat(['Bingo!']));
     function keepCard(at) { save.bingo = { cardNo: cardNo, cells: items.map(function (x) { return x.t; }), calls: calls.map(function (x) { return x.t; }), ci: at, marked: Object.keys(marked).map(Number), res: res }; store(); }
     var cells = items.slice(0, 12).concat([{ free: true }], items.slice(12));
     app.innerHTML = '';
