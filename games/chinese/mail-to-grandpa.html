@@ -499,6 +499,17 @@ button{font:inherit;cursor:pointer}
 .ask-box{background:#fff;border-radius:22px;padding:22px;max-width:460px;text-align:center;font-size:19px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
 .btn.redo{background:#e8a317;box-shadow:0 5px 0 #b37a0c}
 .ask-box h3{font-size:24px;margin-bottom:8px}
+/* bingo on a sideways screen: everything but the card in a column on the left, the card on the right */
+@media (min-width:700px) and (min-aspect-ratio:5/4){
+.wrap.bwide{max-width:1120px}
+.bpanel{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto auto 1fr auto;column-gap:28px;align-items:start;text-align:center}
+.bpanel>.bgoal{grid-column:1;grid-row:1;margin-top:8px}
+.bpanel>.btop{grid-column:1;grid-row:2;flex-direction:column;gap:10px}
+.bpanel>.bhint{grid-column:1;grid-row:3}
+.bpanel>.bend{grid-column:1;grid-row:4}
+.bpanel>.bback{grid-column:1;grid-row:5}
+.bpanel>.bgrid{grid-column:2;grid-row:1 / 6;margin:0;width:min(600px,calc(100vh - 200px));width:min(600px,calc(100dvh - 200px))}
+}
 </style>
 </head>
 <body>
@@ -666,7 +677,7 @@ var LEVELS = [
   { n: 5, title: 'Mail Bingo', zh: '邮票 Bingo', text: 'Listen, then stamp what you hear on your card. Make a line, then two lines, then fill the card.', run: bingo }
 ];
 function menu() {
-  app.classList.remove('big');
+  app.classList.remove('big', 'bwide');
   app.innerHTML = '';
   var h = E('div', 'hero');
   h.appendChild(E('div', 'big', '👴🏻✉️'));
@@ -705,7 +716,7 @@ function open(L) {
 
 /* ---------- one engine for every level: a queue of steps ---------- */
 function play(L, redo) {   // redo = { steps }: a second try at the questions missed the first time
-  app.classList.add('big');   // levels 1-4 use the bigger sizes on a tablet
+  app.classList.add('big'); app.classList.remove('bwide');   // levels 1-4 use the bigger sizes on a tablet
   var steps = redo ? redo.steps : L.build(), total, i = 0, again = {}, res = {}, counter = null;   // res: question id -> 1 right the first time, 0 not
   function first(s, ok) { var isFirst = !(s.id in res); if (isFirst) { res[s.id] = ok ? 1 : 0; keep(); tally(); } return isFirst && ok; }   // only the first try counts
   function tally() { if (!counter) return; var r = 0, w = 0; Object.keys(res).forEach(function (k) { if (res[k]) r++; else w++; }); counter.innerHTML = '<b class="tr">✓ ' + r + '</b><b class="tw">✗ ' + w + '</b>'; }
@@ -952,7 +963,7 @@ function bingoItems() {   // every one of the 15 characters, plus 9 of the words
 function bingo(L) {
   var cardNo = save.bingo && save.bingo.cardNo < BINGO_GOALS.length ? save.bingo.cardNo : 0;
   function start() {
-    app.classList.remove('big');   // the bingo card already fills the width
+    app.classList.remove('big'); app.classList.add('bwide');   // the bingo card fills the width; sideways, the page is wider for the left column
     var goal = BINGO_GOALS[cardNo], items = null, calls = null, ci = 0, now = null, wrong = 0, over = false, marked = {};
     var res = (save.bingo && save.bingo.res) || {};   // card:word -> 1 found on the first try, 0 not; adds up over the three cards
     function firstTap(ok) { var k = cardNo + ':' + now.t; if (!(k in res)) res[k] = ok ? 1 : 0; tally(); }
@@ -972,7 +983,7 @@ function bingo(L) {
     var bar = E('div', 'bar'), fill = E('i'); fill.style.width = Math.round(cardNo / BINGO_GOALS.length * 100) + '%'; bar.appendChild(fill); app.appendChild(bar);
     var p = E('div', 'panel bpanel'); app.appendChild(p);
     p.appendChild(E('div', 'bgoal', 'Card ' + (cardNo + 1) + ' of 3: ' + goal.text));
-    var top = E('div', 'row');
+    var top = E('div', 'row btop');
     var hear = E('button', 'btn hear', '🔊 Listen again <span class="han">再听一次</span>'); hear.setAttribute('aria-label', 'Listen again'); hear.type = 'button'; hear.onclick = function () { if (now) say(now.t); }; top.appendChild(hear);
     p.appendChild(top);
     var counter = E('div', 'tally'); top.appendChild(counter);
@@ -987,8 +998,8 @@ function bingo(L) {
       else b.onclick = function () { tap(c, i, b); };
       btns.push(b); grid.appendChild(b);
     });
-    var end = E('div'); p.appendChild(end);
-    var back = E('div', 'row'), ls = E('button', 'btn ghost', 'All levels'); ls.type = 'button'; ls.onclick = menu; back.appendChild(ls); p.appendChild(back);
+    var end = E('div', 'bend'); p.appendChild(end);
+    var back = E('div', 'row bback'), ls = E('button', 'btn ghost', 'All levels'); ls.type = 'button'; ls.onclick = menu; back.appendChild(ls); p.appendChild(back);
     function peekOff() { btns.forEach(function (x) { x.classList.remove('peek'); }); }
     function call() {
       if (over || ci >= calls.length || !grid.isConnected) return;   // left the card (All levels, Home): stay quiet
