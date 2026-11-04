@@ -326,7 +326,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
 /* Chinese game 1. One idea: the 15 new characters of the lesson.
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 uses them in sentences, level 4 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses the characters in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own; only the characters and common words come from the lesson. */
 :root{
   color-scheme:light;
@@ -418,6 +418,24 @@ button{font:inherit;cursor:pointer}
 .bcell.peek{animation:peek 1s ease-in-out infinite}
 @keyframes stampOn{0%{transform:scale(1.25)}100%{transform:scale(1)}}
 @keyframes peek{50%{background:var(--gold);transform:scale(1.08)}}
+.btn.hear{min-height:60px;font-size:22px;padding:8px 28px}
+.opt.wide{width:100%;max-width:560px;height:auto;min-height:64px;padding:10px 16px;font-size:26px;line-height:1.4;text-align:left}
+.opt.wide::before{display:none}
+/* level 3: sentence pattern */
+.pat{font-family:var(--han);font-weight:700;font-size:40px;color:var(--blue);margin:4px 0 8px}
+.key{color:var(--red)}
+.exs{max-width:560px;margin:14px auto 0;text-align:left;display:grid;gap:10px}
+.ex{display:flex;align-items:center;gap:12px;background:#fffaf0;border:3px solid #e9c46a;border-radius:16px;padding:8px 12px}
+.ex .han{font-size:26px}
+.ex .mean{font-size:16px}
+.bline{min-height:76px;max-width:620px;margin:12px auto 0;border-bottom:4px dashed var(--blue-s);display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;padding:8px}
+.bline.ok{border-color:var(--green)}
+.bline.no{border-color:var(--red);animation:shake .3s}
+.endmark{font-family:var(--han);font-size:30px;color:var(--mute)}
+.tiles{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:16px;min-height:60px}
+.tile{min-height:56px;padding:6px 14px;border:3px solid #e9c46a;border-radius:14px;background:#fffaf0;color:var(--ink);font-family:var(--han);font-weight:700;font-size:28px;box-shadow:0 4px 0 #e9c46a;touch-action:manipulation}
+.tile.key{border-color:var(--red);box-shadow:0 4px 0 var(--red)}
+.bline .tile{background:#fff}
 .bwin{font:800 clamp(34px,8vw,52px)/1.1 var(--display);color:var(--green);margin-top:12px}
 @media (max-width:480px){.wrap{padding:12px}.panel.bpanel{padding:14px 10px}}
 @media (prefers-reduced-motion:reduce){.bcell.on,.bcell.peek{animation:none}.bcell.peek{background:var(--gold)}}
@@ -470,6 +488,25 @@ var WORDS = [
   { w: '孙女', k: 0, py: 'sūnnǚ', en: 'granddaughter', e: '👧' }, { w: '孙子', k: 0, py: 'sūnzi', en: 'grandson', e: '👦' }
 ];
 /* level 3: our own letter, one blank per sentence, each of the 15 characters once. It starts after "亲爱的爷爷：" */
+/* level 3: the lesson's sentence pattern 是不是. All sentences are our own. show = the explanation card,
+   pick = turn a sentence into a question (a = right, no = wrong ones), build = tap the words in order (ok = every right order) */
+var PATTERN = [
+  { t: 'show', shape: '…是不是…？', keys: ['是不是'], end: '？', ask: 'Turn it into a 是不是 question. Which one is right?',
+    what: 'Use 是不是 when you think you know the answer and want to check: "…, right?" Put 是不是 just before the part you are checking. A 是不是 question needs no 吗.',
+    ex: [{ s: '爷爷是不是住在北京？', en: 'Grandpa lives in Beijing, right?' }, { s: '这封信是不是你写的？', en: 'You wrote this letter, didn\'t you?' }, { s: '你是不是想去长城？', en: 'You want to go to the Great Wall, right?' }] },
+  { t: 'pick', from: '爷爷住在北京。', a: '爷爷是不是住在北京？', no: ['爷爷是不是住在北京吗？', '爷爷住在北是不是京？'], en: 'Grandpa lives in Beijing, right?' },
+  { t: 'build', tiles: ['你', '是不是', '给爷爷', '写信了'], ok: ['你是不是给爷爷写信了？', '是不是你给爷爷写信了？'], en: 'You wrote to Grandpa, right?' },
+  { t: 'pick', from: '这是一张长城邮票。', a: '这是不是一张长城邮票？', no: ['这是是不是一张长城邮票？', '这是一张长城邮票是不是吗？'], en: 'This is a Great Wall stamp, isn\'t it?' },
+  { t: 'build', tiles: ['这封信', '是不是', '要寄到', '北京'], ok: ['这封信是不是要寄到北京？', '是不是这封信要寄到北京？'], en: 'This letter is going to Beijing, right?' },
+  { t: 'pick', from: '你们全家都去机场。', a: '你们全家是不是都去机场？', no: ['你们全家都去机场是不是吗？', '你们全是不是家都去机场？'], en: 'Your whole family is going to the airport, right?' },
+  { t: 'build', tiles: ['北京的冬天', '是不是', '很冷'], ok: ['北京的冬天是不是很冷？', '是不是北京的冬天很冷？'], en: 'Winters in Beijing are cold, right?' },
+  { t: 'pick', from: '广场上有很多人。', a: '广场上是不是有很多人？', no: ['广场上是不是有很多人吗？', '广是不是场上有很多人？'], en: 'There are lots of people in the square, right?' },
+  { t: 'build', tiles: ['你', '是不是', '想', '提一个问题'], ok: ['你是不是想提一个问题？', '是不是你想提一个问题？'], en: 'You want to ask a question, right?' },
+  { t: 'pick', from: '坐飞机很安全。', a: '坐飞机是不是很安全？', no: ['坐飞机是不是很安全吗？', '坐飞机很安是不是全？'], en: 'Flying is safe, right?' },
+  { t: 'build', tiles: ['爷爷', '是不是', '收到', '我的信', '了'], ok: ['爷爷是不是收到我的信了？', '是不是爷爷收到我的信了？'], en: 'Grandpa got my letter, right?' },
+  { t: 'pick', from: '妈妈去取票了。', a: '妈妈是不是去取票了？', no: ['妈妈是不是去取票了吗？', '妈妈去取是不是票了？'], en: 'Mom went to pick up the tickets, right?' },
+  { t: 'build', tiles: ['小孙女的中文', '是不是', '进步了'], ok: ['小孙女的中文是不是进步了？', '是不是小孙女的中文进步了？'], en: 'The little granddaughter\'s Chinese has got better, right?' }
+];
 var SENTENCES = [
   { s: '这是我第一次给您写＿。', a: '信', en: 'This is the first letter I have ever written to you.' },
   { s: '我把信装进了一个红色的信＿。', a: '封', en: 'I put it in a red envelope.' },
@@ -497,6 +534,9 @@ var KEY = 'tmg.mail-to-grandpa.v1';
 var save = (function () { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } })();
 function store() { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) { /* private mode: progress just is not kept */ } }
 save.stamps = save.stamps || 0; save.done = save.done || {};
+if (!save.v) {   // a sentence-pattern level was added as level 3, so levels 3 and 4 moved up one
+  var moved = {}; Object.keys(save.done).forEach(function (k) { moved[+k >= 3 ? +k + 1 : k] = save.done[k]; }); save.done = moved; save.v = 2; store();
+}
 function stamps(n) { save.stamps += n; store(); document.getElementById('stamps').textContent = '📮 ' + save.stamps; }
 stamps(0);
 
@@ -560,15 +600,16 @@ function beep(ok) {
 var LEVELS = [
   { n: 1, title: 'Meet the characters', zh: '认生字', text: 'Meet 15 new characters, then find each one in the mailbag.', build: level1 },
   { n: 2, title: 'Build the words', zh: '组词', text: 'Each word is missing one character. Pick the right envelope.', build: level2 },
-  { n: 3, title: 'Write the letter', zh: '写信', text: 'Finish our letter to Grandpa, one sentence at a time, then send it.', build: level3 },
-  { n: 4, title: 'Mail Bingo', zh: '邮票宾果', text: 'Listen, then stamp what you hear on your card. Make a line, then two lines, then fill the card.', run: bingo }
+  { n: 3, title: 'Sentence pattern', zh: '句型 是不是', text: 'Learn to check with a 是不是 question: pick the right one, then build your own from word tiles.', build: levelPattern },
+  { n: 4, letter: true, title: 'Write the letter', zh: '写信', text: 'Finish our letter to Grandpa, one sentence at a time, then send it.', build: level3 },
+  { n: 5, title: 'Mail Bingo', zh: '邮票 Bingo', text: 'Listen, then stamp what you hear on your card. Make a line, then two lines, then fill the card.', run: bingo }
 ];
 function menu() {
   app.innerHTML = '';
   var h = E('div', 'hero');
   h.appendChild(E('div', 'big', '👴🏻✉️'));
   h.appendChild(E('h2', null, 'Help write a letter to Grandpa in Beijing'));
-  h.appendChild(E('p', null, 'Four levels, about ten minutes each. Every right answer earns a stamp 📮. Tap 🔊 to hear the Chinese.'));
+  h.appendChild(E('p', null, 'Five levels, about ten minutes each. Every right answer earns a stamp 📮. Tap 🔊 to hear the Chinese.'));
   app.appendChild(h);
   var ls = E('div', 'levels');
   LEVELS.forEach(function (L) {
@@ -593,6 +634,8 @@ function play(L) {
     fill.style.width = Math.min(100, Math.round((i - 1) / total * 100)) + '%';
     var p = E('div', 'panel'); app.appendChild(p);
     if (s.type === 'meet') return meet(p, s);
+    if (s.type === 'show') return show(p, s);
+    if (s.type === 'build') return build(p, s);
     ask(p, s);
   }
   function meet(p, s) {
@@ -606,12 +649,52 @@ function play(L) {
     var go = E('button', 'btn', 'Got it ▶'); go.type = 'button'; go.onclick = next; r.appendChild(go); p.appendChild(r);
     say(s.c.c);
   }
+  function mark(t) { var P = PATTERN[0]; P.keys.forEach(function (k) { t = t.replace(k, '<span class="key">' + k + '</span>'); }); return t; }
+  function show(p, s) {   // the pattern, what it is for, and three examples to hear
+    var P = PATTERN[0];
+    p.appendChild(E('p', 'say', 'New sentence pattern <span class="han">句型</span>'));
+    p.appendChild(E('div', 'pat', mark(P.shape)));
+    p.appendChild(E('div', 'mean', P.what));
+    var ex = E('div', 'exs');
+    P.ex.forEach(function (x) { var r = E('div', 'ex'); r.appendChild(speakBtn(x.s)); var t = E('div'); t.appendChild(E('div', 'han', mark(x.s))); t.appendChild(E('div', 'mean', x.en)); r.appendChild(t); ex.appendChild(r); });
+    p.appendChild(ex);
+    var r = E('div', 'row'); var go = E('button', 'btn', 'Got it ▶'); go.type = 'button'; go.onclick = next; r.appendChild(go); p.appendChild(r);
+    say(P.ex[0].s);
+  }
+  function build(p, s) {   // tap the word tiles in order; tap a placed tile to take it back
+    var P = PATTERN[0], x = s.x, picked = [], wrong = 0, done = false, order;
+    do { order = shuffle(x.tiles.map(function (t, i) { return i; })); } while (x.ok.indexOf(order.map(function (i) { return x.tiles[i]; }).join('') + P.end) >= 0);
+    p.appendChild(E('p', 'say', 'Tap the words in the right order.'));
+    var top = E('div', 'row'); top.appendChild(speakBtn(x.ok[0])); top.appendChild(E('div', 'mean', x.en)); p.appendChild(top);
+    var line = E('div', 'bline'), pool = E('div', 'tiles'), fb = E('div', 'fb');
+    p.appendChild(line); p.appendChild(pool); p.appendChild(fb);
+    function tile(i) { var b = E('button', 'tile' + (P.keys.indexOf(x.tiles[i]) >= 0 ? ' key' : ''), x.tiles[i]); b.type = 'button'; return b; }
+    function draw() {
+      line.innerHTML = ''; pool.innerHTML = '';
+      picked.forEach(function (i, n) { var b = tile(i); b.onclick = function () { if (done) return; picked.splice(n, 1); line.classList.remove('no'); draw(); }; line.appendChild(b); });
+      line.appendChild(E('span', 'endmark', P.end));
+      order.forEach(function (i) { if (picked.indexOf(i) >= 0) return; var b = tile(i); b.onclick = function () { if (done) return; picked.push(i); draw(); check(); }; pool.appendChild(b); });
+    }
+    function check() {
+      if (picked.length < x.tiles.length) return;
+      var said = picked.map(function (i) { return x.tiles[i]; }).join('') + P.end;
+      if (x.ok.indexOf(said) >= 0) {
+        done = true; line.classList.add('ok'); beep(true); stamps(1); fb.className = 'fb ok'; fb.textContent = 'Right! +1 ' + '📮'; say(said);
+        var r = E('div', 'row'); var go = E('button', 'btn', 'Next ▶'); go.type = 'button'; go.onclick = next; r.appendChild(go); p.appendChild(r); go.focus();
+        return;
+      }
+      wrong++; beep(false); line.classList.add('no'); fb.className = 'fb no';
+      fb.textContent = wrong < 2 ? 'Not quite. Tap a word to take it back.' : 'Try this order: ' + x.ok[0];
+      if (!again[s.id]) { again[s.id] = 1; steps.push(s); total++; }
+    }
+    draw();
+  }
   function ask(p, s) {
     p.appendChild(E('p', 'say', s.prompt));
     if (s.top) p.appendChild(s.top());
     var fb = E('div', 'fb'), opts = E('div', 'opts'), answered = false;
     s.opts.forEach(function (o) {
-      var b = E('button', 'opt'); b.type = 'button'; b.appendChild(E('span', null, o));
+      var b = E('button', 'opt' + (s.wide ? ' wide' : '')); b.type = 'button'; b.appendChild(E('span', null, o));
       b.onclick = function () {
         if (answered) return;
         if (o === s.answer) {
@@ -621,7 +704,7 @@ function play(L) {
           say(s.sayAfter || o);
           var r = E('div', 'row'); var go = E('button', 'btn', 'Next ▶'); go.type = 'button'; go.onclick = next; r.appendChild(go); p.appendChild(r); go.focus();
         } else {
-          b.classList.add('no'); beep(false); fb.className = 'fb no'; fb.textContent = 'Not this one. Try another envelope.';
+          b.classList.add('no'); beep(false); fb.className = 'fb no'; fb.textContent = s.wide ? 'Not this one. Look at where 是不是 goes, and try another.' : 'Not this one. Try another envelope.';
           if (!again[s.id]) { again[s.id] = 1; steps.push(s); total++; }   // a missed question comes back once at the end
         }
       };
@@ -636,9 +719,9 @@ function finish(L) {
   save.done[L.n] = 1; store();
   app.innerHTML = '';
   var p = E('div', 'panel');
-  p.appendChild(E('div', 'card-big', L.n === 3 ? '📬' : '🎉'));
+  p.appendChild(E('div', 'card-big', L.letter ? '📬' : '🎉'));
   p.appendChild(E('h2', null, 'Level ' + L.n + ' done!'));
-  if (L.n === 3) {
+  if (L.letter) {
     p.appendChild(E('p', 'say', 'Your letter is ready. Tap Send!'));
     var letter = E('div', 'letter'); letter.appendChild(E('span', 'st', '📮'));
     letter.appendChild(E('div', null, '亲爱的爷爷：'));
@@ -681,7 +764,7 @@ function bingo(L) {
     var p = E('div', 'panel bpanel'); app.appendChild(p);
     p.appendChild(E('div', 'bgoal', 'Card ' + (cardNo + 1) + ' of 3: ' + goal.text));
     var top = E('div', 'row');
-    var hear = E('button', 'btn ghost', '🔊 Hear it again'); hear.type = 'button'; hear.onclick = function () { if (now) say(now.t); }; top.appendChild(hear);
+    var hear = E('button', 'btn hear', '🔊 Listen again <span class="han">再听一次</span>'); hear.setAttribute('aria-label', 'Listen again'); hear.type = 'button'; hear.onclick = function () { if (now) say(now.t); }; top.appendChild(hear);
     p.appendChild(top);
     var hint = E('div', 'bhint'); p.appendChild(hint);
     var grid = E('div', 'bgrid'); p.appendChild(grid);
@@ -727,7 +810,7 @@ function bingo(L) {
       var go = E('button', 'btn', last ? 'Finish ▶' : 'Next card ▶'); go.type = 'button';
       go.onclick = function () { if (last) finish(L); else { cardNo++; start(); } };
       r.appendChild(go); end.appendChild(r);
-      say('宾果！'); go.focus();
+      say('Bingo!'); go.focus();
     }
     call();
   }
@@ -757,6 +840,14 @@ function level2() {
       top: function () { var d = E('div'); d.appendChild(E('div', 'emoji', w.e)); d.appendChild(E('div', 'word han', shown)); d.appendChild(E('div', 'mean', w.py + ' · ' + w.en)); return d; },
       after: function (p) { var el = p.querySelector('.slot'); if (el) { el.textContent = miss; el.style.color = 'var(--green)'; el.style.borderColor = 'var(--green)'; } } };
   });
+}
+function levelPattern() {   // explain the pattern, then take turns: pick the right sentence, build one from tiles
+  var P = PATTERN[0];
+  return [{ type: 'show' }].concat(PATTERN.slice(1).map(function (x, n) {
+    if (x.t === 'build') return { type: 'build', id: 'b' + n, x: x };
+    return { id: 'q' + n, prompt: P.ask, wide: true, answer: x.a, opts: shuffle([x.a].concat(x.no)), sayAfter: x.a,
+      top: function () { var d = E('div'); d.appendChild(E('div', 'sentence han', x.from)); d.appendChild(E('div', 'mean', x.en)); return d; } };
+  }));
 }
 function level3() {
   return SENTENCES.map(function (s, n) {
