@@ -326,7 +326,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
 /* Chinese game 2. One idea: the 15 new characters of the lesson.
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses the characters in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own; only the characters and common words come from the lesson. */
 :root{
   color-scheme:light;
@@ -406,6 +406,7 @@ button{font:inherit;cursor:pointer}
 .btn.hear{min-height:60px;font-size:22px;padding:8px 28px}
 .opt.wide{width:100%;max-width:560px;height:auto;min-height:64px;padding:10px 16px;font-size:26px;line-height:1.4;text-align:left}
 .opt.wide::before{display:none}
+.opt.word{width:auto;min-width:150px;padding:0 18px;font-size:44px}
 /* level 3: sentence pattern */
 .pat{font-family:var(--han);font-weight:700;font-size:40px;color:var(--blue);margin:4px 0 8px}
 .key{color:var(--red)}
@@ -453,7 +454,6 @@ var WORDS = [
   { w: '柱子', k: 0, py: 'zhùzi', en: 'pillar', e: '🏛️', no: ['狮'] }, { w: '狮子', k: 0, py: 'shīzi', en: 'lion', e: '🦁', no: ['柱'] },
   { w: '十分', k: 1, py: 'shífēn', en: 'very', e: '💯', no: ['座'] }, { w: '好啊', k: 1, py: 'hǎo a', en: 'okay! great!', e: '👍', no: ['色', '景', '美'] }
 ];
-/* level 3: our own postcard, one blank per sentence, each of the 15 characters once. It starts after "亲爱的朋友：" */
 /* level 3: the lesson's sentence pattern 可真……啊！ All sentences are our own. show = the explanation card,
    pick = say it with feeling (a = right, no = wrong ones), build = tap the words in order (ok = every right order) */
 var PATTERN = [
@@ -473,22 +473,23 @@ var PATTERN = [
   { t: 'pick', from: '今天玩得很开心。', a: '今天玩得可真开心啊！', no: ['今天玩得真可开心啊！', '今天玩得可真开心吗？'], en: 'We really had so much fun today!' },
   { t: 'build', tiles: ['沿岸的', '灯', '可真', '亮', '啊'], ok: ['沿岸的灯可真亮啊！'], en: 'The lights along the shore are really bright!' }
 ];
+/* level 4: our own postcard, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的朋友：" */
 var SENTENCES = [
-  { s: '今天天气真好，湖边的风＿好看极了。', a: '景', en: 'The weather is lovely today, and the view by the lake is wonderful.' },
-  { s: '湖水是蓝＿的，像一块大玻璃。', a: '色', en: 'The water is blue, like a big sheet of glass.' },
-  { s: '我们划着小船，到了湖的对＿。', a: '岸', en: 'We rowed a little boat to the far shore.' },
-  { s: '＿着湖边走了一会儿，我们看见了宝岛。', a: '沿', en: 'After walking along the lake for a while, we saw Treasure Island.' },
-  { s: '小＿上有很多高高的树。', a: '岛', en: 'There are many tall trees on the little island.' },
-  { s: '要去那儿，先要走过一＿石桥。', a: '座', en: 'To get there, you first cross a stone bridge.' },
-  { s: '石＿又长又宽，走起来很稳。', a: '桥', en: 'The stone bridge is long and wide, and it feels steady to walk on.' },
-  { s: '桥边立着一根一根的石＿。', a: '柱', en: 'Stone pillars stand one after another beside the bridge.' },
-  { s: '每根柱子上都有一只小石＿子。', a: '狮', en: 'On every pillar sits a little stone lion.' },
-  { s: '这些小狮子十＿可爱，我一直看。', a: '分', en: 'These little lions are so cute that I could not stop looking.' },
-  { s: '我们一口气＿上了岛上的小山。', a: '登', en: 'We climbed the little hill on the island without stopping.' },
-  { s: '好高＿！山下的人都变小了。', a: '啊', en: 'So high! The people below looked tiny.' },
-  { s: '这是一个美＿的地方，我很喜欢这里。', a: '丽', en: 'This is a beautiful place, and I like it very much.' },
-  { s: '＿好的一天过得真快。', a: '美', en: 'A wonderful day goes by so fast.' },
-  { s: '走＿了回家的路，我又想再来一次了。', a: '完', en: 'By the time we finished the walk home, I wanted to come again.' }
+  { s: '今天天气真好，湖边的＿好看极了。', a: '风景', no: ['柱子', '完成'], en: 'The weather is lovely today, and the view by the lake is wonderful.' },
+  { s: '湖水的＿很蓝，像一块大玻璃。', a: '颜色', no: ['登山', '十分'], en: 'The water is so blue, like a big sheet of glass.' },
+  { s: '我们划着小船，到了湖的＿。', a: '对岸', no: ['好啊', '做完'], en: 'We rowed a little boat to the far shore.' },
+  { s: '＿湖边走了一会儿，我们看见了宝岛。', a: '沿着', no: ['美丽', '狮子'], en: 'After walking along the lake for a while, we saw Treasure Island.' },
+  { s: '＿上有很多高高的树。', a: '小岛', no: ['十分', '沿着'], en: 'There are many tall trees on the little island.' },
+  { s: '要去那儿，先要走过＿石桥。', a: '一座', no: ['好啊', '颜色'], en: 'To get there, you first cross a stone bridge.' },
+  { s: '这座＿又长又宽，走起来很稳。', a: '大桥', no: ['美景', '做完'], en: 'This big bridge is long and wide, and it feels steady to walk on.' },
+  { s: '桥边立着一根一根的＿。', a: '柱子', no: ['小岛', '颜色'], en: 'Pillars stand one after another beside the bridge.' },
+  { s: '每根柱子上都有一只小石＿。', a: '狮子', no: ['颜色', '沿着'], en: 'On every pillar sits a little stone lion.' },
+  { s: '这些小狮子＿可爱，我一直看。', a: '十分', no: ['一座', '岸边'], en: 'These little lions are so cute that I could not stop looking.' },
+  { s: '我们一口气＿了岛上的小山。', a: '登上', no: ['美景', '颜色'], en: 'We climbed the little hill on the island without stopping.' },
+  { s: '＿！山下的人都变小了。', a: '好高啊', no: ['十分', '做完'], en: 'So high! The people below looked tiny.' },
+  { s: '这是一个＿的地方，我很喜欢这里。', a: '美丽', no: ['柱子', '沿着'], en: 'This is a beautiful place, and I like it very much.' },
+  { s: '＿的一天过得真快。', a: '美好', no: ['颜色', '柱子'], en: 'A wonderful day goes by so fast.' },
+  { s: '＿了回家的路，我又想再来一次了。', a: '走完', no: ['十分', '狮子'], en: 'By the time we finished the walk home, I wanted to come again.' }
 ];
 
 /* ---------- small helpers ---------- */
@@ -548,7 +549,7 @@ var LEVELS = [
   { n: 1, title: 'Meet the characters', zh: '认生字', text: 'Meet 15 new characters, then find each one in the treasure chests.', build: level1 },
   { n: 2, title: 'Build the words', zh: '组词', text: 'Each word is missing one character. Pick the right treasure chest.', build: level2 },
   { n: 3, title: 'Sentence pattern', zh: '句型 可真…啊', text: 'Learn to say how you feel with 可真…啊! Pick the right sentence, then build your own from word tiles.', build: levelPattern },
-  { n: 4, letter: true, title: 'Write the postcard', zh: '写明信片', text: 'Finish our postcard from the island, one sentence at a time, then send it.', build: level3 },
+  { n: 4, letter: true, title: 'Write the postcard', zh: '写明信片', text: 'Finish our postcard from the island: pick the missing word in each sentence, then send it.', build: level3 },
   { n: 5, title: 'Island Bingo', zh: '宝岛 Bingo', text: 'Listen, then mark what you hear on your card. Make a line, then two lines, then fill the card.', run: bingo }
 ];
 function menu() {
@@ -639,7 +640,7 @@ function play(L) {
     if (s.top) p.appendChild(s.top());
     var fb = E('div', 'fb'), opts = E('div', 'opts'), answered = false;
     s.opts.forEach(function (o) {
-      var b = E('button', 'opt' + (s.wide ? ' wide' : '')); b.type = 'button'; b.appendChild(E('span', null, o));
+      var b = E('button', 'opt' + (s.wide ? ' wide' : '') + (s.word ? ' word' : '')); b.type = 'button'; b.appendChild(E('span', null, o));
       b.onclick = function () {
         if (answered) return;
         if (o === s.answer) {
@@ -794,10 +795,11 @@ function levelPattern() {   // explain the pattern, then take turns: pick the ri
       top: function () { var d = E('div'); d.appendChild(E('div', 'sentence han', x.from)); d.appendChild(E('div', 'mean', x.en)); return d; } };
   }));
 }
-function level3() {
+function level3() {   // the letter level: pick the missing word in each sentence
   return SENTENCES.map(function (s, n) {
-    return { id: 'x' + n, prompt: 'Fill in the missing character.', answer: s.a, opts: pick3(s.a), sayAfter: s.s.replace('＿', s.a),
-      top: function () { var d = E('div'); d.appendChild(E('div', 'sentence han', s.s.replace('＿', '<span class="slot">？</span>'))); d.appendChild(E('div', 'mean', s.en)); return d; },
+    var blank = '<span class="slot">' + s.a.replace(/./g, '？') + '</span>';
+    return { id: 'x' + n, prompt: 'Pick the missing word.', word: true, answer: s.a, opts: shuffle([s.a].concat(s.no)), sayAfter: s.s.replace('＿', s.a),
+      top: function () { var d = E('div'); d.appendChild(E('div', 'sentence han', s.s.replace('＿', blank))); d.appendChild(E('div', 'mean', s.en)); return d; },
       after: function (p) { var el = p.querySelector('.slot'); if (el) { el.textContent = s.a; el.style.color = 'var(--green)'; el.style.borderColor = 'var(--green)'; } } };
   });
 }

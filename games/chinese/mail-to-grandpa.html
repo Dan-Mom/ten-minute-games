@@ -326,7 +326,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
 /* Chinese game 1. One idea: the 15 new characters of the lesson.
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses the characters in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own; only the characters and common words come from the lesson. */
 :root{
   color-scheme:light;
@@ -421,6 +421,7 @@ button{font:inherit;cursor:pointer}
 .btn.hear{min-height:60px;font-size:22px;padding:8px 28px}
 .opt.wide{width:100%;max-width:560px;height:auto;min-height:64px;padding:10px 16px;font-size:26px;line-height:1.4;text-align:left}
 .opt.wide::before{display:none}
+.opt.word{width:auto;min-width:150px;padding:0 18px;font-size:44px}
 /* level 3: sentence pattern */
 .pat{font-family:var(--han);font-weight:700;font-size:40px;color:var(--blue);margin:4px 0 8px}
 .key{color:var(--red)}
@@ -487,7 +488,6 @@ var WORDS = [
   { w: '取票', k: 0, py: 'qǔpiào', en: 'pick up tickets', e: '🎫' }, { w: '进步', k: 0, py: 'jìnbù', en: 'get better, progress', e: '📈' },
   { w: '孙女', k: 0, py: 'sūnnǚ', en: 'granddaughter', e: '👧' }, { w: '孙子', k: 0, py: 'sūnzi', en: 'grandson', e: '👦' }
 ];
-/* level 3: our own letter, one blank per sentence, each of the 15 characters once. It starts after "亲爱的爷爷：" */
 /* level 3: the lesson's sentence pattern 是不是. All sentences are our own. show = the explanation card,
    pick = turn a sentence into a question (a = right, no = wrong ones), build = tap the words in order (ok = every right order) */
 var PATTERN = [
@@ -507,22 +507,23 @@ var PATTERN = [
   { t: 'pick', from: '妈妈去取票了。', a: '妈妈是不是去取票了？', no: ['妈妈是不是去取票了吗？', '妈妈去取是不是票了？'], en: 'Mom went to pick up the tickets, right?' },
   { t: 'build', tiles: ['小孙女的中文', '是不是', '进步了'], ok: ['小孙女的中文是不是进步了？', '是不是小孙女的中文进步了？'], en: 'The little granddaughter\'s Chinese has got better, right?' }
 ];
+/* level 4: our own letter, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的爷爷：" */
 var SENTENCES = [
-  { s: '这是我第一次给您写＿。', a: '信', en: 'This is the first letter I have ever written to you.' },
-  { s: '我把信装进了一个红色的信＿。', a: '封', en: 'I put it in a red envelope.' },
-  { s: '信封上贴着一张长城邮＿。', a: '票', en: 'There is a Great Wall stamp on the envelope.' },
-  { s: '妈妈说，这封信要走很远的路，才能到北＿。', a: '京', en: 'Mom says this letter has a long way to go to reach Beijing.' },
-  { s: '您住的＿市很大，有很多高楼。', a: '城', en: 'The city you live in is big, with lots of tall buildings.' },
-  { s: '听说您家旁边有一个大广＿。', a: '场', en: 'I heard there is a big square next to your home.' },
-  { s: '晚上，＿场上有很多人跳舞，对吗？', a: '广', en: 'In the evening lots of people dance in the square, right?' },
-  { s: '我想＿一个问题：北京冬天冷不冷？', a: '提', en: 'I want to ask a question: are winters in Beijing cold?' },
-  { s: '我的中文有了很大的＿步，老师夸我了。', a: '进', en: 'My Chinese got much better, and my teacher praised me.' },
-  { s: '放假的时候，我们＿家要去看您。', a: '全', en: 'In the holidays our whole family will come to see you.' },
-  { s: '妈妈订好了机票，到时候去机场＿票。', a: '取', en: 'Mom booked the flight and will pick up the tickets at the airport.' },
-  { s: '坐飞机很＿全，您不用担心。', a: '安', en: 'Flying is safe, so please do not worry.' },
-  { s: '我们会先给您发一封电子＿件。', a: '邮', en: 'We will send you an email first.' },
-  { s: '祝您身体健康，＿安快乐！', a: '平', en: 'Wishing you good health, safety and happiness!' },
-  { s: '爱您的小＿女', a: '孙', en: 'Love, your little granddaughter' }
+  { s: '这是我第一次给您＿。', a: '写信', no: ['邮票', '城市'], en: 'This is the first letter I have ever written to you.' },
+  { s: '我把信装进了一个红色的＿。', a: '信封', no: ['北京', '进步'], en: 'I put it in a red envelope.' },
+  { s: '信封上贴着一张长城＿。', a: '邮票', no: ['操场', '全家'], en: 'There is a Great Wall stamp on the envelope.' },
+  { s: '妈妈说，这封信要走很远的路，才能到＿。', a: '北京', no: ['信封', '提出'], en: 'Mom says this letter has a long way to go to reach Beijing.' },
+  { s: '您住的＿很大，有很多高楼。', a: '城市', no: ['邮件', '孙女'], en: 'The city you live in is big, with lots of tall buildings.' },
+  { s: '听说您家旁边有一个大＿。', a: '广场', no: ['安全', '提出'], en: 'I heard there is a big square next to your home.' },
+  { s: '我们学校也有一个大＿，我每天在那里跑步。', a: '操场', no: ['平安', '邮票'], en: 'Our school has a big playground too, and I run there every day.' },
+  { s: '我想＿一个问题：北京的冬天冷不冷？', a: '提出', no: ['城市', '信封'], en: 'I want to ask a question: are winters in Beijing cold?' },
+  { s: '我的中文有了很大的＿，老师夸我了。', a: '进步', no: ['北京', '广场'], en: 'My Chinese got much better, and my teacher praised me.' },
+  { s: '放假的时候，我们＿要去看您。', a: '全家', no: ['邮票', '操场'], en: 'In the holidays our whole family will come to see you.' },
+  { s: '妈妈订好了机票，到时候去机场＿。', a: '取票', no: ['平安', '进步'], en: 'Mom booked the flight and will pick up the tickets at the airport.' },
+  { s: '坐飞机很＿，您不用担心。', a: '安全', no: ['信封', '孙女'], en: 'Flying is safe, so please do not worry.' },
+  { s: '我们会先给您发一封电子＿。', a: '邮件', no: ['城市', '广场'], en: 'We will send you an email first.' },
+  { s: '祝您身体健康，＿快乐！', a: '平安', no: ['操场', '邮件'], en: 'Wishing you good health, safety and happiness!' },
+  { s: '爱您的小＿', a: '孙女', no: ['北京', '信封'], en: 'Love, your little granddaughter' }
 ];
 
 /* ---------- small helpers ---------- */
@@ -601,7 +602,7 @@ var LEVELS = [
   { n: 1, title: 'Meet the characters', zh: '认生字', text: 'Meet 15 new characters, then find each one in the mailbag.', build: level1 },
   { n: 2, title: 'Build the words', zh: '组词', text: 'Each word is missing one character. Pick the right envelope.', build: level2 },
   { n: 3, title: 'Sentence pattern', zh: '句型 是不是', text: 'Learn to check with a 是不是 question: pick the right one, then build your own from word tiles.', build: levelPattern },
-  { n: 4, letter: true, title: 'Write the letter', zh: '写信', text: 'Finish our letter to Grandpa, one sentence at a time, then send it.', build: level3 },
+  { n: 4, letter: true, title: 'Write the letter', zh: '写信', text: 'Finish our letter to Grandpa: pick the missing word in each sentence, then send it.', build: level3 },
   { n: 5, title: 'Mail Bingo', zh: '邮票 Bingo', text: 'Listen, then stamp what you hear on your card. Make a line, then two lines, then fill the card.', run: bingo }
 ];
 function menu() {
@@ -694,7 +695,7 @@ function play(L) {
     if (s.top) p.appendChild(s.top());
     var fb = E('div', 'fb'), opts = E('div', 'opts'), answered = false;
     s.opts.forEach(function (o) {
-      var b = E('button', 'opt' + (s.wide ? ' wide' : '')); b.type = 'button'; b.appendChild(E('span', null, o));
+      var b = E('button', 'opt' + (s.wide ? ' wide' : '') + (s.word ? ' word' : '')); b.type = 'button'; b.appendChild(E('span', null, o));
       b.onclick = function () {
         if (answered) return;
         if (o === s.answer) {
@@ -849,10 +850,11 @@ function levelPattern() {   // explain the pattern, then take turns: pick the ri
       top: function () { var d = E('div'); d.appendChild(E('div', 'sentence han', x.from)); d.appendChild(E('div', 'mean', x.en)); return d; } };
   }));
 }
-function level3() {
+function level3() {   // the letter level: pick the missing word in each sentence
   return SENTENCES.map(function (s, n) {
-    return { id: 'x' + n, prompt: 'Fill in the missing character.', answer: s.a, opts: pick3(s.a), sayAfter: s.s.replace('＿', s.a),
-      top: function () { var d = E('div'); d.appendChild(E('div', 'sentence han', s.s.replace('＿', '<span class="slot">？</span>'))); d.appendChild(E('div', 'mean', s.en)); return d; },
+    var blank = '<span class="slot">' + s.a.replace(/./g, '？') + '</span>';
+    return { id: 'x' + n, prompt: 'Pick the missing word.', word: true, answer: s.a, opts: shuffle([s.a].concat(s.no)), sayAfter: s.s.replace('＿', s.a),
+      top: function () { var d = E('div'); d.appendChild(E('div', 'sentence han', s.s.replace('＿', blank))); d.appendChild(E('div', 'mean', s.en)); return d; },
       after: function (p) { var el = p.querySelector('.slot'); if (el) { el.textContent = s.a; el.style.color = 'var(--green)'; el.style.borderColor = 'var(--green)'; } } };
   });
 }
