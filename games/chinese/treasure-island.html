@@ -513,7 +513,7 @@ var PARTS = [
   { c: '登', parts: ['癶', '豆'], r: 0, rad: '癶', name: '登字头', npy: 'dēng zì tóu', means: 'two feet, walking. It is on top of characters about stepping.', see: '癸 凳 蹬', how: 'Two feet (癶) stepping up onto 豆, which long ago was a tall stand: to climb up. 登山 is to climb a mountain.' },
   { c: '景', parts: ['日', '京'], r: 0, rad: '日', name: '日字头', npy: 'rì zì tóu', means: 'the sun. It is in characters about sunshine, days and time.', see: '早 星 春 晴', how: 'The sun (日) over 京 (jīng), which helps with the sound. Sunlight shows you everything around: 风景 is the scenery.' },
   { c: '色', parts: ['色'], r: 0, rad: '色', name: '色字旁', npy: 'sè zì páng', means: 'color. It is a radical in only a few characters.', see: '艳', how: '色 is one whole shape, and a radical too. It means color: 颜色 is color, and 景色 is the view.' },
-  { c: '岸', parts: ['山', '厂', '干'], r: 0, rad: '山', name: '山字头', npy: 'shān zì tóu', means: 'a mountain or a hill. It is in characters about mountains.', see: '岛 岩 峰 崖', how: 'A mountain (山) over a steep cliff (厂), with 干 (gàn) helping with the sound: the high bank of a river, lake or sea. 岸边 is by the shore.' },
+  { c: '岸', parts: ['山', '厂', '干'], r: 0, rad: '山', name: '山字头', npy: 'shān zì tóu', means: 'a mountain or a hill. It is in characters about mountains.', see: '岛 岩 峰 崖', how: 'A mountain (山) over a steep cliff (厂), with 干 (gān) helping with the sound: the high bank of a river, lake or sea. 岸边 is by the shore.' },
   { c: '岛', parts: ['', '山'], rest: 'top: 鸟 (a bird) without its last stroke', r: 1, rad: '山', name: '山字底', npy: 'shān zì dǐ', means: 'a mountain or a hill. It is in characters about mountains.', see: '岸 岩 峰 崖', how: 'A bird (鸟) resting on a mountain (山) out in the sea: an island. 小岛 is a small island.' },
   { c: '沿', parts: ['氵', ''], rest: 'right side, as in 船 铅', r: 0, rad: '氵', name: '三点水', npy: 'sān diǎn shuǐ', means: 'water. It is in characters about water, rivers and the sea.', see: '河 湖 海 洗 游', how: 'Water (氵): going along the edge of a river or lake. 沿着 means along.' },
   { c: '座', parts: ['广', '坐'], r: 0, rad: '广', name: '广字旁', npy: 'guǎng zì páng', means: 'a house with one side open. It is in characters about buildings.', see: '床 店 庄 底', how: 'A building (广) where people sit (坐): a seat. It also counts big things: 一座桥 is one bridge, 一座山 one mountain.' },
@@ -527,12 +527,12 @@ var GROUPS = [CHARS.slice(0, 5), CHARS.slice(5, 10), CHARS.slice(10, 15)];
 /* level 2: build a word. w = the word, k = which character is missing, no = characters that would also make a real word, so they are never offered */
 var WORDS = [
   { w: '美景', k: 0, py: 'měijǐng', en: 'a beautiful view', e: '🌄' }, { w: '美丽', k: 1, py: 'měilì', en: 'beautiful', e: '🌺', no: ['景', '色'] },
-  { w: '做完', k: 1, py: 'zuòwán', en: 'finish doing', e: '✅' }, { w: '完成', k: 0, py: 'wánchéng', en: 'complete', e: '🏆' },
+  { w: '做完', k: 1, py: 'zuòwán', en: 'finish doing', e: '✅' }, { w: '完成', k: 0, py: 'wánchéng', en: 'complete', e: '🏆', no: ['分'] },
   { w: '登山', k: 0, py: 'dēngshān', en: 'climb a mountain', e: '🥾' }, { w: '风景', k: 1, py: 'fēngjǐng', en: 'scenery', e: '🏞️', no: ['色'] },
   { w: '颜色', k: 1, py: 'yánsè', en: 'color', e: '🌈' }, { w: '岸边', k: 0, py: 'ànbiān', en: 'by the shore', e: '🏖️', no: ['桥', '岛'] },
   { w: '小岛', k: 1, py: 'xiǎodǎo', en: 'small island', e: '🏝️', no: ['桥'] }, { w: '沿着', k: 0, py: 'yánzhe', en: 'along', e: '🚶' },
   { w: '一座', k: 1, py: 'yí zuò', en: 'one (bridge, hill)', e: '⛰️', no: ['分', '色', '景'] }, { w: '大桥', k: 1, py: 'dàqiáo', en: 'big bridge', e: '🌉', no: ['岛'] },
-  { w: '柱子', k: 0, py: 'zhùzi', en: 'pillar', e: '🏛️', no: ['狮'] }, { w: '狮子', k: 0, py: 'shīzi', en: 'lion', e: '🦁', no: ['柱'] },
+  { w: '柱子', k: 0, py: 'zhùzi', en: 'pillar', e: '🏛️', no: ['狮', '分'] }, { w: '狮子', k: 0, py: 'shīzi', en: 'lion', e: '🦁', no: ['柱', '分'] },
   { w: '十分', k: 1, py: 'shífēn', en: 'very', e: '💯', no: ['座'] }, { w: '好啊', k: 1, py: 'hǎo a', en: 'okay! great!', e: '👍', no: ['色', '景', '美'] }
 ];
 /* level 3: the lesson's sentence pattern 可真……啊！ All sentences are our own. show = the explanation card,
@@ -582,33 +582,17 @@ function stamps(n) { save.stamps += n; store(); document.getElementById('stamps'
 stamps(0);
 
 /* voice: every character, word and sentence is recorded in advance with a warm voice (island-voice/<key>.mp3, made by
-   网站\make-voices.py; key = the same hash as voice-lines.cjs). Only text with no recording uses the device's own Chinese voice. */
-var zh = null, VKEYS = null, player = null;
+   网站\make-voices.py; key = the same hash as voice-lines.cjs). Text with no recording stays silent: the device's own voice is never used. */
+var VKEYS = null, player = null;
 try { fetch('island-voice/keys.json').then(function (r) { return r.json(); }).then(function (k) { VKEYS = {}; k.forEach(function (x) { VKEYS[x] = 1; }); }, function () {}); } catch (e) {}
 function vkey(t) { t = String(t).replace(/＿/g, '').trim(); var h = 0x811c9dc5; for (var i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
-function findVoice() {
-  try {
-    var v = speechSynthesis.getVoices().filter(function (x) { return /^zh/i.test(x.lang) && !/TW|HK/i.test(x.lang); });
-    var score = function (x) { return (/natural|neural|enhanced|premium/i.test(x.name) ? 4 : 0) + (/xiaoxiao|tingting|ting-ting|yaoyao|huihui|lili/i.test(x.name) ? 2 : 0); };
-    zh = v.sort(function (a, b) { return score(b) - score(a); })[0] || null;
-  } catch (e) { zh = null; }
-}
-if ('speechSynthesis' in window) { findVoice(); speechSynthesis.onvoiceschanged = findVoice; }
-function deviceSay(t) {
-  if (!('speechSynthesis' in window)) return;
-  try { var u = new SpeechSynthesisUtterance(t.replace(/＿/g, '')); u.lang = 'zh-CN'; if (zh) u.voice = zh; u.rate = 0.8; u.pitch = 1.05; speechSynthesis.speak(u); } catch (e) { /* no voice */ }
-}
 function say(t) {
   if (player) try { player.pause(); } catch (e) {}
-  if ('speechSynthesis' in window) try { speechSynthesis.cancel(); } catch (e) {}
   var k = vkey(t);
-  if (VKEYS && VKEYS[k]) {
-    if (!player) player = new Audio();            // one player, reused, so iPad keeps allowing it after the first tap
-    player.src = 'island-voice/' + k + '.mp3';
-    var p = player.play(); if (p && p.catch) p.catch(function () {});   // interrupted or blocked: stay quiet (🔊 replays it) rather than switch to the device voice
-    return;
-  }
-  deviceSay(t);
+  if (VKEYS && !VKEYS[k]) return;               // no recording for this text: stay quiet, never the device's robot voice
+  if (!player) player = new Audio();            // one player, reused, so iPad keeps allowing it after the first tap
+  player.src = 'island-voice/' + k + '.mp3';        // also before the list has arrived: the file is simply tried
+  var p = player.play(); if (p && p.catch) p.catch(function () {});   // interrupted, blocked or missing: stay quiet (🔊 replays it)
 }
 function speakBtn(t) { var b = E('button', 'speak', '🔊'); b.type = 'button'; b.setAttribute('aria-label', 'Listen'); b.onclick = function () { say(t); }; return b; }
 /* the "how it is built" box on a new-character card: its pieces, its radical and what that radical usually means */
@@ -677,10 +661,10 @@ function play(L) {
   if (was) {   // came back to a level left half way: rebuild it in the saved order and go on from the saved step
     var byKey = {}; steps.forEach(function (s) { byKey[key(s)] = s; });
     var back = was.keys.map(function (k) { return byKey[k]; });
-    if (back.every(Boolean)) { steps = back; i = was.i; again = was.again || {}; }
+    if (back.every(Boolean)) { steps = back; i = was.i; again = was.again || {}; paid = was.paid || {}; }
   }
   total = steps.length;
-  function keep() { save.at = save.at || {}; save.at[L.n] = { keys: steps.map(key), i: i - 1, again: again }; store(); }   // saved at every step
+  function keep() { save.at = save.at || {}; save.at[L.n] = { keys: steps.map(key), i: i - 1, again: again, paid: paid }; store(); }   // saved at every step
   function next() {
     if (i >= steps.length) return finish(L);
     var s = steps[i++];
@@ -893,7 +877,7 @@ function bingo(L) {
     var back = E('div', 'row'), ls = E('button', 'btn ghost', 'All levels'); ls.type = 'button'; ls.onclick = menu; back.appendChild(ls); p.appendChild(back);
     function peekOff() { btns.forEach(function (x) { x.classList.remove('peek'); }); }
     function call() {
-      if (over || ci >= calls.length) return;
+      if (over || ci >= calls.length || !grid.isConnected) return;   // left the card (All levels, Home): stay quiet
       now = calls[ci++]; wrong = 0; hint.textContent = ''; peekOff(); keepCard(ci - 1);
       say(now.t);
     }

@@ -524,16 +524,16 @@ var PARTS = [
   { c: '孙', parts: ['子', '小'], r: 0, rad: '子', name: '子字旁', npy: 'zǐ zì páng', means: 'a child. It is in characters about children.', see: '孩 字 学 孔', how: 'A little (小) child (子): a grandchild. 孙女 is a granddaughter, 孙子 a grandson.' }
 ];
 var GROUPS = [CHARS.slice(0, 5), CHARS.slice(5, 10), CHARS.slice(10, 15)];
-/* level 2: build a word. w = the word, k = which character is missing */
+/* level 2: build a word. w = the word, k = which character is missing, no = characters that would also make a real word, so they are never offered */
 var WORDS = [
-  { w: '信封', k: 1, py: 'xìnfēng', en: 'envelope', e: '✉️' }, { w: '邮票', k: 1, py: 'yóupiào', en: 'postage stamp', e: '📮' },
-  { w: '邮件', k: 0, py: 'yóujiàn', en: 'mail, email', e: '📧' }, { w: '城市', k: 0, py: 'chéngshì', en: 'city', e: '🏙️' },
-  { w: '长城', k: 1, py: 'Chángchéng', en: 'the Great Wall', e: '🧱' }, { w: '北京', k: 1, py: 'Běijīng', en: 'Beijing', e: '🏯' },
-  { w: '广场', k: 0, py: 'guǎngchǎng', en: 'town square', e: '🕊️' }, { w: '操场', k: 1, py: 'cāochǎng', en: 'playground', e: '⚽' },
-  { w: '安全', k: 0, py: 'ānquán', en: 'safe', e: '🦺' }, { w: '全家', k: 0, py: 'quánjiā', en: 'the whole family', e: '👨‍👩‍👧‍👦' },
+  { w: '信封', k: 0, py: 'xìnfēng', en: 'envelope', e: '✉️' }, { w: '封面', k: 0, py: 'fēngmiàn', en: 'front cover (of a book)', e: '📕', no: ['全', '场', '平'] }, { w: '邮票', k: 1, py: 'yóupiào', en: 'postage stamp', e: '📮' },
+  { w: '邮件', k: 0, py: 'yóujiàn', en: 'mail, email', e: '📧', no: ['信', '取'] }, { w: '城市', k: 0, py: 'chéngshì', en: 'city', e: '🏙️', no: ['全'] },
+  { w: '长城', k: 1, py: 'Chángchéng', en: 'the Great Wall', e: '🧱', no: ['安', '进'] }, { w: '北京', k: 1, py: 'Běijīng', en: 'Beijing', e: '🏯', no: ['平', '城'] },
+  { w: '广场', k: 0, py: 'guǎngchǎng', en: 'town square', e: '🕊️', no: ['全', '进'] }, { w: '操场', k: 1, py: 'cāochǎng', en: 'playground', e: '⚽' },
+  { w: '安全', k: 0, py: 'ānquán', en: 'safe', e: '🦺' }, { w: '全家', k: 0, py: 'quánjiā', en: 'the whole family', e: '👨‍👩‍👧‍👦', no: ['安', '孙'] },
   { w: '平安', k: 0, py: 'píng\'ān', en: 'safe and sound', e: '🙏' }, { w: '提问', k: 0, py: 'tíwèn', en: 'ask a question', e: '✋' },
-  { w: '取票', k: 0, py: 'qǔpiào', en: 'pick up tickets', e: '🎫' }, { w: '进步', k: 0, py: 'jìnbù', en: 'get better, progress', e: '📈' },
-  { w: '孙女', k: 0, py: 'sūnnǚ', en: 'granddaughter', e: '👧' }, { w: '孙子', k: 0, py: 'sūnzi', en: 'grandson', e: '👦' }
+  { w: '取票', k: 0, py: 'qǔpiào', en: 'pick up tickets', e: '🎫', no: ['邮', '全'] }, { w: '进步', k: 0, py: 'jìnbù', en: 'get better, progress', e: '📈', no: ['信', '平', '安'] },
+  { w: '孙女', k: 0, py: 'sūnnǚ', en: 'granddaughter', e: '👧' }, { w: '孙子', k: 0, py: 'sūnzi', en: 'grandson', e: '👦', no: ['票', '场'] }
 ];
 /* level 3: the lesson's sentence pattern 是不是. All sentences are our own. show = the explanation card,
    pick = turn a sentence into a question (a = right, no = wrong ones), build = tap the words in order (ok = every right order) */
@@ -570,7 +570,7 @@ var SENTENCES = [
 var app = document.getElementById('app');
 function E(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
 function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
-function pick3(answer) { return shuffle([answer].concat(shuffle(CHARS.map(function (x) { return x.c; }).filter(function (c) { return c !== answer; })).slice(0, 2))); }
+function pick3(answer, no) { return shuffle([answer].concat(shuffle(CHARS.map(function (x) { return x.c; }).filter(function (c) { return c !== answer && (no || []).indexOf(c) < 0; })).slice(0, 2))); }
 var KEY = 'tmg.mail-to-grandpa.v1';
 var save = (function () { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } })();
 function store() { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) { /* private mode: progress just is not kept */ } }
@@ -582,33 +582,17 @@ function stamps(n) { save.stamps += n; store(); document.getElementById('stamps'
 stamps(0);
 
 /* voice: every character, word and sentence is recorded in advance with a warm voice (mail-voice/<key>.mp3, made by
-   网站\make-voices.py; key = the same hash as voice-lines.cjs). Only text with no recording uses the device's own Chinese voice. */
-var zh = null, VKEYS = null, player = null;
+   网站\make-voices.py; key = the same hash as voice-lines.cjs). Text with no recording stays silent: the device's own voice is never used. */
+var VKEYS = null, player = null;
 try { fetch('mail-voice/keys.json').then(function (r) { return r.json(); }).then(function (k) { VKEYS = {}; k.forEach(function (x) { VKEYS[x] = 1; }); }, function () {}); } catch (e) {}
 function vkey(t) { t = String(t).replace(/＿/g, '').trim(); var h = 0x811c9dc5; for (var i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
-function findVoice() {
-  try {
-    var v = speechSynthesis.getVoices().filter(function (x) { return /^zh/i.test(x.lang) && !/TW|HK/i.test(x.lang); });
-    var score = function (x) { return (/natural|neural|enhanced|premium/i.test(x.name) ? 4 : 0) + (/xiaoxiao|tingting|ting-ting|yaoyao|huihui|lili/i.test(x.name) ? 2 : 0); };
-    zh = v.sort(function (a, b) { return score(b) - score(a); })[0] || null;
-  } catch (e) { zh = null; }
-}
-if ('speechSynthesis' in window) { findVoice(); speechSynthesis.onvoiceschanged = findVoice; }
-function deviceSay(t) {
-  if (!('speechSynthesis' in window)) return;
-  try { var u = new SpeechSynthesisUtterance(t.replace(/＿/g, '')); u.lang = 'zh-CN'; if (zh) u.voice = zh; u.rate = 0.8; u.pitch = 1.05; speechSynthesis.speak(u); } catch (e) { /* no voice */ }
-}
 function say(t) {
   if (player) try { player.pause(); } catch (e) {}
-  if ('speechSynthesis' in window) try { speechSynthesis.cancel(); } catch (e) {}
   var k = vkey(t);
-  if (VKEYS && VKEYS[k]) {
-    if (!player) player = new Audio();            // one player, reused, so iPad keeps allowing it after the first tap
-    player.src = 'mail-voice/' + k + '.mp3';
-    var p = player.play(); if (p && p.catch) p.catch(function () {});   // interrupted or blocked: stay quiet (🔊 replays it) rather than switch to the device voice
-    return;
-  }
-  deviceSay(t);
+  if (VKEYS && !VKEYS[k]) return;               // no recording for this text: stay quiet, never the device's robot voice
+  if (!player) player = new Audio();            // one player, reused, so iPad keeps allowing it after the first tap
+  player.src = 'mail-voice/' + k + '.mp3';        // also before the list has arrived: the file is simply tried
+  var p = player.play(); if (p && p.catch) p.catch(function () {});   // interrupted, blocked or missing: stay quiet (🔊 replays it)
 }
 function speakBtn(t) { var b = E('button', 'speak', '🔊'); b.type = 'button'; b.setAttribute('aria-label', 'Listen'); b.onclick = function () { say(t); }; return b; }
 /* the "how it is built" box on a new-character card: its pieces, its radical and what that radical usually means */
@@ -677,10 +661,10 @@ function play(L) {
   if (was) {   // came back to a level left half way: rebuild it in the saved order and go on from the saved step
     var byKey = {}; steps.forEach(function (s) { byKey[key(s)] = s; });
     var back = was.keys.map(function (k) { return byKey[k]; });
-    if (back.every(Boolean)) { steps = back; i = was.i; again = was.again || {}; }
+    if (back.every(Boolean)) { steps = back; i = was.i; again = was.again || {}; paid = was.paid || {}; }
   }
   total = steps.length;
-  function keep() { save.at = save.at || {}; save.at[L.n] = { keys: steps.map(key), i: i - 1, again: again }; store(); }   // saved at every step
+  function keep() { save.at = save.at || {}; save.at[L.n] = { keys: steps.map(key), i: i - 1, again: again, paid: paid }; store(); }   // saved at every step
   function next() {
     if (i >= steps.length) return finish(L);
     var s = steps[i++];
@@ -893,7 +877,7 @@ function bingo(L) {
     var back = E('div', 'row'), ls = E('button', 'btn ghost', 'All levels'); ls.type = 'button'; ls.onclick = menu; back.appendChild(ls); p.appendChild(back);
     function peekOff() { btns.forEach(function (x) { x.classList.remove('peek'); }); }
     function call() {
-      if (over || ci >= calls.length) return;
+      if (over || ci >= calls.length || !grid.isConnected) return;   // left the card (All levels, Home): stay quiet
       now = calls[ci++]; wrong = 0; hint.textContent = ''; peekOff(); keepCard(ci - 1);
       say(now.t);
     }
@@ -952,7 +936,7 @@ function level1() {   // meet 5, find them by pinyin, find them by sound; three 
 function level2() {
   return shuffle(WORDS).map(function (w) {
     var miss = w.w.charAt(w.k), shown = w.w.split('').map(function (ch, i) { return i === w.k ? '<span class="slot">？</span>' : ch; }).join('');
-    return { id: 'w' + w.w, prompt: 'Which character finishes the word?', answer: miss, opts: pick3(miss), sayAfter: w.w,
+    return { id: 'w' + w.w, prompt: 'Which character finishes the word?', answer: miss, opts: pick3(miss, w.no), sayAfter: w.w,
       top: function () { var d = E('div'); d.appendChild(E('div', 'emoji', w.e)); d.appendChild(E('div', 'word han', shown)); d.appendChild(E('div', 'mean', w.py + ' · ' + w.en)); return d; },
       after: function (p) { var el = p.querySelector('.slot'); if (el) { el.textContent = miss; el.style.color = 'var(--green)'; el.style.borderColor = 'var(--green)'; } } };
   });
