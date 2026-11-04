@@ -502,7 +502,7 @@ button{font:inherit;cursor:pointer}
 </style>
 </head>
 <body>
-<header class="top"><h1>✉️ Mail to Grandpa <span class="han">寄信给爷爷</span></h1><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">📮 0</span></header>
+<header class="top"><h1>✉️ Mail to Grandpa <span class="han">寄信给爷爷</span></h1><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
 <div class="wrap" id="app"></div>
 <script>
 /* ---------- content (characters and words from the lesson; all sentences are our own) ---------- */
@@ -591,12 +591,12 @@ if ('stamps' in save) { delete save.stamps; store(); }   // the old pile of stam
 if (!save.v) {   // a sentence-pattern level was added as level 3, so levels 3 and 4 moved up one
   var moved = {}; Object.keys(save.done).forEach(function (k) { moved[+k >= 3 ? +k + 1 : k] = save.done[k]; }); save.done = moved; save.v = 2; store();
 }
-/* score: each level keeps the result of its latest finished play (one stamp per question right the first time); the lesson total adds them up */
-var UNIT = '📮';
+/* score: each level keeps the result of its latest finished play (1 cent per question right the first time, 0.5 cent on a second try); the lesson total adds them up */
+var UNIT = '¢';   // the score is money: 1¢ for each answer right the first time, 0.5¢ for one right on a second try
 function lessonTotal() { var t = 0; Object.keys(save.score).forEach(function (k) { t += (save.score[k].got || 0) + (save.score[k].half || 0) / 2; }); return t; }
-function fmt(x) { var w = Math.floor(x); return (w || x === 0 ? String(w) : '') + (x % 1 ? '½' : ''); }   // 3.5 -> 3½
+function fmt(x) { return String(Math.round(x * 10) / 10); }   // cents: 3.5 -> "3.5"
 function levelScore(sc) { return fmt(sc.got + (sc.half || 0) / 2); }
-function showTotal() { document.getElementById('stamps').textContent = UNIT + ' ' + fmt(lessonTotal()); }
+function showTotal() { document.getElementById('stamps').textContent = '💰 ' + fmt(lessonTotal()) + UNIT; }
 showTotal();
 
 /* voice: every character, word and sentence is recorded in advance with a warm voice (mail-voice/<key>.mp3, made by
@@ -671,7 +671,7 @@ function menu() {
   var h = E('div', 'hero');
   h.appendChild(E('div', 'big', '👴🏻✉️'));
   h.appendChild(E('h2', null, 'Help write a letter to Grandpa in Beijing'));
-  h.appendChild(E('p', null, 'Five levels, about ten minutes each. Each answer right the first time earns a stamp 📮. Play a level again to beat your score. Tap 🔊 to hear the Chinese.'));
+  h.appendChild(E('p', null, 'Five levels, about ten minutes each. Each answer right the first time earns 1¢, and a second try at a missed one earns 0.5¢. Play a level again to beat your score. Tap 🔊 to hear the Chinese.'));
   app.appendChild(h);
   var ls = E('div', 'levels');
   LEVELS.forEach(function (L) {
@@ -679,7 +679,7 @@ function menu() {
     b.appendChild(E('span', 'n', save.done[L.n] ? '✓' : String(L.n)));
     var t = E('div'); t.appendChild(E('h3', null, 'Level ' + L.n + ': ' + L.title + ' <span class="han">' + L.zh + '</span>')); t.appendChild(E('p', null, L.text));
     var sc = save.score[L.n];
-    if (sc) t.appendChild(E('p', 'sc', UNIT + ' ' + levelScore(sc) + ' of ' + sc.of));
+    if (sc) t.appendChild(E('p', 'sc', '💰 ' + levelScore(sc) + UNIT + ' of ' + sc.of + UNIT));
     if (L.run ? save.bingo : save.at && save.at[L.n]) t.appendChild(E('p', 'cont', '⏯ Continue where you left off'));
     b.appendChild(t);
     b.appendChild(E('span', 'go', '▶'));
@@ -695,7 +695,7 @@ function open(L) {
   if (!sc || going) return L.run ? L.run(L) : play(L);
   var o = E('div', 'ask-over'), box = E('div', 'ask-box');
   box.appendChild(E('h3', null, 'Play level ' + L.n + ' again?'));
-  box.appendChild(E('p', null, 'Your score now: <b>' + levelScore(sc) + ' of ' + sc.of + ' ' + UNIT + '</b>. When you finish, your new score takes its place, higher or lower.'));
+  box.appendChild(E('p', null, 'Your score now: <b>' + levelScore(sc) + UNIT + ' of ' + sc.of + UNIT + '</b>. When you finish, your new score takes its place, higher or lower.'));
   var r = E('div', 'row'), yes = E('button', 'btn', 'Play again'), no = E('button', 'btn ghost', 'Not now');
   yes.type = no.type = 'button';
   yes.onclick = function () { o.remove(); if (L.run) L.run(L); else play(L); };
@@ -714,7 +714,7 @@ function play(L, redo) {   // redo = { steps }: a second try at the questions mi
     steps.forEach(function (s) { if (!s.id || seen[s.id]) return; seen[s.id] = 1; if (res[s.id] === 1) got++; else { ids.push(s.id); var l = s.label || s.answer || (s.x && s.x.ok[0]) || ''; if (miss.indexOf(l) < 0) miss.push(l); } });
     return { got: got, of: Object.keys(seen).length, miss: miss, ids: ids };
   }
-  function rightText(s) { return first(s, true) ? (redo ? 'Right! +½ ' : 'Right! +1 ') + UNIT : res[s.id] ? 'Right!' : 'Right! No ' + UNIT + ' this time: the first try was wrong.'; }
+  function rightText(s) { return first(s, true) ? (redo ? 'Right! +0.5' : 'Right! +1') + UNIT : res[s.id] ? 'Right!' : 'Right! No cent this time: the first try was wrong.'; }
   function key(s) { return s.id || (s.c ? 'm' + s.c.c : s.type); }
   var was = !redo && save.at && save.at[L.n];
   if (was) {   // came back to a level left half way: rebuild it in the saved order and go on from the saved step
@@ -872,10 +872,10 @@ function finish(L, r, old) {   // r = this play's result; old = the score it rep
   p.appendChild(E('h2', null, 'Level ' + L.n + ' done!'));
   if (r) {
     var box = E('div', 'result');
-    box.appendChild(E('div', 'big1', r.got + ' of ' + r.of + ' right the first time: ' + r.got + ' ' + UNIT));
-    if (old) box.appendChild(E('div', null, 'This takes the place of your old score, ' + levelScore(old) + ' ' + UNIT + '.'));
+    box.appendChild(E('div', 'big1', r.got + ' of ' + r.of + ' right the first time: ' + r.got + UNIT));
+    if (old) box.appendChild(E('div', null, 'This takes the place of your old score, ' + levelScore(old) + UNIT + '.'));
     if (r.miss.length) box.appendChild(E('div', 'miss', 'Not right the first time: <span class="han">' + r.miss.join(' · ') + '</span>'));
-    box.appendChild(E('div', null, 'Lesson total: ' + fmt(lessonTotal()) + ' ' + UNIT));
+    box.appendChild(E('div', null, 'Lesson total: ' + fmt(lessonTotal()) + UNIT));
     p.appendChild(box);
     if (r.ids && r.ids.length) p.appendChild(redoRow(L, r.ids));
   }
@@ -900,9 +900,9 @@ function finish(L, r, old) {   // r = this play's result; old = the score it rep
   app.appendChild(p);
 }
 
-/* after a level: the questions missed the first time can be tried again, for half a stamp each */
+/* after a level: the questions missed the first time can be tried again, for half a cent each */
 function redoRow(L, ids) {
-  var r = E('div', 'row'), b = E('button', 'btn redo', '🔁 Try the ' + ids.length + ' missed again (½ ' + UNIT + ' each)'); b.type = 'button';
+  var r = E('div', 'row'), b = E('button', 'btn redo', '🔁 Try the ' + ids.length + ' missed again (0.5' + UNIT + ' each)'); b.type = 'button';
   b.onclick = function () { play(L, { steps: redoSteps(L, ids) }); };
   r.appendChild(b); return r;
 }
@@ -918,17 +918,17 @@ function redoSteps(L, ids) {
   var seen = {};
   return L.build().filter(function (s) { if (!s.id || seen[s.id] || ids.indexOf(s.id) < 0) return false; seen[s.id] = 1; return true; });
 }
-function redone(L, r) {   // the end of a second try: half a stamp for each one right this time
+function redone(L, r) {   // the end of a second try: half a cent for each one right this time
   var sc = save.score[L.n]; if (sc) { sc.half = (sc.half || 0) + r.got; store(); showTotal(); }
   app.innerHTML = '';
   var p = E('div', 'panel');
   p.appendChild(E('div', 'card-big', '🔁'));
   p.appendChild(E('h2', null, 'Second try done!'));
   var box = E('div', 'result');
-  box.appendChild(E('div', 'big1', r.got + ' of ' + r.of + ' right this time: +' + fmt(r.got / 2) + ' ' + UNIT));
+  box.appendChild(E('div', 'big1', r.got + ' of ' + r.of + ' right this time: +' + fmt(r.got / 2) + UNIT));
   if (r.miss.length) box.appendChild(E('div', 'miss', 'Still not right: <span class="han">' + r.miss.join(' · ') + '</span>'));
-  if (sc) box.appendChild(E('div', null, 'Level ' + L.n + ' score: ' + fmt(sc.got + sc.half / 2) + ' of ' + sc.of + ' ' + UNIT));
-  box.appendChild(E('div', null, 'Lesson total: ' + fmt(lessonTotal()) + ' ' + UNIT));
+  if (sc) box.appendChild(E('div', null, 'Level ' + L.n + ' score: ' + fmt(sc.got + sc.half / 2) + UNIT + ' of ' + sc.of + UNIT));
+  box.appendChild(E('div', null, 'Lesson total: ' + fmt(lessonTotal()) + UNIT));
   p.appendChild(box);
   if (r.ids.length) p.appendChild(redoRow(L, r.ids));
   var nextL = LEVELS[L.n], r2 = E('div', 'row');
