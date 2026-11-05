@@ -478,7 +478,7 @@ button{font:inherit;cursor:pointer}
 .big .panel.meetp{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.7fr);grid-template-rows:auto auto auto auto;column-gap:28px;align-content:center;align-items:center}
 .big .meetp>.say{grid-column:1;grid-row:1}.big .meetp>.charrow{grid-column:1;grid-row:2}.big .meetp>.py{grid-column:1;grid-row:3}.big .meetp>.mean{grid-column:1;grid-row:4;align-self:start}
 .big .meetp>.built{grid-column:2;grid-row:1 / 5;margin:0}.big .meetp>.row{grid-column:1 / 3;grid-row:5}
-.big .meetp .charrow{flex-wrap:nowrap;gap:10px}.big .meetp .card-big{font-size:104px}.big .meetp .old{max-width:150px}.big .meetp .old img{width:78px;height:78px}.big .meetp .old .cap{font-size:12.5px}   /* sideways: the old form beside the character, so the card keeps its height */
+.big .meetp .charrow{flex-wrap:nowrap;gap:10px}.big .meetp .card-big{font-size:104px}.big .meetp .old{max-width:150px;flex-direction:column;gap:0}.big .meetp .old .cap{text-align:center;margin-top:4px}.big .meetp .old img{width:78px;height:78px}.big .meetp .old .cap{font-size:12.5px}   /* sideways: the old form beside the character, so the card keeps its height */
 .big .pat{font-size:42px;margin:0 0 4px}.big .exs{gap:6px;margin-top:8px}.big .ex{padding:4px 12px}   /* the sentence-pattern card, sideways: a little tighter so "Got it" stays on screen */
 }
 .tile{touch-action:none;-webkit-user-select:none;user-select:none;cursor:grab}
@@ -519,7 +519,7 @@ button{font:inherit;cursor:pointer}
 .old .cap{font-size:13px;color:var(--mute);line-height:1.35;text-align:center;margin-top:4px}
 .big .old img{width:100px;height:100px}
 .big .old .cap{font-size:15px}
-.big .old{max-width:290px}   /* a wider caption takes fewer lines, so an upright card stays on screen */
+.big .charrow .card-big{line-height:1}.big .old{flex-direction:row;gap:12px;max-width:none}.big .old .cap{text-align:left;max-width:230px;margin-top:0}   /* upright: the caption beside the drawing, so the card stays short */
 .credit{font-size:13px;color:var(--mute);text-align:center;margin-top:14px}
 </style>
 </head>
@@ -739,7 +739,7 @@ function menu() {
     ls.appendChild(b);
   });
   app.appendChild(ls);
-  app.appendChild(E('p', 'credit', 'Old character drawings: Wikimedia Commons (Ancient Chinese characters project), public domain.'));
+  app.appendChild(E('p', 'credit', 'Old character drawings: Wikimedia Commons (Ancient Chinese characters project), public domain; many are redrawn from Richard Sears’s Chinese Etymology (hanziyuan.net).'));
 }
 
 /* start a level; if it already has a score and is not half way, first say that the new score will take its place */
