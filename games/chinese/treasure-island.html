@@ -680,6 +680,14 @@ function say(t) {
   voiceDone = done;
   setTimeout(done, 15000);                      // never wait for ever
   player.onended = player.onerror = done;
+  var tr = READY[k] && TRIM[k];               // where the words start and end in this recording, when known
+  player.onloadedmetadata = player.onplaying = null;
+  if (tr) {
+    player.onloadedmetadata = function () { try { if (tr.s > 0.12 && player.currentTime < tr.s - 0.10) player.currentTime = tr.s - 0.10; } catch (e) {} };   // skip the silence before the words
+    player.onplaying = function () { (function check() {   // the words are over: moving on may go ahead (the silent tail is not waited for)
+      if (over) return; var left = tr.e + 0.12 - player.currentTime; if (left <= 0.02) return done(); setTimeout(check, Math.min(left, 0.5) * 1000);
+    })(); };
+  }
   player.src = READY[k] || 'island-voice/' + k + '.mp3';   // downloaded already: plays at once; else fetched now (also before the list has arrived)
   var p = player.play(); if (p && p.catch) p.catch(done);   // interrupted, blocked or missing: stay quiet (🔊 replays it)
 }
@@ -703,10 +711,23 @@ function afterVoice(fn, btn, again) {
 }
 /* download the recordings a level will need as soon as it starts, so a tap plays them from memory with no wait */
 var READY = {}, ASKED = {};
+var TRIM = {}, DEC = null;   // per recording: where the speaking starts and ends (seconds), found once it is downloaded
+function trimOf(k, b) {
+  try {
+    if (!DEC) { var OC = window.OfflineAudioContext || window.webkitOfflineAudioContext; if (!OC) return; DEC = new OC(1, 1, 44100); }
+    var fr = new FileReader();
+    fr.onload = function () {
+      var ok = function (a) { var d = a.getChannelData(0), n = d.length, i = 0, j = n - 1; while (i < n && Math.abs(d[i]) < 0.01) i++; while (j > i && Math.abs(d[j]) < 0.01) j--;
+        if (j > i) TRIM[k] = { s: i / a.sampleRate, e: j / a.sampleRate }; };
+      try { var p = DEC.decodeAudioData(fr.result, ok, function () {}); if (p && p.catch) p.catch(function () {}); } catch (e) {}
+    };
+    fr.readAsArrayBuffer(b);
+  } catch (e) {}
+}
 function warm(texts) {
   texts.forEach(function (t) {
     if (!t) return; var k = vkey(t); if (ASKED[k] || (VKEYS && !VKEYS[k])) return; ASKED[k] = 1;
-    try { fetch('island-voice/' + k + '.mp3').then(function (r) { if (!r.ok) throw 0; return r.blob(); }).then(function (b) { READY[k] = URL.createObjectURL(b); }, function () { delete ASKED[k]; }); } catch (e) { delete ASKED[k]; }
+    try { fetch('island-voice/' + k + '.mp3').then(function (r) { if (!r.ok) throw 0; return r.blob(); }).then(function (b) { READY[k] = URL.createObjectURL(b); trimOf(k, b); }, function () { delete ASKED[k]; }); } catch (e) { delete ASKED[k]; }
   });
 }
 function levelTexts(steps) {   // every line a level can say: characters, radical names, examples, answers, options
