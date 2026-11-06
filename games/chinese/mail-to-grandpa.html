@@ -558,11 +558,11 @@ var PARTS = [
   { c: '票', parts: ['覀', '示'], r: 1, rad: '示', name: '示字底', npy: 'shì zì dǐ', means: 'to show. 示 was once a picture of an altar; on the left side it is written 礻.', see: '礼 福 神 禁', how: 'A ticket or a stamp is a small piece of paper. Think of it this way: it shows (示) that you have paid.' },
   { c: '城', parts: ['土', '成'], r: 0, rad: '土', name: '提土旁', npy: 'tí tǔ páng', means: 'earth, the ground. It is in characters about land and building.', see: '地 场 块 坐 墙', how: 'Earth (土) and 成 (chéng), which gives the sound. Long ago city walls were built of earth, so 城 means a city wall and a city.' },
   { c: '京', parts: ['亠', '口', '小'], r: 0, rad: '亠', name: '京字头', npy: 'jīng zì tóu', means: 'nothing on its own. It is a little lid on top of characters.', see: '六 市 交 高', how: 'Long ago 京 was a picture of a tall building on a high hill. A big city with tall buildings is a capital: 北京 is "the northern capital".' },
-  { c: '广', parts: ['广'], r: 0, rad: '广', name: '广字旁', npy: 'guǎng zì páng', means: 'a house with one side open. It is in characters about buildings.', see: '床 店 庄 座 底', how: '广 is one whole shape, and a radical too. A wide, open hall came to mean "wide": 广场 is a wide, open square.' },
+  { c: '广', parts: ['广'], r: 0, rad: '广', name: '广字旁', npy: 'guǎng zì páng', means: 'a house with one side open. It is in characters about buildings.', see: '床 店 庄 座 底', how: '广 is the simple form of 廣 (a big hall with no walls), which came to mean "wide", as in 广场.' },
   { c: '场', parts: ['土', ''], rest: 'right side, as in 汤 肠', r: 0, rad: '土', name: '提土旁', npy: 'tí tǔ páng', means: 'earth, the ground. It is in characters about land and building.', see: '地 城 块 坐 墙', how: 'Earth (土) means ground: 场 is an open piece of ground, a field or a square. 操场 is a playground.' },
   { c: '安', parts: ['宀', '女'], r: 0, rad: '宀', name: '宝盖头', npy: 'bǎo gài tóu', means: 'a roof, a house. It is in characters about homes and rooms.', see: '家 字 室 宝 完', how: 'A woman (女) under a roof (宀), safe at home: safe and calm. 平安 means safe and sound.' },
   { c: '全', parts: ['人', '王'], r: 0, rad: '人', name: '人字头', npy: 'rén zì tóu', means: 'a person. On top it is spread out like a roof.', see: '会 个 今 合', how: '王 here was once 玉, jade. Perfect jade with nothing missing is 全: whole, all. 全家 is the whole family.' },
-  { c: '平', parts: ['平'], r: 0, rad: '一', name: '横', npy: 'héng', means: 'just one stroke across. As a radical it does not add a meaning.', see: '上 下 七 不', how: '平 is one whole shape; dictionaries put it under its top stroke, 一. Think of a level scale with flat lines across: 平 means flat, even and calm.' },
+  { c: '平', parts: ['平'], r: 0, rad: '一', name: '横', npy: 'héng', means: 'just one stroke across. As a radical it does not add a meaning.', see: '上 下 七 不', how: '平 is one whole shape, listed under its top stroke 一. Think of a level scale: 平 means flat, even and calm.' },
   { c: '提', parts: ['扌', '是'], r: 0, rad: '扌', name: '提手旁', npy: 'tí shǒu páng', means: 'a hand. It is in characters about things you do with your hands.', see: '打 拉 拍 找 抱', how: 'A hand (扌) and 是 (shì), which helps with the sound: to lift or carry. 提问 means to raise a question, to ask.' },
   { c: '取', parts: ['耳', '又'], r: 1, rad: '又', name: '又字旁', npy: 'yòu zì páng', means: 'a hand. 又 was once a picture of a right hand.', see: '友 双 受 反', how: 'A hand (又) taking hold of an ear (耳): to take, to get. 取票 is to pick up tickets.' },
   { c: '进', parts: ['井', '辶'], r: 1, rad: '辶', name: '走之底', npy: 'zǒu zhī dǐ', means: 'walking, going somewhere. It wraps around the bottom of the character.', see: '这 过 还 送 远', how: 'Walking (辶) and 井 (jǐng), which helps with the sound: to go in, to move forward. 进步 is getting better.' },
@@ -578,7 +578,7 @@ var ANCIENT = {
   '票': { f: 'ancient/7968-seal.svg', kind: 'seal', rad: '', form: '票', pic: '' },
   '城': { f: 'ancient/57ce-bronze.svg', kind: 'bronze', rad: '', form: '城', pic: '' },
   '京': { f: 'ancient/4eac-oracle.svg', kind: 'oracle', rad: '', form: '京', pic: 'a tall building on a high base' },
-  '广': { f: 'ancient/5e7f-bronze.svg', kind: 'bronze', rad: '', form: '广', pic: 'a roof and one wall: a shelter open on one side' },
+  '广': { f: 'ancient/5e7f-bronze.svg', kind: 'bronze', rad: '', form: '广', pic: 'the part 广 (in 廣): a roof and one wall' },
   '场': { f: 'ancient/571f-oracle.svg', kind: 'oracle', rad: '土', form: '土', pic: 'a lump of earth on the ground' },
   '安': { f: 'ancient/5b89-oracle.svg', kind: 'oracle', rad: '', form: '安', pic: 'a woman under a roof' },
   '全': { f: 'ancient/5168-seal.svg', kind: 'seal', rad: '', form: '全', pic: '' },
@@ -636,10 +636,19 @@ var app = document.getElementById('app');
 function E(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
 function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
 function pick3(answer, no) { return shuffle([answer].concat(shuffle(CHARS.map(function (x) { return x.c; }).filter(function (c) { return c !== answer && (no || []).indexOf(c) < 0; })).slice(0, 2))); }
-var KEY = 'tmg.mail-to-grandpa.v1';
+var KEY = 'chinese.mail-to-grandpa.v1';   // not "tmg.": the site's account script keeps tmg. names to itself, so a tmg. save never reached a child's profile
+try {   // a save made under the old name moves over once (then the old name is gone, so it cannot be copied to another child later)
+  var OLD_KEY = 'tmg.mail-to-grandpa.v1', oldSave = localStorage.getItem(OLD_KEY);
+  if (oldSave !== null) {
+    if (localStorage.getItem(KEY) === null) localStorage.setItem(KEY, oldSave);
+    // the old name goes only once the account sync is over and the copy is still here: a sync from the cloud may wipe the copy, and then this runs again next time
+    ((window.TMG && TMG.ready) || Promise.resolve()).then(function () { try { if (localStorage.getItem(KEY) !== null) localStorage.removeItem(OLD_KEY); } catch (e) {} }, function () {});
+  }
+} catch (e) {}
 var save = (function () { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } })();
 function store() { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) { /* private mode: progress just is not kept */ } }
 save.done = save.done || {}; save.score = save.score || {};
+if (!save.re || typeof save.re !== 'object' || Array.isArray(save.re)) delete save.re;   // a damaged second-try record is dropped
 Object.keys(save.score).forEach(function (k) { var s = save.score[k] || {}; save.score[k] = { got: +s.got || 0, of: +s.of || 0, half: +s.half || 0 }; });   // numbers only: they are shown on the page
 if ('stamps' in save) { delete save.stamps; store(); }   // the old pile of stamps grew with every replay; scores per level replace it
 if (!save.v) {   // a sentence-pattern level was added as level 3, so levels 3 and 4 moved up one
@@ -771,6 +780,7 @@ function menu() {
     var sc = save.score[L.n];
     if (sc) t.appendChild(E('p', 'sc', '💰 ' + levelScore(sc) + UNIT + ' of ' + sc.of + UNIT));
     if (L.run ? save.bingo : save.at && save.at[L.n]) t.appendChild(E('p', 'cont', '⏯ Continue where you left off'));
+    else if (save.re && save.re[L.n]) t.appendChild(E('p', 'cont', '⏯ Continue the missed questions'));
     b.appendChild(t);
     b.appendChild(E('span', 'go', '▶'));
     b.onclick = function () { afterVoice(function () { open(L); }, b); };
@@ -796,6 +806,10 @@ function open(L) {
   var going = L.run ? save.bingo : save.at && save.at[L.n], sc = save.score[L.n];
   function go() { if (L.run) L.run(L); else play(L); }
   function fresh() { if (L.run) delete save.bingo; else if (save.at) delete save.at[L.n]; store(); go(); }
+  var re = save.re && save.re[L.n];
+  if (!going && re && Array.isArray(re.ids) && Array.isArray(re.keys) && re.ids.length && re.ids.every(function (x) { return typeof x === 'string'; })) return askBox('Level ' + L.n + ': the missed questions', 'You were trying the missed questions again (0.5' + UNIT + ' each). Carry on with them, or play the whole level again?'
+      + (sc ? ' Your score now: <b>' + levelScore(sc) + UNIT + ' of ' + sc.of + UNIT + '</b>; a new finish of the whole level takes its place.' : ''),
+    [['▶ Continue 继续', function () { play(L, { steps: redoSteps(L, re.ids), ids: re.ids, from: re }); }], ['↺ Play the level again 重新开始', function () { delete save.re[L.n]; store(); go(); }, true]]);
   if (going) return askBox('Level ' + L.n + ': carry on?', 'You stopped this level half way. Carry on from where you were, or start the level again?'
       + (sc ? ' Your score now: <b>' + levelScore(sc) + UNIT + ' of ' + sc.of + UNIT + '</b>; a new finish takes its place.' : ''),
     [['▶ Continue 继续', go], ['↺ Start over 重新开始', fresh, true]]);
@@ -818,6 +832,11 @@ function play(L, redo) {   // redo = { steps }: a second try at the questions mi
   function rightText(s) { return first(s, true) ? (redo ? 'Right! +0.5' : 'Right! +1') + UNIT : res[s.id] ? 'Right!' : 'Right! No cent this time: the first try was wrong.'; }
   function key(s) { return s.id || (s.c ? 'm' + s.c.c : s.type); }
   var was = !redo && save.at && save.at[L.n];
+  if (redo && redo.from) {   // came back to a second try left half way: same questions, same order, same answers so far
+    var byKey2 = {}; steps.forEach(function (s) { byKey2[key(s)] = s; });
+    var back2 = redo.from.keys.map(function (k) { return byKey2[k]; });
+    if (back2.length && back2.every(Boolean)) { steps = back2; i = Math.min(Math.max(0, Math.floor(+redo.from.i) || 0), steps.length - 1); res = redo.from.res && typeof redo.from.res === 'object' && !Array.isArray(redo.from.res) ? redo.from.res : {}; }
+  }
   if (was) {   // came back to a level left half way: rebuild it in the saved order and go on from the saved step
     var byKey = {}; steps.forEach(function (s) { byKey[key(s)] = s; });
     var back = was.keys.map(function (k) { return byKey[k]; });
@@ -825,7 +844,7 @@ function play(L, redo) {   // redo = { steps }: a second try at the questions mi
   }
   total = steps.length;
   warm(levelTexts(steps));
-  function keep() { if (redo) return; save.at = save.at || {}; save.at[L.n] = { keys: steps.map(key), i: i - 1, again: again, res: res }; store(); }   // saved at every step
+  function keep() { if (redo) { save.re = save.re || {}; save.re[L.n] = { ids: redo.ids, keys: steps.map(key), i: i - 1, res: res }; store(); return; } save.at = save.at || {}; save.at[L.n] = { keys: steps.map(key), i: i - 1, again: again, res: res }; store(); }   // saved at every step
   function next() {
     if (i >= steps.length) return redo ? redone(L, result()) : finish(L, result());
     var s = steps[i++];
@@ -936,6 +955,7 @@ function finish(L, r, old) {   // r = this play's result; old = the score it rep
   if (arguments.length < 3) { old = save.score[L.n]; if (r) save.score[L.n] = { got: r.got, of: r.of }; }
   if (save.at) delete save.at[L.n];
   if (L.run) delete save.bingo;
+  if (save.re) delete save.re[L.n];   // a new full play: the old second try no longer counts
   save.done[L.n] = 1; store(); showTotal();
   app.innerHTML = '';
   var p = E('div', 'panel');
@@ -974,7 +994,7 @@ function finish(L, r, old) {   // r = this play's result; old = the score it rep
 /* after a level: the questions missed the first time can be tried again, for half a cent each */
 function redoRow(L, ids) {
   var r = E('div', 'row'), b = E('button', 'btn redo', '🔁 Try the ' + ids.length + ' missed again (0.5' + UNIT + ' each)'); b.type = 'button';
-  b.onclick = function () { afterVoice(function () { play(L, { steps: redoSteps(L, ids) }); }, b); };
+  b.onclick = function () { afterVoice(function () { play(L, { steps: redoSteps(L, ids), ids: ids }); }, b); };
   r.appendChild(b); return r;
 }
 function redoSteps(L, ids) {
@@ -991,7 +1011,8 @@ function redoSteps(L, ids) {
   return L.build().filter(function (s) { if (!s.id || seen[s.id] || ids.indexOf(s.id) < 0) return false; seen[s.id] = 1; return true; });
 }
 function redone(L, r) {   // the end of a second try: half a cent for each one right this time
-  var sc = save.score[L.n]; if (sc) { sc.half = (sc.half || 0) + r.got; store(); showTotal(); }
+  if (save.re) delete save.re[L.n];   // this second try is finished
+  var sc = save.score[L.n]; if (sc) sc.half = (sc.half || 0) + r.got; store(); showTotal();
   app.innerHTML = '';
   var p = E('div', 'panel');
   p.appendChild(E('div', 'card-big', '🔁'));
