@@ -976,7 +976,7 @@ function play(L, redo) {   // redo = { steps }: a second try at the questions mi
     var go = E('button', 'btn', 'Got it ▶'); go.type = 'button'; go.onclick = function () { afterVoice(next, go); }; r.appendChild(go); p.appendChild(r);
     say(s.c.c);
   }
-  function mark(t) { var P = PATTERN[0]; P.keys.forEach(function (k) { t = t.replace(k, '<span class="key">' + k + '</span>'); }); return t; }
+  function mark(t) { var P = PATTERN[0]; P.keys.forEach(function (k) { t = t.split(k).join('<span class="key">' + k + '</span>'); }); return t; }   // every time the key is there (不…不… has it twice)
   function show(p, s) {   // the pattern, what it is for, and three examples to hear
     var P = PATTERN[0];
     p.appendChild(E('p', 'say', 'New sentence pattern <span class="han">句型</span>'));
