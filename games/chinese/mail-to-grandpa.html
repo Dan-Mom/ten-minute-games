@@ -325,13 +325,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
-/* Chinese game 1. One idea: the 15 new characters of the lesson.
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
-   All sentences and the story here are our own; only the characters and common words come from the lesson. */
+/* The shared look of every Chinese lesson game. A lesson sets its own colours (--page, --blue, --blue-s, --blue-d) and its .opt::before. */
 :root{
   color-scheme:light;
   --ink:#1d2b4f; --mute:#4a587a; --page:#eef6ff; --card:#fff;
-  --blue:#1b6fd1; --blue-s:#d5e9ff; --red:#d6246e; --red-s:#ffd8ea; --green:#1f8f45; --green-s:#d3f4dd; --gold:#ffd23f;
+  --blue:#1b6fd1; --blue-s:#d5e9ff; --blue-d:#0f4d97; --red:#d6246e; --red-s:#ffd8ea; --green:#1f8f45; --green-s:#d3f4dd; --gold:#ffd23f;
   --display:"Baloo 2","Nunito","Trebuchet MS",system-ui,sans-serif;
   --body:"Nunito","Trebuchet MS",system-ui,sans-serif;
   --han:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC","Noto Sans CJK SC",sans-serif;
@@ -345,8 +343,8 @@ button{font:inherit;cursor:pointer}
 .top{display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:10px 16px;background:#fff;border-bottom:3px solid var(--blue-s)}
 .top h1{font-size:22px;flex:1 1 240px}
 .stamps{font:800 18px var(--display);background:var(--blue-s);color:var(--blue);border-radius:999px;padding:4px 14px;white-space:nowrap}
-.btn{min-height:52px;border:0;border-radius:16px;padding:8px 22px;font:800 20px var(--display);background:var(--blue);color:#fff;box-shadow:0 5px 0 #0f4d97}
-.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #0f4d97}
+.btn{min-height:52px;border:0;border-radius:16px;padding:8px 22px;font:800 20px var(--display);background:var(--blue);color:#fff;box-shadow:0 5px 0 var(--blue-d)}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 var(--blue-d)}
 .btn.ghost{background:#fff;color:var(--blue);box-shadow:0 5px 0 var(--blue-s)}
 .speak{border:0;background:var(--blue-s);color:var(--blue);border-radius:999px;min-width:48px;min-height:48px;font-size:22px}
 
@@ -392,7 +390,6 @@ button{font:inherit;cursor:pointer}
 .emoji{font-size:56px;line-height:1}
 .opts{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:18px}
 .opt{position:relative;width:110px;height:92px;border:3px solid #e9c46a;border-radius:14px;background:#fffaf0;font-family:var(--han);font-size:52px;color:var(--ink);box-shadow:0 5px 0 #e9c46a;overflow:hidden}
-.opt::before{content:"";position:absolute;left:0;right:0;top:0;height:34px;background:linear-gradient(160deg,transparent 49%,#f3d9a4 50%),linear-gradient(200deg,transparent 49%,#f3d9a4 50%);background-size:50% 100%;background-repeat:no-repeat;background-position:left,right;opacity:.6}
 .opt span{position:relative}
 .opt.ok{border-color:var(--green);background:var(--green-s);box-shadow:0 5px 0 var(--green)}
 .opt.no{border-color:var(--red);background:var(--red-s);box-shadow:0 5px 0 var(--red);animation:shake .3s}
@@ -533,6 +530,13 @@ button{-webkit-appearance:none;appearance:none}
 .lvbtn{min-height:44px;border:2px solid var(--blue);background:#fff;color:var(--blue);border-radius:999px;padding:0 16px;font:800 17px var(--display);white-space:nowrap}
 .btn.waiting,.lvbtn.waiting{opacity:.55}
 </style>
+<style>
+/* Chinese game 1. One idea: the 15 new characters of the lesson.
+   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   All sentences and the story here are our own; only the characters and common words come from the lesson. */
+:root{ --page:#eef6ff; --blue:#1b6fd1; --blue-s:#d5e9ff; --blue-d:#0f4d97; }   /* this lesson's colours */
+.opt::before{content:"";position:absolute;left:0;right:0;top:0;height:34px;background:linear-gradient(160deg,transparent 49%,#f3d9a4 50%),linear-gradient(200deg,transparent 49%,#f3d9a4 50%);background-size:50% 100%;background-repeat:no-repeat;background-position:left,right;opacity:.6}
+</style>
 </head>
 <body>
 <header class="top"><h1>✉️ Mail to Grandpa <span class="han">寄信给爷爷</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
@@ -631,14 +635,37 @@ var SENTENCES = [
   { s: '爱您的小＿', a: '孙女', no: ['北京', '信封'], en: 'Love, your little granddaughter' }
 ];
 
+/* ---------- this lesson's settings: the shared engine (../_engine/chinese-engine.js) reads them ---------- */
+var LESSON = {
+  id: 'mail-to-grandpa',              // the save name is chinese.<id>.v1; the page is games/chinese/<id>.html
+  voice: 'mail-voice',              // folder of this lesson's recordings (made by 网站\make-voices.py)
+  intro: { emoji: '👴🏻✉️', title: 'Help write a letter to Grandpa in Beijing' },
+  levels: [
+    { title: 'Meet the characters', zh: '认生字', text: 'Meet 15 new characters, then find each one in the mailbag.' },
+    { title: 'Build the words', zh: '组词', text: 'Each word is missing one character. Pick the right envelope.' },
+    { title: 'Sentence pattern', zh: '句型 是不是', text: 'Learn to check with a 是不是 question: pick the right one, then build your own from word tiles.' },
+    { title: 'Write the letter', zh: '写信', text: 'Finish our letter to Grandpa: pick the missing word in each sentence, then send it.' },
+    { title: 'Mail Bingo', zh: '邮票 Bingo', text: 'Listen, then stamp what you hear on your card. Make a line, then two lines, then fill the card.' }
+  ],
+  pick: 'Which envelope says…',              // level 1: find the character
+  wrong: { pick: 'Not this one. Try another envelope.', pattern: 'Not this one. Look at where 是不是 goes, and try another.' },
+  letter: { ready: 'Your letter is ready. Tap Send!', stamp: '📮', greeting: '亲爱的爷爷：', signRight: true },   // level 4: the finished letter
+  bingoFree: '📮'              // the free middle square
+};
+</script>
+<script>
+/* The shared engine of every Chinese lesson game (five levels: meet the characters, build words, sentence pattern,
+   the letter, bingo). A lesson page defines, before loading this file: CHARS, PARTS, ANCIENT, GROUPS, WORDS, PATTERN,
+   SENTENCES and LESSON (its id, voice folder and own wording). The site build puts this file inside each lesson page.
+   A change here changes every lesson: test them all. */
 /* ---------- small helpers ---------- */
 var app = document.getElementById('app');
 function E(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
 function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
 function pick3(answer, no) { return shuffle([answer].concat(shuffle(CHARS.map(function (x) { return x.c; }).filter(function (c) { return c !== answer && (no || []).indexOf(c) < 0; })).slice(0, 2))); }
-var KEY = 'chinese.mail-to-grandpa.v1';   // not "tmg.": the site's account script keeps tmg. names to itself, so a tmg. save never reached a child's profile
+var KEY = 'chinese.' + LESSON.id + '.v1';   // not "tmg.": the site's account script keeps tmg. names to itself, so a tmg. save never reached a child's profile
 try {   // a save made under the old name moves over once (then the old name is gone, so it cannot be copied to another child later)
-  var OLD_KEY = 'tmg.mail-to-grandpa.v1', oldSave = localStorage.getItem(OLD_KEY);
+  var OLD_KEY = 'tmg.' + LESSON.id + '.v1', oldSave = localStorage.getItem(OLD_KEY);
   if (oldSave !== null) {
     if (localStorage.getItem(KEY) === null) localStorage.setItem(KEY, oldSave);
     // the old name goes only once the account sync is over and the copy is still here: a sync from the cloud may wipe the copy, and then this runs again next time
@@ -662,10 +689,10 @@ function levelScore(sc) { return fmt(sc.got + (sc.half || 0) / 2); }
 function showTotal() { document.getElementById('stamps').textContent = '💰 ' + fmt(lessonTotal()) + UNIT; }
 showTotal();
 
-/* voice: every character, word and sentence is recorded in advance with a warm voice (mail-voice/<key>.mp3, made by
+/* voice: every character, word and sentence is recorded in advance with a warm voice (<lesson folder>/<LESSON.voice>/<key>.mp3, made by
    网站\make-voices.py; key = the same hash as voice-lines.cjs). Text with no recording stays silent: the device's own voice is never used. */
 var VKEYS = null, player = null;
-try { fetch('mail-voice/keys.json').then(function (r) { return r.json(); }).then(function (k) { VKEYS = {}; k.forEach(function (x) { VKEYS[x] = 1; }); }, function () {}); } catch (e) {}
+try { fetch(LESSON.voice + '/keys.json').then(function (r) { return r.json(); }).then(function (k) { VKEYS = {}; k.forEach(function (x) { VKEYS[x] = 1; }); }, function () {}); } catch (e) {}
 function vkey(t) { t = String(t).replace(/＿/g, '').trim(); var h = 0x811c9dc5; for (var i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
 var voiceWait = null, voiceDone = null;   // the recording now playing, and how to mark it finished
 var pending = null, pendBtn = null, navAt = 0;   // the one move waiting for the voice to end, and when the child last moved on
@@ -688,7 +715,7 @@ function say(t) {
       if (over) return; var left = tr.e + 0.12 - player.currentTime; if (left <= 0.02) return done(); setTimeout(check, Math.min(left, 0.5) * 1000);
     })(); };
   }
-  player.src = READY[k] || 'mail-voice/' + k + '.mp3';   // downloaded already: plays at once; else fetched now (also before the list has arrived)
+  player.src = READY[k] || LESSON.voice + '/' + k + '.mp3';   // downloaded already: plays at once; else fetched now (also before the list has arrived)
   var p = player.play(); if (p && p.catch) p.catch(done);   // interrupted, blocked or missing: stay quiet (🔊 replays it)
 }
 /* never cut a recording short. A tap on Next, Back, Quit, Levels or a level waits until the voice has finished; only the latest tap
@@ -727,7 +754,7 @@ function trimOf(k, b) {
 function warm(texts) {
   texts.forEach(function (t) {
     if (!t) return; var k = vkey(t); if (ASKED[k] || (VKEYS && !VKEYS[k])) return; ASKED[k] = 1;
-    try { fetch('mail-voice/' + k + '.mp3').then(function (r) { if (!r.ok) throw 0; return r.blob(); }).then(function (b) { READY[k] = URL.createObjectURL(b); trimOf(k, b); }, function () { delete ASKED[k]; }); } catch (e) { delete ASKED[k]; }
+    try { fetch(LESSON.voice + '/' + k + '.mp3').then(function (r) { if (!r.ok) throw 0; return r.blob(); }).then(function (b) { READY[k] = URL.createObjectURL(b); trimOf(k, b); }, function () { delete ASKED[k]; }); } catch (e) { delete ASKED[k]; }
   });
 }
 function levelTexts(steps) {   // every line a level can say: characters, radical names, examples, answers, options
@@ -777,20 +804,21 @@ function beep(ok) {
 }
 
 /* ---------- the level menu ---------- */
+var LV = LESSON.levels;   // each lesson's own names and descriptions for the five levels
 var LEVELS = [
-  { n: 1, title: 'Meet the characters', zh: '认生字', text: 'Meet 15 new characters, then find each one in the mailbag.', build: level1 },
-  { n: 2, title: 'Build the words', zh: '组词', text: 'Each word is missing one character. Pick the right envelope.', build: level2 },
-  { n: 3, title: 'Sentence pattern', zh: '句型 是不是', text: 'Learn to check with a 是不是 question: pick the right one, then build your own from word tiles.', build: levelPattern },
-  { n: 4, letter: true, title: 'Write the letter', zh: '写信', text: 'Finish our letter to Grandpa: pick the missing word in each sentence, then send it.', build: level3 },
-  { n: 5, title: 'Mail Bingo', zh: '邮票 Bingo', text: 'Listen, then stamp what you hear on your card. Make a line, then two lines, then fill the card.', run: bingo }
+  { n: 1, title: LV[0].title, zh: LV[0].zh, text: LV[0].text, build: level1 },
+  { n: 2, title: LV[1].title, zh: LV[1].zh, text: LV[1].text, build: level2 },
+  { n: 3, title: LV[2].title, zh: LV[2].zh, text: LV[2].text, build: levelPattern },
+  { n: 4, letter: true, title: LV[3].title, zh: LV[3].zh, text: LV[3].text, build: level3 },
+  { n: 5, title: LV[4].title, zh: LV[4].zh, text: LV[4].text, run: bingo }
 ];
 document.getElementById('lvbtn').onclick = function () { afterVoice(menu, this); };   // back to this game's level list, from anywhere
 function menu() {
   app.classList.remove('big', 'bwide');
   app.innerHTML = '';
   var h = E('div', 'hero');
-  h.appendChild(E('div', 'big', '👴🏻✉️'));
-  h.appendChild(E('h2', null, 'Help write a letter to Grandpa in Beijing'));
+  h.appendChild(E('div', 'big', LESSON.intro.emoji));
+  h.appendChild(E('h2', null, LESSON.intro.title));
   h.appendChild(E('p', null, 'Five levels, about ten minutes each. Each answer right the first time earns 1¢, and a second try at a missed one earns 0.5¢. Play a level again to beat your score. Tap 🔊 to hear the Chinese.'));
   app.appendChild(h);
   var ls = E('div', 'levels');
@@ -961,7 +989,7 @@ function play(L, redo) {   // redo = { steps }: a second try at the questions mi
           if (s.after) s.after(p);
           var r = E('div', 'row'); var go = E('button', 'btn', 'Next ▶'); go.type = 'button'; go.onclick = function () { afterVoice(next, go); }; r.appendChild(go); p.appendChild(r); go.focus();
         } else {
-          b.classList.add('no'); first(s, false); beep(false); fb.className = 'fb no'; fb.textContent = s.wide ? 'Not this one. Look at where 是不是 goes, and try another.' : 'Not this one. Try another envelope.';
+          b.classList.add('no'); first(s, false); beep(false); fb.className = 'fb no'; fb.textContent = s.wide ? LESSON.wrong.pattern : LESSON.wrong.pick;
           if (!again[s.id] && !s.wide && !redo) { again[s.id] = 1; steps.push(s); total++; }   // a missed question comes back once at the end (not in the sentence-pattern level)
         }
       };
@@ -992,10 +1020,10 @@ function finish(L, r, old) {   // r = this play's result; old = the score it rep
     if (r.ids && r.ids.length) p.appendChild(redoRow(L, r.ids));
   }
   if (L.letter) {
-    p.appendChild(E('p', 'say', 'Your letter is ready. Tap Send!'));
-    var letter = E('div', 'letter'); letter.appendChild(E('span', 'st', '📮'));
-    letter.appendChild(E('div', null, '亲爱的爷爷：'));
-    SENTENCES.forEach(function (s, n) { var d = E('div', null, s.s.replace('＿', s.a)); if (n === SENTENCES.length - 1) d.style.textAlign = 'right'; letter.appendChild(d); });
+    p.appendChild(E('p', 'say', LESSON.letter.ready));
+    var letter = E('div', 'letter'); letter.appendChild(E('span', 'st', LESSON.letter.stamp));
+    letter.appendChild(E('div', null, LESSON.letter.greeting));
+    SENTENCES.forEach(function (s, n) { var d = E('div', null, s.s.replace('＿', s.a)); if (LESSON.letter.signRight && n === SENTENCES.length - 1) d.style.textAlign = 'right'; letter.appendChild(d); });
     p.appendChild(letter);
     var r = E('div', 'row'); var send = E('button', 'btn', 'Send ✈️'); send.type = 'button';
     send.onclick = function () { afterVoice(function () { letter.classList.add('fly'); beep(true); send.disabled = true; setTimeout(function () { if (letter.isConnected) menu(); }, 1700); }, send); };
@@ -1051,7 +1079,7 @@ function redone(L, r) {   // the end of a second try: half a cent for each one r
   p.appendChild(r2); app.appendChild(p);
 }
 
-/* ---------- level 4: bingo. Hear it, find it, stamp it. Three cards, each asking a little more. ---------- */
+/* ---------- level 4: bingo. Hear it, find it, mark it. Three cards, each asking a little more. ---------- */
 var BINGO_LINES = (function () {
   var out = [], i, j;
   for (i = 0; i < 5; i++) { var r = [], c = []; for (j = 0; j < 5; j++) { r.push(i * 5 + j); c.push(j * 5 + i); } out.push(r, c); }
@@ -1059,9 +1087,9 @@ var BINGO_LINES = (function () {
   return out;
 })();
 var BINGO_GOALS = [{ lines: 1, text: 'Make 1 line' }, { lines: 2, text: 'Make 2 lines' }, { lines: 12, text: 'Fill the whole card' }];
-function bingoItems() {   // every one of the 15 characters, plus 9 of the words
+function bingoItems() {   // every one of the lesson's characters, plus words to fill the 24 squares (15 characters + 9 words, 14 + 10, …)
   return CHARS.map(function (x) { return { t: x.c, py: x.py, en: x.en }; })
-    .concat(shuffle(WORDS).slice(0, 9).map(function (x) { return { t: x.w, py: x.py, en: x.en }; }));
+    .concat(shuffle(WORDS).slice(0, 24 - CHARS.length).map(function (x) { return { t: x.w, py: x.py, en: x.en }; }));
 }
 function bingo(L) {
   var cardNo = save.bingo && save.bingo.cardNo < BINGO_GOALS.length ? save.bingo.cardNo : 0;
@@ -1102,7 +1130,7 @@ function bingo(L) {
     var grid = E('div', 'bgrid'); p.appendChild(grid);
     var btns = [];
     cells.forEach(function (c, i) {
-      var b = E('button', 'bcell' + (c.free || marked[i] ? ' on' : '') + (c.free ? ' free' : '')); b.type = 'button'; b.textContent = c.free ? '📮' : c.t;
+      var b = E('button', 'bcell' + (c.free || marked[i] ? ' on' : '') + (c.free ? ' free' : '')); b.type = 'button'; b.textContent = c.free ? LESSON.bingoFree : c.t;
       if (c.free) { marked[i] = 1; b.setAttribute('aria-label', 'Free space'); b.disabled = true; }
       else b.onclick = function () { tap(c, i, b); };
       btns.push(b); grid.appendChild(b);
@@ -1161,7 +1189,7 @@ function level1() {   // meet 5, find them by pinyin, find them by sound; three 
   GROUPS.forEach(function (g, gi) {
     g.forEach(function (c) { out.push({ type: 'meet', c: c }); });
     shuffle(g).forEach(function (c) {
-      out.push({ id: 'p' + c.c, prompt: 'Which envelope says…', answer: c.c, opts: pick3(c.c),
+      out.push({ id: 'p' + c.c, prompt: LESSON.pick, answer: c.c, opts: pick3(c.c),
         top: function () { var d = E('div'); d.appendChild(E('div', 'py', c.py)); d.appendChild(E('div', 'mean', c.e + ' ' + c.en)); return d; } });
     });
     shuffle(g).forEach(function (c) {
