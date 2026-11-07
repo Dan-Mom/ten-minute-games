@@ -592,11 +592,14 @@ button{-webkit-appearance:none;appearance:none}
 .wbtns{margin-top:10px;gap:10px}
 .wbtns .btn{min-height:46px;padding:6px 16px;font-size:18px}
 .wmsg{min-height:27px;margin:10px 0 4px;color:var(--blue-d)}
-.wwords{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin:2px auto 0;max-width:700px}
+.wwords{display:flex;flex-wrap:nowrap;align-items:center;justify-content:center;gap:8px;margin:2px auto 0;max-width:720px}   /* one row: a long meaning is cut short (… ) instead of making a second row below the screen */
 .wword{-webkit-appearance:none;appearance:none;border:2px solid var(--blue-s);background:#fff;border-radius:14px;padding:4px 12px;min-height:46px;font:inherit;color:var(--ink);line-height:1.2}
 .wword .han{font-size:22px}
 .wword .wc{color:var(--blue)}
 .wword small{display:block;font:700 13px var(--body);color:var(--mute)}
+.wwords .tlab{flex:0 0 auto}
+.wword{flex:0 1 auto;min-width:0}
+.wword small{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;max-width:13em;margin:0 auto}   /* a long meaning takes two short lines */
 </style>
 <style>
 /* Chinese game 10. One idea: the 12 new characters of the lesson.
@@ -663,6 +666,22 @@ var WORDS = [
   { w: '苹果', k: 0, py: 'píngguǒ', en: 'apple', e: '🍎' }, { w: '葡萄', k: 0, py: 'pútao', en: 'grapes', e: '🍇' },
   { w: '葡萄干', k: 1, py: 'pútaogān', en: 'raisins', e: '🍇' }
 ];
+/* "Write it": more words with each character (common words, or words from the lesson), shown under the writing boxes with the
+   words of level 2 that have it. w = the word, py = its pinyin, en = what it means */
+var MORE_WORDS = {
+  '答': [{ w: '答案', py: 'dá\'àn', en: 'answer' }, { w: '问答', py: 'wèndá', en: 'questions and answers' }],
+  '弯': [{ w: '弯弯', py: 'wānwān', en: 'curved' }, { w: '拐弯', py: 'guǎiwān', en: 'turn a corner' }],
+  '船': [{ w: '船长', py: 'chuánzhǎng', en: 'captain (of a ship)' }, { w: '帆船', py: 'fānchuán', en: 'sailing boat' }],
+  '尖': [{ w: '尖尖', py: 'jiānjiān', en: 'pointed' }, { w: '塔尖', py: 'tǎjiān', en: 'top of a tower' }],
+  '握': [{ w: '握住', py: 'wòzhù', en: 'hold tight' }, { w: '握紧', py: 'wòjǐn', en: 'grip tightly' }],
+  '毛': [{ w: '羽毛', py: 'yǔmáo', en: 'feather' }, { w: '毛巾', py: 'máojīn', en: 'towel' }],
+  '箭': [{ w: '弓箭', py: 'gōngjiàn', en: 'bow and arrow' }, { w: '箭头', py: 'jiàntóu', en: 'arrow (a sign)' }],
+  '圆': [{ w: '圆圆', py: 'yuányuán', en: 'round' }, { w: '圆形', py: 'yuánxíng', en: 'circle' }],
+  '串': [{ w: '一串', py: 'yí chuàn', en: 'a bunch' }, { w: '串门', py: 'chuànmén', en: 'drop in on neighbours' }],
+  '苹': [{ w: '苹果树', py: 'píngguǒshù', en: 'apple tree' }, { w: '苹果汁', py: 'píngguǒzhī', en: 'apple juice' }],
+  '葡': [{ w: '葡萄树', py: 'pútaoshù', en: 'grapevine' }, { w: '葡萄汁', py: 'pútaozhī', en: 'grape juice' }],
+  '萄': [{ w: '葡萄树', py: 'pútaoshù', en: 'grapevine' }, { w: '葡萄汁', py: 'pútaozhī', en: 'grape juice' }]
+};
 /* level 3: the lesson's sentence pattern: a riddle question 什么 ＋ a doubled describing word ＋ what it does? All sentences are our own.
    show = the explanation card, pick = turn the answer into a riddle question (a = right, no = wrong ones), build = tap the words in order (ok = every right order) */
 var PATTERN = [
@@ -1291,8 +1310,9 @@ function writeIt(at) {
     var t = E('div', 'wtext'); t.appendChild(txt('div', 'py', c.py)); t.appendChild(txt('div', 'mean', c.e + ' ' + c.en)); info.appendChild(t);
     info.appendChild(speakBtn(c.c));
     words.innerHTML = '';
-    var ws = WORDS.filter(function (w) { return w.w.indexOf(c.c) >= 0; }), seen = {};
-    ws = ws.filter(function (w) { if (seen[w.w]) return false; seen[w.w] = 1; return true; }).slice(0, 4);
+    var more = typeof MORE_WORDS !== 'undefined' && MORE_WORDS && Array.isArray(MORE_WORDS[c.c]) ? MORE_WORDS[c.c] : [];   // the lesson's extra words for this character
+    var ws = WORDS.filter(function (w) { return w.w.indexOf(c.c) >= 0; }).concat(more.filter(function (w) { return w && typeof w.w === 'string' && w.w.indexOf(c.c) >= 0; })), seen = {};
+    ws = ws.filter(function (w) { if (seen[w.w]) return false; seen[w.w] = 1; return true; }).slice(0, 3);   // three fit in one row under the boxes
     if (ws.length) {
       words.appendChild(E('span', 'tlab', 'Words <span class="han">组词</span>'));
       ws.forEach(function (w) {

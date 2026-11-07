@@ -592,11 +592,14 @@ button{-webkit-appearance:none;appearance:none}
 .wbtns{margin-top:10px;gap:10px}
 .wbtns .btn{min-height:46px;padding:6px 16px;font-size:18px}
 .wmsg{min-height:27px;margin:10px 0 4px;color:var(--blue-d)}
-.wwords{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin:2px auto 0;max-width:700px}
+.wwords{display:flex;flex-wrap:nowrap;align-items:center;justify-content:center;gap:8px;margin:2px auto 0;max-width:720px}   /* one row: a long meaning is cut short (… ) instead of making a second row below the screen */
 .wword{-webkit-appearance:none;appearance:none;border:2px solid var(--blue-s);background:#fff;border-radius:14px;padding:4px 12px;min-height:46px;font:inherit;color:var(--ink);line-height:1.2}
 .wword .han{font-size:22px}
 .wword .wc{color:var(--blue)}
 .wword small{display:block;font:700 13px var(--body);color:var(--mute)}
+.wwords .tlab{flex:0 0 auto}
+.wword{flex:0 1 auto;min-width:0}
+.wword small{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;max-width:13em;margin:0 auto}   /* a long meaning takes two short lines */
 </style>
 <style>
 /* Chinese game 11. One idea: the 14 new characters of the lesson.
@@ -668,6 +671,24 @@ var WORDS = [
   { w: '细心', k: 0, py: 'xìxīn', en: 'careful', e: '🔍', no: ['冰'] }, { w: '观看', k: 0, py: 'guānkàn', en: 'watch', e: '👀', no: ['细', '察'] },
   { w: '观察', k: 1, py: 'guānchá', en: 'look closely, observe', e: '🔎', no: ['叶'] }, { w: '看懂', k: 1, py: 'kàndǒng', en: 'understand (by looking)', e: '💡' }
 ];
+/* "Write it": more words with each character (common words, or words from the lesson), shown under the writing boxes with the
+   words of level 2 that have it. w = the word, py = its pinyin, en = what it means */
+var MORE_WORDS = {
+  '言': [{ w: '发言', py: 'fāyán', en: 'speak up (in class)' }, { w: '留言', py: 'liúyán', en: 'leave a message' }],
+  '丰': [{ w: '丰盛', py: 'fēngshèng', en: 'plentiful (a meal)' }, { w: '丰年', py: 'fēngnián', en: 'a year of good harvest' }],
+  '富': [{ w: '富有', py: 'fùyǒu', en: 'rich' }, { w: '财富', py: 'cáifù', en: 'wealth' }],
+  '晴': [{ w: '晴朗', py: 'qínglǎng', en: 'sunny and clear' }, { w: '天晴', py: 'tiān qíng', en: 'the sky clears' }],
+  '搬': [{ w: '搬运', py: 'bānyùn', en: 'carry, move' }, { w: '搬走', py: 'bānzǒu', en: 'move away' }],
+  '伞': [{ w: '打伞', py: 'dǎ sǎn', en: 'hold an umbrella' }, { w: '太阳伞', py: 'tàiyángsǎn', en: 'sunshade' }],
+  '冰': [{ w: '冰箱', py: 'bīngxiāng', en: 'fridge' }, { w: '冰淇淋', py: 'bīngqílín', en: 'ice cream' }],
+  '化': [{ w: '融化', py: 'rónghuà', en: 'melt' }, { w: '文化', py: 'wénhuà', en: 'culture' }],
+  '叶': [{ w: '叶子', py: 'yèzi', en: 'leaf' }, { w: '茶叶', py: 'cháyè', en: 'tea leaves' }],
+  '妙': [{ w: '美妙', py: 'měimiào', en: 'wonderful' }, { w: '巧妙', py: 'qiǎomiào', en: 'clever' }],
+  '细': [{ w: '仔细', py: 'zǐxì', en: 'careful' }, { w: '细小', py: 'xìxiǎo', en: 'tiny' }],
+  '观': [{ w: '参观', py: 'cānguān', en: 'visit' }, { w: '观众', py: 'guānzhòng', en: 'audience' }],
+  '察': [{ w: '警察', py: 'jǐngchá', en: 'police officer' }, { w: '察看', py: 'chákàn', en: 'take a close look' }],
+  '懂': [{ w: '懂事', py: 'dǒngshì', en: 'sensible' }, { w: '听懂', py: 'tīngdǒng', en: 'understand (when you hear it)' }]
+};
 /* level 3: the lesson's sentence pattern 正在……呢 (happening right now). All sentences are our own. show = the explanation card,
    pick = put 正在 and 呢 in the right places (a = right, no = wrong ones), build = tap the words in order (ok = every right order) */
 var PATTERN = [
@@ -1297,8 +1318,9 @@ function writeIt(at) {
     var t = E('div', 'wtext'); t.appendChild(txt('div', 'py', c.py)); t.appendChild(txt('div', 'mean', c.e + ' ' + c.en)); info.appendChild(t);
     info.appendChild(speakBtn(c.c));
     words.innerHTML = '';
-    var ws = WORDS.filter(function (w) { return w.w.indexOf(c.c) >= 0; }), seen = {};
-    ws = ws.filter(function (w) { if (seen[w.w]) return false; seen[w.w] = 1; return true; }).slice(0, 4);
+    var more = typeof MORE_WORDS !== 'undefined' && MORE_WORDS && Array.isArray(MORE_WORDS[c.c]) ? MORE_WORDS[c.c] : [];   // the lesson's extra words for this character
+    var ws = WORDS.filter(function (w) { return w.w.indexOf(c.c) >= 0; }).concat(more.filter(function (w) { return w && typeof w.w === 'string' && w.w.indexOf(c.c) >= 0; })), seen = {};
+    ws = ws.filter(function (w) { if (seen[w.w]) return false; seen[w.w] = 1; return true; }).slice(0, 3);   // three fit in one row under the boxes
     if (ws.length) {
       words.appendChild(E('span', 'tlab', 'Words <span class="han">组词</span>'));
       ws.forEach(function (w) {

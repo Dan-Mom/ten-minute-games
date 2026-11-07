@@ -592,11 +592,14 @@ button{-webkit-appearance:none;appearance:none}
 .wbtns{margin-top:10px;gap:10px}
 .wbtns .btn{min-height:46px;padding:6px 16px;font-size:18px}
 .wmsg{min-height:27px;margin:10px 0 4px;color:var(--blue-d)}
-.wwords{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin:2px auto 0;max-width:700px}
+.wwords{display:flex;flex-wrap:nowrap;align-items:center;justify-content:center;gap:8px;margin:2px auto 0;max-width:720px}   /* one row: a long meaning is cut short (… ) instead of making a second row below the screen */
 .wword{-webkit-appearance:none;appearance:none;border:2px solid var(--blue-s);background:#fff;border-radius:14px;padding:4px 12px;min-height:46px;font:inherit;color:var(--ink);line-height:1.2}
 .wword .han{font-size:22px}
 .wword .wc{color:var(--blue)}
 .wword small{display:block;font:700 13px var(--body);color:var(--mute)}
+.wwords .tlab{flex:0 0 auto}
+.wword{flex:0 1 auto;min-width:0}
+.wword small{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;max-width:13em;margin:0 auto}   /* a long meaning takes two short lines */
 </style>
 <style>
 /* Chinese game 5. One idea: the 12 new characters of the lesson.
@@ -664,6 +667,21 @@ var WORDS = [
   { w: '原来', k: 0, py: 'yuánlái', en: 'at first; so that\'s how it was', e: '😮', no: ['该', '既', '突'] }, { w: '既然', k: 0, py: 'jìrán', en: 'since (this is so)', e: '🔗', no: ['突', '定'] },
   { w: '好像', k: 1, py: 'hǎoxiàng', en: 'seems like', e: '🤔', no: ['深', '浅', '喝', '办', '正'] }
 ];
+/* "Write it": more words with each character (common words, or words from the lesson), shown under the writing boxes with the
+   words of level 2 that have it. w = the word, py = its pinyin, en = what it means */
+var MORE_WORDS = {
+  '喝': [{ w: '好喝', py: 'hǎohē', en: 'tasty (to drink)' }, { w: '喝茶', py: 'hē chá', en: 'drink tea' }],
+  '伯': [{ w: '大伯', py: 'dàbó', en: 'Dad\'s eldest brother' }, { w: '伯母', py: 'bómǔ', en: 'aunt (Dad\'s older brother\'s wife)' }],
+  '深': [{ w: '深夜', py: 'shēnyè', en: 'late at night' }, { w: '深色', py: 'shēnsè', en: 'dark colour' }],
+  '浅': [{ w: '浅色', py: 'qiǎnsè', en: 'light colour' }, { w: '浅水', py: 'qiǎnshuǐ', en: 'shallow water' }],
+  '正': [{ w: '正确', py: 'zhèngquè', en: 'correct' }, { w: '正方形', py: 'zhèngfāngxíng', en: 'square' }],
+  '突': [{ w: '突出', py: 'tūchū', en: 'stick out' }],
+  '该': [{ w: '不该', py: 'bù gāi', en: 'should not' }],
+  '办': [{ w: '怎么办', py: 'zěnme bàn', en: 'what can we do?' }, { w: '办事', py: 'bàn shì', en: 'get things done' }],
+  '定': [{ w: '决定', py: 'juédìng', en: 'decide' }, { w: '定好', py: 'dìnghǎo', en: 'decide on, all set' }],
+  '原': [{ w: '原因', py: 'yuányīn', en: 'reason' }, { w: '草原', py: 'cǎoyuán', en: 'grassland' }],
+  '像': [{ w: '不像', py: 'bú xiàng', en: 'does not look like' }, { w: '画像', py: 'huàxiàng', en: 'portrait' }]
+};
 /* level 3: the lesson's sentence pattern 既不……，也不…… ("neither … nor …"). All sentences are our own. show = the explanation card,
    pick = put 既不 and 也不 in the right places (a = right, no = wrong ones), build = tap the words in order (ok = every right order) */
 var PATTERN = [
@@ -1292,8 +1310,9 @@ function writeIt(at) {
     var t = E('div', 'wtext'); t.appendChild(txt('div', 'py', c.py)); t.appendChild(txt('div', 'mean', c.e + ' ' + c.en)); info.appendChild(t);
     info.appendChild(speakBtn(c.c));
     words.innerHTML = '';
-    var ws = WORDS.filter(function (w) { return w.w.indexOf(c.c) >= 0; }), seen = {};
-    ws = ws.filter(function (w) { if (seen[w.w]) return false; seen[w.w] = 1; return true; }).slice(0, 4);
+    var more = typeof MORE_WORDS !== 'undefined' && MORE_WORDS && Array.isArray(MORE_WORDS[c.c]) ? MORE_WORDS[c.c] : [];   // the lesson's extra words for this character
+    var ws = WORDS.filter(function (w) { return w.w.indexOf(c.c) >= 0; }).concat(more.filter(function (w) { return w && typeof w.w === 'string' && w.w.indexOf(c.c) >= 0; })), seen = {};
+    ws = ws.filter(function (w) { if (seen[w.w]) return false; seen[w.w] = 1; return true; }).slice(0, 3);   // three fit in one row under the boxes
     if (ws.length) {
       words.appendChild(E('span', 'tlab', 'Words <span class="han">组词</span>'));
       ws.forEach(function (w) {
