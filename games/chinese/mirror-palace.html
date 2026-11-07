@@ -600,6 +600,8 @@ button{-webkit-appearance:none;appearance:none}
 .wwords .tlab{flex:0 0 auto}
 .wword{flex:0 1 auto;min-width:0}
 .wword small{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;max-width:13em;margin:0 auto}   /* a long meaning takes two short lines */
+.hero .offl{margin-top:6px;font:800 15px var(--display);color:var(--green)}
+.hero .offl:empty{display:none}
 </style>
 <style>
 /* Chinese game 3. One idea: the 14 new characters of the lesson.
@@ -1007,7 +1009,9 @@ function menu() {
   h.appendChild(E('div', 'big', LESSON.intro.emoji));
   h.appendChild(E('h2', null, LESSON.intro.title));
   h.appendChild(E('p', null, (HAS_STORY ? 'New here? Start with the story, then play the five levels. ' : '') + 'Five levels, about ten minutes each. Each answer right the first time earns 1¢, and a second try at a missed one earns 0.5¢. Play a level again to beat your score. Tap 🔊 to hear the Chinese.'));
+  if (LESSON.offline) { var off = E('p', 'offl'); off.id = 'offl'; h.appendChild(off); }   // offline: how far saving has got (goOffline)
   app.appendChild(h);
+  offlineNote();
   var ls = E('div', 'levels');
   if (HAS_STORY) {   // "Start here": the lesson's short talk comes before level 1 (only in a lesson that has a STORY)
     var sb = E('button', 'lvs' + (save.story ? ' done' : '')); sb.type = 'button';   // not 'lv': the level cards stay level 1 to 5 in order
@@ -1736,7 +1740,55 @@ function level3() {   // the letter level: pick the missing word in each sentenc
   });
 }
 
+/* ---------- offline (LESSON.offline; the owner, 2026-11-07): after the lesson was opened once online, it opens and plays with no
+   internet. The site's zh-sw.js (at the site root) answers from its cache when there is no internet; here the lesson puts all
+   its files in that cache: the page, the home page and its book page (the way back), its voice, old drawings and stroke data.
+   The menu says how far that has got. Nothing here runs without LESSON.offline. ---------- */
+var OFF = { on: false, done: 0, total: 0, ok: false };
+function offlineNote() {   // the line under the menu's intro
+  var el = document.getElementById('offl'); if (!el) return;
+  el.innerHTML = !OFF.on ? '' : OFF.ok ? '✓ Ready to play offline <span class="han">没有网络也能玩</span>'
+    : OFF.total && OFF.done >= OFF.total ? 'Not saved for offline yet: open this lesson again with internet <span class="han">请联网再打开一次</span>'
+    : '📥 Saving for offline <span class="han">正在保存</span> ' + (OFF.total ? Math.floor(100 * OFF.done / OFF.total) : 0) + '%';
+}
+function goOffline() {
+  if (!LESSON.offline || !('serviceWorker' in navigator) || !window.caches || !/^https?:$/.test(location.protocol)) return;
+  try { navigator.serviceWorker.register('../../zh-sw.js', { scope: '../../' }).catch(function () {}); } catch (e) { return; }
+  OFF.on = true;
+  if (save.offline) { OFF.ok = true; offlineNote(); if (!navigator.onLine) return; }   // saved before: say so at once (a check runs below when online)
+  var files = ['../../index.html', LESSON.voice + '/keys.json'], pages = [location.pathname];
+  var hm = /[?&]home=([^&]*)/.exec(location.search || '');
+  if (hm) try { var hp = decodeURIComponent(hm[1]).split(/[?#]/)[0]; if (/^[A-Za-z0-9._~\/-]+\.html$/.test(hp) && hp.indexOf('//') < 0) pages.push(hp); } catch (e) {}
+  if (typeof ANCIENT !== 'undefined') Object.keys(ANCIENT).forEach(function (k) { if (ANCIENT[k] && ANCIENT[k].f) files.push(ANCIENT[k].f); });
+  if (HAS_WRITE) CHARS.forEach(function (c) { var h = c.c.codePointAt(0).toString(16); while (h.length < 4) h = '0' + h; files.push('strokes/' + h + '.json'); });
+  pages.push('../../index.html');
+  fetch(LESSON.voice + '/keys.json').then(function (r) { if (!r.ok) throw new Error('keys'); return r.json(); }).then(function (keys) {
+    keys.forEach(function (k) { if (/^[0-9a-f]{8}$/.test(k)) files.push(LESSON.voice + '/' + k + '.mp3'); });
+    return caches.open('zh-offline');
+  }).then(function (c) {
+    var list = files.concat(pages), seen = {}, ok = true;
+    list = list.filter(function (f) { var u = new URL(f, location.href); u.search = ''; u.hash = ''; if (seen[u.href]) return false; seen[u.href] = 1; return true; });
+    OFF.total = list.length; OFF.done = 0; offlineNote();
+    var i = 0;
+    function one() {   // a few at a time, so the iPad stays quick while the child plays
+      if (i >= list.length) return Promise.resolve();
+      var f = list[i++], u = new URL(f, location.href); u.search = ''; u.hash = '';
+      var page = /\.html$/.test(u.pathname);   // pages: always the newest copy; the other files never change under the same name
+      return (page ? Promise.resolve(null) : c.match(u.href)).then(function (hit) {
+        if (hit) return;
+        return fetch(u.href, { cache: 'reload' }).then(function (r) { if (!r.ok) throw new Error('missing'); return c.put(u.href, r); });
+      }).then(null, function () { return c.match(u.href).then(function (h) { if (!h) ok = false; }); })   // a page that could not be refreshed still counts when a copy is kept
+        .then(function () { OFF.done++; offlineNote(); return one(); });
+    }
+    return Promise.all([one(), one(), one(), one()]).then(function () {
+      OFF.ok = ok; if (ok) { save.offline = 1; store(); try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {}); } catch (e) {} }   // ask the iPad to keep the saved files
+      offlineNote();
+    });
+  }).then(null, function () { OFF.on = !!save.offline; OFF.ok = !!save.offline; offlineNote(); });
+}
+
 menu();
+goOffline();
 </script>
 <script>(function backPill() {
   try { if (window.parent !== window) return; } catch (e) { return; }
@@ -1769,7 +1821,9 @@ menu();
   function clearOffline(base) {
     var jobs = [];
     if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) {
-      return Promise.all(rs.filter(function (r) { return r.scope.indexOf(location.origin + base) === 0; }).map(function (r) { return r.unregister(); }));
+      // the Chinese lessons' offline worker (zh-sw.js) stays: it always gets pages from the internet first, and without it the
+      // home page and the saved lessons would not open offline until a lesson is opened online again
+      return Promise.all(rs.filter(function (r) { var w = r.active || r.waiting || r.installing; return r.scope.indexOf(location.origin + base) === 0 && !/\/zh-sw\.js$/.test((w && w.scriptURL) || ''); }).map(function (r) { return r.unregister(); }));
     }));
     if (window.caches) jobs.push(caches.keys().then(function (ks) {
       return Promise.all(ks.filter(function (k) { return /^(ttc-cache-\d|rnk-roman-numeral-kingdom-|splinter-)/.test(k); }).map(function (k) { return caches.delete(k); }));

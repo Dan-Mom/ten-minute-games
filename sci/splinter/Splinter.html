@@ -1459,7 +1459,9 @@
   function clearOffline(base) {
     var jobs = [];
     if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) {
-      return Promise.all(rs.filter(function (r) { return r.scope.indexOf(location.origin + base) === 0; }).map(function (r) { return r.unregister(); }));
+      // the Chinese lessons' offline worker (zh-sw.js) stays: it always gets pages from the internet first, and without it the
+      // home page and the saved lessons would not open offline until a lesson is opened online again
+      return Promise.all(rs.filter(function (r) { var w = r.active || r.waiting || r.installing; return r.scope.indexOf(location.origin + base) === 0 && !/\/zh-sw\.js$/.test((w && w.scriptURL) || ''); }).map(function (r) { return r.unregister(); }));
     }));
     if (window.caches) jobs.push(caches.keys().then(function (ks) {
       return Promise.all(ks.filter(function (k) { return /^(ttc-cache-\d|rnk-roman-numeral-kingdom-|splinter-)/.test(k); }).map(function (k) { return caches.delete(k); }));
