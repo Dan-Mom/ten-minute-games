@@ -666,7 +666,7 @@ var PATTERN = [
   { t: 'build', tiles: ['不洗手，', '不能', '吃', '西瓜'], ok: ['不洗手，不能吃西瓜。', '不洗手，西瓜不能吃。'], en: 'No washing hands, no watermelon!' },
   { t: 'pick', from: '如果天气不暖和，种子就不会发芽。', a: '天不暖和，种子不发芽。', no: ['天不暖和，不种子发芽。', '天暖和不，种子不发芽。'], en: 'If the weather isn\'t warm, the seeds won\'t sprout.' },
   { t: 'build', tiles: ['衣服', '不晒干，', '不能', '穿'], ok: ['衣服不晒干，不能穿。', '不晒干，衣服不能穿。'], en: 'If the clothes aren\'t dried in the sun, you can\'t wear them.' },
-  { t: 'build', tiles: ['不晒太阳，', '身体', '不', '健康'], ok: ['不晒太阳，身体不健康。'], en: 'Without any sunshine, your body won\'t be healthy.' }
+  { t: 'build', tiles: ['晚上', '不开灯，', '屋里', '不', '亮'], ok: ['晚上不开灯，屋里不亮。', '不开灯，晚上屋里不亮。'], en: 'At night, if you don\'t turn on the light, the room isn\'t bright.' }
 ];
 /* level 4: our own letter to Mom from Grandma's farm, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的妈妈：" */
 var SENTENCES = [
@@ -978,7 +978,8 @@ function menu() {
     }
   });
   app.appendChild(ls);
-  app.appendChild(E('p', 'credit', 'Old character drawings: Wikimedia Commons (Ancient Chinese characters project), public domain; many are redrawn from Richard Sears’s Chinese Etymology (hanziyuan.net).'));
+  // no source line under the levels (the owner, 2026-11-07: the lessons do not name their sources). The old drawings are public domain
+  // (Wikimedia Commons, Ancient Chinese characters project; many redrawn from Richard Sears's Chinese Etymology).
 }
 
 /* ---------- "Start here": the lesson's short talk (STORY), one line at a time, before level 1. No score.

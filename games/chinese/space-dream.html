@@ -682,7 +682,7 @@ var SENTENCES = [
   { s: '我的＿是当一名宇航员。', a: '梦想', no: ['边界', '泥土'], en: 'My dream is to be an astronaut.' },
   { s: '我想飞到太空里，回头看一看蓝色的＿。', a: '地球', no: ['号码', '店员'], en: 'I want to fly into space and look back at the blue Earth.' },
   { s: '我还想＿月球，在上面走一走。', a: '到达', no: ['梦想', '号码'], en: 'I also want to reach the Moon and walk around on it.' },
-  { s: '书上说，＿上没有空气，也没有水。', a: '月球', no: ['店员', '人类'], en: 'My book says there is no air and no water on the Moon.' },
+  { s: '书上说，＿上没有可以呼吸的空气。', a: '月球', no: ['店员', '人类'], en: 'My book says there is no air to breathe on the Moon.' },
   { s: '我还画了一张画：一个＿站在月球上，向地球挥手。', a: '宇航员', no: ['泥土', '号码'], en: 'I also drew a picture: an astronaut standing on the Moon, waving at the Earth.' },
   { s: '下个月，爸爸要带我去参观＿博物馆，里面有真的火箭。', a: '航天', no: ['泥土', '号码'], en: 'Next month Dad is taking me to a space museum with real rockets in it.' },
   { s: '我知道，当宇航员要＿努力，身体也要好。', a: '非常', no: ['边界', '店员'], en: 'I know that to be an astronaut you have to work very hard and be healthy too.' },
@@ -985,7 +985,8 @@ function menu() {
     }
   });
   app.appendChild(ls);
-  app.appendChild(E('p', 'credit', 'Old character drawings: Wikimedia Commons (Ancient Chinese characters project), public domain; many are redrawn from Richard Sears’s Chinese Etymology (hanziyuan.net).'));
+  // no source line under the levels (the owner, 2026-11-07: the lessons do not name their sources). The old drawings are public domain
+  // (Wikimedia Commons, Ancient Chinese characters project; many redrawn from Richard Sears's Chinese Etymology).
 }
 
 /* ---------- "Start here": the lesson's short talk (STORY), one line at a time, before level 1. No score.
