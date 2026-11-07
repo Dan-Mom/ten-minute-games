@@ -732,15 +732,17 @@ try { fetch(LESSON.voice + '/keys.json').then(function (r) { return r.json(); })
 function vkey(t) { t = String(t).replace(/＿/g, '').trim(); var h = 0x811c9dc5; for (var i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
 var voiceWait = null, voiceDone = null;   // the recording now playing, and how to mark it finished
 var pending = null, pendBtn = null, navAt = 0;   // the one move waiting for the voice to end, and when the child last moved on
-/* Fast sound: a recording that is downloaded and decoded (BUF) plays through Web Audio, which starts at once, also on iPad, where
-   switching the <audio> player to another recording takes a noticeable moment. Web Audio may only start after the first tap on the
-   page (iPad), so until then, and for anything not decoded yet, the <audio> player is used as before. */
+/* Fast sound (computers): a recording that is downloaded and decoded (BUF) plays through Web Audio, which starts at once. Until the
+   first tap, and for anything not decoded yet, the <audio> player is used. iPad and iPhone always use the <audio> player (see IOS). */
+// iPad and iPhone keep the <audio> player for the voice: there the voice played through Web Audio had a crackling noise
+// (2026-11-07: on an iPad the first line of a talk, still on <audio>, was clean and every later line, on Web Audio, was not).
+// Older iPads also let Web Audio obey silent mode, which <audio> does not. There no AudioContext is made up front either: beep()
+// makes its own at the first beep, inside a tap, as before 2026-11-05 (one made early can sound crackly on iOS).
+var IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && 'ontouchend' in document);
 var AC = null, BUF = {}, srcNode = null;
 try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}   // iPad (iOS 17+): play even in silent mode, like the <audio> player
-try { var ACx = window.AudioContext || window.webkitAudioContext; if (ACx) AC = new ACx(); } catch (e) { AC = null; }
-// iPad before iPadOS 17 has no audioSession: there Web Audio obeys silent mode while <audio> does not, so keep <audio> for the voice
-var IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && 'ontouchend' in document);
-var FAST = !!AC && (!IOS || !!navigator.audioSession);
+try { var ACx = window.AudioContext || window.webkitAudioContext; if (ACx && !IOS) AC = new ACx(); } catch (e) { AC = null; }
+var FAST = !!AC && !IOS;
 if (AC) AC.onstatechange = function () {   // iPad paused the sound (a call, another app): a move waiting for this recording may go now
   if (AC.state !== 'running' && srcNode && voiceDone) { var n = srcNode; srcNode = null; try { n.onended = null; n.stop(0); } catch (e) {} voiceDone(); }
 };
@@ -887,7 +889,8 @@ function built(x) {
 /* tiny sounds for right and wrong, no files needed */
 var ac = null;
 function beep(ok) {
-  try { ac = ac || AC || new (window.AudioContext || window.webkitAudioContext)(); var o = ac.createOscillator(), g = ac.createGain(); o.connect(g); g.connect(ac.destination);
+  try { ac = ac || AC || new (window.AudioContext || window.webkitAudioContext)(); if (ac.state !== 'running' && ac.resume) { var r = ac.resume(); if (r && r.catch) r.catch(function () {}); }   // also after a phone call paused it
+    var o = ac.createOscillator(), g = ac.createGain(); o.connect(g); g.connect(ac.destination);
     o.frequency.value = ok ? 880 : 220; g.gain.setValueAtTime(0.12, ac.currentTime); g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + (ok ? 0.25 : 0.35)); o.start(); o.stop(ac.currentTime + 0.4); } catch (e) { /* no sound */ }
 }
 
