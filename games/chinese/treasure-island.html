@@ -565,6 +565,34 @@ button{-webkit-appearance:none;appearance:none}
 .nobr{white-space:nowrap}
 .bubble{cursor:pointer;transition:box-shadow .2s}
 .bubble.playing{box-shadow:0 0 0 4px var(--gold)}
+
+/* "Write it 写一写": stroke order (left) and writing with a finger (right), each in a 田字格 box */
+.wtitle{font-size:24px;align-self:center}
+.wchips{margin:0 auto 8px;gap:4px}
+.wchips .tchar{color:var(--ink);border-color:var(--blue-s);min-width:42px;min-height:42px;font-size:22px}
+.tchar.wrote{border-color:var(--green);color:var(--green);background:var(--green-s)}
+.tchar.cur{box-shadow:0 0 0 3px var(--gold)}
+.whead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:2px 0 8px}
+.whead .btn{min-height:48px;padding:4px 16px;font-size:18px}
+.whead .btn:disabled{opacity:.35;cursor:default}
+.winfo{display:flex;align-items:center;justify-content:center;gap:12px;min-width:0}
+.wbig{font-size:52px;line-height:1;color:var(--blue)}
+.wtext{text-align:left}
+.wtext .py{font-size:22px;color:var(--blue)}
+.wtext .mean{font-size:17px;color:var(--mute)}
+.wrow{display:flex;flex-wrap:wrap;justify-content:center;gap:24px}
+.wbox{display:flex;flex-direction:column;align-items:center;min-width:0}
+.wlab{margin:0 0 6px;font:800 17px var(--display);color:var(--mute)}
+.tzg{position:relative;background:#fff;border:3px solid #e2a3a3;border-radius:6px;-webkit-user-select:none;user-select:none}
+.tzg::before,.tzg::after{content:"";position:absolute;pointer-events:none}
+.tzg::before{left:50%;top:0;bottom:0;border-left:2px dashed #efc4c4}
+.tzg::after{top:50%;left:0;right:0;border-top:2px dashed #efc4c4}
+.tzg svg{position:relative;z-index:1;display:block}
+.wq{touch-action:none;-webkit-touch-callout:none}
+.wbtns{margin-top:10px;gap:10px}
+.wbtns .btn{min-height:46px;padding:6px 16px;font-size:18px}
+.wmsg{min-height:27px;margin:10px 0 4px;color:var(--blue-d)}
+.writep .credit{margin-top:10px}
 </style>
 <style>
 /* Chinese game 2. One idea: the 15 new characters of the lesson.
@@ -724,6 +752,7 @@ var save = (function () { try { return JSON.parse(localStorage.getItem(KEY)) || 
 function store() { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) { /* private mode: progress just is not kept */ } }
 save.done = save.done || {}; save.score = save.score || {};
 if (!save.re || typeof save.re !== 'object' || Array.isArray(save.re)) delete save.re;   // a damaged second-try record is dropped
+if (save.write && (typeof save.write !== 'object' || Array.isArray(save.write))) delete save.write;   // "Write it": { character: 1 } for each one written
 Object.keys(save.score).forEach(function (k) { var s = save.score[k] || {}; save.score[k] = { got: +s.got || 0, of: +s.of || 0, half: +s.half || 0 }; });   // numbers only: they are shown on the page
 if ('stamps' in save) { delete save.stamps; store(); }   // the old pile of stamps grew with every replay; scores per level replace it
 if (!save.v) {   // a sentence-pattern level was added as level 3, so levels 3 and 4 moved up one
@@ -946,6 +975,17 @@ function menu() {
     b.appendChild(E('span', 'go', '▶'));
     b.onclick = function () { afterVoice(function () { open(L); }, b); };
     ls.appendChild(b);
+    if (HAS_WRITE && L.n === 1) {   // "Write it" comes right after level 1, where the characters are met (not 'lv': the level cards stay 1 to 5)
+      var wn = CHARS.filter(function (c) { return written(c.c); }).length, all = wn === CHARS.length;
+      var wb = E('button', 'lvs lvw' + (all ? ' done' : '')); wb.type = 'button';
+      wb.appendChild(E('span', 'n', all ? '✓' : '✍️'));
+      var wt = E('div'); wt.appendChild(E('h3', null, 'Write it <span class="han">写一写</span>'));
+      wt.appendChild(E('p', null, 'Watch how each character is written, then write it with your finger.' + (wn ? ' ' + wn + ' of ' + CHARS.length + ' written.' : '')));
+      wb.appendChild(wt); wb.appendChild(E('span', 'go', '▶'));
+      var firstNew = 0; while (firstNew < CHARS.length - 1 && written(CHARS[firstNew].c)) firstNew++;
+      wb.onclick = function () { afterVoice(function () { writeIt(all ? 0 : firstNew); }, wb); };
+      ls.appendChild(wb);
+    }
   });
   app.appendChild(ls);
   app.appendChild(E('p', 'credit', 'Old character drawings: Wikimedia Commons (Ancient Chinese characters project), public domain; many are redrawn from Richard Sears’s Chinese Etymology (hanziyuan.net).'));
@@ -1035,6 +1075,143 @@ function story() {
     if (hadFocus) try { main.focus({ preventScroll: true }); } catch (e) {}
   }
   add();
+}
+
+/* ---------- "Write it 写一写": watch how a character is written, then write it with a finger in a 田字格 box. No score.
+   Only in a lesson that sets LESSON.write: its page also loads Hanzi Writer (_engine/hanzi-writer.min.js) and has a strokes/
+   folder with one file per character (scripts/strokes.py). A character written to the end is ticked (save.write). ---------- */
+var HAS_WRITE = !!LESSON.write && typeof HanziWriter !== 'undefined';
+var STROKES = {}, writeRedraw = null;
+function strokesOf(ch) {   // the lesson's own copy of the stroke data (never fetched from elsewhere), asked for once per character
+  if (!STROKES[ch]) {
+    var h = ch.codePointAt(0).toString(16); while (h.length < 4) h = '0' + h;
+    STROKES[ch] = fetch('strokes/' + h + '.json').then(function (r) { if (!r.ok) throw new Error('missing'); return r.json(); });
+    STROKES[ch].catch(function () { delete STROKES[ch]; });   // a failed download is tried again next time
+  }
+  return STROKES[ch];
+}
+function written(ch) { return !!(save.write && save.write[ch]); }
+var resizeAt = 0;
+window.addEventListener('resize', function () {   // turning the iPad: the boxes take the new size (what is half written stays)
+  clearTimeout(resizeAt); resizeAt = setTimeout(function () { if (writeRedraw) writeRedraw(); }, 250);
+});
+function writeIt(at) {
+  app.classList.remove('big', 'bwide');
+  app.innerHTML = '';
+  if (!save.write || typeof save.write !== 'object' || Array.isArray(save.write)) save.write = {};
+  warm(CHARS.map(function (c) { return c.c; }));
+  var cur = at || 0, demo = null, quiz = null, nextStroke = 0, total = 0, failed = false, lastS = 0;
+  var nav = E('div', 'nav');
+  var ls = E('button', 'btn ghost', '✕ Quit 退出'); ls.type = 'button'; ls.onclick = function () { afterVoice(menu, ls); };
+  nav.appendChild(E('h2', 'wtitle', '✍️ Write it <span class="han">写一写</span>')); nav.appendChild(ls); app.appendChild(nav);
+  var p = E('div', 'panel writep'); app.appendChild(p);
+  var chips = E('div', 'today wchips'), chip = [];
+  CHARS.forEach(function (c, n) {
+    var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py);
+    b.onclick = function () { pick(n); }; chip.push(b); chips.appendChild(b);
+  });
+  p.appendChild(chips);
+  // the character now: ◀ (the one before), the character with its pinyin, meaning and 🔊, then Next ▶
+  var head = E('div', 'whead'), info = E('div', 'winfo'), prev = E('button', 'btn ghost', '◀'), nxt = E('button', 'btn', '');
+  prev.type = nxt.type = 'button'; prev.setAttribute('aria-label', 'The character before');
+  prev.onclick = function () { if (cur > 0) afterVoice(function () { pick(cur - 1); }, prev); };
+  nxt.onclick = function () { afterVoice(function () { if (cur < CHARS.length - 1) pick(cur + 1); else menu(); }, nxt); };
+  head.appendChild(prev); head.appendChild(info); head.appendChild(nxt); p.appendChild(head);
+  var row = E('div', 'wrow'); p.appendChild(row);
+  var b1 = E('div', 'wbox'), b2 = E('div', 'wbox');
+  b1.appendChild(E('p', 'wlab', '1. Watch <span class="han">看笔顺</span>'));
+  var dEl = E('div', 'tzg'); b1.appendChild(dEl);
+  var r1 = E('div', 'row wbtns'), play = E('button', 'btn ghost', '▶ Watch again <span class="han">再看</span>'); play.type = 'button';
+  play.onclick = function () { if (failed) return load(); watch(); }; r1.appendChild(play); b1.appendChild(r1);
+  b2.appendChild(E('p', 'wlab', '2. Your turn <span class="han">自己写</span>'));
+  var qEl = E('div', 'tzg wq'); b2.appendChild(qEl);
+  var r2 = E('div', 'row wbtns'), hint = E('button', 'btn ghost', '💡 Hint <span class="han">提示</span>'), again = E('button', 'btn ghost', '↺ Again <span class="han">再写</span>');
+  hint.type = again.type = 'button';
+  hint.onclick = function () { if (quiz && !failed && nextStroke < total) try { quiz.highlightStroke(nextStroke); } catch (e) {} };
+  again.onclick = function () { if (failed) return load(); start(); };
+  r2.appendChild(hint); r2.appendChild(again); b2.appendChild(r2);
+  row.appendChild(b1); row.appendChild(b2);
+  var msg = E('p', 'wmsg'); p.appendChild(msg);
+  p.appendChild(E('p', 'credit', 'Stroke order: Hanzi Writer (MIT licence), with stroke data from Make Me a Hanzi, based on fonts by Arphic Technology (Arphic Public Licence).'));
+
+  function size() {   // two boxes side by side when they fit, else one above the other; small enough that the buttons under them are on the screen too
+    var w = row.clientWidth || 300, two = Math.floor((w - 24) / 2) - 6;   // 24 = the gap between the boxes, 6 = a box's two borders
+    var room = window.innerHeight - (row.getBoundingClientRect().top + (window.pageYOffset || 0)) - 36 - 128;   // the label above, the buttons and the message below
+    return Math.max(170, Math.min(two >= 200 ? two : w - 6, room, 340));
+  }
+  function dims(s) { return { width: s, height: s, padding: Math.round(s * 0.06) }; }
+  function boxes(s) { lastS = s; [dEl, qEl].forEach(function (el) { el.style.width = el.style.height = (s + 6) + 'px'; }); }   // + the 3px border on each side
+  function resize() {   // only when the size really changed (iPad Safari also "resizes" when its toolbar hides on scrolling)
+    if (!dEl.isConnected) { writeRedraw = null; return; }
+    var s = size(); if (!demo || Math.abs(s - lastS) < 8) return;
+    boxes(s); try { demo.updateDimensions(dims(s)); quiz.updateDimensions(dims(s)); } catch (e) {}
+  }
+  function loader(ch, ok, bad) {   // Hanzi Writer asks for a character's strokes here
+    strokesOf(ch).then(ok, function (e) {
+      if (CHARS[cur].c === ch) { failed = true; msg.textContent = 'Oops, this one did not load. Ask a grown-up to check the internet, then tap ↺ Again.'; }
+      if (bad) bad(e);
+    });
+  }
+  function make() {   // the two writers are made once per visit; a new character only changes what they show
+    var s = size(), c = CHARS[cur].c; boxes(s);
+    var col = (getComputedStyle(document.documentElement).getPropertyValue('--blue') || '').trim() || '#1b6fd1';
+    var base = Object.assign(dims(s), { charDataLoader: loader, onLoadCharDataError: function () {}, strokeColor: '#1d2b4f', radicalColor: col, outlineColor: '#dde2ea' });
+    demo = HanziWriter.create(dEl, c, Object.assign({}, base, { showCharacter: true, showOutline: true, delayBetweenStrokes: 300, strokeAnimationSpeed: 0.8 }));
+    quiz = HanziWriter.create(qEl, c, Object.assign({}, base, { showCharacter: false, showOutline: true, drawingColor: '#e76f51', drawingWidth: Math.max(5, Math.round(s / 36)),
+      highlightColor: '#ffb703', highlightOnComplete: true, showHintAfterMisses: 3 }));
+  }
+  function load() {   // show the character now chosen: the left box writes it once by itself, the right box waits for the child
+    var c = CHARS[cur].c; failed = false; nextStroke = 0; total = 0;
+    msg.textContent = '';
+    if (!demo) make();
+    else { try { quiz.cancelQuiz(); } catch (e) {} try { demo.setCharacter(c); quiz.setCharacter(c); } catch (e) {} }
+    strokesOf(c).then(function (d) { if (CHARS[cur].c === c) { total = d.strokes.length; watch(); start(); } }, function () {});
+  }
+  function watch() { if (demo && !failed) try { demo.animateCharacter(); } catch (e) {} }
+  function start() {
+    if (!quiz || failed) return;
+    var c = CHARS[cur].c; nextStroke = 0;
+    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    try {
+      quiz.quiz({
+        onCorrectStroke: function (d) {
+          if (CHARS[cur].c !== c) return;
+          nextStroke = d.strokeNum + 1; total = d.strokeNum + 1 + d.strokesRemaining;
+          if (d.strokesRemaining) msg.textContent = 'Stroke ' + nextStroke + ' of ' + total + ' ✓';
+        },
+        onMistake: function (d) {
+          if (CHARS[cur].c !== c) return;
+          msg.textContent = d.isBackwards ? 'Right stroke! Now draw it the other way round.'
+            : 'Not quite. Try stroke ' + (d.strokeNum + 1) + ' again.' + (d.mistakesOnStroke >= 2 ? ' Tap 💡 Hint, or watch the box on the left.' : '');
+        },
+        onComplete: function () {
+          if (CHARS[cur].c !== c) return;
+          nextStroke = total;
+          save.write[c] = 1; store(); mark();
+          var all = CHARS.every(function (x) { return written(x.c); });
+          msg.innerHTML = all ? 'You wrote all ' + CHARS.length + '! <span class="han">全写完了！</span>'
+            : 'Well done! <span class="han">写得好！</span> ' + (cur < CHARS.length - 1 ? 'Tap Next for the next character.' : 'Tap a character above that is not green yet.');
+          beep(true);
+          setTimeout(function () { if (qEl.isConnected && CHARS[cur].c === c && !speaking()) say(c); }, 450);
+        }
+      });
+    } catch (e) { failed = true; msg.textContent = 'Oops, this one did not load. Ask a grown-up to check the internet, then tap ↺ Again.'; }
+  }
+  function mark() {
+    chip.forEach(function (b, n) { b.classList.toggle('wrote', written(CHARS[n].c)); b.classList.toggle('cur', n === cur); });
+    prev.disabled = cur === 0;
+    nxt.innerHTML = ''; if (cur < CHARS.length - 1) { nxt.appendChild(document.createTextNode('Next ')); nxt.appendChild(txt('span', 'han', CHARS[cur + 1].c)); nxt.appendChild(document.createTextNode(' ▶')); } else nxt.textContent = 'All levels ▶';
+  }
+  function pick(n) {
+    cur = n;
+    var c = CHARS[n]; info.innerHTML = '';
+    info.appendChild(txt('span', 'wbig han', c.c));
+    var t = E('div', 'wtext'); t.appendChild(txt('div', 'py', c.py)); t.appendChild(txt('div', 'mean', c.e + ' ' + c.en)); info.appendChild(t);
+    info.appendChild(speakBtn(c.c));
+    mark(); load(); say(c.c);
+  }
+  writeRedraw = resize;
+  pick(Math.max(0, Math.min(CHARS.length - 1, cur)));
 }
 
 /* a small question box over the page: title, words, and buttons [label, what it does, ghost?] */
