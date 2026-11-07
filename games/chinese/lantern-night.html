@@ -563,6 +563,8 @@ button{-webkit-appearance:none;appearance:none}
 .tchar{-webkit-appearance:none;appearance:none;min-width:44px;min-height:44px;padding:0 6px;border:2px solid #ddd;border-radius:12px;background:#fff;color:#b9b9b9;font-size:24px;line-height:1}
 .tchar.lit{border-color:var(--blue);color:var(--blue);background:var(--blue-s)}
 .nobr{white-space:nowrap}
+.bubble{cursor:pointer;transition:box-shadow .2s}
+.bubble.playing{box-shadow:0 0 0 4px var(--gold)}
 </style>
 <style>
 /* Chinese game 6. One idea: the 12 new characters of the lesson.
@@ -660,6 +662,19 @@ var SENTENCES = [
   { s: '回到家，墙上的＿已经指向十点了。', a: '挂钟', no: ['人群', '伸手'], en: 'When we got home, the clock on the wall already said ten.' },
   { s: '妈妈笑着说："＿，快去睡觉吧！"', a: '好啦', no: ['挂钟', '于是'], en: 'Mom smiled and said, "OK then, off to bed!"' }
 ];
+/* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
+   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+var STORY = { title: '中秋灯会', en: 'Lantern night', lines: [
+  { who: '👩 妈妈', s: '晚饭吃完了！今天是中秋节，我们去公园看灯会吧！', py: 'Wǎnfàn chīwán le! Jīntiān shì Zhōngqiū Jié, wǒmen qù gōngyuán kàn dēnghuì ba!', en: 'Dinner\'s finished! It\'s the Mid-Autumn Festival today, so let\'s go to the lantern fair in the park!' },
+  { who: '🧒 我', s: '太好啦！我们快走吧！', py: 'Tài hǎo la! Wǒmen kuài zǒu ba!', en: 'Great! Let\'s go, quick!' },
+  { who: '👩 妈妈', s: '你看，树上挂着好多小兔子灯笼！', py: 'Nǐ kàn, shù shang guàzhe hǎo duō xiǎo tùzi dēnglong!', en: 'Look, there are lots of little rabbit lanterns hanging in the trees!' },
+  { who: '🧒 我', s: '我抬起头，看见月亮就在灯笼上面。月亮上真的有小兔子吗？', py: 'Wǒ tái qǐ tóu, kànjiàn yuèliang jiù zài dēnglong shàngmiàn. Yuèliang shang zhēn de yǒu xiǎo tùzi ma?', en: 'I look up and see the moon right above the lanterns. Is there really a little rabbit on the moon?' },
+  { who: '👩 妈妈', s: '那是一个很老的故事。前面有捞金鱼的游戏，你不是最喜欢金鱼吗？', py: 'Nà shì yí ge hěn lǎo de gùshi. Qiánmiàn yǒu lāo jīnyú de yóuxì, nǐ bú shì zuì xǐhuan jīnyú ma?', en: 'That\'s a very old story. There\'s a goldfish-scooping game ahead. You love goldfish, don\'t you?', pat: true },
+  { who: '🧒 我', s: '我刚捞到一条小红鱼！妈妈，你看！', py: 'Wǒ gāng lāodào yì tiáo xiǎo hóng yú! Māma, nǐ kàn!', en: 'I just caught a little red fish! Mom, look!' },
+  { who: '👩 妈妈', s: '叔叔把它装进小袋子里了，你伸手接过来吧。', py: 'Shūshu bǎ tā zhuāngjìn xiǎo dàizi li le, nǐ shēnshǒu jiē guòlai ba.', en: 'The man has put it in a little bag. Reach out and take it.' },
+  { who: '🧒 我', s: '人群里好挤，我要一直拿好袋子，别让人碰到它。', py: 'Rénqún li hǎo jǐ, wǒ yào yìzhí náhǎo dàizi, bié ràng rén pèngdào tā.', en: 'It\'s so crowded. I\'ll hold the bag carefully the whole time so nobody bumps it.' },
+  { who: '👩 妈妈', s: '你真细心！回家我们一起看一本关于月亮和小兔子的书吧。', py: 'Nǐ zhēn xìxīn! Huí jiā wǒmen yìqǐ kàn yì běn guānyú yuèliang hé xiǎo tùzi de shū ba.', en: 'You\'re being so careful! At home, let\'s read a book about the moon and the little rabbit together.' }
+] };
 
 /* ---------- this lesson's settings: the shared engine (../_engine/chinese-engine.js) reads them ---------- */
 var LESSON = {
@@ -967,7 +982,13 @@ function story() {
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(c.c); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a <span class="newc demo">coloured</span> character to hear it. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  function sayLine(b, s) {   // read a line again; it glows while it is being read, so a child can follow and say it along
+    var before = voiceWait;
+    say(s);
+    [].forEach.call(talk.querySelectorAll('.bubble.playing'), function (x) { x.classList.remove('playing'); });
+    if (voiceWait && voiceWait !== before) { b.classList.add('playing'); var w = voiceWait; w.then(function () { if (voiceWait === w || !speaking()) b.classList.remove('playing'); }); }
+  }
   var talk = E('div', 'talk' + (showPy ? '' : ' nopy')); talk.setAttribute('aria-live', 'polite'); p.appendChild(talk);
   var ctl = E('div', 'row sctl'); p.appendChild(ctl);
   var pyb = E('button', 'btn ghost', ''); pyb.type = 'button';   // pinyin on or off, next to Next so it stays in reach
@@ -978,7 +999,9 @@ function story() {
     var x = STORY.lines[shown++];
     var b = E('div', 'bubble' + (x.who === first ? '' : ' right') + (x.pat ? ' patb' : ''));   // the first speaker on the left, the other on the right
     b.appendChild(txt('div', 'who', x.who));
-    var r = E('div', 'srow'); r.appendChild(speakBtn(x.s)); r.appendChild(storyLine(x)); b.appendChild(r);
+    var sp = E('button', 'speak', '🔊'); sp.type = 'button'; sp.setAttribute('aria-label', 'Listen to this line again');
+    var r = E('div', 'srow'); r.appendChild(sp); r.appendChild(storyLine(x)); b.appendChild(r);
+    b.onclick = function (ev) { if (ev.target.closest && ev.target.closest('.newc')) return; sayLine(b, x.s); };   // the whole bubble (and its 🔊) reads the line again; a coloured character reads only itself
     if (x.py) b.appendChild(txt('div', 'pyl', x.py));
     b.appendChild(txt('div', 'mean', x.en));
     if (x.pat) { var pn = E('div', 'patn', 'Sentence pattern <span class="han">句型</span>: '); pn.appendChild(document.createTextNode(PATTERN[0].shape)); b.appendChild(pn); }
@@ -986,7 +1009,7 @@ function story() {
     x.s.split('').forEach(function (ch) { if (chip[ch]) chip[ch].classList.add('lit'); });
     controls();
     try { b.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) { b.scrollIntoView(); }
-    say(x.s);
+    sayLine(b, x.s);
   }
   function controls() {
     var hadFocus = ctl.contains(document.activeElement), main;   // keep the keyboard on the main button when the bar is redrawn

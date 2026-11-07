@@ -563,6 +563,8 @@ button{-webkit-appearance:none;appearance:none}
 .tchar{-webkit-appearance:none;appearance:none;min-width:44px;min-height:44px;padding:0 6px;border:2px solid #ddd;border-radius:12px;background:#fff;color:#b9b9b9;font-size:24px;line-height:1}
 .tchar.lit{border-color:var(--blue);color:var(--blue);background:var(--blue-s)}
 .nobr{white-space:nowrap}
+.bubble{cursor:pointer;transition:box-shadow .2s}
+.bubble.playing{box-shadow:0 0 0 4px var(--gold)}
 </style>
 <style>
 /* Chinese game 8. One idea: the 14 new characters of the lesson.
@@ -664,6 +666,19 @@ var SENTENCES = [
   { s: '叔叔很＿，一个人就扛来一把大梯子，爬上去把小猫抱了下来。', a: '有劲', no: ['鱼缸', '游戏'], en: 'The park keeper was strong. He carried a big ladder over all by himself, climbed up and brought the kitten down.' },
   { s: '小猫没事了，小妹妹也笑了。我觉得我的好朋友很＿，他知道要找大人帮忙。', a: '聪明', no: ['石块', '鱼缸'], en: 'The kitten was fine and the little girl smiled. I think my friend is very clever: he knew to ask a grown-up for help.' }
 ];
+/* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
+   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+var STORY = { title: '救小猫', en: 'Saving the kitten', lines: [
+  { who: '🧒 我', s: '公园里的人真多，有的在放风筝，有的在野餐。', py: 'Gōngyuán li de rén zhēn duō, yǒude zài fàng fēngzheng, yǒude zài yěcān.', en: 'There are so many people in the park. Some are flying kites, and some are having picnics.', pat: true },
+  { who: '👦 好朋友', s: '我们玩了好久的游戏，好渴啊！还好出门前我把水壶装满了水。', py: 'Wǒmen wánle hǎo jiǔ de yóuxì, hǎo kě a! Háihǎo chūmén qián wǒ bǎ shuǐhú zhuāngmǎnle shuǐ.', en: 'We\'ve played games for ages, and I\'m so thirsty! Good thing I filled my water bottle before we came out.' },
+  { who: '🧒 我', s: '我带了核桃。我们坐下来，用石块把它们砸开吧！', py: 'Wǒ dàile hétao. Wǒmen zuò xiàlai, yòng shíkuài bǎ tāmen zákāi ba!', en: 'I brought some walnuts. Let\'s sit down and crack them open with a stone!' },
+  { who: '👦 好朋友', s: '咦？树上有只小猫在叫，它好像吓坏了。', py: 'Yí? Shù shang yǒu zhī xiǎo māo zài jiào, tā hǎoxiàng xiàhuài le.', en: 'Huh? There\'s a kitten crying up in the tree. It looks really scared.' },
+  { who: '🧒 我', s: '旁边的小妹妹都急哭了，大家都很惊慌。', py: 'Pángbiān de xiǎo mèimei dōu jí kū le, dàjiā dōu hěn jīnghuāng.', en: 'A little girl nearby is so worried she\'s crying, and everyone is in a panic.' },
+  { who: '👦 好朋友', s: '别慌，我有办法！我们去找公园的叔叔。', py: 'Bié huāng, wǒ yǒu bànfǎ! Wǒmen qù zhǎo gōngyuán de shūshu.', en: 'Don\'t panic, I have an idea! Let\'s go and find the park keeper.' },
+  { who: '🧒 我', s: '叔叔搬来梯子，使劲往上爬，把小猫救了下来！', py: 'Shūshu bānlái tīzi, shǐjìn wǎng shàng pá, bǎ xiǎo māo jiùle xiàlai!', en: 'The park keeper brought a ladder, climbed up hard, and rescued the kitten!' },
+  { who: '👦 好朋友', s: '叔叔说，小猫是小店里养的，它最喜欢趴在鱼缸边看金鱼。', py: 'Shūshu shuō, xiǎo māo shì xiǎodiàn li yǎng de, tā zuì xǐhuan pā zài yúgāng biān kàn jīnyú.', en: 'The park keeper says the kitten lives at the little shop. Its favourite thing is lying by the fish tank, watching the goldfish.' },
+  { who: '🧒 我', s: '你真聪明！我们小孩不能爬树，找叔叔帮忙最安全。', py: 'Nǐ zhēn cōngmíng! Wǒmen xiǎohái bù néng pá shù, zhǎo shūshu bāngmáng zuì ānquán.', en: 'You\'re so clever! We kids shouldn\'t climb trees. Getting the park keeper to help was the safest thing.' }
+] };
 
 /* ---------- this lesson's settings: the shared engine (../_engine/chinese-engine.js) reads them ---------- */
 var LESSON = {
@@ -971,7 +986,13 @@ function story() {
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(c.c); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a <span class="newc demo">coloured</span> character to hear it. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  function sayLine(b, s) {   // read a line again; it glows while it is being read, so a child can follow and say it along
+    var before = voiceWait;
+    say(s);
+    [].forEach.call(talk.querySelectorAll('.bubble.playing'), function (x) { x.classList.remove('playing'); });
+    if (voiceWait && voiceWait !== before) { b.classList.add('playing'); var w = voiceWait; w.then(function () { if (voiceWait === w || !speaking()) b.classList.remove('playing'); }); }
+  }
   var talk = E('div', 'talk' + (showPy ? '' : ' nopy')); talk.setAttribute('aria-live', 'polite'); p.appendChild(talk);
   var ctl = E('div', 'row sctl'); p.appendChild(ctl);
   var pyb = E('button', 'btn ghost', ''); pyb.type = 'button';   // pinyin on or off, next to Next so it stays in reach
@@ -982,7 +1003,9 @@ function story() {
     var x = STORY.lines[shown++];
     var b = E('div', 'bubble' + (x.who === first ? '' : ' right') + (x.pat ? ' patb' : ''));   // the first speaker on the left, the other on the right
     b.appendChild(txt('div', 'who', x.who));
-    var r = E('div', 'srow'); r.appendChild(speakBtn(x.s)); r.appendChild(storyLine(x)); b.appendChild(r);
+    var sp = E('button', 'speak', '🔊'); sp.type = 'button'; sp.setAttribute('aria-label', 'Listen to this line again');
+    var r = E('div', 'srow'); r.appendChild(sp); r.appendChild(storyLine(x)); b.appendChild(r);
+    b.onclick = function (ev) { if (ev.target.closest && ev.target.closest('.newc')) return; sayLine(b, x.s); };   // the whole bubble (and its 🔊) reads the line again; a coloured character reads only itself
     if (x.py) b.appendChild(txt('div', 'pyl', x.py));
     b.appendChild(txt('div', 'mean', x.en));
     if (x.pat) { var pn = E('div', 'patn', 'Sentence pattern <span class="han">句型</span>: '); pn.appendChild(document.createTextNode(PATTERN[0].shape)); b.appendChild(pn); }
@@ -990,7 +1013,7 @@ function story() {
     x.s.split('').forEach(function (ch) { if (chip[ch]) chip[ch].classList.add('lit'); });
     controls();
     try { b.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) { b.scrollIntoView(); }
-    say(x.s);
+    sayLine(b, x.s);
   }
   function controls() {
     var hadFocus = ctl.contains(document.activeElement), main;   // keep the keyboard on the main button when the bar is redrawn

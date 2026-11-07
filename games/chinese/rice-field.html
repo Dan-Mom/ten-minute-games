@@ -563,6 +563,8 @@ button{-webkit-appearance:none;appearance:none}
 .tchar{-webkit-appearance:none;appearance:none;min-width:44px;min-height:44px;padding:0 6px;border:2px solid #ddd;border-radius:12px;background:#fff;color:#b9b9b9;font-size:24px;line-height:1}
 .tchar.lit{border-color:var(--blue);color:var(--blue);background:var(--blue-s)}
 .nobr{white-space:nowrap}
+.bubble{cursor:pointer;transition:box-shadow .2s}
+.bubble.playing{box-shadow:0 0 0 4px var(--gold)}
 </style>
 <style>
 /* Chinese game 7. One idea: the 15 new characters of the lesson.
@@ -670,6 +672,19 @@ var SENTENCES = [
   { s: '回家以后，我在电视＿里看到了稻子丰收的消息。', a: '新闻', no: ['盘子', '午餐'], en: 'Back home, I saw on the TV news that the rice harvest was good.' },
   { s: '冬天快到了，山里的熊要去＿了，您也可以好好休息了。', a: '冬眠', no: ['新闻', '米粒'], en: 'Winter is coming. The bears in the hills will go to sleep for the winter, and you can have a good rest too.' }
 ];
+/* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
+   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+var STORY = { title: '稻田一日', en: 'A day at the rice fields', lines: [
+  { who: '👨‍🌾 农民伯伯', s: '你听，鸟儿在树上啼叫，天一亮我们就下田了。', py: 'Nǐ tīng, niǎor zài shù shang tíjiào, tiān yí liàng wǒmen jiù xià tián le.', en: 'Listen, the birds are singing in the trees. As soon as it gets light, we go out to the fields.' },
+  { who: '🧒 我', s: '伯伯，您每天起得这么早，不困吗？', py: 'Bóbo, nín měi tiān qǐ de zhème zǎo, bú kùn ma?', en: 'Uncle, you get up so early every day. Aren\'t you sleepy?' },
+  { who: '👨‍🌾 农民伯伯', s: '当然困！可是农民不能睡懒觉。到了冬天，才能像熊冬眠一样好好休息。', py: 'Dāngrán kùn! Kěshì nóngmín bù néng shuì lǎnjiào. Dàole dōngtiān, cái néng xiàng xióng dōngmián yíyàng hǎohǎo xiūxi.', en: 'Of course I am! But farmers can\'t sleep in. Only in winter can we rest properly, like bears sleeping through the winter.' },
+  { who: '🧒 我', s: '我闻到了，稻子好香啊！', py: 'Wǒ wéndào le, dàozi hǎo xiāng a!', en: 'I can smell it. The rice smells so good!' },
+  { who: '👨‍🌾 农民伯伯', s: '天很热，我干一会儿活就出汗，汗水一滴一滴往下落。', py: 'Tiān hěn rè, wǒ gàn yíhuìr huó jiù chū hàn, hànshuǐ yì dī yì dī wǎng xià luò.', en: 'It\'s hot. After working a little while I start to sweat, and the sweat falls drop by drop.' },
+  { who: '🧒 我', s: '伯伯，您辛苦了！', py: 'Bóbo, nín xīnkǔ le!', en: 'Uncle, thank you for all your hard work!' },
+  { who: '👨‍🌾 农民伯伯', s: '中午了，我们去吃午餐吧！盘子里的青菜是我们自己种的。', py: 'Zhōngwǔ le, wǒmen qù chī wǔcān ba! Pánzi li de qīngcài shì wǒmen zìjǐ zhòng de.', en: 'It\'s noon. Let\'s go and have lunch! The greens on the plates are ones we grew ourselves.' },
+  { who: '🧒 我', s: '我晓得了！以后碗里的米饭，我要粒粒都吃干净。', py: 'Wǒ xiǎode le! Yǐhòu wǎn li de mǐfàn, wǒ yào lìlì dōu chī gānjìng.', en: 'Now I understand! From now on, I\'ll eat up every single grain of rice in my bowl.', pat: true },
+  { who: '👨‍🌾 农民伯伯', s: '说得好！不浪费粮食，这个道理人人皆知。', py: 'Shuō de hǎo! Bú làngfèi liángshi, zhège dàolǐ rénrén jiē zhī.', en: 'Well said! Not wasting food is something everyone knows.' }
+] };
 
 /* ---------- this lesson's settings: the shared engine (../_engine/chinese-engine.js) reads them ---------- */
 var LESSON = {
@@ -977,7 +992,13 @@ function story() {
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(c.c); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a <span class="newc demo">coloured</span> character to hear it. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  function sayLine(b, s) {   // read a line again; it glows while it is being read, so a child can follow and say it along
+    var before = voiceWait;
+    say(s);
+    [].forEach.call(talk.querySelectorAll('.bubble.playing'), function (x) { x.classList.remove('playing'); });
+    if (voiceWait && voiceWait !== before) { b.classList.add('playing'); var w = voiceWait; w.then(function () { if (voiceWait === w || !speaking()) b.classList.remove('playing'); }); }
+  }
   var talk = E('div', 'talk' + (showPy ? '' : ' nopy')); talk.setAttribute('aria-live', 'polite'); p.appendChild(talk);
   var ctl = E('div', 'row sctl'); p.appendChild(ctl);
   var pyb = E('button', 'btn ghost', ''); pyb.type = 'button';   // pinyin on or off, next to Next so it stays in reach
@@ -988,7 +1009,9 @@ function story() {
     var x = STORY.lines[shown++];
     var b = E('div', 'bubble' + (x.who === first ? '' : ' right') + (x.pat ? ' patb' : ''));   // the first speaker on the left, the other on the right
     b.appendChild(txt('div', 'who', x.who));
-    var r = E('div', 'srow'); r.appendChild(speakBtn(x.s)); r.appendChild(storyLine(x)); b.appendChild(r);
+    var sp = E('button', 'speak', '🔊'); sp.type = 'button'; sp.setAttribute('aria-label', 'Listen to this line again');
+    var r = E('div', 'srow'); r.appendChild(sp); r.appendChild(storyLine(x)); b.appendChild(r);
+    b.onclick = function (ev) { if (ev.target.closest && ev.target.closest('.newc')) return; sayLine(b, x.s); };   // the whole bubble (and its 🔊) reads the line again; a coloured character reads only itself
     if (x.py) b.appendChild(txt('div', 'pyl', x.py));
     b.appendChild(txt('div', 'mean', x.en));
     if (x.pat) { var pn = E('div', 'patn', 'Sentence pattern <span class="han">句型</span>: '); pn.appendChild(document.createTextNode(PATTERN[0].shape)); b.appendChild(pn); }
@@ -996,7 +1019,7 @@ function story() {
     x.s.split('').forEach(function (ch) { if (chip[ch]) chip[ch].classList.add('lit'); });
     controls();
     try { b.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) { b.scrollIntoView(); }
-    say(x.s);
+    sayLine(b, x.s);
   }
   function controls() {
     var hadFocus = ctl.contains(document.activeElement), main;   // keep the keyboard on the main button when the bar is redrawn

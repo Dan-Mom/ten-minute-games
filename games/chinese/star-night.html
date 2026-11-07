@@ -563,6 +563,8 @@ button{-webkit-appearance:none;appearance:none}
 .tchar{-webkit-appearance:none;appearance:none;min-width:44px;min-height:44px;padding:0 6px;border:2px solid #ddd;border-radius:12px;background:#fff;color:#b9b9b9;font-size:24px;line-height:1}
 .tchar.lit{border-color:var(--blue);color:var(--blue);background:var(--blue-s)}
 .nobr{white-space:nowrap}
+.bubble{cursor:pointer;transition:box-shadow .2s}
+.bubble.playing{box-shadow:0 0 0 4px var(--gold)}
 </style>
 <style>
 /* Chinese game 9. One idea: the 13 new characters of the lesson.
@@ -660,6 +662,18 @@ var SENTENCES = [
   { s: '爸爸说，你们宇航员每天都要锻炼，所以很有＿。', a: '力气', no: ['勺子', '清楚'], en: 'Dad says you astronauts exercise every day, so you are very strong.' },
   { s: '我每天都会＿锻炼身体，以后也去太空看一看！', a: '努力', no: ['勺子', '天空'], en: 'I will try hard to exercise every day, and one day I will go to space too!' }
 ];
+/* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
+   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+var STORY = { title: '数星星', en: 'Counting the stars', lines: [
+  { who: '👨 爸爸', s: '这就是著名的天文馆，我们进去吧！', py: 'Zhè jiù shì zhùmíng de tiānwénguǎn, wǒmen jìnqu ba!', en: 'This is the famous planetarium. Let\'s go in!' },
+  { who: '🧒 我', s: '哇，圆圆的屋顶变成了一片天空，满天都是星星！', py: 'Wā, yuányuán de wūdǐng biànchéngle yí piàn tiānkōng, mǎn tiān dōu shì xīngxing!', en: 'Wow, the round ceiling has turned into a sky, full of stars!' },
+  { who: '👨 爸爸', s: '这里的椅子可以往后靠，你仰起头，就能看清楚整个屋顶了。', py: 'Zhèlǐ de yǐzi kěyǐ wǎng hòu kào, nǐ yǎngqǐ tóu, jiù néng kàn qīngchu zhěnggè wūdǐng le.', en: 'These seats lean back. Tilt your head up and you can see the whole ceiling clearly.' },
+  { who: '🧒 我', s: '我来数一数！我已经数到五十颗了，星星一颗连着一颗，还有好多呢！', py: 'Wǒ lái shǔ yi shǔ! Wǒ yǐjīng shǔ dào wǔshí kē le, xīngxing yì kē liánzhe yì kē, hái yǒu hǎo duō ne!', en: 'Let me count! I\'ve got to fifty already. The stars go on and on, and there are lots more!' },
+  { who: '👨 爸爸', s: '有的星星离我们特别远，它们的光要走很久很久，才能照到地球。', py: 'Yǒude xīngxing lí wǒmen tèbié yuǎn, tāmen de guāng yào zǒu hěn jiǔ hěn jiǔ, cái néng zhào dào dìqiú.', en: 'Some stars are especially far from us. Their light has to travel for a very, very long time to reach the Earth.' },
+  { who: '🧒 我', s: '我长大了要当宇航员，坐着飞船飞上去，再飞下来告诉你！', py: 'Wǒ zhǎngdà le yào dāng yǔhángyuán, zuòzhe fēichuán fēi shàngqu, zài fēi xiàlai gàosu nǐ!', en: 'When I grow up I\'ll be an astronaut. I\'ll fly up in a spaceship, then fly back down and tell you all about it!', pat: true },
+  { who: '👨 爸爸', s: '那你要努力学习，还要有力气。', py: 'Nà nǐ yào nǔlì xuéxí, hái yào yǒu lìqi.', en: 'Then you need to study hard and be strong too.' },
+  { who: '🧒 我', s: '好！那我今天晚饭要吃三大勺米饭，多长力气！', py: 'Hǎo! Nà wǒ jīntiān wǎnfàn yào chī sān dà sháo mǐfàn, duō zhǎng lìqi!', en: 'OK! Then tonight I\'ll eat three big spoonfuls of rice to get strong!' }
+] };
 
 /* ---------- this lesson's settings: the shared engine (../_engine/chinese-engine.js) reads them ---------- */
 var LESSON = {
@@ -967,7 +981,13 @@ function story() {
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(c.c); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a <span class="newc demo">coloured</span> character to hear it. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  function sayLine(b, s) {   // read a line again; it glows while it is being read, so a child can follow and say it along
+    var before = voiceWait;
+    say(s);
+    [].forEach.call(talk.querySelectorAll('.bubble.playing'), function (x) { x.classList.remove('playing'); });
+    if (voiceWait && voiceWait !== before) { b.classList.add('playing'); var w = voiceWait; w.then(function () { if (voiceWait === w || !speaking()) b.classList.remove('playing'); }); }
+  }
   var talk = E('div', 'talk' + (showPy ? '' : ' nopy')); talk.setAttribute('aria-live', 'polite'); p.appendChild(talk);
   var ctl = E('div', 'row sctl'); p.appendChild(ctl);
   var pyb = E('button', 'btn ghost', ''); pyb.type = 'button';   // pinyin on or off, next to Next so it stays in reach
@@ -978,7 +998,9 @@ function story() {
     var x = STORY.lines[shown++];
     var b = E('div', 'bubble' + (x.who === first ? '' : ' right') + (x.pat ? ' patb' : ''));   // the first speaker on the left, the other on the right
     b.appendChild(txt('div', 'who', x.who));
-    var r = E('div', 'srow'); r.appendChild(speakBtn(x.s)); r.appendChild(storyLine(x)); b.appendChild(r);
+    var sp = E('button', 'speak', '🔊'); sp.type = 'button'; sp.setAttribute('aria-label', 'Listen to this line again');
+    var r = E('div', 'srow'); r.appendChild(sp); r.appendChild(storyLine(x)); b.appendChild(r);
+    b.onclick = function (ev) { if (ev.target.closest && ev.target.closest('.newc')) return; sayLine(b, x.s); };   // the whole bubble (and its 🔊) reads the line again; a coloured character reads only itself
     if (x.py) b.appendChild(txt('div', 'pyl', x.py));
     b.appendChild(txt('div', 'mean', x.en));
     if (x.pat) { var pn = E('div', 'patn', 'Sentence pattern <span class="han">句型</span>: '); pn.appendChild(document.createTextNode(PATTERN[0].shape)); b.appendChild(pn); }
@@ -986,7 +1008,7 @@ function story() {
     x.s.split('').forEach(function (ch) { if (chip[ch]) chip[ch].classList.add('lit'); });
     controls();
     try { b.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) { b.scrollIntoView(); }
-    say(x.s);
+    sayLine(b, x.s);
   }
   function controls() {
     var hadFocus = ctl.contains(document.activeElement), main;   // keep the keyboard on the main button when the bar is redrawn

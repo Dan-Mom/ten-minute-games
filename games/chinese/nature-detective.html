@@ -563,6 +563,8 @@ button{-webkit-appearance:none;appearance:none}
 .tchar{-webkit-appearance:none;appearance:none;min-width:44px;min-height:44px;padding:0 6px;border:2px solid #ddd;border-radius:12px;background:#fff;color:#b9b9b9;font-size:24px;line-height:1}
 .tchar.lit{border-color:var(--blue);color:var(--blue);background:var(--blue-s)}
 .nobr{white-space:nowrap}
+.bubble{cursor:pointer;transition:box-shadow .2s}
+.bubble.playing{box-shadow:0 0 0 4px var(--gold)}
 </style>
 <style>
 /* Chinese game 11. One idea: the 14 new characters of the lesson.
@@ -663,6 +665,18 @@ var SENTENCES = [
   { s: '晚上，我们一家人一起＿了一个讲小动物的节目。', a: '观看', no: ['树叶', '冰块'], en: 'In the evening, our family watched a programme about little animals together.' },
   { s: '我把今天看到的都画了下来，连妹妹都＿了。', a: '看懂', no: ['丰收', '冰块'], en: 'I drew everything I saw today, and even my little sister understood it.' }
 ];
+/* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
+   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+var STORY = { title: '自然小侦探', en: 'Nature detectives', lines: [
+  { who: '👩 老师', s: '今天是晴天，我们来当自然小侦探！', py: 'Jīntiān shì qíngtiān, wǒmen lái dāng zìrán xiǎo zhēntàn!', en: 'It\'s a sunny day today. Let\'s be nature detectives!' },
+  { who: '🧒 我', s: '老师，我带了雨伞，可是好像用不上了。', py: 'Lǎoshī, wǒ dàile yǔsǎn, kěshì hǎoxiàng yòng bu shàng le.', en: 'Teacher, I brought an umbrella, but it looks like I won\'t need it.' },
+  { who: '👩 老师', s: '没关系。我们用眼睛细细地观察，听听小动物的“语言”。', py: 'Méi guānxi. Wǒmen yòng yǎnjing xìxì de guānchá, tīngting xiǎo dòngwù de “yǔyán”.', en: 'That\'s fine. Let\'s look closely with our eyes and listen to the "language" of little animals.' },
+  { who: '🧒 我', s: '老师，那只小松鼠正在搬松果呢！', py: 'Lǎoshī, nà zhī xiǎo sōngshǔ zhèngzài bān sōngguǒ ne!', en: 'Teacher, that little squirrel is carrying pine cones right now!', pat: true },
+  { who: '👩 老师', s: '你看，枫叶变红了，银杏叶变黄了，秋天的颜色多丰富！', py: 'Nǐ kàn, fēngyè biàn hóng le, yínxìngyè biàn huáng le, qiūtiān de yánsè duō fēngfù!', en: 'Look, the maple leaves have turned red and the ginkgo leaves yellow. Autumn has so many colours!' },
+  { who: '🧒 我', s: '哎呀，我的冰棍化了，滴到手上了！', py: 'Āiyā, wǒ de bīnggùn huà le, dī dào shǒu shang le!', en: 'Oh no, my ice pop has melted and dripped onto my hand!' },
+  { who: '👩 老师', s: '快擦擦手吧！你看，小松鼠会把松果藏起来，等冬天再吃，是不是很妙？', py: 'Kuài cāca shǒu ba! Nǐ kàn, xiǎo sōngshǔ huì bǎ sōngguǒ cáng qǐlai, děng dōngtiān zài chī, shì bu shì hěn miào?', en: 'Quick, wipe your hands! Look, the little squirrel hides its pine cones to eat in winter. Isn\'t that clever?' },
+  { who: '🧒 我', s: '太妙了！我懂了，小动物也有自己的办法。', py: 'Tài miào le! Wǒ dǒng le, xiǎo dòngwù yě yǒu zìjǐ de bànfǎ.', en: 'So clever! Now I understand: little animals have their own ways too.' }
+] };
 
 /* ---------- this lesson's settings: the shared engine (../_engine/chinese-engine.js) reads them ---------- */
 var LESSON = {
@@ -970,7 +984,13 @@ function story() {
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(c.c); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a <span class="newc demo">coloured</span> character to hear it. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  function sayLine(b, s) {   // read a line again; it glows while it is being read, so a child can follow and say it along
+    var before = voiceWait;
+    say(s);
+    [].forEach.call(talk.querySelectorAll('.bubble.playing'), function (x) { x.classList.remove('playing'); });
+    if (voiceWait && voiceWait !== before) { b.classList.add('playing'); var w = voiceWait; w.then(function () { if (voiceWait === w || !speaking()) b.classList.remove('playing'); }); }
+  }
   var talk = E('div', 'talk' + (showPy ? '' : ' nopy')); talk.setAttribute('aria-live', 'polite'); p.appendChild(talk);
   var ctl = E('div', 'row sctl'); p.appendChild(ctl);
   var pyb = E('button', 'btn ghost', ''); pyb.type = 'button';   // pinyin on or off, next to Next so it stays in reach
@@ -981,7 +1001,9 @@ function story() {
     var x = STORY.lines[shown++];
     var b = E('div', 'bubble' + (x.who === first ? '' : ' right') + (x.pat ? ' patb' : ''));   // the first speaker on the left, the other on the right
     b.appendChild(txt('div', 'who', x.who));
-    var r = E('div', 'srow'); r.appendChild(speakBtn(x.s)); r.appendChild(storyLine(x)); b.appendChild(r);
+    var sp = E('button', 'speak', '🔊'); sp.type = 'button'; sp.setAttribute('aria-label', 'Listen to this line again');
+    var r = E('div', 'srow'); r.appendChild(sp); r.appendChild(storyLine(x)); b.appendChild(r);
+    b.onclick = function (ev) { if (ev.target.closest && ev.target.closest('.newc')) return; sayLine(b, x.s); };   // the whole bubble (and its 🔊) reads the line again; a coloured character reads only itself
     if (x.py) b.appendChild(txt('div', 'pyl', x.py));
     b.appendChild(txt('div', 'mean', x.en));
     if (x.pat) { var pn = E('div', 'patn', 'Sentence pattern <span class="han">句型</span>: '); pn.appendChild(document.createTextNode(PATTERN[0].shape)); b.appendChild(pn); }
@@ -989,7 +1011,7 @@ function story() {
     x.s.split('').forEach(function (ch) { if (chip[ch]) chip[ch].classList.add('lit'); });
     controls();
     try { b.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) { b.scrollIntoView(); }
-    say(x.s);
+    sayLine(b, x.s);
   }
   function controls() {
     var hadFocus = ctl.contains(document.activeElement), main;   // keep the keyboard on the main button when the bar is redrawn

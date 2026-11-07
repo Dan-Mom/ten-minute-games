@@ -563,6 +563,8 @@ button{-webkit-appearance:none;appearance:none}
 .tchar{-webkit-appearance:none;appearance:none;min-width:44px;min-height:44px;padding:0 6px;border:2px solid #ddd;border-radius:12px;background:#fff;color:#b9b9b9;font-size:24px;line-height:1}
 .tchar.lit{border-color:var(--blue);color:var(--blue);background:var(--blue-s)}
 .nobr{white-space:nowrap}
+.bubble{cursor:pointer;transition:box-shadow .2s}
+.bubble.playing{box-shadow:0 0 0 4px var(--gold)}
 </style>
 <style>
 /* Chinese game 12. One idea: the 14 new characters of the lesson.
@@ -664,6 +666,18 @@ var SENTENCES = [
   { s: '我相信，以后＿一定会去更远的地方。', a: '人类', no: ['边界', '泥土'], en: 'I believe that one day humans will go even further away.' },
   { s: '十年后的你，是不是已经＿了这个梦想？', a: '实现', no: ['泥土', '号码'], en: 'Future me, have you made this dream come true yet?' }
 ];
+/* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
+   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+var STORY = { title: '我的太空梦', en: 'My space dream', lines: [
+  { who: '🧒 我', s: '妈妈，我长大了想当宇航员，飞到月球上去！', py: 'Māma, wǒ zhǎngdà le xiǎng dāng yǔhángyuán, fēi dào yuèqiú shang qù!', en: 'Mom, when I grow up I want to be an astronaut and fly to the Moon!' },
+  { who: '👩 妈妈', s: '这个梦想非常好！', py: 'Zhège mèngxiǎng fēicháng hǎo!', en: 'That\'s a wonderful dream!' },
+  { who: '🧒 我', s: '我要把今天记下来：二〇二六年十一月六日，我有了自己的太空梦！', py: 'Wǒ yào bǎ jīntiān jì xiàlai: èr líng èr liù nián shíyī yuè liù rì, wǒ yǒule zìjǐ de tàikōng mèng!', en: 'I\'ll write today down: on 6 November 2026, I found my very own space dream!', pat: true },
+  { who: '👩 妈妈', s: '月球表面的泥土是灰色的，细得像面粉一样。', py: 'Yuèqiú biǎomiàn de nítǔ shì huīsè de, xì de xiàng miànfěn yíyàng.', en: 'The soil on the Moon\'s surface is grey, and as fine as flour.' },
+  { who: '🧒 我', s: '要是我第一次飞上太空，一定先给你打电话！', py: 'Yàoshi wǒ dì yī cì fēi shàng tàikōng, yídìng xiān gěi nǐ dǎ diànhuà!', en: 'The first time I fly into space, I\'ll call you first!' },
+  { who: '👩 妈妈', s: '好啊！现在世界上很多国家都在造飞船，以后人类还想到达火星呢！', py: 'Hǎo a! Xiànzài shìjiè shang hěn duō guójiā dōu zài zào fēichuán, yǐhòu rénlèi hái xiǎng dàodá Huǒxīng ne!', en: 'Deal! Lots of countries around the world are building spaceships now. One day people even want to reach Mars!' },
+  { who: '🧒 我', s: '我要给我的火箭模型起名叫“梦想一号”！', py: 'Wǒ yào gěi wǒ de huǒjiàn móxíng qǐ míng jiào “Mèngxiǎng Yī Hào”!', en: 'I\'m going to call my model rocket "Dream No. 1"!' },
+  { who: '👩 妈妈', s: '只要你努力，梦想一定会实现。', py: 'Zhǐyào nǐ nǔlì, mèngxiǎng yídìng huì shíxiàn.', en: 'If you work hard, your dream will come true.' }
+] };
 
 /* ---------- this lesson's settings: the shared engine (../_engine/chinese-engine.js) reads them ---------- */
 var LESSON = {
@@ -971,7 +985,13 @@ function story() {
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(c.c); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a <span class="newc demo">coloured</span> character to hear it. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  function sayLine(b, s) {   // read a line again; it glows while it is being read, so a child can follow and say it along
+    var before = voiceWait;
+    say(s);
+    [].forEach.call(talk.querySelectorAll('.bubble.playing'), function (x) { x.classList.remove('playing'); });
+    if (voiceWait && voiceWait !== before) { b.classList.add('playing'); var w = voiceWait; w.then(function () { if (voiceWait === w || !speaking()) b.classList.remove('playing'); }); }
+  }
   var talk = E('div', 'talk' + (showPy ? '' : ' nopy')); talk.setAttribute('aria-live', 'polite'); p.appendChild(talk);
   var ctl = E('div', 'row sctl'); p.appendChild(ctl);
   var pyb = E('button', 'btn ghost', ''); pyb.type = 'button';   // pinyin on or off, next to Next so it stays in reach
@@ -982,7 +1002,9 @@ function story() {
     var x = STORY.lines[shown++];
     var b = E('div', 'bubble' + (x.who === first ? '' : ' right') + (x.pat ? ' patb' : ''));   // the first speaker on the left, the other on the right
     b.appendChild(txt('div', 'who', x.who));
-    var r = E('div', 'srow'); r.appendChild(speakBtn(x.s)); r.appendChild(storyLine(x)); b.appendChild(r);
+    var sp = E('button', 'speak', '🔊'); sp.type = 'button'; sp.setAttribute('aria-label', 'Listen to this line again');
+    var r = E('div', 'srow'); r.appendChild(sp); r.appendChild(storyLine(x)); b.appendChild(r);
+    b.onclick = function (ev) { if (ev.target.closest && ev.target.closest('.newc')) return; sayLine(b, x.s); };   // the whole bubble (and its 🔊) reads the line again; a coloured character reads only itself
     if (x.py) b.appendChild(txt('div', 'pyl', x.py));
     b.appendChild(txt('div', 'mean', x.en));
     if (x.pat) { var pn = E('div', 'patn', 'Sentence pattern <span class="han">句型</span>: '); pn.appendChild(document.createTextNode(PATTERN[0].shape)); b.appendChild(pn); }
@@ -990,7 +1012,7 @@ function story() {
     x.s.split('').forEach(function (ch) { if (chip[ch]) chip[ch].classList.add('lit'); });
     controls();
     try { b.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) { b.scrollIntoView(); }
-    say(x.s);
+    sayLine(b, x.s);
   }
   function controls() {
     var hadFocus = ctl.contains(document.activeElement), main;   // keep the keyboard on the main button when the bar is redrawn
