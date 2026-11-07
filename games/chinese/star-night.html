@@ -1010,17 +1010,18 @@ function storyPart() {   // how many lines were heard, when the talk was left ha
   var n = Math.floor(+save.storyAt) || 0;
   return n > 0 && n < STORY.lines.length ? n : 0;
 }
-/* like a level (the owner, 2026-11-07): a talk left half way asks "carry on, or start again?"; a talk heard to the end asks
-   "see it all (tap any line to hear it), or start again one line at a time?"; a new talk just starts */
+/* like a level (the owner, 2026-11-07): coming back asks Continue or Start over, the same two buttons as everywhere. Continue goes on
+   from the line where the child stopped; a talk heard to the end before shows all its lines (tap one to hear it again) with the
+   buttons for what comes next. A new talk just starts. */
 function openStory() {
   var n = storyPart(), all = STORY.lines.length;
   if (n) return askBox('Start here: continue?', 'You heard ' + n + ' of the ' + all + ' lines. Continue from there, or start again from the first line?',
     [['▶ Continue 继续', function () { story(n); }], ['↺ Start over 重新开始', function () { story(0); }, true]]);
-  if (save.story) return askBox('Start here: the story', 'You heard the whole talk! See it all again (tap a line to hear it), or start again one line at a time?',
-    [['▶ See it all 看全部', function () { story(all); }], ['↺ Start over 重新开始', function () { story(0); }, true]]);
+  if (save.story) return askBox('Start here: continue?', 'You heard all ' + all + ' lines last time. Continue to see them all, or start over from the first line?',
+    [['▶ Continue 继续', function () { story(all); }], ['↺ Start over 重新开始', function () { story(0); }, true]]);
   story(0);
 }
-function story(from) {   // from = how many lines to show at once, without reading them (Continue, See it all)
+function story(from) {   // from = how many lines to show at once, without reading them (Continue)
   from = Math.max(0, Math.min(STORY.lines.length, Math.floor(+from) || 0));
   app.classList.remove('big', 'bwide');
   app.innerHTML = '';
@@ -1090,9 +1091,9 @@ function story(from) {   // from = how many lines to show at once, without readi
     }
     if (hadFocus) try { main.focus({ preventScroll: true }); } catch (e) {}
   }
-  while (shown < from) add(true);   // Continue / See it all: the lines heard before are there at once
+  while (shown < from) add(true);   // Continue: the lines heard before are there at once
   if (shown < STORY.lines.length) add();   // then the next line is read (Continue), or the first one (a new start)
-  else try { window.scrollTo(0, 0); } catch (e) {}   // See it all: from the first line
+  else { var last = talk.lastChild; if (last) try { last.scrollIntoView({ block: 'nearest' }); } catch (e) {} }   // heard to the end: at the last line, by the buttons
 }
 
 /* ---------- "Write it 写一写": watch how a character is written, then write it with a finger in a 田字格 box. No score.
