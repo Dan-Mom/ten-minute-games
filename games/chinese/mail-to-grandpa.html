@@ -592,6 +592,11 @@ button{-webkit-appearance:none;appearance:none}
 .wbtns{margin-top:10px;gap:10px}
 .wbtns .btn{min-height:46px;padding:6px 16px;font-size:18px}
 .wmsg{min-height:27px;margin:10px 0 4px;color:var(--blue-d)}
+.wwords{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin:2px auto 0;max-width:700px}
+.wword{-webkit-appearance:none;appearance:none;border:2px solid var(--blue-s);background:#fff;border-radius:14px;padding:4px 12px;min-height:46px;font:inherit;color:var(--ink);line-height:1.2}
+.wword .han{font-size:22px}
+.wword .wc{color:var(--blue)}
+.wword small{display:block;font:700 13px var(--body);color:var(--mute)}
 </style>
 <style>
 /* Chinese game 1. One idea: the 15 new characters of the lesson.
@@ -1009,11 +1014,13 @@ function menu() {
     b.onclick = function () { afterVoice(function () { open(L); }, b); };
     ls.appendChild(b);
     if (HAS_WRITE && L.n === 1) {   // "Write it" comes right after level 1, where the characters are met (not 'lv': the level cards stay 1 to 5)
+      writeScore(); showTotal();   // ticks saved before Write it had a score (2026-11-07) count too
       var wn = CHARS.filter(function (c) { return written(c.c); }).length, all = wn === CHARS.length;
       var wb = E('button', 'lvs lvw' + (all ? ' done' : '')); wb.type = 'button';
       wb.appendChild(E('span', 'n', all ? '✓' : '✍️'));
       var wt = E('div'); wt.appendChild(E('h3', null, 'Write it <span class="han">写一写</span>'));
-      wt.appendChild(E('p', null, 'Watch how each character is written, then write it with your finger.' + (wn ? ' ' + wn + ' of ' + CHARS.length + ' written.' : '')));
+      wt.appendChild(E('p', null, 'Watch how each character is written, then write it with your finger. No mistakes: 1' + UNIT + '; with a mistake or a hint: 0.5' + UNIT + '.' + (wn ? ' ' + wn + ' of ' + CHARS.length + ' written.' : '')));
+      var wsc = save.score.write; if (wsc) wt.appendChild(E('p', 'sc', '💰 ' + levelScore(wsc) + UNIT + ' of ' + wsc.of + UNIT));
       wb.appendChild(wt); wb.appendChild(E('span', 'go', '▶'));
       wb.onclick = function () { afterVoice(openWrite, wb); };
       ls.appendChild(wb);
@@ -1155,16 +1162,24 @@ window.addEventListener('resize', function () {   // turning the iPad: the boxes
   clearTimeout(resizeAt); resizeAt = setTimeout(function () { if (writeRedraw) writeRedraw(); }, 250);
 });
 /* like a level: with some characters written already, ask "carry on, or start over?" (the owner, 2026-11-07) */
+/* "Write it" scores like a level (the owner, 2026-11-07): the first time a character is written in a round, 1¢ with no mistake and
+   no hint, else 0.5¢ (save.write[character] = 1 or 0.5). Writing it again later is practice. Start over clears the round. */
+function writeScore() {
+  var got = 0, half = 0;
+  CHARS.forEach(function (c) { var v = save.write && save.write[c.c]; if (v === 1 || v === true || v === '1') got++; else if (v) half++; });
+  if (got + half) save.score.write = { got: got, of: CHARS.length, half: half }; else delete save.score.write;
+}
 function openWrite() {
   var wn = CHARS.filter(function (c) { return written(c.c); }).length;
   if (!wn) return writeIt(0);
   var firstNew = 0; while (firstNew < CHARS.length - 1 && written(CHARS[firstNew].c)) firstNew++;
   var all = wn === CHARS.length;
   askBox(all ? 'Write it: all written!' : 'Write it: continue?',
-    all ? 'You have written all ' + CHARS.length + '! Write them again and keep your green ticks, or start over with no ticks?'
-        : 'You have written ' + wn + ' of ' + CHARS.length + ' characters. Continue with the ones not written yet, or start over from the first (the green ticks go)?',
+    (all ? 'You have written all ' + CHARS.length + '! Write them again just for practice (your green ticks and score stay), or start over (ticks and score go, and the new score takes their place)?'
+        : 'You have written ' + wn + ' of ' + CHARS.length + ' characters. Continue with the ones not written yet, or start over from the first (the green ticks and the score go)?')
+      + (save.score.write ? ' Your score now: <b>' + levelScore(save.score.write) + UNIT + ' of ' + save.score.write.of + UNIT + '</b>.' : ''),
     [[all ? '▶ Write again 再写一遍' : '▶ Continue 继续', function () { writeIt(all ? 0 : firstNew); }],
-     ['↺ Start over 重新开始', function () { save.write = {}; store(); writeIt(0); }, true]]);
+     ['↺ Start over 重新开始', function () { save.write = {}; save.wslip = {}; writeScore(); store(); showTotal(); writeIt(0); }, true]]);
 }
 function writeIt(at) {
   app.classList.remove('big', 'bwide');
@@ -1172,6 +1187,8 @@ function writeIt(at) {
   if (!save.write || typeof save.write !== 'object' || Array.isArray(save.write)) save.write = {};
   warm(CHARS.map(function (c) { return c.c; }));
   var cur = at || 0, demo = null, quiz = null, nextStroke = 0, total = 0, failed = false, lastS = 0;
+  if (!save.wslip || typeof save.wslip !== 'object' || Array.isArray(save.wslip)) save.wslip = {};
+  function slipped(c) { if (!written(c)) { save.wslip[c] = 1; store(); } }   // a mistake or a hint before the character was first written
   var nav = E('div', 'nav');
   var ls = E('button', 'btn ghost', '✕ Quit 退出'); ls.type = 'button'; ls.onclick = function () { afterVoice(menu, ls); };
   nav.appendChild(E('h2', 'wtitle', '✍️ Write it <span class="han">写一写</span>')); nav.appendChild(ls); app.appendChild(nav);
@@ -1198,17 +1215,18 @@ function writeIt(at) {
   var qEl = E('div', 'tzg wq'); b2.appendChild(qEl);
   var r2 = E('div', 'row wbtns'), hint = E('button', 'btn ghost', '💡 Hint <span class="han">提示</span>'), again = E('button', 'btn ghost', '↺ Again <span class="han">再写</span>');
   hint.type = again.type = 'button';
-  hint.onclick = function () { if (quiz && !failed && nextStroke < total) try { quiz.highlightStroke(nextStroke); } catch (e) {} };
+  hint.onclick = function () { if (quiz && !failed && nextStroke < total) try { quiz.highlightStroke(nextStroke); slipped(CHARS[cur].c); } catch (e) {} };
   again.onclick = function () { if (failed) return load(); start(); };
   r2.appendChild(hint); r2.appendChild(again); b2.appendChild(r2);
   row.appendChild(b1); row.appendChild(b2);
   var msg = E('p', 'wmsg'); p.appendChild(msg);
+  var words = E('div', 'wwords'); p.appendChild(words);   // words with this character (from level 2), so the child sees how it is used; tap to hear
   // no credit line on the page (the owner, 2026-11-07: the children do not read it); the licences go with the files: the MIT notice inside
   // hanzi-writer.min.js, and ARPHICPL.TXT with README.txt in strokes/
 
   function size() {   // two boxes side by side when they fit, else one above the other; small enough that the buttons under them are on the screen too
     var w = row.clientWidth || 300, two = Math.floor((w - 24) / 2) - 6;   // 24 = the gap between the boxes, 6 = a box's two borders
-    var room = window.innerHeight - (row.getBoundingClientRect().top + (window.pageYOffset || 0)) - 36 - 128;   // the label above, the buttons and the message below
+    var room = window.innerHeight - (row.getBoundingClientRect().top + (window.pageYOffset || 0)) - 36 - 128 - 60;   // the label above; the buttons, the message and the words below
     return Math.max(170, Math.min(two >= 200 ? two : w - 6, room, 340));
   }
   function dims(s) { return { width: s, height: s, padding: Math.round(s * 0.06) }; }
@@ -1253,16 +1271,20 @@ function writeIt(at) {
         },
         onMistake: function (d) {
           if (CHARS[cur].c !== c) return;
-          msg.textContent = d.isBackwards ? 'Right stroke! Now draw it the other way round.'
+          slipped(c);
+          msg.textContent = d.isBackwards ? 'Almost! Draw it the other way round.'
             : 'Not quite. Try stroke ' + (d.strokeNum + 1) + ' again.' + (d.mistakesOnStroke >= 2 ? ' Tap 💡 Hint, or watch the box on the left.' : '');
         },
         onComplete: function () {
           if (CHARS[cur].c !== c) return;
           nextStroke = total;
-          save.write[c] = 1; store(); mark();
+          var gain = written(c) ? 0 : save.wslip[c] ? 0.5 : 1;   // only the first time in a round counts; again later is practice
+          if (gain) { save.write[c] = gain; delete save.wslip[c]; writeScore(); store(); showTotal(); }
+          mark();
           var all = CHARS.every(function (x) { return written(x.c); });
-          msg.innerHTML = all ? 'You wrote all ' + CHARS.length + '! <span class="han">全写完了！</span>'
-            : 'Well done! <span class="han">写得好！</span> ' + (cur < CHARS.length - 1 ? 'Tap Next for the next character.' : 'Tap a character above that is not green yet.');
+          var won = gain === 1 ? ' +1' + UNIT : gain ? ' +0.5' + UNIT + ' (in a new round, write it with no mistakes for 1' + UNIT + ')' : '';
+          msg.innerHTML = (all && gain ? 'You wrote all ' + CHARS.length + '! <span class="han">全写完了！</span>' : 'Well done! <span class="han">写得好！</span>') + won + ' '
+            + (all ? '' : cur < CHARS.length - 1 ? 'Tap Next for the next character.' : 'Tap a character above that is not green yet.');
           beep(true);
           setTimeout(function () { if (qEl.isConnected && CHARS[cur].c === c && !speaking()) say(c); }, 450);
         }
@@ -1280,6 +1302,18 @@ function writeIt(at) {
     info.appendChild(txt('span', 'wbig han', c.c));
     var t = E('div', 'wtext'); t.appendChild(txt('div', 'py', c.py)); t.appendChild(txt('div', 'mean', c.e + ' ' + c.en)); info.appendChild(t);
     info.appendChild(speakBtn(c.c));
+    words.innerHTML = '';
+    var ws = WORDS.filter(function (w) { return w.w.indexOf(c.c) >= 0; }), seen = {};
+    ws = ws.filter(function (w) { if (seen[w.w]) return false; seen[w.w] = 1; return true; }).slice(0, 4);
+    if (ws.length) {
+      words.appendChild(E('span', 'tlab', 'Words <span class="han">组词</span>'));
+      ws.forEach(function (w) {
+        var b = E('button', 'wword'); b.type = 'button'; b.setAttribute('aria-label', w.w + ', ' + w.py);
+        var h = E('span', 'han'); w.w.split('').forEach(function (ch) { if (ch === c.c) h.appendChild(txt('b', 'wc', ch)); else h.appendChild(document.createTextNode(ch)); });
+        b.appendChild(h); b.appendChild(txt('small', null, w.py + ' · ' + w.en));
+        b.onclick = function () { say(w.w); }; words.appendChild(b);
+      });
+    }
     mark(); load(); say(c.c);
   }
   writeRedraw = resize;
