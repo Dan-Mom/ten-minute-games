@@ -976,8 +976,7 @@ function menu() {
       var wt = E('div'); wt.appendChild(E('h3', null, 'Write it <span class="han">写一写</span>'));
       wt.appendChild(E('p', null, 'Watch how each character is written, then write it with your finger.' + (wn ? ' ' + wn + ' of ' + CHARS.length + ' written.' : '')));
       wb.appendChild(wt); wb.appendChild(E('span', 'go', '▶'));
-      var firstNew = 0; while (firstNew < CHARS.length - 1 && written(CHARS[firstNew].c)) firstNew++;
-      wb.onclick = function () { afterVoice(function () { writeIt(all ? 0 : firstNew); }, wb); };
+      wb.onclick = function () { afterVoice(openWrite, wb); };
       ls.appendChild(wb);
     }
   });
@@ -1093,6 +1092,18 @@ var resizeAt = 0;
 window.addEventListener('resize', function () {   // turning the iPad: the boxes take the new size (what is half written stays)
   clearTimeout(resizeAt); resizeAt = setTimeout(function () { if (writeRedraw) writeRedraw(); }, 250);
 });
+/* like a level: with some characters written already, ask "carry on, or start over?" (the owner, 2026-11-07) */
+function openWrite() {
+  var wn = CHARS.filter(function (c) { return written(c.c); }).length;
+  if (!wn) return writeIt(0);
+  var firstNew = 0; while (firstNew < CHARS.length - 1 && written(CHARS[firstNew].c)) firstNew++;
+  var all = wn === CHARS.length;
+  askBox(all ? 'Write it: all written!' : 'Write it: carry on?',
+    all ? 'You have written all ' + CHARS.length + '! Write them again and keep your green ticks, or start over with no ticks?'
+        : 'You have written ' + wn + ' of ' + CHARS.length + ' characters. Carry on with the ones not written yet, or start over from the first (the green ticks go)?',
+    [[all ? '▶ Write again 再写一遍' : '▶ Continue 继续', function () { writeIt(all ? 0 : firstNew); }],
+     ['↺ Start over 重新开始', function () { save.write = {}; store(); writeIt(0); }, true]]);
+}
 function writeIt(at) {
   app.classList.remove('big', 'bwide');
   app.innerHTML = '';
