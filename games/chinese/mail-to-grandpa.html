@@ -668,6 +668,19 @@ var SENTENCES = [
   { s: '祝您身体健康，＿快乐！', a: '平安', no: ['操场', '邮件'], en: 'Wishing you good health, safety and happiness!' },
   { s: '爱您的小＿', a: '孙女', no: ['北京', '信封'], en: 'Love, your little granddaughter' }
 ];
+/* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
+   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+var STORY = { title: '给爷爷写信', en: 'Writing to Grandpa', lines: [
+  { who: '🧒 我', s: '妈妈，我想给北京的爷爷写一封信。', py: 'Māma, wǒ xiǎng gěi Běijīng de yéye xiě yì fēng xìn.', en: 'Mom, I want to write a letter to Grandpa in Beijing.' },
+  { who: '👩 妈妈', s: '好啊！你是不是第一次写信？', py: 'Hǎo a! Nǐ shì bu shì dì yī cì xiě xìn?', en: 'Good idea! This is your first letter, isn\'t it?', pat: true },
+  { who: '🧒 我', s: '是的。我要用这个红色的信封，再贴一张邮票。', py: 'Shì de. Wǒ yào yòng zhège hóngsè de xìnfēng, zài tiē yì zhāng yóupiào.', en: 'Yes. I will use this red envelope and put a stamp on it.' },
+  { who: '👩 妈妈', s: '北京是个大城市。爷爷家旁边有个广场，晚上很多人在那里跳舞。', py: 'Běijīng shì ge dà chéngshì. Yéye jiā pángbiān yǒu ge guǎngchǎng, wǎnshang hěn duō rén zài nàlǐ tiàowǔ.', en: 'Beijing is a big city. There is a square next to Grandpa\'s home, and in the evening lots of people dance there.' },
+  { who: '🧒 我', s: '我要告诉爷爷，我每天都练习写汉字，进步很快！', py: 'Wǒ yào gàosu yéye, wǒ měi tiān dōu liànxí xiě Hànzì, jìnbù hěn kuài!', en: 'I will tell Grandpa that I practise writing Chinese characters every day, and I am getting better fast!' },
+  { who: '👩 妈妈', s: '你还可以提一个问题，问问爷爷北京冷不冷。', py: 'Nǐ hái kěyǐ tí yí ge wèntí, wènwen yéye Běijīng lěng bu lěng.', en: 'You could also ask Grandpa a question, like whether it is cold in Beijing.' },
+  { who: '🧒 我', s: '我好想爷爷！放假了，我们全家去北京看他，好不好？', py: 'Wǒ hǎo xiǎng yéye! Fàngjià le, wǒmen quánjiā qù Běijīng kàn tā, hǎo bu hǎo?', en: 'I miss Grandpa so much! When the holidays come, can our whole family go to Beijing to see him?' },
+  { who: '👩 妈妈', s: '当然好！到时候我们先去机场取票，再坐飞机。', py: 'Dāngrán hǎo! Dào shíhou wǒmen xiān qù jīchǎng qǔpiào, zài zuò fēijī.', en: 'Of course! When the day comes, we will pick up our tickets at the airport and then get on the plane.' },
+  { who: '🧒 我', s: '我要祝爷爷平平安安，最后写上：爱您的小孙女。', py: 'Wǒ yào zhù yéye píngpíng-ān\'ān, zuìhòu xiěshang: ài nín de xiǎo sūnnǚ.', en: 'I will wish Grandpa safe and well, and at the end write: love, your little granddaughter.' }
+] };
 
 /* ---------- this lesson's settings: the shared engine (../_engine/chinese-engine.js) reads them ---------- */
 var LESSON = {

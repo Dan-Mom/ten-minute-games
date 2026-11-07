@@ -668,6 +668,18 @@ var SENTENCES = [
   { s: '＿的一天过得真快。', a: '美好', no: ['颜色', '柱子'], en: 'A wonderful day goes by so fast.' },
   { s: '＿了回家的路，我又想再来一次了。', a: '走完', no: ['十分', '狮子'], en: 'By the time we finished the walk home, I wanted to come again.' }
 ];
+/* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
+   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+var STORY = { title: '宝岛一日游', en: 'A day at Treasure Island', lines: [
+  { who: '🧒 我', s: '爸爸，湖对岸那个小岛叫什么名字？', py: 'Bàba, hú duì\'àn nàge xiǎodǎo jiào shénme míngzi?', en: 'Dad, what is the little island on the other side of the lake called?' },
+  { who: '👨 爸爸', s: '它叫宝岛。我们沿着湖边走过去吧！', py: 'Tā jiào Bǎodǎo. Wǒmen yánzhe húbiān zǒu guòqu ba!', en: 'It is called Treasure Island. Let\'s walk there along the lake!' },
+  { who: '🧒 我', s: '看，前面有一座石桥！桥上的柱子真多。', py: 'Kàn, qiánmiàn yǒu yí zuò shíqiáo! Qiáo shang de zhùzi zhēn duō.', en: 'Look, there is a stone bridge ahead! It has so many posts.' },
+  { who: '👨 爸爸', s: '柱子上还站着小石狮子，有的张着嘴，有的闭着眼。', py: 'Zhùzi shang hái zhànzhe xiǎo shí shīzi, yǒude zhāngzhe zuǐ, yǒude bìzhe yǎn.', en: 'Little stone lions stand on the posts too. Some have their mouths open, some have their eyes shut.' },
+  { who: '🧒 我', s: '这些小狮子可真好玩啊！', py: 'Zhèxiē xiǎo shīzi kě zhēn hǎowán a!', en: 'These little lions are so much fun!', pat: true },
+  { who: '👨 爸爸', s: '看完小狮子，我们比一比，看谁先登上山顶！', py: 'Kànwán xiǎo shīzi, wǒmen bǐ yi bǐ, kàn shéi xiān dēngshàng shāndǐng!', en: 'When we have finished looking at the little lions, let\'s have a race to see who gets to the top of the hill first!' },
+  { who: '🧒 我', s: '好高啊！这里的景色十分美丽。', py: 'Hǎo gāo a! Zhèlǐ de jǐngsè shífēn měilì.', en: 'So high! The view here is really beautiful.' },
+  { who: '👨 爸爸', s: '对！我们买一张明信片，写给你的好朋友吧！', py: 'Duì! Wǒmen mǎi yì zhāng míngxìnpiàn, xiě gěi nǐ de hǎo péngyou ba!', en: 'Yes! Let\'s buy a postcard and write to your good friend!' }
+] };
 
 /* ---------- this lesson's settings: the shared engine (../_engine/chinese-engine.js) reads them ---------- */
 var LESSON = {

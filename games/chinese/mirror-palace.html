@@ -666,6 +666,18 @@ var SENTENCES = [
   { s: '园林太大了，我差一点儿就＿了。', a: '迷路', no: ['大厅', '花香'], en: 'The gardens were so big that I almost got lost.' },
   { s: '凡尔赛宫真＿，我还想再来一次！', a: '迷人', no: ['影子', '镜子'], en: 'Versailles is so charming. I want to come again!' }
 ];
+/* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
+   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+var STORY = { title: '参观凡尔赛宫', en: 'A visit to Versailles', lines: [
+  { who: '👩 妈妈', s: '快看，我们到凡尔赛宫了！以前，法国的国王就住在这里。', py: 'Kuài kàn, wǒmen dào Fán\'ěrsài Gōng le! Yǐqián, Fǎguó de guówáng jiù zhù zài zhèlǐ.', en: 'Look, we have arrived at the Palace of Versailles! The kings of France used to live right here.' },
+  { who: '🧒 我', s: '王宫好大啊！我们先去看哪个大厅？', py: 'Wánggōng hǎo dà a! Wǒmen xiān qù kàn nǎge dàtīng?', en: 'The palace is so big! Which hall shall we see first?' },
+  { who: '👩 妈妈', s: '先去镜厅吧！那里的墙上有三百多面镜子。', py: 'Xiān qù Jìngtīng ba! Nàlǐ de qiáng shang yǒu sānbǎi duō miàn jìngzi.', en: 'The Hall of Mirrors first! There are more than three hundred mirrors on its walls.', pat: true },
+  { who: '🧒 我', s: '哇，镜子里映出了好多个我，个个都在招手，真有趣！', py: 'Wā, jìngzi li yìngchūle hǎo duō ge wǒ, gègè dōu zài zhāoshǒu, zhēn yǒuqù!', en: 'Wow, the mirrors show lots of me, and every one of them is waving. What fun!' },
+  { who: '👩 妈妈', s: '镜子对面是一排大窗户。你看，这些窗户的样子都一样！', py: 'Jìngzi duìmiàn shì yì pái dà chuānghu. Nǐ kàn, zhèxiē chuānghu de yàngzi dōu yíyàng!', en: 'Opposite the mirrors is a row of big windows. Look, these windows all look the same!' },
+  { who: '🧒 我', s: '外面的园林真大，花香一阵一阵的。', py: 'Wàimiàn de yuánlín zhēn dà, huāxiāng yí zhèn yí zhèn de.', en: 'The gardens outside are huge, and the smell of flowers keeps drifting by.' },
+  { who: '👩 妈妈', s: '从上面看，花园就如同一块大地毯。别跑太远，小心迷路！', py: 'Cóng shàngmiàn kàn, huāyuán jiù rútóng yí kuài dà dìtǎn. Bié pǎo tài yuǎn, xiǎoxīn mílù!', en: 'From up here, the garden looks just like a big carpet. Don\'t run too far, or you will get lost!' },
+  { who: '🧒 我', s: '我不会迷路的，你看，我的影子一直跟着我！', py: 'Wǒ bú huì mílù de, nǐ kàn, wǒ de yǐngzi yìzhí gēnzhe wǒ!', en: 'I won\'t get lost. Look, my shadow is following me the whole time!' }
+] };
 
 /* ---------- this lesson's settings: the shared engine (../_engine/chinese-engine.js) reads them ---------- */
 var LESSON = {
