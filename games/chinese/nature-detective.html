@@ -1,0 +1,1381 @@
+<!doctype html>
+<html lang="en">
+<head><script>/* Ten-Minute Games accounts: a parent signs in with Google, adds children by nickname, and each child's game progress follows them
+   to any computer or iPad. Signing in is optional; without it every game works exactly as before (progress stays on this device).
+
+   How progress is kept: every game already saves its progress in this browser (localStorage) under its own names. This script,
+   which build.cjs puts at the very top of every page, keeps one copy of those values per player ("guest" = not signed in, or a
+   child). When the player changes, the values in the browser are swapped before the game reads them. When a child is playing,
+   their copy is also saved to Firebase (Firestore: families/<parent uid>/kids/<child id>), and loaded back on other devices.
+   Only values written by these game pages are kept; nothing else in the browser is read or sent.
+
+   Public Firebase web config: allowed on the public site by PRIVACY-RULE.md exception five. Access is guarded by the Firestore
+   rules (each parent can only read and write their own family), not by hiding this. */
+(function () {
+  'use strict';
+  if (window.TMG) return;
+  var CONFIG = {
+    apiKey: 'AIzaSyDC-kbJIExCfhIsUkkShVIO8VtBTe3D7WI',
+    authDomain: 'ten-minute-games.firebaseapp.com',
+    projectId: 'ten-minute-games',
+    storageBucket: 'ten-minute-games.firebasestorage.app',
+    messagingSenderId: '448551703283',
+    appId: '1:448551703283:web:7f0c2b75a166f1fcbb1d86'
+  };
+  var SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
+  var P = 'tmg.', GUEST = 'guest', MAX_VALUE = 200000;
+  var LS; try { LS = window.localStorage; LS.getItem(P + 'x'); } catch (e) { LS = null; }
+  if (!LS) { window.TMG = { kid: GUEST, ready: Promise.resolve(), mountHome: function () {} }; return; }
+  var rawSet = Storage.prototype.setItem, rawRemove = Storage.prototype.removeItem, rawGet = Storage.prototype.getItem;
+  function get(k) { return rawGet.call(LS, k); }
+  function put(k, v) { try { rawSet.call(LS, k, v); } catch (e) {} }
+  function del(k) { rawRemove.call(LS, k); }
+  function J(k, d) { try { var v = get(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
+  function W(k, o) { put(k, JSON.stringify(o)); }
+  function ours(k) { return typeof k === 'string' && (k.indexOf(P) === 0 || k.indexOf('firebase') === 0); }
+
+  function current() { return get(P + 'current') || GUEST; }
+  function store(id) { return J(P + 'kid.' + id, { data: {}, updated: 0 }); }
+  function saveStore(id, s) { W(P + 'kid.' + id, s); }
+  function known() { return J(P + 'known', []); }
+
+  /* Put player `id`'s values into the browser. The values sitting there now belong to `owner`: keep them first. */
+  function swap() {
+    var id = current(), owner = get(P + 'owner') || GUEST;
+    if (owner === id) return false;
+    var ks = known(), from = store(owner), to = store(id), changed = false;
+    ks.forEach(function (k) { var v = get(k); if (v === null) delete from.data[k]; else from.data[k] = v; });
+    saveStore(owner, from);
+    ks.forEach(function (k) {
+      var want = Object.prototype.hasOwnProperty.call(to.data, k) ? to.data[k] : null;
+      if (get(k) !== want) { changed = true; if (want === null) del(k); else put(k, want); }
+    });
+    put(P + 'owner', id);
+    return changed;
+  }
+  swap();
+
+  /* Every write a game makes is copied into the current player's store. For a child, the name is also listed under `changed` until it has reached the cloud.
+     Until this page has heard from the cloud, writes only wait: a game saving as it opens must not make an out-of-date device look newest. */
+  var dirtyTimer = 0, syncing = false, waiting = {}, onHome = !!document.querySelector('meta[name="tmg-home"]');
+  if (get(P + 'dirty') === '1') {          // left by an older version of this script: everything this child has here may be unsent
+    if (current() !== GUEST) { var old = store(current()); old.changed = {}; Object.keys(old.data).forEach(function (k) { old.changed[k] = 1; }); saveStore(current(), old); }
+    del(P + 'dirty');
+  }
+  function later() { clearTimeout(dirtyTimer); dirtyTimer = setTimeout(function () { cloud.push(); }, 3000); }
+  function noteWrite(k, v) {
+    if (ours(k)) return;
+    if (v !== null && String(v).length > MAX_VALUE) return;
+    var ks = known(); if (ks.indexOf(k) < 0) { ks.push(k); W(P + 'known', ks); }
+    var id = current(), s = store(id), had = Object.prototype.hasOwnProperty.call(s.data, k) ? s.data[k] : null;
+    if (had === (v === null ? null : String(v))) return;   // nothing new
+    if (v === null) delete s.data[k]; else s.data[k] = String(v);
+    if (id === GUEST) { s.updated = Date.now(); saveStore(id, s); return; }
+    if (syncing) { waiting[k] = 1; saveStore(id, s); return; }
+    (s.changed = s.changed || {})[k] = 1; s.updated = Date.now(); saveStore(id, s);
+    later();
+  }
+  Storage.prototype.setItem = function (k, v) { rawSet.call(this, k, v); if (this === LS) noteWrite(String(k), String(v)); };
+  Storage.prototype.removeItem = function (k) { rawRemove.call(this, k); if (this === LS) noteWrite(String(k), null); };
+  /* the writes that were waiting now count as this child's changes */
+  function settle() {
+    syncing = false;
+    var ks = Object.keys(waiting), id = current(); waiting = {};
+    if (!ks.length || id === GUEST) return;
+    var s = store(id); s.changed = s.changed || {};
+    ks.forEach(function (k) { s.changed[k] = 1; });
+    s.updated = Date.now(); saveStore(id, s); later();
+  }
+  function reloadPage() {
+    try {
+      var flag = 'tmg.reloaded.' + location.pathname, last = Number(sessionStorage.getItem(flag)) || 0;
+      if (Date.now() - last > 30000) { sessionStorage.setItem(flag, String(Date.now())); location.reload(); }
+    } catch (e) {}
+  }
+  /* A child's copies on this device: progress and the reward words. */
+  function dropKid(id) {
+    del(P + 'kid.' + id);
+    var end = '.rewards.' + id;
+    Object.keys(LS).forEach(function (k) { if (k.indexOf(P) === 0 && k.slice(-end.length) === end) del(k); });
+  }
+  /* The child was removed on another device: this device lets go too, and never writes them back. */
+  function childGone(id) {
+    if (current() === id) { put(P + 'current', GUEST); swap(); }
+    dropKid(id);
+    var fam = J(P + 'family', null);
+    if (fam && fam.kids) { fam.kids = fam.kids.filter(function (k) { return k.id !== id; }); W(P + 'family', fam); }
+  }
+
+  /* ---------- Firebase (loaded only when it is needed) ---------- */
+  var fb = null;
+  function loadScript(src) { return new Promise(function (ok, no) { var s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); }
+  function firebaseReady() {
+    if (fb) return fb;
+    fb = loadScript(SDK + 'firebase-app-compat.js')
+      .then(function () { return Promise.all([loadScript(SDK + 'firebase-auth-compat.js'), loadScript(SDK + 'firebase-firestore-compat.js')]); })
+      .then(function () {
+        var app = window.firebase.apps.length ? window.firebase.app() : window.firebase.initializeApp(CONFIG);
+        return { auth: app.auth(), db: app.firestore() };
+      });
+    return fb;
+  }
+  function userNow(f) { return new Promise(function (ok) { var off = f.auth.onAuthStateChanged(function (u) { off(); ok(u); }); }); }
+  function kidsRef(f, uid) { return f.db.collection('families').doc(uid).collection('kids'); }
+
+  var cloud = {
+    /* upload a child's copy if it has changes. true = nothing is left unsent. `update`, not `set`: it fails on a child who has been removed instead of bringing them back. */
+    push: function (id) {
+      id = id || current();
+      var uid = get(P + 'uid');
+      if (id === GUEST || !uid) return Promise.resolve(true);
+      if (syncing && id === current()) return ready.then(function () { return cloud.push(id); });
+      var s = store(id);
+      if (!Object.keys(s.changed || {}).length) return Promise.resolve(true);
+      var name = (J(P + 'family', { kids: [] }).kids.filter(function (k) { return k.id === id; })[0] || {}).name || 'Player';
+      if (JSON.stringify(s.data).length > 900000) return Promise.resolve(false);   // a Firestore document holds at most 1 MB: keep it on this device only
+      return firebaseReady().then(function (f) {
+        return kidsRef(f, uid).doc(id).update({ name: name, data: s.data, updated: s.updated || Date.now() });
+      }).then(function () {
+        var now = store(id);
+        now.base = s.updated;   // the cloud now holds this version
+        if (now.updated === s.updated) now.changed = {};
+        saveStore(id, now);
+        return true;
+      }, function (e) {
+        if (e && e.code === 'not-found') { childGone(id); if (!onHome) reloadPage(); return true; }
+        return false;
+      });
+    },
+    /* compare with the cloud; returns true when the values in the browser changed */
+    pull: function () {
+      var id = current(), uid = get(P + 'uid');
+      if (id === GUEST || !uid) return Promise.resolve(false);
+      return firebaseReady().then(function (f) { return kidsRef(f, uid).doc(id).get(); }).then(function (doc) {
+        if (!doc.exists) { childGone(id); return true; }
+        var c = doc.data(), s = store(id), cu = c.updated || 0, mine = s.changed || {};
+        var news = s.base != null ? cu !== s.base : cu > (s.updated || 0);   // has the cloud changed since this device last synced?
+        if (!news) {
+          if (cu < (s.updated || 0) && !Object.keys(mine).length) { s.changed = {}; Object.keys(s.data).forEach(function (k) { s.changed[k] = 1; }); saveStore(id, s); }
+          return false;
+        }
+        /* the cloud is newer: take it, keeping only what this device changed and has not sent yet */
+        var data = JSON.parse(JSON.stringify(c.data || {})), mineKeys = Object.keys(mine);
+        mineKeys.forEach(function (k) { if (Object.prototype.hasOwnProperty.call(s.data, k)) data[k] = s.data[k]; else delete data[k]; });
+        saveStore(id, { data: data, updated: mineKeys.length ? Math.max(Date.now(), cu + 1) : cu, changed: mine, base: cu });
+        waiting = {};
+        var ks = known(); Object.keys(data).forEach(function (k) { if (ks.indexOf(k) < 0) ks.push(k); }); W(P + 'known', ks);
+        var changed = false;
+        if ((get(P + 'owner') || GUEST) === id) ks.forEach(function (k) {
+          var want = Object.prototype.hasOwnProperty.call(data, k) ? data[k] : null;
+          if (get(k) !== want) { changed = true; if (want === null) del(k); else put(k, want); }
+        });
+        return changed;
+      }, function () { return false; });
+    }
+  };
+  /* hear from the cloud, then send whatever is left to send */
+  function syncNow() {
+    syncing = true;
+    setTimeout(function () { if (syncing) settle(); }, 20000);   // no answer for this long: what the child has been doing counts
+    return cloud.pull().then(function (changed) { settle(); cloud.push(); return changed; });
+  }
+  window.addEventListener('pagehide', function () { cloud.push(); });
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') cloud.push(); });
+
+  /* On a game page with a child playing: fetch their newest progress; if it differs from what the game already read, reload. */
+  var ready = Promise.resolve();
+  if (get(P + 'uid') && current() !== GUEST) {
+    ready = syncNow().then(function (changed) { if (changed && !onHome) reloadPage(); });
+  }
+
+  /* ---------- the parent panel on the home page ---------- */
+  function E(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function newId() { var a = new Uint8Array(9); crypto.getRandomValues(a); return Array.prototype.map.call(a, function (b) { return ('0' + b.toString(16)).slice(-2); }).join(''); }
+  function cleanName(s) { return String(s || '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 20); }
+
+  function mountHome(box) {
+    var msg = '';
+    function render() {
+      box.replaceChildren();
+      var uid = get(P + 'uid'), fam = J(P + 'family', { kids: [] }), cur = current();
+      if (!uid) {
+        var b = E('button', 'acct-btn', 'Parent sign-in'); b.type = 'button'; b.onclick = signIn;
+        box.appendChild(b);
+        box.appendChild(E('span', 'acct-note', 'Optional: keep each child’s progress on every device.'));
+      } else {
+        var row = E('div', 'acct-kids');
+        fam.kids.forEach(function (k) {
+          var chip = E('button', 'acct-kid' + (k.id === cur ? ' on' : ''), (k.id === cur ? '▶ ' : '') + k.name); chip.type = 'button';
+          chip.setAttribute('aria-pressed', k.id === cur ? 'true' : 'false');
+          chip.onclick = function () { choose(k.id); };
+          row.appendChild(chip);
+        });
+        var g = E('button', 'acct-kid' + (cur === GUEST ? ' on' : ''), 'Just looking'); g.type = 'button'; g.onclick = function () { choose(GUEST); };
+        row.appendChild(g);
+        var add = E('button', 'acct-btn small', '+ Add child'); add.type = 'button'; add.onclick = addKid;
+        row.appendChild(add);
+        box.appendChild(row);
+        var tools = E('span', 'acct-tools');   // on the same row, right after "+ Add child"
+        var so = E('button', 'acct-link', 'Sign out'); so.type = 'button'; so.onclick = signOut; tools.appendChild(so);
+        var rm = E('button', 'acct-link', 'Remove a child'); rm.type = 'button'; rm.onclick = removeKid; tools.appendChild(rm);
+        var dl = E('button', 'acct-link danger', 'Delete account and all data'); dl.type = 'button'; dl.onclick = deleteAll; tools.appendChild(dl);
+        var pv = E('a', 'acct-link', 'Privacy'); pv.href = 'privacy.html'; tools.appendChild(pv);
+        row.appendChild(tools);
+      }
+      if (msg) box.appendChild(E('div', 'acct-msg', msg));
+    }
+    function say(t) { msg = t; render(); }
+    function loadFamily(f, uid) {
+      return kidsRef(f, uid).get().then(function (q) {
+        var kids = []; q.forEach(function (d) { kids.push({ id: d.id, name: cleanName(d.data().name) || 'Player' }); });
+        kids.sort(function (a, b) { return a.name.localeCompare(b.name); });
+        var before = J(P + 'family', { kids: [] }).kids;
+        W(P + 'family', { kids: kids });
+        if (current() !== GUEST && !kids.some(function (k) { return k.id === current(); })) { put(P + 'current', GUEST); swap(); }
+        before.forEach(function (o) { if (!kids.some(function (k) { return k.id === o.id; })) dropKid(o.id); });
+        return kids;
+      });
+    }
+    function signIn() {
+      say('Opening Google sign-in…');
+      firebaseReady().then(function (f) {
+        var p = new window.firebase.auth.GoogleAuthProvider();
+        return f.auth.signInWithPopup(p).then(function (r) { put(P + 'uid', r.user.uid); return loadFamily(f, r.user.uid); });
+      }).then(function (kids) { msg = kids.length ? 'Signed in. Pick who is playing.' : 'Signed in. Add your first child (a nickname is enough).'; render(); },
+        function (e) { say(e && e.code === 'auth/popup-closed-by-user' ? '' : 'Sign-in did not work' + (e && e.code ? ' (' + e.code + ')' : '') + '. Please try again.'); });
+    }
+    function addKid() {
+      var name = cleanName(window.prompt('Child’s nickname (not their full name):', ''));
+      if (!name) return;
+      var uid = get(P + 'uid'), id = newId(), fam = J(P + 'family', { kids: [] });
+      var guest = store(GUEST), first = fam.kids.length === 0 && Object.keys(guest.data).length > 0;
+      var start = { data: {}, updated: Date.now() };
+      if (first && window.confirm('Move the progress already on this device to ' + name + '?')) {
+        swap(); start = { data: JSON.parse(JSON.stringify(store(GUEST).data)), updated: Date.now() };
+      }
+      say('Adding ' + name + '…');
+      firebaseReady().then(function (f) {
+        return kidsRef(f, uid).doc(id).set({ name: name, data: start.data, updated: start.updated }).then(function () { return loadFamily(f, uid); });
+      }).then(function () { start.base = start.updated; saveStore(id, start); choose(id); }, function () { say('Could not add ' + name + '. Please try again.'); });
+    }
+    function choose(id) {
+      cloud.push().then(function () {
+        put(P + 'current', id); swap();
+        msg = id === GUEST ? 'Just looking: progress stays on this device.' : 'Now playing: ' + ((J(P + 'family', { kids: [] }).kids.filter(function (k) { return k.id === id; })[0] || {}).name || '');
+        render();
+        if (id !== GUEST) ready = syncNow();
+      });
+    }
+    function removeKid() {
+      var fam = J(P + 'family', { kids: [] }); if (!fam.kids.length) return;
+      var name = window.prompt('Type the nickname of the child to remove. Their progress is deleted everywhere.\n\n' + fam.kids.map(function (k) { return k.name; }).join(', '), '');
+      var k = fam.kids.filter(function (x) { return x.name === cleanName(name); })[0]; if (!k) return;
+      var uid = get(P + 'uid');
+      firebaseReady().then(function (f) { return kidsRef(f, uid).doc(k.id).delete().then(function () { return loadFamily(f, uid); }); })
+        .then(function () { dropKid(k.id); say(k.name + ' was removed.'); }, function () { say('Could not remove ' + k.name + '. Please try again.'); });
+    }
+    /* leave this device as a guest device: the children's copies are taken off it. keepUnsent keeps any copy that has not reached the cloud yet. */
+    function forgetDevice(keepUnsent) {
+      put(P + 'current', GUEST); swap();
+      J(P + 'family', { kids: [] }).kids.forEach(function (k) {
+        if (keepUnsent && Object.keys(store(k.id).changed || {}).length) return;
+        del(P + 'kid.' + k.id);
+      });
+      if (!keepUnsent) del(P + 'family');
+      del(P + 'uid');
+    }
+    /* never sign out while something has not reached the cloud: signing out takes the only copy off this device */
+    function signOut() {
+      var ids = J(P + 'family', { kids: [] }).kids.map(function (k) { return k.id; });
+      say('Saving…');
+      ready.then(function () { return Promise.all(ids.map(function (id) { return cloud.push(id); })); }).then(function (done) {
+        if (done.indexOf(false) >= 0) { say('Not signed out: some progress has not been saved yet. Check the internet and try again.'); return; }
+        return firebaseReady().then(function (f) { return f.auth.signOut(); }).then(function () { forgetDevice(); say('Signed out. This device is back to guest play.'); },
+          function () { forgetDevice(); say('Signed out on this device.'); });
+      });
+    }
+    function deleteAll() {
+      if (!window.confirm('Delete your account, all your children and all their progress? This cannot be undone.')) return;
+      var uid = get(P + 'uid');
+      say('Deleting…');
+      firebaseReady().then(function (f) {
+        return kidsRef(f, uid).get().then(function (q) { var jobs = []; q.forEach(function (d) { jobs.push(d.ref.delete()); }); return Promise.all(jobs); })
+          .then(function () { var u = f.auth.currentUser; return u.delete().catch(function (e) {
+            if (e && e.code === 'auth/requires-recent-login') return u.reauthenticateWithPopup(new window.firebase.auth.GoogleAuthProvider()).then(function () { return u.delete(); });
+            throw e; }); });
+      }).then(function () { var ids = J(P + 'family', { kids: [] }).kids.map(function (k) { return k.id; }); forgetDevice(); ids.forEach(dropKid); say('Your account and all its data were deleted.'); },
+        function () { say('Could not finish deleting. Please sign in again and retry.'); });
+    }
+    /* check the sign-in is still valid (it can end on another device) */
+    if (get(P + 'uid')) firebaseReady().then(function (f) { return userNow(f).then(function (u) {
+      if (!u) { forgetDevice(true); render(); return; }
+      return loadFamily(f, u.uid).then(render);
+    }); }, function () {});
+    render();
+  }
+
+  window.TMG = { kid: current(), ready: ready, mountHome: mountHome, _swap: swap, _cloud: cloud };
+})();
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Nature Detective · 自然小侦探</title>
+<meta name="theme-color" content="#9a4a12">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+/* The shared look of every Chinese lesson game. A lesson sets its own colours (--page, --blue, --blue-s, --blue-d) and its .opt::before. */
+:root{
+  color-scheme:light;
+  --ink:#1d2b4f; --mute:#4a587a; --page:#eef6ff; --card:#fff;
+  --blue:#1b6fd1; --blue-s:#d5e9ff; --blue-d:#0f4d97; --red:#d6246e; --red-s:#ffd8ea; --green:#1f8f45; --green-s:#d3f4dd; --gold:#ffd23f;
+  --display:"Baloo 2","Nunito","Trebuchet MS",system-ui,sans-serif;
+  --body:"Nunito","Trebuchet MS",system-ui,sans-serif;
+  --han:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC","Noto Sans CJK SC",sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--page);color:var(--ink);font:700 18px/1.5 var(--body);display:flex;flex-direction:column}
+h1,h2,h3{font-family:var(--display);margin:0;line-height:1.15}
+.han{font-family:var(--han);font-weight:700}
+.wrap{width:100%;max-width:760px;margin:0 auto;padding:16px}
+button{font:inherit;cursor:pointer}
+.top{display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:10px 16px;background:#fff;border-bottom:3px solid var(--blue-s)}
+.top h1{font-size:22px;flex:1 1 240px}
+.stamps{font:800 18px var(--display);background:var(--blue-s);color:var(--blue);border-radius:999px;padding:4px 14px;white-space:nowrap}
+.btn{min-height:52px;border:0;border-radius:16px;padding:8px 22px;font:800 20px var(--display);background:var(--blue);color:#fff;box-shadow:0 5px 0 var(--blue-d)}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 var(--blue-d)}
+.btn.ghost{background:#fff;color:var(--blue);box-shadow:0 5px 0 var(--blue-s)}
+.speak{border:0;background:var(--blue-s);color:var(--blue);border-radius:999px;min-width:48px;min-height:48px;font-size:22px}
+
+/* level menu */
+.hero{text-align:center;padding:18px 0 6px}
+.hero .big{font-size:64px;line-height:1}
+.hero p{margin:8px auto 0;color:var(--mute);max-width:560px}
+.levels{display:grid;gap:14px;margin-top:18px}
+.lv{display:flex;align-items:center;gap:14px;text-align:left;border:3px solid var(--blue-s);background:#fff;border-radius:22px;padding:14px 16px;box-shadow:0 6px 0 var(--blue-s)}
+.lv .n{flex:0 0 auto;width:56px;height:56px;border-radius:16px;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font:800 26px var(--display)}
+.lv.done .n{background:var(--green)}
+.lv h3{font-size:21px}
+.lv p{margin:2px 0 0;color:var(--mute);font-size:16px}
+.lv .cont{color:var(--blue);font-weight:800}
+.lv .go{margin-left:auto;font-size:28px}
+
+/* play */
+.bar{height:12px;background:#fff;border-radius:999px;overflow:hidden;box-shadow:inset 0 0 0 2px var(--blue-s);margin:6px 0 14px}
+.bar i{display:block;height:100%;width:0;background:var(--blue);transition:width .3s}
+.panel{background:#fff;border-radius:26px;padding:20px;box-shadow:0 8px 0 var(--blue-s);text-align:center}
+.say{color:var(--mute);font-size:17px;margin:0 0 10px}
+.card-big{font-size:110px;line-height:1.1}
+.py{font:800 30px var(--display);color:var(--blue)}
+.mean{font-size:20px;color:var(--mute)}
+.word{font-size:64px;letter-spacing:6px}
+.built{max-width:560px;margin:14px auto 0;background:#f4f8ff;border:3px solid var(--blue-s);border-radius:18px;padding:12px 16px;text-align:left;font-size:17px;line-height:1.5}
+.built .bt{font:800 18px var(--display);color:var(--blue);text-align:center}
+.built p{margin:8px 0 0}
+.built .how{border-top:2px dashed var(--blue-s);padding-top:8px}
+.pieces{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:8px}
+.piece{min-width:56px;height:56px;padding:0 6px;border-radius:12px;background:#fff;border:3px solid var(--blue-s);display:inline-flex;align-items:center;justify-content:center;font-size:36px}
+.piece.rad{border-color:var(--red);color:var(--red);background:var(--red-s)}
+.piece.rest{font:700 15px var(--body);color:var(--mute);max-width:150px;text-align:center;line-height:1.2}
+.plus{font:800 20px var(--display);color:var(--mute)}
+.rline{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:10px;text-align:center}
+.rline i{color:var(--blue);font-style:normal}
+.rg{color:var(--red);font-size:1.25em}
+.see{letter-spacing:4px;font-size:1.15em}
+.speak.small{min-width:44px;min-height:44px;font-size:18px}
+@media (max-width:480px){.card-big{font-size:88px}.built{font-size:16px;padding:10px 12px}}
+.slot{display:inline-block;min-width:1.1em;border-bottom:6px solid var(--red);color:var(--red)}
+.sentence{font-size:34px;line-height:1.6}
+.emoji{font-size:56px;line-height:1}
+.opts{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+.opt{position:relative;width:110px;height:92px;border:3px solid #e9c46a;border-radius:14px;background:#fffaf0;font-family:var(--han);font-size:52px;color:var(--ink);box-shadow:0 5px 0 #e9c46a;overflow:hidden}
+.opt span{position:relative}
+.opt.ok{border-color:var(--green);background:var(--green-s);box-shadow:0 5px 0 var(--green)}
+.opt.no{border-color:var(--red);background:var(--red-s);box-shadow:0 5px 0 var(--red);animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.fb{min-height:34px;margin-top:12px;font:800 20px var(--display)}
+.fb.ok{color:var(--green)}.fb.no{color:var(--red)}
+.row{display:flex;gap:12px;justify-content:center;align-items:center;flex-wrap:wrap;margin-top:12px}
+
+/* the letter at the end */
+.letter{max-width:520px;margin:10px auto 0;background:#fffdf6;border:3px solid #e9c46a;border-radius:18px;padding:18px 20px;text-align:left;font-family:var(--han);font-size:24px;line-height:1.8;position:relative}
+.letter .st{position:absolute;right:14px;top:12px;font-size:44px;transform:rotate(8deg)}
+.fly{animation:fly 1.6s ease-in forwards}
+@keyframes fly{to{transform:translate(60vw,-60vh) rotate(25deg) scale(.3);opacity:0}}
+
+/* level 4: bingo */
+.bgoal{font:800 22px var(--display);color:var(--blue)}
+.bhint{min-height:30px;margin-top:6px;color:var(--mute);font-size:18px}
+.bgrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;max-width:560px;margin:12px auto 0}
+.bcell{position:relative;aspect-ratio:1;min-width:0;padding:0;border:3px solid #e9c46a;border-radius:12px;background:#fffaf0;color:var(--ink);font-family:var(--han);font-weight:700;font-size:clamp(20px,6.2vw,40px);line-height:1;box-shadow:0 3px 0 #e9c46a;touch-action:manipulation}
+.bcell.free{background:var(--gold);border-color:#c79a12;box-shadow:0 3px 0 #c79a12;font-size:clamp(24px,7vw,44px)}
+.bcell.on{background:var(--blue-s);border-color:var(--blue);box-shadow:0 3px 0 var(--blue);animation:stampOn .3s ease}
+.bcell.line{background:var(--green-s);border-color:var(--green);box-shadow:0 3px 0 var(--green)}
+.bcell.no{background:var(--red-s);border-color:var(--red);animation:shake .3s}
+.bcell.peek{animation:peek 1s ease-in-out infinite}
+@keyframes stampOn{0%{transform:scale(1.25)}100%{transform:scale(1)}}
+@keyframes peek{50%{background:var(--gold);transform:scale(1.08)}}
+.btn.hear{min-height:60px;font-size:22px;padding:8px 28px}
+.opt.wide{width:100%;max-width:560px;height:auto;min-height:64px;padding:10px 16px;font-size:26px;line-height:1.4;text-align:left}
+.opt.wide::before{display:none}
+.opt.word{width:auto;min-width:150px;padding:0 18px;font-size:44px}
+/* level 3: sentence pattern */
+.pat{font-family:var(--han);font-weight:700;font-size:40px;color:var(--blue);margin:4px 0 8px}
+.key{color:var(--red)}
+.exs{max-width:560px;margin:14px auto 0;text-align:left;display:grid;gap:10px}
+.ex{display:flex;align-items:center;gap:12px;background:#fffaf0;border:3px solid #e9c46a;border-radius:16px;padding:8px 12px}
+.ex .han{font-size:26px}
+.ex .mean{font-size:16px}
+.bline{min-height:76px;max-width:620px;margin:12px auto 0;border-bottom:4px dashed var(--blue-s);display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;padding:8px}
+.bline.ok{border-color:var(--green)}
+.bline.no{border-color:var(--red);animation:shake .3s}
+.endmark{font-family:var(--han);font-size:30px;color:var(--mute)}
+.tiles{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:16px;min-height:60px}
+.tile{min-height:56px;padding:6px 14px;border:3px solid #e9c46a;border-radius:14px;background:#fffaf0;color:var(--ink);font-family:var(--han);font-weight:700;font-size:28px;box-shadow:0 4px 0 #e9c46a;touch-action:manipulation}
+.tile.key{border-color:var(--red);box-shadow:0 4px 0 var(--red)}
+.bline .tile{background:#fff}
+.bleft{font:800 18px var(--display);color:var(--mute);margin-top:4px}
+.bwin{font:800 clamp(34px,8vw,52px)/1.1 var(--display);color:var(--green);margin-top:12px}
+@media (max-width:480px){.wrap{padding:12px}.panel.bpanel{padding:14px 10px}}
+@media (prefers-reduced-motion:reduce){.bcell.on,.bcell.peek{animation:none}.bcell.peek{background:var(--gold)}}
+/* levels 1-4 on a tablet or computer: everything 20% bigger (phones keep the sizes above) */
+@media (min-width:600px){
+.wrap.big{max-width:912px}
+.big .panel{min-height:calc(100vh - 214px);min-height:calc(100dvh - 214px);display:flex;flex-direction:column;justify-content:center}   /* the card fills the screen, its content in the middle: no empty half below */
+.big .say{font-size:20px}
+.big .card-big{font-size:132px}
+.big .py{font-size:36px}
+.big .mean{font-size:24px}
+.big .word{font-size:77px}
+.big .sentence{font-size:41px}
+.big .emoji{font-size:67px}
+.big .opt{width:132px;height:110px;font-size:62px}
+.big .opt.wide{width:100%;max-width:672px;height:auto;font-size:31px}
+.big .opt.word{width:auto;min-width:180px;font-size:53px}
+.big .fb{font-size:24px;min-height:41px}
+.big .btn{min-height:62px;font-size:24px;padding:8px 26px}
+.big .speak{min-width:58px;min-height:58px;font-size:26px}
+.big .built{max-width:672px;font-size:20px}
+.big .built .bt{font-size:22px}
+.big .piece{min-width:67px;height:67px;font-size:43px}
+.big .piece.rest{font-size:18px;max-width:180px}
+.big .plus{font-size:24px}
+.big .pat{font-size:48px}
+.big .exs{max-width:672px}
+.big .ex .han{font-size:31px}
+.big .ex .mean{font-size:19px}
+.big .tile{min-height:67px;font-size:34px;padding:6px 17px}
+.big .endmark{font-size:36px}
+.big .bline{min-height:91px;max-width:744px}
+.big .letter{max-width:624px;font-size:29px}
+}
+/* a new-character card on a sideways iPad: the character on the left, how it is built on the right, so "Got it" stays on screen */
+@media (min-width:900px) and (min-aspect-ratio:5/4){
+.big .panel.meetp{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.7fr);grid-template-rows:auto auto auto auto;column-gap:28px;align-content:center;align-items:center}
+.big .meetp>.say{grid-column:1;grid-row:1}.big .meetp>.charrow{grid-column:1;grid-row:2}.big .meetp>.py{grid-column:1;grid-row:3}.big .meetp>.mean{grid-column:1;grid-row:4;align-self:start}
+.big .meetp>.built{grid-column:2;grid-row:1 / 5;margin:0}.big .meetp>.row{grid-column:1 / 3;grid-row:5}
+.big .meetp .charrow{display:flex;justify-content:center;flex-wrap:nowrap;gap:10px}.big .meetp .card-big{font-size:104px}.big .meetp .old{max-width:150px;flex-direction:column;gap:0}.big .meetp .old .cap{text-align:center;margin-top:4px}.big .meetp .old img{width:78px;height:78px}.big .meetp .old .cap{font-size:12.5px}   /* sideways: the old form beside the character, so the card keeps its height */
+.big .pat{font-size:40px;margin:0 0 2px}.big .exs{gap:5px;margin-top:6px}.big .ex{padding:2px 12px}.big .ex .han{font-size:26px}.big .ex .mean{font-size:16px}.big .panel{padding-top:12px;padding-bottom:12px}   /* the sentence-pattern card, sideways: a little tighter so "Got it" stays on screen */
+}
+.tile{-webkit-user-select:none;user-select:none}
+.big .panel>.built,.big .panel>.exs,.big .panel>.bline,.big .panel>.tiles,.big .panel>.letter{width:100%}   /* in the full-height card, keep these full width */
+.nav{display:flex;justify-content:space-between;gap:10px;margin:0 0 8px}
+.nav .btn{min-height:48px;font-size:18px;padding:4px 18px}
+.nav .btn:disabled{opacity:.35;cursor:default}
+@media (min-width:600px){.big .nav .btn{min-height:56px;font-size:21px}}
+/* scores */
+.tally{font:800 20px var(--display);align-self:center;white-space:nowrap}
+.tally .tr{color:var(--green)}.tally .tw{color:var(--red);margin-left:26px}
+.lv .sc{color:var(--green);font-weight:800}
+.result{max-width:560px;margin:12px auto 0;background:#fffaf0;border:3px solid #e9c46a;border-radius:18px;padding:12px 16px;font-size:19px}
+.result .big1{font:800 26px var(--display);color:var(--green)}
+.result .miss{color:var(--red);margin-top:6px}
+.result .han{letter-spacing:3px}
+.ask-over{position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px}
+.ask-box{background:#fff;border-radius:22px;padding:22px;max-width:460px;text-align:center;font-size:19px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.btn.redo{background:#e8a317;box-shadow:0 5px 0 #b37a0c}
+.ask-box h3{font-size:24px;margin-bottom:8px}
+/* bingo on a sideways screen: everything but the card in a column on the left, the card on the right */
+@media (min-width:700px) and (min-height:600px) and (min-aspect-ratio:5/4){
+.wrap.bwide{max-width:1120px}
+.bpanel{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto auto 1fr auto;column-gap:28px;align-items:start;text-align:center}
+.bpanel>.bgoal{grid-column:1;grid-row:1;margin-top:8px}
+.bpanel>.btop{grid-column:1;grid-row:2;flex-direction:column;gap:10px}
+.bpanel>.bhint{grid-column:1;grid-row:3}
+.bpanel>.bend{grid-column:1;grid-row:4}
+.bpanel>.bback{grid-column:1;grid-row:5}
+.bpanel>.bgrid{grid-column:2;grid-row:1 / 6;margin:0;width:min(600px,calc(100vh - 200px));width:min(600px,calc(100dvh - 200px))}
+}
+/* the character long ago */
+.charrow{display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap}
+.old{display:flex;flex-direction:column;align-items:center;max-width:200px}
+.old img{width:86px;height:86px;background:#fff;border:3px solid #e9c46a;border-radius:14px;padding:4px}
+.old .cap{font-size:13px;color:var(--mute);line-height:1.35;text-align:center;margin-top:4px}
+.big .old img{width:100px;height:100px}
+.big .old .cap{font-size:15px}
+.big .charrow .card-big{line-height:1}.big .old{flex-direction:row;gap:12px;max-width:none}.big .old .cap{text-align:left;max-width:230px;margin-top:0}   /* upright: the caption beside the drawing, so the card stays short */
+.credit{font-size:13px;color:var(--mute);text-align:center;margin-top:14px}
+/* round 6 */
+button{-webkit-appearance:none;appearance:none}
+.opt{padding:0;display:inline-flex;align-items:center;justify-content:center}   /* iPad gives buttons ~1em padding: keep the character in the middle */
+.opt.wide{justify-content:flex-start}
+.speak{padding:0}
+.big .charrow{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:18px}   /* the big character exactly in the middle, its old form to the right */
+.big .charrow>.card-big{grid-column:2}
+.big .charrow>.old{grid-column:3;justify-self:start}
+.barrow{display:flex;align-items:center;gap:12px;margin:4px 0 10px}
+.barrow .bar{flex:1;margin:0}
+.stepn{font:800 18px/1 var(--display);color:var(--mute);white-space:nowrap}
+.lvbtn{min-height:44px;border:2px solid var(--blue);background:#fff;color:var(--blue);border-radius:999px;padding:0 16px;font:800 17px var(--display);white-space:nowrap}
+.btn.waiting,.lvbtn.waiting{opacity:.55}
+</style>
+<style>
+/* Chinese game 11. One idea: the 14 new characters of the lesson.
+   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   All sentences and the story here are our own; only the characters and common words come from the lesson. */
+:root{ --page:#fbf3ea; --blue:#9a4a12; --blue-s:#f3dcc7; --blue-d:#6b330c; }   /* this lesson's colours */
+.opt::before{content:"";position:absolute;right:8px;top:8px;width:16px;height:16px;background:#e0892b;border-radius:0 70% 0 70%}
+</style>
+</head>
+<body>
+<header class="top"><h1>🔍 Nature Detective <span class="han">自然小侦探</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
+<div class="wrap" id="app"></div>
+<script>
+/* ---------- content (characters and words from the lesson; all sentences are our own) ---------- */
+var CHARS = [
+  { c: '言', py: 'yán', en: 'words, speech', e: '💬' }, { c: '丰', py: 'fēng', en: 'plenty', e: '🌾' },
+  { c: '富', py: 'fù', en: 'rich', e: '💰' }, { c: '晴', py: 'qíng', en: 'sunny, clear', e: '☀️' },
+  { c: '搬', py: 'bān', en: 'move, carry', e: '📦' }, { c: '伞', py: 'sǎn', en: 'umbrella', e: '☂️' },
+  { c: '冰', py: 'bīng', en: 'ice', e: '🧊' }, { c: '化', py: 'huà', en: 'melt; change', e: '💧' },
+  { c: '叶', py: 'yè', en: 'leaf', e: '🍃' }, { c: '妙', py: 'miào', en: 'wonderful, clever', e: '✨' },
+  { c: '细', py: 'xì', en: 'thin; careful', e: '🧵' }, { c: '观', py: 'guān', en: 'look at, watch', e: '👀' },
+  { c: '察', py: 'chá', en: 'look closely', e: '🔎' }, { c: '懂', py: 'dǒng', en: 'understand', e: '💡' }
+];
+/* level 1: how each character is built. parts = the pieces (r = which piece is the radical; rest = a piece described in words),
+   rad = the radical (部首) with its name, what it usually means, and other characters where you can see it; how = the meaning */
+var PARTS = [
+  { c: '言', parts: ['言'], r: 0, rad: '言', name: '言字旁', npy: 'yán zì páng', means: 'words, speaking. On the left side it is written 讠.', see: '说 话 语 读 请', how: '言 is one whole shape. Long ago it was a mouth (口) with something coming out of it: words. 语言 = language; 发言 = speak up.' },
+  { c: '丰', parts: ['丰'], r: 0, rad: '丨', name: '竖', npy: 'shù', means: 'one stroke going down. As a radical it does not add a meaning.', see: '中 串 临', how: '丰 is one whole shape. Long ago it showed a plant growing thick and full. 丰收 = a big harvest; 丰富 = rich, plenty of.' },
+  { c: '富', parts: ['宀', '畐'], r: 0, rad: '宀', name: '宝盖头', npy: 'bǎo gài tóu', means: 'a roof, a house. It is in characters about homes and rooms.', see: '家 字 室 安 完', how: 'A roof (宀) and 畐 (fú), which gives the sound; 畐 looked like a full jar. A house with full jars is rich. 富 = rich; 丰富 = plenty of.' },
+  { c: '晴', parts: ['日', '青'], r: 0, rad: '日', name: '日字旁', npy: 'rì zì páng', means: 'the sun. It is in characters about light, days and time.', see: '明 时 晚 昨 映', how: 'The sun (日) and 青 (qīng), which gives the sound: a clear, sunny day. 晴天 = a sunny day.' },
+  { c: '搬', parts: ['扌', '般'], r: 0, rad: '扌', name: '提手旁', npy: 'tí shǒu páng', means: 'a hand. It is in characters about doing things with your hands.', see: '打 拉 把 找 拍', how: 'A hand (扌) and 般 (bān), which gives the sound: to move things with your hands. 搬家 = move house.' },
+  { c: '伞', parts: ['伞'], r: 0, rad: '人', name: '人字头', npy: 'rén zì tóu', means: 'a person. On top it looks like a roof.', see: '今 个 会 全 合', how: '伞 is one whole shape, and it looks like an open umbrella on its handle. 雨伞 = an umbrella; 打伞 = hold up an umbrella.' },
+  { c: '冰', parts: ['冫', '水'], r: 0, rad: '冫', name: '两点水', npy: 'liǎng diǎn shuǐ', means: 'ice and cold. It is in characters about cold things.', see: '冷 冻 凉 准 净', how: 'Ice (冫) and water (水): water that has frozen. 冰 = ice; 冰块 = an ice cube.' },
+  { c: '化', parts: ['亻', '匕'], r: 0, rad: '亻', name: '单人旁', npy: 'dān rén páng', means: 'a person. It is in characters about people.', see: '你 他 们 住 休', how: 'Long ago 化 showed one person standing (亻) and one upside down (匕): something has changed. 变化 = a change; 冰化了 = the ice melted.' },
+  { c: '叶', parts: ['口', '十'], r: 0, rad: '口', name: '口字旁', npy: 'kǒu zì páng', means: 'a mouth. It is in characters about eating, drinking and speaking.', see: '吃 叫 唱 吗 听', how: 'The old form 葉 had a tree with leaves on top. 叶 is a short way to write it, so 口 here does not mean a mouth. 树叶 = tree leaves.' },
+  { c: '妙', parts: ['女', '少'], r: 0, rad: '女', name: '女字旁', npy: 'nǚ zì páng', means: 'a woman or a girl. It is in characters about women and family.', see: '妈 姐 妹 好 奶', how: 'A girl (女) and 少 (shǎo, little). Memory trick: a little girl with a wonderful idea! 奇妙 = amazing; 太妙了 = how clever!' },
+  { c: '细', parts: ['纟', '田'], r: 0, rad: '纟', name: '绞丝旁', npy: 'jiǎo sī páng', means: 'silk thread. It is in characters about threads and cloth.', see: '红 线 纸 给 绿', how: 'Silk thread (纟) is very thin, so 细 means thin. (田 here was once a different shape that helped with the sound.) 细心 = careful.' },
+  { c: '观', parts: ['又', '见'], r: 0, rad: '又', name: '又字旁', npy: 'yòu zì páng', means: 'a hand. 又 was once a picture of a right hand.', see: '友 双 对 欢', how: 'Here 又 is just a short way to write an old sound part, not a hand; 见 means to see. 观看 = watch; 观察 = look closely.' },
+  { c: '察', parts: ['宀', '祭'], r: 0, rad: '宀', name: '宝盖头', npy: 'bǎo gài tóu', means: 'a roof, a house. It is in characters about homes and rooms.', see: '家 字 室 安 完', how: 'A roof (宀) and 祭 (jì), which helps with the sound: looking carefully at everything. 观察 = observe; 警察 = police officer.' },
+  { c: '懂', parts: ['忄', '董'], r: 0, rad: '忄', name: '竖心旁', npy: 'shù xīn páng', means: 'the heart and feelings. It is in characters about how you feel.', see: '快 怕 情 忙 慢', how: 'The heart (忄) and 董 (dǒng), which gives the sound: understanding in your heart. 懂 = understand; 看懂 = understand by looking.' }
+];
+/* level 1: each character long ago (public-domain drawings from Wikimedia Commons, Ancient Chinese characters project, in ancient/).
+   kind = which old script; rad = when the character itself has no old form, its radical is shown instead (form = the old character drawn);
+   pic = what the old drawing shows, only where that is well known */
+var ANCIENT = {
+  '言': { f: 'ancient/8a00-oracle.svg', kind: 'oracle', rad: "", form: '言', pic: "" },
+  '丰': { f: 'ancient/4e30-oracle.svg', kind: 'oracle', rad: "", form: '丰', pic: "" },
+  '富': { f: 'ancient/5bcc-bronze.svg', kind: 'bronze', rad: "", form: '富', pic: "" },
+  '晴': { f: 'ancient/65e5-oracle.svg', kind: 'oracle', rad: "日", form: '日', pic: "the sun" },
+  '搬': { f: 'ancient/624b-bronze.svg', kind: 'bronze', rad: "扌", form: '手', pic: "a hand with its fingers" },
+  '伞': { f: 'ancient/4eba-oracle.svg', kind: 'oracle', rad: "人", form: '人', pic: "a person standing, seen from the side" },
+  '冰': { f: 'ancient/51b0-seal.svg', kind: 'seal', rad: "", form: '冰', pic: "" },
+  '化': { f: 'ancient/5316-oracle.svg', kind: 'oracle', rad: "", form: '化', pic: "one person standing and one upside down" },
+  '叶': { f: 'ancient/53e3-oracle.svg', kind: 'oracle', rad: "口", form: '口', pic: "a mouth" },
+  '妙': { f: 'ancient/5973-oracle.svg', kind: 'oracle', rad: "女", form: '女', pic: "a woman kneeling with her hands crossed" },
+  '细': { f: 'ancient/7d30-seal.svg', kind: 'seal', rad: "", form: '細', pic: "" },
+  '观': { f: 'ancient/53c8-oracle.svg', kind: 'oracle', rad: "又", form: '又', pic: "a right hand" },
+  '察': { f: 'ancient/5bdf-bronze.svg', kind: 'bronze', rad: "", form: '察', pic: "" },
+  '懂': { f: 'ancient/5fc3-oracle.svg', kind: 'oracle', rad: "忄", form: '心', pic: "a heart" }
+};
+var GROUPS = [CHARS.slice(0, 5), CHARS.slice(5, 10), CHARS.slice(10)];
+/* level 2: build a word. w = the word, k = which character is missing, no = characters that would also make a real word, so they are never offered */
+var WORDS = [
+  { w: '语言', k: 1, py: 'yǔyán', en: 'language', e: '🗣️' }, { w: '丰收', k: 0, py: 'fēngshōu', en: 'a big harvest', e: '🌾' },
+  { w: '丰富', k: 1, py: 'fēngfù', en: 'rich, plenty of', e: '🎁' }, { w: '晴天', k: 0, py: 'qíngtiān', en: 'a sunny day', e: '☀️', no: ['冰', '观'] },
+  { w: '搬家', k: 0, py: 'bānjiā', en: 'move house', e: '📦', no: ['富'] }, { w: '雨伞', k: 1, py: 'yǔsǎn', en: 'umbrella', e: '☂️' },
+  { w: '冰块', k: 0, py: 'bīngkuài', en: 'ice cube', e: '🧊' }, { w: '变化', k: 1, py: 'biànhuà', en: 'a change', e: '🔄', no: ['富', '细', '晴', '冰'] },
+  { w: '树叶', k: 1, py: 'shùyè', en: 'tree leaves', e: '🍂', no: ['冰'] }, { w: '奇妙', k: 1, py: 'qímiào', en: 'amazing', e: '✨', no: ['观'] },
+  { w: '细心', k: 0, py: 'xìxīn', en: 'careful', e: '🔍', no: ['冰'] }, { w: '观看', k: 0, py: 'guānkàn', en: 'watch', e: '👀', no: ['细', '察'] },
+  { w: '观察', k: 1, py: 'guānchá', en: 'look closely, observe', e: '🔎', no: ['叶'] }, { w: '看懂', k: 1, py: 'kàndǒng', en: 'understand (by looking)', e: '💡' }
+];
+/* level 3: the lesson's sentence pattern 正在……呢 (happening right now). All sentences are our own. show = the explanation card,
+   pick = put 正在 and 呢 in the right places (a = right, no = wrong ones), build = tap the words in order (ok = every right order) */
+var PATTERN = [
+  { t: 'show', shape: '……正在 ＋ 做什么 ＋ 呢。', keys: ['正在', '呢'], end: '。', ask: 'Where do 正在 and 呢 go? Pick the right sentence.',
+    what: 'Use 正在…呢 to say something is happening right now. Put 正在 right after who is doing it, and 呢 at the very end. 小猫正在晒太阳呢 = the kitten is sunbathing right now.',
+    ex: [{ s: '小猫正在晒太阳呢。', en: 'The kitten is sunbathing right now.' }, { s: '外面正在下雪呢。', en: 'It is snowing outside right now.' }, { s: '爸爸正在做饭呢。', en: 'Dad is cooking right now.' }] },
+  { t: 'pick', from: '弟弟在画画。', a: '弟弟正在画画呢。', no: ['弟弟画画正在呢。', '正在弟弟画画呢。'], en: 'My little brother is drawing right now.' },
+  { t: 'build', tiles: ['小鸟', '正在', '树上', '唱歌', '呢'], ok: ['小鸟正在树上唱歌呢。', '树上小鸟正在唱歌呢。'], en: 'A little bird is singing in the tree right now.' },
+  { t: 'pick', from: '青蛙在河边叫。', a: '青蛙正在河边叫呢。', no: ['青蛙河边叫正在呢。', '青蛙正在河边呢叫。'], en: 'A frog is croaking by the river right now.' },
+  { t: 'build', tiles: ['我们', '正在', '观察', '小蜗牛', '呢'], ok: ['我们正在观察小蜗牛呢。'], en: 'We are watching a little snail closely right now.' },
+  { t: 'build', tiles: ['外面', '正在', '刮', '大风', '呢'], ok: ['外面正在刮大风呢。'], en: 'A strong wind is blowing outside right now.' }
+];
+/* level 4: our own nature journal from a walk in the park, one missing word per sentence (a = the word, no = two words that do not fit). It starts after the title "我的观察日记" */
+var SENTENCES = [
+  { s: '今天是＿，老师带我们去公园观察大自然。', a: '晴天', no: ['冰块', '雨伞'], en: 'Today was a sunny day, and our teacher took us to the park to look at nature.' },
+  { s: '妈妈说下午可能会下雨，让我把＿放进书包。', a: '雨伞', no: ['冰块', '变化'], en: 'Mom said it might rain in the afternoon, so she told me to put an umbrella in my backpack.' },
+  { s: '老师说，小动物不会说话，可是它们也有自己的＿。', a: '语言', no: ['树叶', '冰块'], en: 'Our teacher said little animals can\'t talk, but they have their own kind of language too.' },
+  { s: '我捡起一片红红的＿，上面有很多细细的线。', a: '树叶', no: ['语言', '晴天'], en: 'I picked up a red leaf with lots of thin lines on it.' },
+  { s: '老师说，秋天到了，树叶的颜色有了＿。', a: '变化', no: ['雨伞', '冰块'], en: 'Our teacher said autumn is here, so the colour of the leaves has changed.' },
+  { s: '我拿着放大镜，＿地看一只小蜗牛。', a: '细心', no: ['冰块', '晴天'], en: 'I held a magnifying glass and carefully looked at a little snail.' },
+  { s: '小蜗牛背着它的家，好像在＿一样。', a: '搬家', no: ['树叶', '雨伞'], en: 'The little snail carries its home on its back, as if it were moving house.' },
+  { s: '我们又＿了一会儿池塘里的小鱼。', a: '观察', no: ['丰收', '奇妙'], en: 'Then we watched the little fish in the pond for a while.' },
+  { s: '中午很热，老师给我们每人一杯放了＿的果汁。', a: '冰块', no: ['树叶', '语言'], en: 'At noon it was hot, and our teacher gave each of us a juice with ice in it.' },
+  { s: '公园旁边的苹果树结满了果子，今年真是个＿年！', a: '丰收', no: ['晴天', '搬家'], en: 'The apple trees next to the park were full of fruit. This must be a year with a big harvest.' },
+  { s: '池塘边的小花有红的、黄的、白的，颜色真＿。', a: '丰富', no: ['冰块', '雨伞'], en: 'The little flowers by the pond were red, yellow and white. So many colours!' },
+  { s: '大自然真＿，有那么多有意思的东西。', a: '奇妙', no: ['雨伞', '树叶'], en: 'Nature is amazing. There are so many interesting things.' },
+  { s: '晚上，我们一家人一起＿了一个讲小动物的节目。', a: '观看', no: ['树叶', '冰块'], en: 'In the evening, our family watched a programme about little animals together.' },
+  { s: '我把今天看到的都画了下来，连妹妹都＿了。', a: '看懂', no: ['丰收', '冰块'], en: 'I drew everything I saw today, and even my little sister understood it.' }
+];
+
+/* ---------- this lesson's settings: the shared engine (../_engine/chinese-engine.js) reads them ---------- */
+var LESSON = {
+  id: 'nature-detective',              // the save name is chinese.<id>.v1; the page is games/chinese/<id>.html
+  voice: 'nature-detective-voice',              // folder of this lesson's recordings (made by 网站\make-voices.py)
+  intro: { emoji: '🔍🍂', title: 'A nature walk in the park, looking for clues' },
+  levels: [
+    { title: 'Meet the characters', zh: '认生字', text: 'Meet 14 new characters, then find each one among the leaves.' },
+    { title: 'Build the words', zh: '组词', text: 'Each word is missing one character. Pick the right leaf.' },
+    { title: 'Sentence pattern', zh: '句型 正在……呢', text: 'Learn to say what is happening right now with 正在…呢, as in 小猫正在晒太阳呢. Pick the right sentence, then build your own from word tiles.' },
+    { title: 'Write the nature journal', zh: '写观察日记', text: 'Finish our nature journal from a walk in the park: pick the missing word in each sentence, then send it to your teacher.' },
+    { title: 'Nature Bingo', zh: '自然 Bingo', text: 'Listen, then mark what you hear on your card. Make a line, then two lines, then fill the card.' }
+  ],
+  pick: 'Which leaf says…',              // level 1: find the character
+  wrong: { pick: 'Not this one. Try another leaf.', pattern: 'Not this one. Look at where 正在 and 呢 go, and try another.' },
+  letter: { ready: 'Your nature journal is ready. Tap Send to share it with your teacher!', stamp: '🍂', greeting: '我的观察日记', signRight: false },   // level 4: the finished journal
+  bingoFree: '🔍'              // the free middle square
+};
+</script>
+<script>
+/* The shared engine of every Chinese lesson game (five levels: meet the characters, build words, sentence pattern,
+   the letter, bingo). A lesson page defines, before loading this file: CHARS, PARTS, ANCIENT, GROUPS, WORDS, PATTERN,
+   SENTENCES and LESSON (its id, voice folder and own wording). The site build puts this file inside each lesson page.
+   A change here changes every lesson: test them all. */
+/* ---------- small helpers ---------- */
+var app = document.getElementById('app');
+function E(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+function pick3(answer, no) { return shuffle([answer].concat(shuffle(CHARS.map(function (x) { return x.c; }).filter(function (c) { return c !== answer && (no || []).indexOf(c) < 0; })).slice(0, 2))); }
+var KEY = 'chinese.' + LESSON.id + '.v1';   // not "tmg.": the site's account script keeps tmg. names to itself, so a tmg. save never reached a child's profile
+try {   // a save made under the old name moves over once (then the old name is gone, so it cannot be copied to another child later)
+  var OLD_KEY = 'tmg.' + LESSON.id + '.v1', oldSave = localStorage.getItem(OLD_KEY);
+  if (oldSave !== null) {
+    if (localStorage.getItem(KEY) === null) localStorage.setItem(KEY, oldSave);
+    // the old name goes only once the account sync is over and the copy is still here: a sync from the cloud may wipe the copy, and then this runs again next time
+    ((window.TMG && TMG.ready) || Promise.resolve()).then(function () { try { if (localStorage.getItem(KEY) !== null) localStorage.removeItem(OLD_KEY); } catch (e) {} }, function () {});
+  }
+} catch (e) {}
+var save = (function () { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } })();
+function store() { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) { /* private mode: progress just is not kept */ } }
+save.done = save.done || {}; save.score = save.score || {};
+if (!save.re || typeof save.re !== 'object' || Array.isArray(save.re)) delete save.re;   // a damaged second-try record is dropped
+Object.keys(save.score).forEach(function (k) { var s = save.score[k] || {}; save.score[k] = { got: +s.got || 0, of: +s.of || 0, half: +s.half || 0 }; });   // numbers only: they are shown on the page
+if ('stamps' in save) { delete save.stamps; store(); }   // the old pile of stamps grew with every replay; scores per level replace it
+if (!save.v) {   // a sentence-pattern level was added as level 3, so levels 3 and 4 moved up one
+  var moved = {}; Object.keys(save.done).forEach(function (k) { moved[+k >= 3 ? +k + 1 : k] = save.done[k]; }); save.done = moved; save.v = 2; store();
+}
+/* score: each level keeps the result of its latest finished play (1 cent per question right the first time, 0.5 cent on a second try); the lesson total adds them up */
+var UNIT = '¢';   // the score is money: 1¢ for each answer right the first time, 0.5¢ for one right on a second try
+function lessonTotal() { var t = 0; Object.keys(save.score).forEach(function (k) { t += (save.score[k].got || 0) + (save.score[k].half || 0) / 2; }); return t; }
+function fmt(x) { return String(Math.round(x * 10) / 10); }   // cents: 3.5 -> "3.5"
+function levelScore(sc) { return fmt(sc.got + (sc.half || 0) / 2); }
+function showTotal() { document.getElementById('stamps').textContent = '💰 ' + fmt(lessonTotal()) + UNIT; }
+showTotal();
+
+/* voice: every character, word and sentence is recorded in advance with a warm voice (<lesson folder>/<LESSON.voice>/<key>.mp3, made by
+   网站\make-voices.py; key = the same hash as voice-lines.cjs). Text with no recording stays silent: the device's own voice is never used. */
+var VKEYS = null, player = null;
+try { fetch(LESSON.voice + '/keys.json').then(function (r) { return r.json(); }).then(function (k) { VKEYS = {}; k.forEach(function (x) { VKEYS[x] = 1; }); }, function () {}); } catch (e) {}
+function vkey(t) { t = String(t).replace(/＿/g, '').trim(); var h = 0x811c9dc5; for (var i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
+var voiceWait = null, voiceDone = null;   // the recording now playing, and how to mark it finished
+var pending = null, pendBtn = null, navAt = 0;   // the one move waiting for the voice to end, and when the child last moved on
+/* Fast sound: a recording that is downloaded and decoded (BUF) plays through Web Audio, which starts at once, also on iPad, where
+   switching the <audio> player to another recording takes a noticeable moment. Web Audio may only start after the first tap on the
+   page (iPad), so until then, and for anything not decoded yet, the <audio> player is used as before. */
+var AC = null, BUF = {}, srcNode = null;
+try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}   // iPad (iOS 17+): play even in silent mode, like the <audio> player
+try { var ACx = window.AudioContext || window.webkitAudioContext; if (ACx) AC = new ACx(); } catch (e) { AC = null; }
+// iPad before iPadOS 17 has no audioSession: there Web Audio obeys silent mode while <audio> does not, so keep <audio> for the voice
+var IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && 'ontouchend' in document);
+var FAST = !!AC && (!IOS || !!navigator.audioSession);
+if (AC) AC.onstatechange = function () {   // iPad paused the sound (a call, another app): a move waiting for this recording may go now
+  if (AC.state !== 'running' && srcNode && voiceDone) { var n = srcNode; srcNode = null; try { n.onended = null; n.stop(0); } catch (e) {} voiceDone(); }
+};
+var SILENT = null, primed = false;   // a tiny silent sound, played once inside the first tap so iPad also allows the <audio> player later
+function silentUrl() {
+  if (SILENT) return SILENT;
+  var b = new ArrayBuffer(46), v = new DataView(b), w = function (o, s) { for (var i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, 'RIFF'); v.setUint32(4, 38, true); w(8, 'WAVE'); w(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, 8000, true); v.setUint32(28, 16000, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, 2, true); v.setInt16(44, 0, true);
+  return (SILENT = URL.createObjectURL(new Blob([b], { type: 'audio/wav' })));
+}
+function unlockSound() {   // every tap: make sure Web Audio may play (iPad also pauses it after a call or another app)
+  if (!primed && (!player || player.paused)) {
+    primed = true;
+    try { if (!player) player = new Audio(); var u = silentUrl(); player.src = u; var q = player.play();
+      if (q && q.then) q.then(function () { if (player.src === u) player.pause(); }, function () {}); } catch (e) {}
+  }
+  if (!AC || AC.state === 'running') return;
+  try { var r = AC.resume(); if (r && r.catch) r.catch(function () {}); } catch (e) {}
+  try { var s = AC.createBufferSource(); s.buffer = AC.createBuffer(1, 1, 22050); s.connect(AC.destination); s.start(0); } catch (e) {}
+}
+['touchend', 'pointerdown', 'mousedown', 'keydown'].forEach(function (ev) { document.addEventListener(ev, unlockSound, true); });
+function stopSound() {
+  if (player) try { player.pause(); } catch (e) {}
+  if (srcNode) { var n = srcNode; srcNode = null; try { n.onended = null; n.stop(0); } catch (e) {} }
+}
+function speaking() {   // is a recording still being said? (an interrupted or paused one does not hold anything up)
+  if (!voiceDone) return false;
+  if (srcNode) return !!AC && AC.state === 'running';
+  return !!player && !player.paused && !player.ended;
+}
+function say(t) {
+  if (voiceDone) voiceDone();                   // the one before is over (cut off by this one)
+  stopSound();
+  var k = vkey(t);
+  if (VKEYS && !VKEYS[k]) return;               // no recording for this text: stay quiet, never the device's robot voice
+  var over = false, done;                       // each recording has its own "done", so a late signal from an old one cannot end this one
+  voiceWait = new Promise(function (r) { done = function () { if (over) return; over = true; if (voiceDone === done) voiceDone = null; r(); }; });
+  voiceDone = done;
+  setTimeout(done, 15000);                      // never wait for ever
+  if (FAST && BUF[k] && AC.state === 'running') {   // decoded, trimmed to the words: starts at once and ends when the words end
+    try {
+      var node = AC.createBufferSource(); node.buffer = BUF[k]; node.connect(AC.destination);
+      node.onended = function () { if (srcNode === node) srcNode = null; done(); };
+      srcNode = node; node.start(0); return;
+    } catch (e) { srcNode = null; }
+  }
+  if (!player) player = new Audio();            // one player, reused, so iPad keeps allowing it after the first tap
+  player.onended = player.onerror = done;
+  var tr = READY[k] && TRIM[k];               // where the words start and end in this recording, when known
+  player.onloadedmetadata = player.onplaying = null;
+  if (tr) {
+    player.onloadedmetadata = function () { try { if (tr.s > 0.12 && player.currentTime < tr.s - 0.10) player.currentTime = tr.s - 0.10; } catch (e) {} };   // skip the silence before the words
+    player.onplaying = function () { (function check() {   // the words are over: moving on may go ahead (the silent tail is not waited for)
+      if (over) return; var left = tr.e + 0.12 - player.currentTime; if (left <= 0.02) return done(); setTimeout(check, Math.min(left, 0.5) * 1000);
+    })(); };
+  }
+  player.src = READY[k] || LESSON.voice + '/' + k + '.mp3';   // downloaded already: plays at once; else fetched now (also before the list has arrived)
+  var p = player.play(); if (p && p.catch) p.catch(done);   // interrupted, blocked or missing: stay quiet (🔊 replays it)
+}
+/* never cut a recording short. A tap on Next, Back, Quit, Levels or a level waits until the voice has finished; only the latest tap
+   is kept (Quit then Next = Next, Next then Quit = Quit); a second tap within a third of a second of moving on is ignored (the next card's
+   button sits in the same spot); a move made by the game itself (btn left out) never overrides one the child asked for. */
+function afterVoice(fn, btn, again) {
+  if (btn && !again && Date.now() - navAt < 350) return;
+  if (!speaking()) {
+    if (btn) { navAt = Date.now(); if (pendBtn) pendBtn.classList.remove('waiting'); pending = pendBtn = null; }
+    return fn();
+  }
+  if (!btn && pending) return;
+  if (btn) { if (pendBtn) pendBtn.classList.remove('waiting'); pendBtn = btn; btn.classList.add('waiting'); }
+  pending = fn;
+  voiceWait.then(function () {
+    if (pending !== fn) return;                 // a later tap took its place
+    var b = pendBtn; pending = pendBtn = null; if (b) b.classList.remove('waiting');
+    afterVoice(fn, b, true);                    // check again: a 🔊 tapped meanwhile is waited for too
+  });
+}
+/* download the recordings a level will need as soon as it starts, so a tap plays them from memory with no wait */
+var READY = {}, ASKED = {};
+var TRIM = {}, DEC = null;   // per recording: where the speaking starts and ends (seconds), found once it is downloaded
+function trimOf(k, b) {
+  try {
+    if (!DEC) { var OC = window.OfflineAudioContext || window.webkitOfflineAudioContext; DEC = (FAST && AC) || (OC ? new OC(1, 1, 44100) : null); if (!DEC) return; }
+    var fr = new FileReader();
+    fr.onload = function () {
+      var ok = function (a) { var d = a.getChannelData(0), n = d.length, i = 0, j = n - 1; while (i < n && Math.abs(d[i]) < 0.01) i++; while (j > i && Math.abs(d[j]) < 0.01) j--;
+        if (j <= i) return;
+        TRIM[k] = { s: i / a.sampleRate, e: j / a.sampleRate };
+        if (DEC === AC) try {   // keep just the words (from 0.10 s before to 0.12 s after): less memory, and it ends when the words end
+          var rate = a.sampleRate, from = Math.max(0, i - Math.round(0.10 * rate)), to = Math.min(n, j + Math.round(0.12 * rate));
+          var b2 = AC.createBuffer(1, to - from, rate); b2.getChannelData(0).set(d.subarray(from, to)); BUF[k] = b2;
+        } catch (e) {} };
+      try { var p = DEC.decodeAudioData(fr.result, ok, function () {}); if (p && p.catch) p.catch(function () {}); } catch (e) {}
+    };
+    fr.readAsArrayBuffer(b);
+  } catch (e) {}
+}
+function warm(texts) {
+  texts.forEach(function (t) {
+    if (!t) return; var k = vkey(t); if (ASKED[k] || (VKEYS && !VKEYS[k])) return; ASKED[k] = 1;
+    try { fetch(LESSON.voice + '/' + k + '.mp3').then(function (r) { if (!r.ok) throw 0; return r.blob(); }).then(function (b) { READY[k] = URL.createObjectURL(b); trimOf(k, b); }, function () { delete ASKED[k]; }); } catch (e) { delete ASKED[k]; }
+  });
+}
+function levelTexts(steps) {   // every line a level can say: characters, radical names, examples, answers, options
+  var out = [];
+  steps.forEach(function (s) {
+    if (s.c) { out.push(s.c.c); PARTS.forEach(function (x) { if (x.c === s.c.c) out.push(x.name); }); }
+    if (s.type === 'show') PATTERN[0].ex.forEach(function (e) { out.push(e.s); });
+    if (s.x) out = out.concat(s.x.ok);
+    out = out.concat([s.answer, s.sayAfter, s.sayFirst], s.opts || []);
+  });
+  return out;
+}
+/* the character long ago, shown next to the big character on a new-character card */
+var SCRIPT = { oracle: ['甲骨文', 'oracle bone script', 'about 3,000 years ago'], bronze: ['金文', 'bronze script', 'about 2,800 years ago'], seal: ['篆书', 'seal script', 'about 2,200 years ago'] };
+function oldForm(ch, a) {
+  var k = SCRIPT[a.kind], box = E('div', 'old'), img = E('img');
+  img.src = a.f; img.alt = (a.rad ? a.form : ch) + ', ' + k[1]; box.appendChild(img);
+  var what = a.rad ? 'its radical <span class="han">' + a.rad + '</span> (<span class="han">' + a.form + '</span>), ' : (a.form !== ch ? 'old form <span class="han">' + a.form + '</span>, ' : '');
+  box.appendChild(E('div', 'cap', '<b>Long ago <span class="han">古时候</span></b><br>' + what + '<span class="han">' + k[0] + '</span> · ' + k[2] + (a.pic ? '<br><i>' + a.pic + '</i>' : '')));
+  return box;
+}
+function speakBtn(t) { var b = E('button', 'speak', '🔊'); b.type = 'button'; b.setAttribute('aria-label', 'Listen'); b.onclick = function () { say(t); }; return b; }
+/* the "how it is built" box on a new-character card: its pieces, its radical and what that radical usually means */
+function built(x) {
+  var box = E('div', 'built');
+  box.appendChild(E('div', 'bt', 'How it is built <span class="han">字的结构</span>'));
+  var pr = E('div', 'pieces');
+  if (x.parts.length === 1) { pr.appendChild(E('span', 'piece han' + (x.parts[0] === x.rad ? ' rad' : ''), x.parts[0])); pr.appendChild(E('span', 'plus', 'one whole shape <span class="han">独体字</span>')); }
+  else x.parts.forEach(function (q, n) {
+    if (n) pr.appendChild(E('span', 'plus', '+'));
+    pr.appendChild(q ? E('span', 'piece han' + (n === x.r ? ' rad' : ''), q) : E('span', 'piece rest', x.rest));
+  });
+  box.appendChild(pr);
+  var rl = E('div', 'rline');
+  rl.appendChild(E('span', null, 'Radical <span class="han">部首</span>: <b class="han rg">' + x.rad + '</b> <span class="han">' + x.name + '</span> <i>' + x.npy + '</i>'));
+  var sb = speakBtn(x.name); sb.classList.add('small'); sb.setAttribute('aria-label', 'Listen to the radical name'); rl.appendChild(sb);
+  box.appendChild(rl);
+  box.appendChild(E('p', null, '<b class="han rg">' + x.rad + '</b> usually means ' + x.means + ' You can see it in <span class="han see">' + x.see + '</span>'));
+  box.appendChild(E('p', 'how', '<b class="han">' + x.c + '</b>: ' + x.how));
+  return box;
+}
+/* tiny sounds for right and wrong, no files needed */
+var ac = null;
+function beep(ok) {
+  try { ac = ac || AC || new (window.AudioContext || window.webkitAudioContext)(); var o = ac.createOscillator(), g = ac.createGain(); o.connect(g); g.connect(ac.destination);
+    o.frequency.value = ok ? 880 : 220; g.gain.setValueAtTime(0.12, ac.currentTime); g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + (ok ? 0.25 : 0.35)); o.start(); o.stop(ac.currentTime + 0.4); } catch (e) { /* no sound */ }
+}
+
+/* ---------- the level menu ---------- */
+var LV = LESSON.levels;   // each lesson's own names and descriptions for the five levels
+var LEVELS = [
+  { n: 1, title: LV[0].title, zh: LV[0].zh, text: LV[0].text, build: level1 },
+  { n: 2, title: LV[1].title, zh: LV[1].zh, text: LV[1].text, build: level2 },
+  { n: 3, title: LV[2].title, zh: LV[2].zh, text: LV[2].text, build: levelPattern },
+  { n: 4, letter: true, title: LV[3].title, zh: LV[3].zh, text: LV[3].text, build: level3 },
+  { n: 5, title: LV[4].title, zh: LV[4].zh, text: LV[4].text, run: bingo }
+];
+document.getElementById('lvbtn').onclick = function () { afterVoice(menu, this); };   // back to this game's level list, from anywhere
+function menu() {
+  app.classList.remove('big', 'bwide');
+  app.innerHTML = '';
+  var h = E('div', 'hero');
+  h.appendChild(E('div', 'big', LESSON.intro.emoji));
+  h.appendChild(E('h2', null, LESSON.intro.title));
+  h.appendChild(E('p', null, 'Five levels, about ten minutes each. Each answer right the first time earns 1¢, and a second try at a missed one earns 0.5¢. Play a level again to beat your score. Tap 🔊 to hear the Chinese.'));
+  app.appendChild(h);
+  var ls = E('div', 'levels');
+  LEVELS.forEach(function (L) {
+    var b = E('button', 'lv' + (save.done[L.n] ? ' done' : '')); b.type = 'button';
+    b.appendChild(E('span', 'n', save.done[L.n] ? '✓' : String(L.n)));
+    var t = E('div'); t.appendChild(E('h3', null, 'Level ' + L.n + ': ' + L.title + ' <span class="han">' + L.zh + '</span>')); t.appendChild(E('p', null, L.text));
+    var sc = save.score[L.n];
+    if (sc) t.appendChild(E('p', 'sc', '💰 ' + levelScore(sc) + UNIT + ' of ' + sc.of + UNIT));
+    if (L.run ? save.bingo : save.at && save.at[L.n]) t.appendChild(E('p', 'cont', '⏯ Continue where you left off'));
+    else if (save.re && save.re[L.n]) t.appendChild(E('p', 'cont', '⏯ Continue the missed questions'));
+    b.appendChild(t);
+    b.appendChild(E('span', 'go', '▶'));
+    b.onclick = function () { afterVoice(function () { open(L); }, b); };
+    ls.appendChild(b);
+  });
+  app.appendChild(ls);
+  app.appendChild(E('p', 'credit', 'Old character drawings: Wikimedia Commons (Ancient Chinese characters project), public domain; many are redrawn from Richard Sears’s Chinese Etymology (hanziyuan.net).'));
+}
+
+/* a small question box over the page: title, words, and buttons [label, what it does, ghost?] */
+function askBox(title, html, buttons) {
+  var o = E('div', 'ask-over'), box = E('div', 'ask-box'), r = E('div', 'row');
+  box.appendChild(E('h3', null, title)); box.appendChild(E('p', null, html));
+  buttons.forEach(function (b, n) {
+    var el = E('button', 'btn' + (b[2] ? ' ghost' : ''), b[0]); el.type = 'button';
+    el.onclick = function () { o.remove(); if (b[1]) b[1](); };
+    r.appendChild(el); if (n === 0) setTimeout(function () { el.focus(); }, 0);
+  });
+  box.appendChild(r); o.appendChild(box); document.body.appendChild(o);
+}
+/* start a level: one left half way asks "continue or start over?"; one with a score says the new score will take its place */
+function open(L) {
+  var going = L.run ? save.bingo : save.at && save.at[L.n], sc = save.score[L.n];
+  function go() { if (L.run) L.run(L); else play(L); }
+  function fresh() { if (L.run) delete save.bingo; else if (save.at) delete save.at[L.n]; store(); go(); }
+  var re = save.re && save.re[L.n];
+  if (!going && re && Array.isArray(re.ids) && Array.isArray(re.keys) && re.ids.length && re.ids.every(function (x) { return typeof x === 'string'; })) return askBox('Level ' + L.n + ': the missed questions', 'You were trying the missed questions again (0.5' + UNIT + ' each). Carry on with them, or play the whole level again?'
+      + (sc ? ' Your score now: <b>' + levelScore(sc) + UNIT + ' of ' + sc.of + UNIT + '</b>; a new finish of the whole level takes its place.' : ''),
+    [['▶ Continue 继续', function () { play(L, { steps: redoSteps(L, re.ids), ids: re.ids, from: re }); }], ['↺ Play the level again 重新开始', function () { delete save.re[L.n]; store(); go(); }, true]]);
+  if (going) return askBox('Level ' + L.n + ': carry on?', 'You stopped this level half way. Carry on from where you were, or start the level again?'
+      + (sc ? ' Your score now: <b>' + levelScore(sc) + UNIT + ' of ' + sc.of + UNIT + '</b>; a new finish takes its place.' : ''),
+    [['▶ Continue 继续', go], ['↺ Start over 重新开始', fresh, true]]);
+  if (!sc) return go();
+  askBox('Play level ' + L.n + ' again?', 'Your score now: <b>' + levelScore(sc) + UNIT + ' of ' + sc.of + UNIT + '</b>. When you finish, your new score takes its place, higher or lower.',
+    [['Play again', go], ['Not now', null, true]]);
+}
+
+/* ---------- one engine for every level: a queue of steps ---------- */
+function play(L, redo) {   // redo = { steps }: a second try at the questions missed the first time
+  app.classList.add('big'); app.classList.remove('bwide');   // levels 1-4 use the bigger sizes on a tablet
+  var steps = redo ? redo.steps : L.build(), total, i = 0, again = {}, res = {}, counter = null;   // res: question id -> 1 right the first time, 0 not
+  function first(s, ok) { var isFirst = !(s.id in res); if (isFirst) { res[s.id] = ok ? 1 : 0; keep(); tally(); } return isFirst && ok; }   // only the first try counts
+  function tally() { if (!counter) return; var r = 0, w = 0; Object.keys(res).forEach(function (k) { if (res[k]) r++; else w++; }); counter.innerHTML = '<b class="tr">✓ ' + r + '</b><b class="tw">✗ ' + w + '</b>'; }
+  function result() {   // this play: how many questions were right the first time, and which were not
+    var seen = {}, got = 0, miss = [], ids = [];
+    steps.forEach(function (s) { if (!s.id || seen[s.id]) return; seen[s.id] = 1; if (res[s.id] === 1) got++; else { ids.push(s.id); var l = s.label || s.answer || (s.x && s.x.ok[0]) || ''; if (miss.indexOf(l) < 0) miss.push(l); } });
+    return { got: got, of: Object.keys(seen).length, miss: miss, ids: ids };
+  }
+  function rightText(s) { return first(s, true) ? (redo ? 'Right! +0.5' : 'Right! +1') + UNIT : res[s.id] ? 'Right!' : 'Right! No cent this time: the first try was wrong.'; }
+  function key(s) { return s.id || (s.c ? 'm' + s.c.c : s.type); }
+  var was = !redo && save.at && save.at[L.n];
+  if (redo && redo.from) {   // came back to a second try left half way: same questions, same order, same answers so far
+    var byKey2 = {}; steps.forEach(function (s) { byKey2[key(s)] = s; });
+    var back2 = redo.from.keys.map(function (k) { return byKey2[k]; });
+    if (back2.length && back2.every(Boolean)) { steps = back2; i = Math.min(Math.max(0, Math.floor(+redo.from.i) || 0), steps.length - 1); res = redo.from.res && typeof redo.from.res === 'object' && !Array.isArray(redo.from.res) ? redo.from.res : {}; }
+  }
+  if (was) {   // came back to a level left half way: rebuild it in the saved order and go on from the saved step
+    var byKey = {}; steps.forEach(function (s) { byKey[key(s)] = s; });
+    var back = was.keys.map(function (k) { return byKey[k]; });
+    if (back.every(Boolean)) { steps = back; i = was.i; again = was.again || {}; res = was.res || {}; }
+  }
+  total = steps.length;
+  warm(levelTexts(steps));
+  function keep() { if (redo) { save.re = save.re || {}; save.re[L.n] = { ids: redo.ids, keys: steps.map(key), i: i - 1, res: res }; store(); return; } save.at = save.at || {}; save.at[L.n] = { keys: steps.map(key), i: i - 1, again: again, res: res }; store(); }   // saved at every step
+  function next() {
+    if (i >= steps.length) return redo ? redone(L, result()) : finish(L, result());
+    var s = steps[i++];
+    keep();
+    app.innerHTML = '';
+    var nav = E('div', 'nav');   // go back one step, or quit to the level list (the place is saved; coming back asks continue or start over)
+    var bk = E('button', 'btn ghost', '◀ Back'); bk.type = 'button'; bk.disabled = i <= 1; bk.onclick = function () { afterVoice(function () { i = Math.max(0, i - 2); next(); }, bk); };
+    var ls = E('button', 'btn ghost', '✕ Quit 退出'); ls.type = 'button'; ls.onclick = function () { afterVoice(menu, ls); };
+    counter = E('span', 'tally'); tally();
+    nav.appendChild(bk); nav.appendChild(counter); nav.appendChild(ls); app.appendChild(nav);
+    var brow = E('div', 'barrow'), bar = E('div', 'bar'), fill = E('i'); bar.appendChild(fill); brow.appendChild(bar); brow.appendChild(E('span', 'stepn', i + ' / ' + total)); app.appendChild(brow);
+    fill.style.width = Math.min(100, Math.round((i - 1) / total * 100)) + '%';
+    var p = E('div', 'panel'); app.appendChild(p);
+    if (s.type === 'meet') return meet(p, s);
+    if (s.type === 'show') return show(p, s);
+    if (s.type === 'build') return build(p, s);
+    ask(p, s);
+  }
+  function meet(p, s) {
+    p.classList.add('meetp');
+    p.appendChild(E('p', 'say', 'New character'));
+    var cr = E('div', 'charrow'); cr.appendChild(E('div', 'card-big han', s.c.c));
+    if (typeof ANCIENT !== 'undefined' && ANCIENT[s.c.c]) cr.appendChild(oldForm(s.c.c, ANCIENT[s.c.c]));
+    p.appendChild(cr);
+    p.appendChild(E('div', 'py', s.c.py));
+    p.appendChild(E('div', 'mean', s.c.e + ' ' + s.c.en));
+    var part = PARTS.filter(function (x) { return x.c === s.c.c; })[0];
+    if (part) p.appendChild(built(part));
+    var r = E('div', 'row'); r.appendChild(speakBtn(s.c.c));
+    var go = E('button', 'btn', 'Got it ▶'); go.type = 'button'; go.onclick = function () { afterVoice(next, go); }; r.appendChild(go); p.appendChild(r);
+    say(s.c.c);
+  }
+  function mark(t) { var P = PATTERN[0]; P.keys.forEach(function (k) { t = t.split(k).join('<span class="key">' + k + '</span>'); }); return t; }   // every time the key is there (不…不… has it twice)
+  function show(p, s) {   // the pattern, what it is for, and three examples to hear
+    var P = PATTERN[0];
+    p.appendChild(E('p', 'say', 'New sentence pattern <span class="han">句型</span>'));
+    p.appendChild(E('div', 'pat', mark(P.shape)));
+    p.appendChild(E('div', 'mean', P.what));
+    var ex = E('div', 'exs');
+    P.ex.forEach(function (x) { var r = E('div', 'ex'); r.appendChild(speakBtn(x.s)); var t = E('div'); t.appendChild(E('div', 'han', mark(x.s))); t.appendChild(E('div', 'mean', x.en)); r.appendChild(t); ex.appendChild(r); });
+    p.appendChild(ex);
+    var r = E('div', 'row'); var go = E('button', 'btn', 'Got it ▶'); go.type = 'button'; go.onclick = function () { afterVoice(next, go); }; r.appendChild(go); p.appendChild(r);
+    say(P.ex[0].s);
+  }
+  function build(p, s) {   // put the word tiles in order by tapping them
+    var P = PATTERN[0], x = s.x, picked = [], wrong = 0, done = false, order;
+    do { order = shuffle(x.tiles.map(function (t, i) { return i; })); } while (x.ok.indexOf(order.map(function (i) { return x.tiles[i]; }).join('') + P.end) >= 0);
+    p.appendChild(E('p', 'say', 'Tap the words in the right order.'));
+    var top = E('div', 'row'); top.appendChild(speakBtn(x.ok[0])); top.appendChild(E('div', 'mean', x.en)); p.appendChild(top);
+    var line = E('div', 'bline'), pool = E('div', 'tiles'), fb = E('div', 'fb');
+    p.appendChild(line); p.appendChild(pool); p.appendChild(fb);
+    /* a tap moves a tile into the sentence (at the end) or, from the sentence, back down */
+    function tile(i, n) {   // n = its place in the sentence, or -1 while it waits below
+      var b = E('button', 'tile' + (P.keys.indexOf(x.tiles[i]) >= 0 ? ' key' : ''), x.tiles[i]); b.type = 'button';
+      b.onclick = function () { if (!done) place(i, n, n < 0 ? picked.length : -1); };
+      return b;
+    }
+    function place(i, n, at) {   // take tile i out of place n (if it was in the sentence), then put it at place `at` (-1 = back down)
+      if (n >= 0) picked.splice(n, 1);
+      if (at >= 0) picked.splice(Math.min(at, picked.length), 0, i);
+      line.classList.remove('no'); draw(); check();
+    }
+    function draw() {
+      line.innerHTML = ''; pool.innerHTML = '';
+      picked.forEach(function (i, n) { line.appendChild(tile(i, n)); });
+      line.appendChild(E('span', 'endmark', P.end));
+      order.forEach(function (i) { if (picked.indexOf(i) < 0) pool.appendChild(tile(i, -1)); });
+    }
+    function check() {
+      if (picked.length < x.tiles.length) return;
+      var said = picked.map(function (i) { return x.tiles[i]; }).join('') + P.end;
+      if (x.ok.indexOf(said) >= 0) {
+        done = true; line.classList.add('ok'); beep(true); fb.className = 'fb ok'; fb.textContent = rightText(s); say(said);
+        var r = E('div', 'row'); var go = E('button', 'btn', 'Next ▶'); go.type = 'button'; go.onclick = function () { afterVoice(next, go); }; r.appendChild(go); p.appendChild(r); go.focus();
+        return;
+      }
+      wrong++; first(s, false); beep(false); line.classList.add('no'); fb.className = 'fb no';
+      fb.textContent = wrong < 2 ? 'Not quite. Tap a word to take it back.' : 'Try this order: ' + x.ok[0];
+    }
+    draw();
+  }
+  function ask(p, s) {
+    p.appendChild(E('p', 'say', s.prompt));
+    if (s.top) p.appendChild(s.top());
+    var fb = E('div', 'fb'), opts = E('div', 'opts'), answered = false;
+    s.opts.forEach(function (o) {
+      var b = E('button', 'opt' + (s.wide ? ' wide' : '') + (s.word ? ' word' : '')); b.type = 'button'; b.appendChild(E('span', null, o));
+      b.onclick = function () {
+        if (answered) return;
+        if (o === s.answer) {
+          answered = true; say(s.sayAfter || o); b.classList.add('ok'); beep(true);   // the sound first, then the rest
+          fb.className = 'fb ok'; fb.textContent = rightText(s);
+          if (s.after) s.after(p);
+          var r = E('div', 'row'); var go = E('button', 'btn', 'Next ▶'); go.type = 'button'; go.onclick = function () { afterVoice(next, go); }; r.appendChild(go); p.appendChild(r); go.focus();
+        } else {
+          b.classList.add('no'); first(s, false); beep(false); fb.className = 'fb no'; fb.textContent = s.wide ? LESSON.wrong.pattern : LESSON.wrong.pick;
+          if (!again[s.id] && !s.wide && !redo) { again[s.id] = 1; steps.push(s); total++; }   // a missed question comes back once at the end (not in the sentence-pattern level)
+        }
+      };
+      opts.appendChild(b);
+    });
+    p.appendChild(opts); p.appendChild(fb);
+    if (s.sayFirst) say(s.sayFirst);
+  }
+  next();
+}
+function finish(L, r, old) {   // r = this play's result; old = the score it replaces (bingo saves its score itself and passes the old one)
+  if (arguments.length < 3) { old = save.score[L.n]; if (r) save.score[L.n] = { got: r.got, of: r.of }; }
+  if (save.at) delete save.at[L.n];
+  if (L.run) delete save.bingo;
+  if (save.re) delete save.re[L.n];   // a new full play: the old second try no longer counts
+  save.done[L.n] = 1; store(); showTotal();
+  app.innerHTML = '';
+  var p = E('div', 'panel');
+  p.appendChild(E('div', 'card-big', L.letter ? '📬' : '🎉'));
+  p.appendChild(E('h2', null, 'Level ' + L.n + ' done!'));
+  if (r) {
+    var box = E('div', 'result');
+    box.appendChild(E('div', 'big1', r.got + ' of ' + r.of + ' right the first time: ' + r.got + UNIT));
+    if (old) box.appendChild(E('div', null, 'This takes the place of your old score, ' + levelScore(old) + UNIT + '.'));
+    if (r.miss.length) box.appendChild(E('div', 'miss', 'Not right the first time: <span class="han">' + r.miss.join(' · ') + '</span>'));
+    box.appendChild(E('div', null, 'Lesson total: ' + fmt(lessonTotal()) + UNIT));
+    p.appendChild(box);
+    if (r.ids && r.ids.length) p.appendChild(redoRow(L, r.ids));
+  }
+  if (L.letter) {
+    p.appendChild(E('p', 'say', LESSON.letter.ready));
+    var letter = E('div', 'letter'); letter.appendChild(E('span', 'st', LESSON.letter.stamp));
+    letter.appendChild(E('div', null, LESSON.letter.greeting));
+    SENTENCES.forEach(function (s, n) { var d = E('div', null, s.s.replace('＿', s.a)); if (LESSON.letter.signRight && n === SENTENCES.length - 1) d.style.textAlign = 'right'; letter.appendChild(d); });
+    p.appendChild(letter);
+    var r = E('div', 'row'); var send = E('button', 'btn', 'Send ✈️'); send.type = 'button';
+    send.onclick = function () { afterVoice(function () { letter.classList.add('fly'); beep(true); send.disabled = true; setTimeout(function () { if (letter.isConnected) menu(); }, 1700); }, send); };
+    r.appendChild(send); p.appendChild(r);
+  } else {
+    var nextL = LEVELS[L.n];
+    if (nextL) p.appendChild(E('p', 'say', 'Ready for level ' + nextL.n + '?'));
+    var r2 = E('div', 'row');
+    if (nextL) { var nx = E('button', 'btn', 'Level ' + nextL.n + ' ▶'); nx.type = 'button'; nx.onclick = function () { afterVoice(function () { open(nextL); }, nx); }; r2.appendChild(nx); }
+    else { var ag = E('button', 'btn', 'Play bingo again'); ag.type = 'button'; ag.onclick = function () { afterVoice(function () { open(L); }, ag); }; r2.appendChild(ag); }
+    var bk = E('button', 'btn ghost', 'All levels'); bk.type = 'button'; bk.onclick = function () { afterVoice(menu, bk); };
+    r2.appendChild(bk); p.appendChild(r2);
+  }
+  app.appendChild(p);
+}
+
+/* after a level: the questions missed the first time can be tried again, for half a cent each */
+function redoRow(L, ids) {
+  var r = E('div', 'row'), b = E('button', 'btn redo', '🔁 Try the ' + ids.length + ' missed again (0.5' + UNIT + ' each)'); b.type = 'button';
+  b.onclick = function () { afterVoice(function () { play(L, { steps: redoSteps(L, ids), ids: ids }); }, b); };
+  r.appendChild(b); return r;
+}
+function redoSteps(L, ids) {
+  if (L.run) {   // bingo: each missed word comes back as "listen, then pick it"
+    var pool = CHARS.map(function (c) { return c.c; }).concat(WORDS.map(function (w) { return w.w; }));
+    return ids.map(function (id) {
+      var t = id.slice(id.indexOf(':') + 1);   // id = card:word
+      return { id: id, label: t, prompt: 'Listen, then pick what you hear.', answer: t, word: true, sayFirst: t,
+        opts: shuffle([t].concat(shuffle(pool.filter(function (x) { return x !== t; })).slice(0, 2))),
+        top: function () { var d = E('div', 'row'); d.appendChild(speakBtn(t)); return d; } };
+    });
+  }
+  var seen = {};
+  return L.build().filter(function (s) { if (!s.id || seen[s.id] || ids.indexOf(s.id) < 0) return false; seen[s.id] = 1; return true; });
+}
+function redone(L, r) {   // the end of a second try: half a cent for each one right this time
+  if (save.re) delete save.re[L.n];   // this second try is finished
+  var sc = save.score[L.n]; if (sc) sc.half = (sc.half || 0) + r.got; store(); showTotal();
+  app.innerHTML = '';
+  var p = E('div', 'panel');
+  p.appendChild(E('div', 'card-big', '🔁'));
+  p.appendChild(E('h2', null, 'Second try done!'));
+  var box = E('div', 'result');
+  box.appendChild(E('div', 'big1', r.got + ' of ' + r.of + ' right this time: +' + fmt(r.got / 2) + UNIT));
+  if (r.miss.length) box.appendChild(E('div', 'miss', 'Still not right: <span class="han">' + r.miss.join(' · ') + '</span>'));
+  if (sc) box.appendChild(E('div', null, 'Level ' + L.n + ' score: ' + fmt(sc.got + sc.half / 2) + UNIT + ' of ' + sc.of + UNIT));
+  box.appendChild(E('div', null, 'Lesson total: ' + fmt(lessonTotal()) + UNIT));
+  p.appendChild(box);
+  if (r.ids.length) p.appendChild(redoRow(L, r.ids));
+  var nextL = LEVELS[L.n], r2 = E('div', 'row');
+  if (nextL) { var nx = E('button', 'btn', 'Level ' + nextL.n + ' ▶'); nx.type = 'button'; nx.onclick = function () { afterVoice(function () { open(nextL); }, nx); }; r2.appendChild(nx); }
+  var bk = E('button', 'btn ghost', 'All levels'); bk.type = 'button'; bk.onclick = function () { afterVoice(menu, bk); }; r2.appendChild(bk);
+  p.appendChild(r2); app.appendChild(p);
+}
+
+/* ---------- level 4: bingo. Hear it, find it, mark it. Three cards, each asking a little more. ---------- */
+var BINGO_LINES = (function () {
+  var out = [], i, j;
+  for (i = 0; i < 5; i++) { var r = [], c = []; for (j = 0; j < 5; j++) { r.push(i * 5 + j); c.push(j * 5 + i); } out.push(r, c); }
+  out.push([0, 6, 12, 18, 24], [4, 8, 12, 16, 20]);
+  return out;
+})();
+var BINGO_GOALS = [{ lines: 1, text: 'Make 1 line' }, { lines: 2, text: 'Make 2 lines' }, { lines: 12, text: 'Fill the whole card' }];
+function bingoItems() {   // every one of the lesson's characters, plus words to fill the 24 squares (15 characters + 9 words, 14 + 10, …)
+  return CHARS.map(function (x) { return { t: x.c, py: x.py, en: x.en }; })
+    .concat(shuffle(WORDS).slice(0, 24 - CHARS.length).map(function (x) { return { t: x.w, py: x.py, en: x.en }; }));
+}
+function bingo(L) {
+  var cardNo = save.bingo && save.bingo.cardNo < BINGO_GOALS.length ? save.bingo.cardNo : 0;
+  function start() {
+    app.classList.remove('big'); app.classList.add('bwide');   // the bingo card fills the width; sideways, the page is wider for the left column
+    var goal = BINGO_GOALS[cardNo], items = null, calls = null, ci = 0, now = null, wrong = 0, over = false, marked = {};
+    var res = {}, known = {}, kept = (save.bingo && save.bingo.res) || {};   // card:word -> 1 found on the first try, 0 not; adds up over the three cards
+    CHARS.forEach(function (x) { known[x.c] = 1; }); WORDS.forEach(function (x) { known[x.w] = 1; });
+    Object.keys(kept).forEach(function (k) { if (known[k.slice(k.indexOf(':') + 1)]) res[k] = kept[k] ? 1 : 0; });   // only real lesson words count (and are shown)
+    function firstTap(ok) { var k = cardNo + ':' + now.t; if (!(k in res)) res[k] = ok ? 1 : 0; tally(); }
+    function bingoResult() {   // ids: every missed call (card:word); miss: the words to show, "京 ×2" when missed on two cards
+      var got = 0, ids = [], count = {}, order = [];
+      Object.keys(res).forEach(function (k) { if (res[k]) { got++; return; } ids.push(k); var t = k.slice(k.indexOf(':') + 1); if (!count[t]) { count[t] = 0; order.push(t); } count[t]++; });
+      return { got: got, of: Object.keys(res).length, miss: order.map(function (t) { return count[t] > 1 ? t + ' ×' + count[t] : t; }), ids: ids };
+    }
+    var was = save.bingo && save.bingo.cardNo === cardNo && save.bingo.cells ? save.bingo : null;
+    if (was) {   // came back to a card left half way
+      var pool = {};
+      CHARS.forEach(function (x) { pool[x.c] = { t: x.c, py: x.py, en: x.en }; }); WORDS.forEach(function (x) { pool[x.w] = { t: x.w, py: x.py, en: x.en }; });
+      items = was.cells.map(function (t) { return pool[t]; }); calls = was.calls.map(function (t) { return pool[t]; });
+      if (items.every(Boolean) && calls.every(Boolean)) { ci = was.ci || 0; (was.marked || []).forEach(function (k) { marked[k] = 1; }); } else items = null;
+    }
+    if (!items) { items = shuffle(bingoItems()); calls = shuffle(items); }
+    warm(calls.map(function (x) { return x.t; }).concat(['Bingo!']));
+    function keepCard(at) { save.bingo = { cardNo: cardNo, cells: items.map(function (x) { return x.t; }), calls: calls.map(function (x) { return x.t; }), ci: at, marked: Object.keys(marked).map(Number), res: res }; store(); }
+    var cells = items.slice(0, 12).concat([{ free: true }], items.slice(12));
+    app.innerHTML = '';
+    var brow = E('div', 'barrow'), bar = E('div', 'bar'), fill = E('i'); fill.style.width = Math.round(cardNo / BINGO_GOALS.length * 100) + '%'; bar.appendChild(fill); brow.appendChild(bar); brow.appendChild(E('span', 'stepn', 'Card ' + (cardNo + 1) + ' / ' + BINGO_GOALS.length)); app.appendChild(brow);
+    var p = E('div', 'panel bpanel'); app.appendChild(p);
+    var gl = E('div', 'bgoal', goal.text), left = E('div', 'bleft'); gl.appendChild(left); p.appendChild(gl);
+    var top = E('div', 'row btop');
+    var hear = E('button', 'btn hear', '🔊 Listen again <span class="han">再听一次</span>'); hear.setAttribute('aria-label', 'Listen again'); hear.type = 'button'; hear.onclick = function () { if (now) say(now.t); }; top.appendChild(hear);
+    p.appendChild(top);
+    var counter = E('div', 'tally'); top.appendChild(counter);
+    function tally() { var r = bingoResult(); counter.innerHTML = '<b class="tr">✓ ' + r.got + '</b><b class="tw">✗ ' + r.ids.length + '</b>'; }
+    tally();
+    var hint = E('div', 'bhint'); p.appendChild(hint);
+    var grid = E('div', 'bgrid'); p.appendChild(grid);
+    var btns = [];
+    cells.forEach(function (c, i) {
+      var b = E('button', 'bcell' + (c.free || marked[i] ? ' on' : '') + (c.free ? ' free' : '')); b.type = 'button'; b.textContent = c.free ? LESSON.bingoFree : c.t;
+      if (c.free) { marked[i] = 1; b.setAttribute('aria-label', 'Free space'); b.disabled = true; }
+      else b.onclick = function () { tap(c, i, b); };
+      btns.push(b); grid.appendChild(b);
+    });
+    var end = E('div', 'bend'); p.appendChild(end);
+    var back = E('div', 'row bback'), ls = E('button', 'btn ghost', '✕ Quit 退出'); ls.type = 'button'; ls.onclick = function () { afterVoice(menu, ls); }; back.appendChild(ls); p.appendChild(back);
+    function peekOff() { btns.forEach(function (x) { x.classList.remove('peek'); }); }
+    function call() {
+      if (over || ci >= calls.length || !grid.isConnected) return;   // left the card (All levels, Home): stay quiet
+      now = calls[ci++]; wrong = 0; hint.textContent = ''; peekOff(); keepCard(ci - 1);
+      say(now.t);
+    }
+    function linesDone() {
+      var n = 0;
+      BINGO_LINES.forEach(function (ln) { if (ln.every(function (i) { return marked[i]; })) { n++; ln.forEach(function (i) { btns[i].classList.add('line'); }); } });
+      var togo = btns.length - Object.keys(marked).length;   // how far the card is, shown under the goal
+      left.textContent = goal.lines >= BINGO_LINES.length ? togo + (togo === 1 ? ' square' : ' squares') + ' to go · 还差 ' + togo + ' 个' : 'Lines: ' + Math.min(n, goal.lines) + ' of ' + goal.lines;
+      return n;
+    }
+    function tap(c, i, b) {
+      if (over || !now || marked[i]) return;
+      if (c.t !== now.t) {
+        wrong++; firstTap(false); keepCard(ci - 1); beep(false); b.classList.add('no'); setTimeout(function () { b.classList.remove('no'); }, 350);
+        if (wrong === 1) { hint.textContent = 'Not this one. Listen again.'; say(now.t); }
+        else if (wrong === 2) hint.textContent = now.py + ' · ' + now.en;
+        else { hint.textContent = now.py + ' · ' + now.en; btns.forEach(function (x, k) { if (cells[k].t === now.t) x.classList.add('peek'); }); }
+        return;
+      }
+      marked[i] = 1; keepCard(ci); b.classList.remove('peek'); b.classList.add('on'); beep(true); firstTap(true); keepCard(ci);
+      hint.textContent = '';
+      var done = linesDone();
+      if (done >= goal.lines) return win();
+      now = null; setTimeout(function () { afterVoice(call); }, 750);
+    }
+    function win() {
+      over = true; now = null; hint.textContent = ''; top.remove(); back.remove();
+      end.appendChild(E('div', 'bwin', '🎉 BINGO!'));
+      var r = E('div', 'row'), last = cardNo === BINGO_GOALS.length - 1;
+      var old = save.score[L.n], sc = bingoResult();
+      if (last) { delete save.bingo; save.done[L.n] = 1; save.score[L.n] = { got: sc.got, of: sc.of }; } else save.bingo = { cardNo: cardNo + 1, res: res }; store();   // coming back starts the next card
+      end.appendChild(E('div', 'tally', '<b class="tr">✓ ' + sc.got + '</b><b class="tw">✗ ' + sc.ids.length + '</b>'));
+      var go = E('button', 'btn', last ? 'Finish ▶' : 'Next card ▶'); go.type = 'button';
+      go.onclick = function () { afterVoice(function () { if (last) finish(L, sc, old); else { cardNo++; start(); } }, go); };
+      r.appendChild(go); end.appendChild(r);
+      say('Bingo!'); go.focus();
+    }
+    linesDone();   // a card picked up again shows its finished lines
+    call();
+  }
+  start();
+}
+
+/* ---------- the three levels ---------- */
+function level1() {   // meet 5, find them by pinyin, find them by sound; three groups
+  var out = [];
+  GROUPS.forEach(function (g, gi) {
+    g.forEach(function (c) { out.push({ type: 'meet', c: c }); });
+    shuffle(g).forEach(function (c) {
+      out.push({ id: 'p' + c.c, prompt: LESSON.pick, answer: c.c, opts: pick3(c.c),
+        top: function () { var d = E('div'); d.appendChild(E('div', 'py', c.py)); d.appendChild(E('div', 'mean', c.e + ' ' + c.en)); return d; } });
+    });
+    shuffle(g).forEach(function (c) {
+      out.push({ id: 's' + c.c, prompt: 'Listen, then pick the character you hear.', answer: c.c, opts: pick3(c.c), sayFirst: c.c,
+        top: function () { var d = E('div', 'row'); d.appendChild(speakBtn(c.c)); return d; } });
+    });
+  });
+  return out;
+}
+function level2() {
+  return shuffle(WORDS).map(function (w) {
+    var miss = w.w.charAt(w.k), shown = w.w.split('').map(function (ch, i) { return i === w.k ? '<span class="slot">？</span>' : ch; }).join('');
+    return { id: 'w' + w.w, label: w.w, prompt: 'Which character finishes the word?', answer: miss, opts: pick3(miss, w.no), sayAfter: w.w,
+      top: function () { var d = E('div'); d.appendChild(E('div', 'emoji', w.e)); d.appendChild(E('div', 'word han', shown)); d.appendChild(E('div', 'mean', w.py + ' · ' + w.en)); return d; },
+      after: function (p) { var el = p.querySelector('.slot'); if (el) { el.textContent = miss; el.style.color = 'var(--green)'; el.style.borderColor = 'var(--green)'; } } };
+  });
+}
+function levelPattern() {   // explain the pattern, then five sentences: pick the right one, or build it from tiles
+  var P = PATTERN[0];
+  return [{ type: 'show' }].concat(PATTERN.slice(1).map(function (x, n) {
+    if (x.t === 'build') return { type: 'build', id: 'b' + n, x: x };
+    return { id: 'q' + n, prompt: P.ask, wide: true, answer: x.a, opts: shuffle([x.a].concat(x.no)), sayAfter: x.a,
+      top: function () { var d = E('div'); d.appendChild(E('div', 'sentence han', x.from)); d.appendChild(E('div', 'mean', x.en)); return d; } };
+  }));
+}
+function level3() {   // the letter level: pick the missing word in each sentence
+  return SENTENCES.map(function (s, n) {
+    var blank = '<span class="slot">' + s.a.replace(/./g, '？') + '</span>';
+    return { id: 'x' + n, prompt: 'Pick the missing word.', word: true, answer: s.a, opts: shuffle([s.a].concat(s.no)), sayAfter: s.s.replace('＿', s.a),
+      top: function () { var d = E('div'); d.appendChild(E('div', 'sentence han', s.s.replace('＿', blank))); d.appendChild(E('div', 'mean', s.en)); return d; },
+      after: function (p) { var el = p.querySelector('.slot'); if (el) { el.textContent = s.a; el.style.color = 'var(--green)'; el.style.borderColor = 'var(--green)'; } } };
+  });
+}
+
+menu();
+</script>
+<script>(function backPill() {
+  try { if (window.parent !== window) return; } catch (e) { return; }
+  var h = '', m = /[?&]home=([^&]*)/.exec(location.search || '');
+  if (m) { try { h = decodeURIComponent(m[1]); } catch (e) { h = ''; } }
+  if (h && (!/^[A-Za-z0-9._%~/-]+$/.test(h) || h.indexOf('//') >= 0)) h = '';
+  var a = document.createElement('div');
+  a.setAttribute('style', 'position:fixed;z-index:2147483647;box-sizing:border-box;display:inline-flex;align-items:center;gap:8px');
+  if (h) {
+    var back = document.createElement('a'); back.href = h; back.textContent = '🏠 Home';
+    back.setAttribute('style', 'box-sizing:border-box;display:inline-flex;align-items:center;min-height:56px;padding:0 22px;border:3px solid #fff;background:#1f5f99;color:#fff;font:800 20px system-ui,sans-serif;border-radius:999px;white-space:nowrap;text-decoration:none;box-shadow:0 2px 10px rgba(0,0,0,.45)');
+    a.appendChild(back);
+  }
+  var upd = document.createElement('button'); upd.type = 'button';
+  upd.setAttribute('style', 'box-sizing:border-box;min-height:56px;padding:0 22px;border:3px solid #fff;background:#E8590C;color:#fff;font:800 20px system-ui,sans-serif;border-radius:999px;cursor:pointer;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,.45)');
+  a.appendChild(upd);
+  /* A page with a top bar keeps a spot for the buttons in it (<span data-pill-slot>): there they sit in the bar's own row, a little smaller,
+     and can never cover the title. Every other page gets the floating pill below. */
+  var slot = document.querySelector('[data-pill-slot]');
+  if (slot) {
+    a.setAttribute('style', 'box-sizing:border-box;display:inline-flex;align-items:center;flex-wrap:wrap;gap:6px');
+    [back, upd].forEach(function (el) { if (el) { el.style.minHeight = '44px'; el.style.padding = '0 14px'; el.style.fontSize = '17px'; el.style.borderWidth = '2px'; el.style.boxShadow = 'none'; } });
+  }
+  (slot || document.body).appendChild(a);
+  /* Update: get the newest copy of the site from the internet. With no internet nothing is touched, so offline games keep working.
+     Progress lives in localStorage and is never touched. Only this site's offline copies are cleared: other apps share this web address. */
+  var LABEL = '🔄 Update', busy = false, KEY = 'tmg.justUpdated';
+  upd.textContent = LABEL;
+  function say(t) { upd.textContent = t; setTimeout(function () { upd.textContent = LABEL; }, 2500); }
+  function clearOffline(base) {
+    var jobs = [];
+    if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) {
+      return Promise.all(rs.filter(function (r) { return r.scope.indexOf(location.origin + base) === 0; }).map(function (r) { return r.unregister(); }));
+    }));
+    if (window.caches) jobs.push(caches.keys().then(function (ks) {
+      return Promise.all(ks.filter(function (k) { return /^(ttc-cache-\d|rnk-roman-numeral-kingdom-|splinter-)/.test(k); }).map(function (k) { return caches.delete(k); }));
+    }));
+    return Promise.all(jobs);
+  }
+  upd.addEventListener('click', function () {
+    if (busy) return; busy = true; upd.textContent = 'Updating…';
+    var ROOT = '/ten-minute-games/', p = location.pathname, i = p.indexOf(ROOT), base = i >= 0 ? p.slice(0, i + ROOT.length) : '/';
+    function fresh(u) { return fetch(u, { cache: 'reload' }).catch(function () {}); }
+    fetch(base + 'version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error('no copy'); })
+      .then(function () { return clearOffline(base); })
+      .then(function () { return Promise.all([fresh(location.href), fresh(base + 'index.html')]); })
+      .then(function () { try { sessionStorage.setItem(KEY, '1'); } catch (e) {} location.reload(); },
+            function () { busy = false; say('No internet'); });
+  });
+  try { if (sessionStorage.getItem(KEY)) { sessionStorage.removeItem(KEY); say('Updated ✓'); } } catch (e) {}
+  if (slot) return;   // in a top bar: nothing to move around
+  /* The lessons keep their own buttons along the screen edges (Previous / Next in a footer, controls in a header), so a pill nailed to
+     one corner always sat on top of something. Keep the pill 44px tall (easy to tap) and, whenever the page layout changes, put it in
+     whichever of six edge spots does not cover a button, link or field (spots tried in this order: bottom-centre, bottom-left,
+     bottom-right, top-centre, top-left, top-right). Buttons that are always on screen (fixed or sticky) count much more than ones
+     that scroll away. It never moves while the child is just scrolling, and stays where it is as long as its spot is free. */
+  var SPOTS = ['bc', 'bl', 'br', 'tc', 'tl', 'tr'], cur = '', timer = 0;
+  var SEL = 'button,a[href],input,select,textarea,summary,label,[role=button],[role=tab],[tabindex]:not([tabindex="-1"])';
+  function put(s) {
+    var st = a.style, v = s.charAt(0) === 'b' ? 'bottom' : 'top', side = s.charAt(1);
+    st.top = st.bottom = st.left = st.right = 'auto'; st.transform = 'none';
+    st[v] = '10px'; st[v] = 'calc(10px + env(safe-area-inset-' + v + ', 0px))';
+    if (side === 'c') { st.left = '50%'; st.transform = 'translateX(-50%)'; }
+    else { var d = side === 'l' ? 'left' : 'right'; st[d] = '10px'; st[d] = 'calc(10px + env(safe-area-inset-' + d + ', 0px))'; }
+  }
+  function fixedish(e) {
+    for (var n = e; n && n.nodeType === 1; n = n.parentElement) { var p = getComputedStyle(n).position; if (p === 'fixed' || p === 'sticky') return true; }
+    return false;
+  }
+  function place() {
+    try {
+      var W = document.documentElement.clientWidth, H = window.innerHeight, items = [], all, i, j;
+      a.style.pointerEvents = 'none'; all = document.querySelectorAll(SEL);   /* (while measuring, the pill itself must not count as covering anything) */
+      for (i = 0; i < all.length; i++) {
+        var e = all[i]; if (e === a || a.contains(e) || e.querySelector(SEL)) continue;
+        var cs = getComputedStyle(e); if (cs.display === 'none' || cs.visibility === 'hidden' || cs.pointerEvents === 'none') continue;
+        var r = e.getBoundingClientRect(); if (r.width < 2 || r.height < 2 || r.bottom <= 0 || r.top >= H || r.right <= 0 || r.left >= W) continue;
+        var t = document.elementFromPoint(Math.min(Math.max(r.left + r.width / 2, 0), W - 1), Math.min(Math.max(r.top + r.height / 2, 0), H - 1));
+        if (t && !e.contains(t)) continue;   /* hidden behind something else right now (for example scrolled under the footer): not a button the pill can cover */
+        items.push({ r: r, hard: fixedish(e) });
+      }
+      var res = {};
+      SPOTS.forEach(function (s) {
+        put(s); var b = a.getBoundingClientRect(), hard = 0, soft = 0;
+        items.forEach(function (it) { var q = it.r; if (q.left < b.right - 1 && q.right > b.left + 1 && q.top < b.bottom - 1 && q.bottom > b.top + 1) { if (it.hard) hard++; else soft++; } });
+        res[s] = { hard: hard, soft: soft };
+      });
+      var best = '', c = res[cur];
+      for (j = 0; j < SPOTS.length; j++) { var x = res[SPOTS[j]]; if (!best || x.hard < res[best].hard || (x.hard === res[best].hard && x.soft < res[best].soft)) best = SPOTS[j]; }
+      if (!(c && c.hard === 0 && (c.soft === 0 || res[best].hard > 0 || res[best].soft > 0))) cur = best;
+      put(cur); a.style.pointerEvents = '';
+    } catch (e) { put(cur || 'bl'); a.style.pointerEvents = ''; }
+  }
+  function later() { clearTimeout(timer); timer = setTimeout(function () { place(); timer = setTimeout(place, 500); }, 120); }
+  put('bc'); cur = 'bc'; place();
+  window.addEventListener('resize', later); window.addEventListener('orientationchange', later); window.addEventListener('load', later);
+  try { new MutationObserver(function (ms) { for (var i = 0; i < ms.length; i++) if (!a.contains(ms[i].target)) { later(); return; } }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden', 'disabled', 'aria-hidden', 'open'] }); } catch (e) { /* no observer: the spot is only worked out at load and on resize */ }
+})()</script><script>(function noZoom() {
+  var st = document.createElement('style');
+  // text-size-adjust: Safari enlarges text after a turn to landscape; manipulation: no double-tap zoom (rules that set their own touch-action, such as drag areas, still win)
+  st.textContent = 'html{-webkit-text-size-adjust:100%;text-size-adjust:100%}*{touch-action:manipulation}';
+  (document.head || document.documentElement).appendChild(st);
+  var stop = function (e) { e.preventDefault(); };
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (t) { document.addEventListener(t, stop, { passive: false }); });   // Safari's pinch
+  document.addEventListener('touchmove', function (e) { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });   // two fingers: no pinch
+})()</script></body>
+</html>
