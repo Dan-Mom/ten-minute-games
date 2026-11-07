@@ -529,6 +529,40 @@ button{-webkit-appearance:none;appearance:none}
 .stepn{font:800 18px/1 var(--display);color:var(--mute);white-space:nowrap}
 .lvbtn{min-height:44px;border:2px solid var(--blue);background:#fff;color:var(--blue);border-radius:999px;padding:0 16px;font:800 17px var(--display);white-space:nowrap}
 .btn.waiting,.lvbtn.waiting{opacity:.55}
+/* "Start here": the lesson's short talk (only in a lesson with a STORY) */
+.lvs{display:flex;align-items:center;gap:14px;text-align:left;border:3px solid #e9c46a;background:#fffaf0;border-radius:22px;padding:14px 16px;box-shadow:0 6px 0 #e9c46a}   /* looks like a level card, but is not one (.lv) */
+.lvs .n{flex:0 0 auto;width:56px;height:56px;border-radius:16px;background:#e09a1f;color:#fff;display:flex;align-items:center;justify-content:center;font:800 26px var(--display)}
+.lvs.done .n{background:var(--green)}
+.lvs h3{font-size:21px}
+.lvs p{margin:2px 0 0;color:var(--mute);font-size:16px}
+.lvs .go{margin-left:auto;font-size:28px}
+.storyp{text-align:left}
+.storyp>.say{text-align:center}
+.stitle{text-align:center;font-size:30px;margin:0 0 4px}
+.stitle .sen{display:block;font:700 18px var(--body);color:var(--mute)}
+.shelp{text-align:center;color:var(--mute);font-size:16px;margin:0 0 10px}
+.talk{display:flex;flex-direction:column;gap:12px;max-width:680px;margin:0 auto}
+.bubble{align-self:flex-start;max-width:92%;background:#f3f7ff;border:3px solid var(--blue-s);border-radius:20px 20px 20px 6px;padding:8px 14px 10px}
+.bubble.right{align-self:flex-end;background:#fff8e8;border-color:#f1dfb8;border-radius:20px 20px 6px 20px}
+.bubble.patb{border-color:var(--red)}
+.bubble{scroll-margin-bottom:110px}   /* a new line scrolls into view above the buttons */
+.who{font:800 16px var(--display);color:var(--mute)}
+.srow{display:flex;align-items:flex-start;gap:10px}
+.srow .speak{flex:0 0 auto}
+.sline{font-size:30px;line-height:1.45}
+.newc{-webkit-appearance:none;appearance:none;border:0;background:none;margin:0;padding:0;font:inherit;line-height:inherit;color:var(--blue);text-decoration:underline;text-decoration-style:dotted;text-underline-offset:5px;cursor:pointer;display:inline}
+.newc.key{color:var(--red)}
+.newc.demo{cursor:default}
+.pyl{font:700 18px var(--body);color:var(--blue);margin-top:2px}
+.nopy .pyl{display:none}
+.bubble .mean{font-size:17px}
+.patn{margin-top:4px;font:800 15px var(--display);color:var(--red)}
+.sctl{position:sticky;bottom:0;margin:12px -20px -20px;padding:12px 20px 16px;background:rgba(255,255,255,.96);border-radius:0 0 26px 26px}
+.today{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;margin:6px auto 10px;max-width:680px}
+.tlab{font:800 15px var(--display);color:var(--mute);margin-right:4px}
+.tchar{-webkit-appearance:none;appearance:none;min-width:44px;min-height:44px;padding:0 6px;border:2px solid #ddd;border-radius:12px;background:#fff;color:#b9b9b9;font-size:24px;line-height:1}
+.tchar.lit{border-color:var(--blue);color:var(--blue);background:var(--blue-s)}
+.nobr{white-space:nowrap}
 </style>
 <style>
 /* Chinese game 1. One idea: the 15 new characters of the lesson.
@@ -871,9 +905,18 @@ function menu() {
   var h = E('div', 'hero');
   h.appendChild(E('div', 'big', LESSON.intro.emoji));
   h.appendChild(E('h2', null, LESSON.intro.title));
-  h.appendChild(E('p', null, 'Five levels, about ten minutes each. Each answer right the first time earns 1¢, and a second try at a missed one earns 0.5¢. Play a level again to beat your score. Tap 🔊 to hear the Chinese.'));
+  h.appendChild(E('p', null, (HAS_STORY ? 'New here? Start with the story, then play the five levels. ' : '') + 'Five levels, about ten minutes each. Each answer right the first time earns 1¢, and a second try at a missed one earns 0.5¢. Play a level again to beat your score. Tap 🔊 to hear the Chinese.'));
   app.appendChild(h);
   var ls = E('div', 'levels');
+  if (HAS_STORY) {   // "Start here": the lesson's short talk comes before level 1 (only in a lesson that has a STORY)
+    var sb = E('button', 'lvs' + (save.story ? ' done' : '')); sb.type = 'button';   // not 'lv': the level cards stay level 1 to 5 in order
+    sb.appendChild(E('span', 'n', save.story ? '✓' : '📖'));
+    var st = E('div'); st.appendChild(E('h3', null, 'Start here: the story <span class="han">先听故事</span>'));
+    st.appendChild(E('p', null, 'Listen to a short talk that uses the new characters and the sentence pattern. Then play level 1.'));
+    sb.appendChild(st); sb.appendChild(E('span', 'go', '▶'));
+    sb.onclick = function () { afterVoice(story, sb); };
+    ls.appendChild(sb);
+  }
   LEVELS.forEach(function (L) {
     var b = E('button', 'lv' + (save.done[L.n] ? ' done' : '')); b.type = 'button';
     b.appendChild(E('span', 'n', save.done[L.n] ? '✓' : String(L.n)));
@@ -889,6 +932,84 @@ function menu() {
   });
   app.appendChild(ls);
   app.appendChild(E('p', 'credit', 'Old character drawings: Wikimedia Commons (Ancient Chinese characters project), public domain; many are redrawn from Richard Sears’s Chinese Etymology (hanziyuan.net).'));
+}
+
+/* ---------- "Start here": the lesson's short talk (STORY), one line at a time, before level 1. No score.
+   The lesson's characters are coloured and say themselves when tapped; the sentence-pattern line is marked too. ---------- */
+var HAS_STORY = typeof STORY !== 'undefined' && STORY && Array.isArray(STORY.lines) && STORY.lines.length > 0;
+var showPy = true;   // pinyin under each line: on, unless the child turns it off
+function storyLine(x) {   // the line with the lesson's characters coloured (tap to hear) and, in the pattern line, the pattern's key words marked
+  var s = x.s, inKey = [], chars = {};
+  CHARS.forEach(function (c) { chars[c.c] = 1; });
+  if (x.pat) PATTERN[0].keys.forEach(function (k) { var at = s.indexOf(k); while (at >= 0) { for (var j = 0; j < k.length; j++) inKey[at + j] = 1; at = s.indexOf(k, at + k.length); } });
+  var d = E('div', 'sline han'), list = s.split(''), PUNCT = '，。！？、；：”）';
+  list.forEach(function (ch, n) {
+    if (PUNCT.indexOf(ch) >= 0 && n > 0 && (chars[list[n - 1]] || inKey[n - 1])) return;   // already added with the character before it
+    var el;
+    if (chars[ch]) { el = E('button', 'newc' + (inKey[n] ? ' key' : ''), ch); el.type = 'button'; el.setAttribute('aria-label', ch); el.onclick = function () { say(ch); }; }
+    else if (inKey[n]) el = E('span', 'key', ch);
+    else { d.appendChild(document.createTextNode(ch)); return; }
+    var nx = list[n + 1];
+    if (nx && PUNCT.indexOf(nx) >= 0) { var keep = E('span', 'nobr'); keep.appendChild(el); keep.appendChild(document.createTextNode(nx)); el = keep; }   // a comma never starts a line
+    d.appendChild(el);
+  });
+  return d;
+}
+function txt(tag, cls, t) { var e = E(tag, cls); e.textContent = t; return e; }   // plain text from the lesson data, never read as HTML
+function story() {
+  app.classList.remove('big', 'bwide');
+  app.innerHTML = '';
+  warm(STORY.lines.map(function (x) { return x.s; }).concat(CHARS.map(function (c) { return c.c; })));
+  var shown = 0, first = STORY.lines[0].who;
+  var nav = E('div', 'nav');
+  var ls = E('button', 'btn ghost', '✕ Quit 退出'); ls.type = 'button'; ls.onclick = function () { afterVoice(menu, ls); };
+  nav.appendChild(E('span')); nav.appendChild(ls); app.appendChild(nav);
+  var p = E('div', 'panel storyp'); app.appendChild(p);
+  p.appendChild(E('p', 'say', 'Start here: the story <span class="han">先听故事</span>'));
+  var head = E('h2', 'stitle'); head.appendChild(txt('span', 'han', STORY.title)); if (STORY.en) head.appendChild(txt('span', 'sen', STORY.en)); p.appendChild(head);
+  // today's new characters: each one lights up when the talk first uses it, and says itself when tapped
+  var today = E('div', 'today'), chip = {};
+  today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
+  CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(c.c); }; chip[c.c] = b; today.appendChild(b); });
+  p.appendChild(today);
+  p.appendChild(E('p', 'shelp', 'Tap a <span class="newc demo">coloured</span> character to hear it. The pink words show the sentence pattern.'));
+  var talk = E('div', 'talk' + (showPy ? '' : ' nopy')); talk.setAttribute('aria-live', 'polite'); p.appendChild(talk);
+  var ctl = E('div', 'row sctl'); p.appendChild(ctl);
+  var pyb = E('button', 'btn ghost', ''); pyb.type = 'button';   // pinyin on or off, next to Next so it stays in reach
+  function pyLabel() { pyb.innerHTML = 'Pinyin <span class="han">拼音</span>: ' + (showPy ? 'on' : 'off'); }
+  pyLabel();
+  pyb.onclick = function () { showPy = !showPy; pyLabel(); talk.classList.toggle('nopy', !showPy); };
+  function add() {
+    var x = STORY.lines[shown++];
+    var b = E('div', 'bubble' + (x.who === first ? '' : ' right') + (x.pat ? ' patb' : ''));   // the first speaker on the left, the other on the right
+    b.appendChild(txt('div', 'who', x.who));
+    var r = E('div', 'srow'); r.appendChild(speakBtn(x.s)); r.appendChild(storyLine(x)); b.appendChild(r);
+    if (x.py) b.appendChild(txt('div', 'pyl', x.py));
+    b.appendChild(txt('div', 'mean', x.en));
+    if (x.pat) { var pn = E('div', 'patn', 'Sentence pattern <span class="han">句型</span>: '); pn.appendChild(document.createTextNode(PATTERN[0].shape)); b.appendChild(pn); }
+    talk.appendChild(b);
+    x.s.split('').forEach(function (ch) { if (chip[ch]) chip[ch].classList.add('lit'); });
+    controls();
+    try { b.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) { b.scrollIntoView(); }
+    say(x.s);
+  }
+  function controls() {
+    var hadFocus = ctl.contains(document.activeElement), main;   // keep the keyboard on the main button when the bar is redrawn
+    ctl.innerHTML = '';
+    ctl.appendChild(pyb);
+    if (shown < STORY.lines.length) {
+      main = E('button', 'btn', 'Next line <span class="han">下一句</span> ▶'); main.type = 'button';
+      main.onclick = function () { afterVoice(add, main); };
+      ctl.appendChild(main);
+    } else {
+      save.story = 1; store();
+      var again = E('button', 'btn ghost', '↺ Hear it again'); again.type = 'button'; again.onclick = function () { afterVoice(story, again); };
+      main = E('button', 'btn', 'Play level 1 ▶'); main.type = 'button'; main.onclick = function () { afterVoice(function () { open(LEVELS[0]); }, main); };
+      ctl.appendChild(again); ctl.appendChild(main);
+    }
+    if (hadFocus) try { main.focus({ preventScroll: true }); } catch (e) {}
+  }
+  add();
 }
 
 /* a small question box over the page: title, words, and buttons [label, what it does, ghost?] */
