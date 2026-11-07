@@ -592,7 +592,6 @@ button{-webkit-appearance:none;appearance:none}
 .wbtns{margin-top:10px;gap:10px}
 .wbtns .btn{min-height:46px;padding:6px 16px;font-size:18px}
 .wmsg{min-height:27px;margin:10px 0 4px;color:var(--blue-d)}
-.writep .credit{margin-top:10px}
 </style>
 <style>
 /* Chinese game 10. One idea: the 12 new characters of the lesson.
@@ -825,7 +824,9 @@ function say(t) {
   var tr = READY[k] && TRIM[k];               // where the words start and end in this recording, when known
   player.onloadedmetadata = player.onplaying = null;
   if (tr) {
-    player.onloadedmetadata = function () { try { if (tr.s > 0.12 && player.currentTime < tr.s - 0.10) player.currentTime = tr.s - 0.10; } catch (e) {} };   // skip the silence before the words
+    // skip the silence before the words (computers only: on iPad and iPhone the jump plus the player's slow start could cut off the
+    // first character, as the owner heard in the talks on 2026-11-07, so there the recording plays from its very start, ~0.2 s of silence)
+    if (!IOS) player.onloadedmetadata = function () { try { if (tr.s > 0.12 && player.currentTime < tr.s - 0.10) player.currentTime = tr.s - 0.10; } catch (e) {} };
     player.onplaying = function () { (function check() {   // the words are over: moving on may go ahead (the silent tail is not waited for)
       if (over) return; var left = tr.e + 0.12 - player.currentTime; if (left <= 0.02) return done(); setTimeout(check, Math.min(left, 0.5) * 1000);
     })(); };
@@ -947,7 +948,7 @@ function menu() {
     var sb = E('button', 'lvs' + (save.story ? ' done' : '')); sb.type = 'button';   // not 'lv': the level cards stay level 1 to 5 in order
     sb.appendChild(E('span', 'n', save.story ? '✓' : '📖'));
     var st = E('div'); st.appendChild(E('h3', null, 'Start here: the story <span class="han">先听故事</span>'));
-    st.appendChild(E('p', null, 'Listen to a short talk that uses the new characters and the sentence pattern. Then play level 1.'));
+    st.appendChild(E('p', null, 'Listen to a short talk that uses the new characters and the sentence pattern. Then play the levels.'));
     sb.appendChild(st); sb.appendChild(E('span', 'go', '▶'));
     sb.onclick = function () { afterVoice(story, sb); };
     ls.appendChild(sb);
@@ -1058,7 +1059,11 @@ function story() {
     } else {
       save.story = 1; store();
       var again = E('button', 'btn ghost', '↺ Hear it again'); again.type = 'button'; again.onclick = function () { afterVoice(story, again); };
-      main = E('button', 'btn', 'Play level 1 ▶'); main.type = 'button'; main.onclick = function () { afterVoice(function () { open(LEVELS[0]); }, main); };
+      // on to the first level not played yet (level 1 the first time; the owner, 2026-11-07: with level 1 done, "Play level 1" asked
+      // "play it again?", and "Not now" left the child on the story with nowhere to go); every level played: the level list
+      var nl = LEVELS.filter(function (L) { return !save.score[L.n] && !save.done[L.n]; })[0];
+      main = E('button', 'btn', nl ? 'Play level ' + nl.n + ' ▶' : 'All levels ▶'); main.type = 'button';
+      main.onclick = function () { afterVoice(function () { if (nl) open(nl); else menu(); }, main); };
       ctl.appendChild(again); ctl.appendChild(main);
     }
     if (hadFocus) try { main.focus({ preventScroll: true }); } catch (e) {}
@@ -1121,7 +1126,8 @@ function writeIt(at) {
   r2.appendChild(hint); r2.appendChild(again); b2.appendChild(r2);
   row.appendChild(b1); row.appendChild(b2);
   var msg = E('p', 'wmsg'); p.appendChild(msg);
-  p.appendChild(E('p', 'credit', 'Stroke order: Hanzi Writer (MIT licence), with stroke data from Make Me a Hanzi, based on fonts by Arphic Technology (Arphic Public Licence).'));
+  // no credit line on the page (the owner, 2026-11-07: the children do not read it); the licences go with the files: the MIT notice inside
+  // hanzi-writer.min.js, and ARPHICPL.TXT with README.txt in strokes/
 
   function size() {   // two boxes side by side when they fit, else one above the other; small enough that the buttons under them are on the screen too
     var w = row.clientWidth || 300, two = Math.floor((w - 24) / 2) - 6;   // 24 = the gap between the boxes, 6 = a box's two borders
