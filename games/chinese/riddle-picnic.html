@@ -949,8 +949,9 @@ function menu() {
     sb.appendChild(E('span', 'n', save.story ? '✓' : '📖'));
     var st = E('div'); st.appendChild(E('h3', null, 'Start here: the story <span class="han">先听故事</span>'));
     st.appendChild(E('p', null, 'Listen to a short talk that uses the new characters and the sentence pattern. Then play the levels.'));
+    if (storyPart()) st.appendChild(E('p', 'cont', '⏯ Continue where you left off'));
     sb.appendChild(st); sb.appendChild(E('span', 'go', '▶'));
-    sb.onclick = function () { afterVoice(story, sb); };
+    sb.onclick = function () { afterVoice(openStory, sb); };
     ls.appendChild(sb);
   }
   LEVELS.forEach(function (L) {
@@ -960,7 +961,7 @@ function menu() {
     var sc = save.score[L.n];
     if (sc) t.appendChild(E('p', 'sc', '💰 ' + levelScore(sc) + UNIT + ' of ' + sc.of + UNIT));
     if (L.run ? save.bingo : save.at && save.at[L.n]) t.appendChild(E('p', 'cont', '⏯ Continue where you left off'));
-    else if (save.re && save.re[L.n]) t.appendChild(E('p', 'cont', '⏯ Continue the missed questions'));
+    else if (waiting(L)) t.appendChild(E('p', 'cont', '⏯ Continue the missed questions'));
     b.appendChild(t);
     b.appendChild(E('span', 'go', '▶'));
     b.onclick = function () { afterVoice(function () { open(L); }, b); };
@@ -1002,7 +1003,22 @@ function storyLine(x) {   // the line with the lesson's characters coloured (tap
   return d;
 }
 function txt(tag, cls, t) { var e = E(tag, cls); e.textContent = t; return e; }   // plain text from the lesson data, never read as HTML
-function story() {
+function storyPart() {   // how many lines were heard, when the talk was left half way (else 0)
+  var n = Math.floor(+save.storyAt) || 0;
+  return n > 0 && n < STORY.lines.length ? n : 0;
+}
+/* like a level (the owner, 2026-11-07): a talk left half way asks "carry on, or start again?"; a talk heard to the end asks
+   "see it all (tap any line to hear it), or start again one line at a time?"; a new talk just starts */
+function openStory() {
+  var n = storyPart(), all = STORY.lines.length;
+  if (n) return askBox('Start here: continue?', 'You heard ' + n + ' of the ' + all + ' lines. Continue from there, or start again from the first line?',
+    [['▶ Continue 继续', function () { story(n); }], ['↺ Start over 重新开始', function () { story(0); }, true]]);
+  if (save.story) return askBox('Start here: the story', 'You heard the whole talk! See it all again (tap a line to hear it), or start again one line at a time?',
+    [['▶ See it all 看全部', function () { story(all); }], ['↺ Start over 重新开始', function () { story(0); }, true]]);
+  story(0);
+}
+function story(from) {   // from = how many lines to show at once, without reading them (Continue, See it all)
+  from = Math.max(0, Math.min(STORY.lines.length, Math.floor(+from) || 0));
   app.classList.remove('big', 'bwide');
   app.innerHTML = '';
   warm(STORY.lines.map(function (x) { return x.s; }).concat(CHARS.map(function (c) { return c.c; })));
@@ -1023,7 +1039,9 @@ function story() {
     var before = voiceWait;
     say(s);
     [].forEach.call(talk.querySelectorAll('.bubble.playing'), function (x) { x.classList.remove('playing'); });
-    if (voiceWait && voiceWait !== before) { b.classList.add('playing'); var w = voiceWait; w.then(function () { if (voiceWait === w || !speaking()) b.classList.remove('playing'); }); }
+    if (voiceWait && voiceWait !== before) {   // the glow goes when this reading ends or is cut off (by a tapped character, too), unless the line was started again
+      b.classList.add('playing'); var w = voiceWait; b.wait = w; w.then(function () { if (b.wait === w) b.classList.remove('playing'); });
+    }
   }
   var talk = E('div', 'talk' + (showPy ? '' : ' nopy')); talk.setAttribute('aria-live', 'polite'); p.appendChild(talk);
   var ctl = E('div', 'row sctl'); p.appendChild(ctl);
@@ -1031,8 +1049,9 @@ function story() {
   function pyLabel() { pyb.innerHTML = 'Pinyin <span class="han">拼音</span>: ' + (showPy ? 'on' : 'off'); }
   pyLabel();
   pyb.onclick = function () { showPy = !showPy; pyLabel(); talk.classList.toggle('nopy', !showPy); };
-  function add() {
+  function add(silent) {
     var x = STORY.lines[shown++];
+    save.storyAt = shown; store();   // where the talk is, for Continue
     var b = E('div', 'bubble' + (x.who === first ? '' : ' right') + (x.pat ? ' patb' : ''));   // the first speaker on the left, the other on the right
     b.appendChild(txt('div', 'who', x.who));
     var sp = E('button', 'speak', '🔊'); sp.type = 'button'; sp.setAttribute('aria-label', 'Listen to this line again');
@@ -1044,6 +1063,7 @@ function story() {
     talk.appendChild(b);
     x.s.split('').forEach(function (ch) { if (chip[ch]) chip[ch].classList.add('lit'); });
     controls();
+    if (silent) return;   // shown again from before: not read aloud
     try { b.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) { b.scrollIntoView(); }
     sayLine(b, x.s);
   }
@@ -1053,11 +1073,11 @@ function story() {
     ctl.appendChild(pyb);
     if (shown < STORY.lines.length) {
       main = E('button', 'btn', 'Next line <span class="han">下一句</span> ▶'); main.type = 'button';
-      main.onclick = function () { afterVoice(add, main); };
+      main.onclick = function () { afterVoice(function () { add(); }, main); };
       ctl.appendChild(main);
     } else {
       save.story = 1; store();
-      var again = E('button', 'btn ghost', '↺ Hear it again'); again.type = 'button'; again.onclick = function () { afterVoice(story, again); };
+      var again = E('button', 'btn ghost', '↺ Hear it again'); again.type = 'button'; again.onclick = function () { afterVoice(function () { story(0); }, again); };
       // on to the first level not played yet (level 1 the first time; the owner, 2026-11-07: with level 1 done, "Play level 1" asked
       // "play it again?", and "Not now" left the child on the story with nowhere to go); every level played: the level list
       var nl = LEVELS.filter(function (L) { return !save.score[L.n] && !save.done[L.n]; })[0];
@@ -1067,7 +1087,9 @@ function story() {
     }
     if (hadFocus) try { main.focus({ preventScroll: true }); } catch (e) {}
   }
-  add();
+  while (shown < from) add(true);   // Continue / See it all: the lines heard before are there at once
+  if (shown < STORY.lines.length) add();   // then the next line is read (Continue), or the first one (a new start)
+  else try { window.scrollTo(0, 0); } catch (e) {}   // See it all: from the first line
 }
 
 /* ---------- "Write it 写一写": watch how a character is written, then write it with a finger in a 田字格 box. No score.
@@ -1094,9 +1116,9 @@ function openWrite() {
   if (!wn) return writeIt(0);
   var firstNew = 0; while (firstNew < CHARS.length - 1 && written(CHARS[firstNew].c)) firstNew++;
   var all = wn === CHARS.length;
-  askBox(all ? 'Write it: all written!' : 'Write it: carry on?',
+  askBox(all ? 'Write it: all written!' : 'Write it: continue?',
     all ? 'You have written all ' + CHARS.length + '! Write them again and keep your green ticks, or start over with no ticks?'
-        : 'You have written ' + wn + ' of ' + CHARS.length + ' characters. Carry on with the ones not written yet, or start over from the first (the green ticks go)?',
+        : 'You have written ' + wn + ' of ' + CHARS.length + ' characters. Continue with the ones not written yet, or start over from the first (the green ticks go)?',
     [[all ? '▶ Write again 再写一遍' : '▶ Continue 继续', function () { writeIt(all ? 0 : firstNew); }],
      ['↺ Start over 重新开始', function () { save.write = {}; store(); writeIt(0); }, true]]);
 }
@@ -1236,12 +1258,15 @@ function open(L) {
   var going = L.run ? save.bingo : save.at && save.at[L.n], sc = save.score[L.n];
   function go() { if (L.run) L.run(L); else play(L); }
   function fresh() { if (L.run) delete save.bingo; else if (save.at) delete save.at[L.n]; store(); go(); }
-  var re = save.re && save.re[L.n];
-  if (!going && re && Array.isArray(re.ids) && Array.isArray(re.keys) && re.ids.length && re.ids.every(function (x) { return typeof x === 'string'; })) return askBox('Level ' + L.n + ': the missed questions', 'You were trying the missed questions again (0.5' + UNIT + ' each). Carry on with them, or play the whole level again?'
-      + (sc ? ' Your score now: <b>' + levelScore(sc) + UNIT + ' of ' + sc.of + UNIT + '</b>; a new finish of the whole level takes its place.' : ''),
-    [['▶ Continue 继续', function () { play(L, { steps: redoSteps(L, re.ids), ids: re.ids, from: re }); }], ['↺ Play the level again 重新开始', function () { delete save.re[L.n]; store(); go(); }, true]]);
-  if (going) return askBox('Level ' + L.n + ': carry on?', 'You stopped this level half way. Carry on from where you were, or start the level again?'
-      + (sc ? ' Your score now: <b>' + levelScore(sc) + UNIT + ' of ' + sc.of + UNIT + '</b>; a new finish takes its place.' : ''),
+  var w = !going && waiting(L);   // the missed questions: a second try left half way, or a list still waiting for its second try (2026-11-07)
+  var now = sc ? ' Your score now: <b>' + levelScore(sc) + UNIT + ' of ' + sc.of + UNIT + '</b>. If you play the whole level again, the new score takes its place.' : '';
+  if (w) {
+    var many = w.steps.length > 1 ? 's' : '';
+    return askBox('Level ' + L.n + ': the missed questions', (w.started ? 'You were trying the missed questions again' : 'You have ' + w.steps.length + ' missed question' + many + ' to try again')
+        + ' (0.5' + UNIT + ' each). Try ' + (many ? 'them' : 'it') + ' now, or play the whole level again?' + now,
+      [['▶ Continue 继续', function () { play(L, w.started ? { steps: w.steps, ids: w.re.ids, from: w.re } : { steps: w.steps, ids: w.re.ids }); }], ['↺ Play the level again 重新开始', function () { delete save.re[L.n]; store(); go(); }, true]]);
+  }
+  if (going) return askBox('Level ' + L.n + ': continue?', 'You stopped this level half way. Continue from where you were, or start the level again?' + now,
     [['▶ Continue 继续', go], ['↺ Start over 重新开始', fresh, true]]);
   if (!sc) return go();
   askBox('Play level ' + L.n + ' again?', 'Your score now: <b>' + levelScore(sc) + UNIT + ' of ' + sc.of + UNIT + '</b>. When you finish, your new score takes its place, higher or lower.',
@@ -1398,7 +1423,7 @@ function finish(L, r, old) {   // r = this play's result; old = the score it rep
     if (r.miss.length) box.appendChild(E('div', 'miss', 'Not right the first time: <span class="han">' + r.miss.join(' · ') + '</span>'));
     box.appendChild(E('div', null, 'Lesson total: ' + fmt(lessonTotal()) + UNIT));
     p.appendChild(box);
-    if (r.ids && r.ids.length) p.appendChild(redoRow(L, r.ids));
+    if (r.ids && r.ids.length) { p.appendChild(redoRow(L, r.ids)); save.re = save.re || {}; save.re[L.n] = { ids: r.ids }; store(); }   // kept, so the missed ones can still be tried after leaving this page
   }
   if (L.letter) {
     p.appendChild(E('p', 'say', LESSON.letter.ready));
@@ -1422,6 +1447,15 @@ function finish(L, r, old) {   // r = this play's result; old = the score it rep
 }
 
 /* after a level: the questions missed the first time can be tried again, for half a cent each */
+/* the missed questions of level L still waiting (a list, or a second try left half way), with their steps; a list whose
+   questions are no longer in the lesson is dropped */
+function waiting(L) {
+  var re = save.re && save.re[L.n];
+  if (!re || !Array.isArray(re.ids) || !re.ids.length || !re.ids.every(function (x) { return typeof x === 'string'; })) return null;
+  var steps = redoSteps(L, re.ids);
+  if (!steps.length) { delete save.re[L.n]; store(); return null; }
+  return { re: re, steps: steps, started: Array.isArray(re.keys) && re.keys.length > 0 };
+}
 function redoRow(L, ids) {
   var r = E('div', 'row'), b = E('button', 'btn redo', '🔁 Try the ' + ids.length + ' missed again (0.5' + UNIT + ' each)'); b.type = 'button';
   b.onclick = function () { afterVoice(function () { play(L, { steps: redoSteps(L, ids), ids: ids }); }, b); };
@@ -1430,7 +1464,7 @@ function redoRow(L, ids) {
 function redoSteps(L, ids) {
   if (L.run) {   // bingo: each missed word comes back as "listen, then pick it"
     var pool = CHARS.map(function (c) { return c.c; }).concat(WORDS.map(function (w) { return w.w; }));
-    return ids.map(function (id) {
+    return ids.filter(function (id) { return pool.indexOf(id.slice(id.indexOf(':') + 1)) >= 0; }).map(function (id) {   // only words still in the lesson
       var t = id.slice(id.indexOf(':') + 1);   // id = card:word
       return { id: id, label: t, prompt: 'Listen, then pick what you hear.', answer: t, word: true, sayFirst: t,
         opts: shuffle([t].concat(shuffle(pool.filter(function (x) { return x !== t; })).slice(0, 2))),
@@ -1453,7 +1487,7 @@ function redone(L, r) {   // the end of a second try: half a cent for each one r
   if (sc) box.appendChild(E('div', null, 'Level ' + L.n + ' score: ' + fmt(sc.got + sc.half / 2) + UNIT + ' of ' + sc.of + UNIT));
   box.appendChild(E('div', null, 'Lesson total: ' + fmt(lessonTotal()) + UNIT));
   p.appendChild(box);
-  if (r.ids.length) p.appendChild(redoRow(L, r.ids));
+  if (r.ids.length) { p.appendChild(redoRow(L, r.ids)); save.re = save.re || {}; save.re[L.n] = { ids: r.ids }; store(); }   // the ones still missed wait for another try
   var nextL = LEVELS[L.n], r2 = E('div', 'row');
   if (nextL) { var nx = E('button', 'btn', 'Level ' + nextL.n + ' ▶'); nx.type = 'button'; nx.onclick = function () { afterVoice(function () { open(nextL); }, nx); }; r2.appendChild(nx); }
   var bk = E('button', 'btn ghost', 'All levels'); bk.type = 'button'; bk.onclick = function () { afterVoice(menu, bk); }; r2.appendChild(bk);
@@ -1551,7 +1585,7 @@ function bingo(L) {
       end.appendChild(E('div', 'bwin', '🎉 BINGO!'));
       var r = E('div', 'row'), last = cardNo === BINGO_GOALS.length - 1;
       var old = save.score[L.n], sc = bingoResult();
-      if (last) { delete save.bingo; save.done[L.n] = 1; save.score[L.n] = { got: sc.got, of: sc.of }; } else save.bingo = { cardNo: cardNo + 1, res: res }; store();   // coming back starts the next card
+      if (last) { delete save.bingo; save.done[L.n] = 1; save.score[L.n] = { got: sc.got, of: sc.of }; save.re = save.re || {}; if (sc.ids.length) save.re[L.n] = { ids: sc.ids }; else delete save.re[L.n]; } else save.bingo = { cardNo: cardNo + 1, res: res }; store();   // coming back starts the next card
       end.appendChild(E('div', 'tally', '<b class="tr">✓ ' + sc.got + '</b><b class="tw">✗ ' + sc.ids.length + '</b>'));
       var go = E('button', 'btn', last ? 'Finish ▶' : 'Next card ▶'); go.type = 'button';
       go.onclick = function () { afterVoice(function () { if (last) finish(L, sc, old); else { cardNo++; start(); } }, go); };
