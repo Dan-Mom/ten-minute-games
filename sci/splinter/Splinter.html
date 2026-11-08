@@ -269,11 +269,13 @@
   function cleanName(s) { return String(s || '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 20); }
 
   function mountHome(box) {
-    var msg = '';
+    var msg = '', askDelete = null, deleting = false;   // askDelete: the loaded Firebase while the parent is asked to confirm with Google; deleting: Google window open or deletion running
     function render() {
       box.replaceChildren();
       var uid = get(P + 'uid'), fam = J(P + 'family', { kids: [] }), cur = current();
-      if (!uid) {
+      if (!uid) askDelete = null;
+      if (deleting) {   // nothing else to tap until the deletion has finished or stopped
+      } else if (!uid) {
         var b = E('button', 'acct-btn', 'Parent sign-in'); b.type = 'button'; b.onclick = signIn;
         box.appendChild(b);
         box.appendChild(E('span', 'acct-note', 'Optional: keep each child’s progress on every device.'));
@@ -298,6 +300,13 @@
         row.appendChild(tools);
       }
       if (msg) box.appendChild(E('div', 'acct-msg', msg));
+      if (askDelete && uid) {
+        var cf = E('div', 'acct-confirm');
+        cf.appendChild(E('div', 'acct-msg', 'Last step: confirm with Google that it is you. Then the account, all children and all progress are deleted.'));
+        var yes = E('button', 'acct-btn danger', 'Confirm with Google and delete'); yes.type = 'button'; yes.onclick = reallyDelete; cf.appendChild(yes);
+        var no = E('button', 'acct-link', 'Cancel'); no.type = 'button'; no.onclick = function () { askDelete = null; say('Nothing was deleted.'); }; cf.appendChild(no);
+        box.appendChild(cf);
+      }
     }
     function say(t) { msg = t; render(); }
     function loadFamily(f, uid) {
@@ -312,6 +321,7 @@
       });
     }
     function signIn() {
+      if (deleting) return; askDelete = null;
       say('Opening Google sign-in…');
       firebaseReady().then(function (f) {
         var p = new window.firebase.auth.GoogleAuthProvider();
@@ -320,6 +330,7 @@
         function (e) { say(e && e.code === 'auth/popup-closed-by-user' ? '' : 'Sign-in did not work' + (e && e.code ? ' (' + e.code + ')' : '') + '. Please try again.'); });
     }
     function addKid() {
+      if (deleting) return; askDelete = null;
       var name = cleanName(window.prompt('Child’s nickname (not their full name):', ''));
       if (!name) return;
       var uid = get(P + 'uid'), id = newId(), fam = J(P + 'family', { kids: [] });
@@ -334,6 +345,7 @@
       }).then(function () { start.base = start.updated; saveStore(id, start); choose(id); }, function () { say('Could not add ' + name + '. Please try again.'); });
     }
     function choose(id) {
+      if (deleting) return; askDelete = null;
       cloud.push().then(function () {
         setCurrent(id); swap();
         msg = id === GUEST ? 'Just looking: progress stays on this device.' : 'Now playing: ' + ((J(P + 'family', { kids: [] }).kids.filter(function (k) { return k.id === id; })[0] || {}).name || '');
@@ -342,6 +354,7 @@
       });
     }
     function removeKid() {
+      if (deleting) return; askDelete = null;
       var fam = J(P + 'family', { kids: [] }); if (!fam.kids.length) return;
       var name = window.prompt('Type the nickname of the child to remove. Their progress is deleted everywhere.\n\n' + fam.kids.map(function (k) { return k.name; }).join(', '), '');
       var k = fam.kids.filter(function (x) { return x.name === cleanName(name); })[0]; if (!k) return;
@@ -361,6 +374,7 @@
     }
     /* never sign out while something has not reached the cloud: signing out takes the only copy off this device */
     function signOut() {
+      if (deleting) return; askDelete = null;
       var ids = J(P + 'family', { kids: [] }).kids.map(function (k) { return k.id; });
       say('Saving…');
       ready.then(function () { return Promise.all(ids.map(function (id) { return cloud.push(id); })); }).then(function (done) {
@@ -369,17 +383,42 @@
           function () { forgetDevice(); say('Signed out on this device.'); });
       });
     }
+    /* Deleting a Google sign-in needs a recent sign-in. Safari only opens the Google window straight from a tap,
+       so: first tap asks, Firebase is loaded, then a second button opens the Google window inside its own tap,
+       and only after Google says yes is anything deleted. */
     function deleteAll() {
+      if (deleting) return;
       if (!window.confirm('Delete your account, all your children and all their progress? This cannot be undone.')) return;
-      var uid = get(P + 'uid');
-      say('Deleting…');
-      firebaseReady().then(function (f) {
-        return kidsRef(f, uid).get().then(function (q) { var jobs = []; q.forEach(function (d) { jobs.push(d.ref.delete()); }); return Promise.all(jobs); })
-          .then(function () { var u = f.auth.currentUser; return u.delete().catch(function (e) {
-            if (e && e.code === 'auth/requires-recent-login') return u.reauthenticateWithPopup(new window.firebase.auth.GoogleAuthProvider()).then(function () { return u.delete(); });
-            throw e; }); });
-      }).then(function () { var ids = J(P + 'family', { kids: [] }).kids.map(function (k) { return k.id; }); forgetDevice(); ids.forEach(dropKid); say('Your account and all its data were deleted.'); },
-        function () { say('Could not finish deleting. Please sign in again and retry.'); });
+      askDelete = null; say('One moment…');
+      firebaseReady().then(function (f) { return userNow(f).then(function (u) {
+        if (!u || u.uid !== get(P + 'uid')) { forgetDevice(true); say('This device is no longer signed in. Sign in again, then delete.'); return; }
+        askDelete = f; say('');
+      }); }, function () { say('Could not reach Google. Check the internet and try again. Nothing was deleted.'); });
+    }
+    function reallyDelete() {
+      var f = askDelete, u = f && f.auth.currentUser, stage = 'confirm';
+      askDelete = null;
+      if (deleting) return;
+      if (!u || u.uid !== get(P + 'uid')) { say('This device is no longer signed in. Sign in again, then delete.'); return; }
+      var uid = u.uid;
+      deleting = true;
+      say('Waiting for Google… (close the Google window to cancel)');
+      function gone() { deleting = false; var ids = J(P + 'family', { kids: [] }).kids.map(function (k) { return k.id; }); forgetDevice(); ids.forEach(dropKid); say('Your account and all its data were deleted.'); }
+      u.reauthenticateWithPopup(new window.firebase.auth.GoogleAuthProvider())   // opened inside this tap, so Safari lets it open
+        .then(function () { stage = 'delete'; say('Deleting…'); return kidsRef(f, uid).get(); })
+        .then(function (q) { var jobs = []; q.forEach(function (d) { jobs.push(d.ref.delete()); }); return Promise.all(jobs); })
+        .then(function () { return u.delete(); })
+        .then(gone, function (e) {
+          var c = e && e.code;
+          deleting = false;
+          if (c === 'auth/user-not-found') { gone(); return; }   // the sign-in record is already gone (an earlier try finished but its answer was lost)
+          if (stage === 'confirm') {
+            if (c === 'auth/user-mismatch') say('That was a different Google account. Nothing was deleted. Tap "Delete account and all data" again and pick the account you signed in with.');
+            else if (c === 'auth/popup-closed-by-user' || c === 'auth/cancelled-popup-request') say('Nothing was deleted.');
+            else if (c === 'auth/popup-blocked') say('The Google window did not open. Nothing was deleted. Wait a moment and tap "Delete account and all data" again.');
+            else say('Google did not confirm' + (c ? ' (' + c + ')' : '') + '. Nothing was deleted. Please try again.');
+          } else say('Not finished: some data may already be deleted. Check the internet and tap "Delete account and all data" again to finish.');
+        });
     }
     /* check the sign-in is still valid (it can end on another device) */
     if (get(P + 'uid')) firebaseReady().then(function (f) { return userNow(f).then(function (u) {

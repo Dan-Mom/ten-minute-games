@@ -273,11 +273,13 @@
   function cleanName(s) { return String(s || '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 20); }
 
   function mountHome(box) {
-    var msg = '';
+    var msg = '', askDelete = null, deleting = false;   // askDelete: the loaded Firebase while the parent is asked to confirm with Google; deleting: Google window open or deletion running
     function render() {
       box.replaceChildren();
       var uid = get(P + 'uid'), fam = J(P + 'family', { kids: [] }), cur = current();
-      if (!uid) {
+      if (!uid) askDelete = null;
+      if (deleting) {   // nothing else to tap until the deletion has finished or stopped
+      } else if (!uid) {
         var b = E('button', 'acct-btn', 'Parent sign-in'); b.type = 'button'; b.onclick = signIn;
         box.appendChild(b);
         box.appendChild(E('span', 'acct-note', 'Optional: keep each child’s progress on every device.'));
@@ -302,6 +304,13 @@
         row.appendChild(tools);
       }
       if (msg) box.appendChild(E('div', 'acct-msg', msg));
+      if (askDelete && uid) {
+        var cf = E('div', 'acct-confirm');
+        cf.appendChild(E('div', 'acct-msg', 'Last step: confirm with Google that it is you. Then the account, all children and all progress are deleted.'));
+        var yes = E('button', 'acct-btn danger', 'Confirm with Google and delete'); yes.type = 'button'; yes.onclick = reallyDelete; cf.appendChild(yes);
+        var no = E('button', 'acct-link', 'Cancel'); no.type = 'button'; no.onclick = function () { askDelete = null; say('Nothing was deleted.'); }; cf.appendChild(no);
+        box.appendChild(cf);
+      }
     }
     function say(t) { msg = t; render(); }
     function loadFamily(f, uid) {
@@ -316,6 +325,7 @@
       });
     }
     function signIn() {
+      if (deleting) return; askDelete = null;
       say('Opening Google sign-in…');
       firebaseReady().then(function (f) {
         var p = new window.firebase.auth.GoogleAuthProvider();
@@ -324,6 +334,7 @@
         function (e) { say(e && e.code === 'auth/popup-closed-by-user' ? '' : 'Sign-in did not work' + (e && e.code ? ' (' + e.code + ')' : '') + '. Please try again.'); });
     }
     function addKid() {
+      if (deleting) return; askDelete = null;
       var name = cleanName(window.prompt('Child’s nickname (not their full name):', ''));
       if (!name) return;
       var uid = get(P + 'uid'), id = newId(), fam = J(P + 'family', { kids: [] });
@@ -338,6 +349,7 @@
       }).then(function () { start.base = start.updated; saveStore(id, start); choose(id); }, function () { say('Could not add ' + name + '. Please try again.'); });
     }
     function choose(id) {
+      if (deleting) return; askDelete = null;
       cloud.push().then(function () {
         setCurrent(id); swap();
         msg = id === GUEST ? 'Just looking: progress stays on this device.' : 'Now playing: ' + ((J(P + 'family', { kids: [] }).kids.filter(function (k) { return k.id === id; })[0] || {}).name || '');
@@ -346,6 +358,7 @@
       });
     }
     function removeKid() {
+      if (deleting) return; askDelete = null;
       var fam = J(P + 'family', { kids: [] }); if (!fam.kids.length) return;
       var name = window.prompt('Type the nickname of the child to remove. Their progress is deleted everywhere.\n\n' + fam.kids.map(function (k) { return k.name; }).join(', '), '');
       var k = fam.kids.filter(function (x) { return x.name === cleanName(name); })[0]; if (!k) return;
@@ -365,6 +378,7 @@
     }
     /* never sign out while something has not reached the cloud: signing out takes the only copy off this device */
     function signOut() {
+      if (deleting) return; askDelete = null;
       var ids = J(P + 'family', { kids: [] }).kids.map(function (k) { return k.id; });
       say('Saving…');
       ready.then(function () { return Promise.all(ids.map(function (id) { return cloud.push(id); })); }).then(function (done) {
@@ -373,17 +387,42 @@
           function () { forgetDevice(); say('Signed out on this device.'); });
       });
     }
+    /* Deleting a Google sign-in needs a recent sign-in. Safari only opens the Google window straight from a tap,
+       so: first tap asks, Firebase is loaded, then a second button opens the Google window inside its own tap,
+       and only after Google says yes is anything deleted. */
     function deleteAll() {
+      if (deleting) return;
       if (!window.confirm('Delete your account, all your children and all their progress? This cannot be undone.')) return;
-      var uid = get(P + 'uid');
-      say('Deleting…');
-      firebaseReady().then(function (f) {
-        return kidsRef(f, uid).get().then(function (q) { var jobs = []; q.forEach(function (d) { jobs.push(d.ref.delete()); }); return Promise.all(jobs); })
-          .then(function () { var u = f.auth.currentUser; return u.delete().catch(function (e) {
-            if (e && e.code === 'auth/requires-recent-login') return u.reauthenticateWithPopup(new window.firebase.auth.GoogleAuthProvider()).then(function () { return u.delete(); });
-            throw e; }); });
-      }).then(function () { var ids = J(P + 'family', { kids: [] }).kids.map(function (k) { return k.id; }); forgetDevice(); ids.forEach(dropKid); say('Your account and all its data were deleted.'); },
-        function () { say('Could not finish deleting. Please sign in again and retry.'); });
+      askDelete = null; say('One moment…');
+      firebaseReady().then(function (f) { return userNow(f).then(function (u) {
+        if (!u || u.uid !== get(P + 'uid')) { forgetDevice(true); say('This device is no longer signed in. Sign in again, then delete.'); return; }
+        askDelete = f; say('');
+      }); }, function () { say('Could not reach Google. Check the internet and try again. Nothing was deleted.'); });
+    }
+    function reallyDelete() {
+      var f = askDelete, u = f && f.auth.currentUser, stage = 'confirm';
+      askDelete = null;
+      if (deleting) return;
+      if (!u || u.uid !== get(P + 'uid')) { say('This device is no longer signed in. Sign in again, then delete.'); return; }
+      var uid = u.uid;
+      deleting = true;
+      say('Waiting for Google… (close the Google window to cancel)');
+      function gone() { deleting = false; var ids = J(P + 'family', { kids: [] }).kids.map(function (k) { return k.id; }); forgetDevice(); ids.forEach(dropKid); say('Your account and all its data were deleted.'); }
+      u.reauthenticateWithPopup(new window.firebase.auth.GoogleAuthProvider())   // opened inside this tap, so Safari lets it open
+        .then(function () { stage = 'delete'; say('Deleting…'); return kidsRef(f, uid).get(); })
+        .then(function (q) { var jobs = []; q.forEach(function (d) { jobs.push(d.ref.delete()); }); return Promise.all(jobs); })
+        .then(function () { return u.delete(); })
+        .then(gone, function (e) {
+          var c = e && e.code;
+          deleting = false;
+          if (c === 'auth/user-not-found') { gone(); return; }   // the sign-in record is already gone (an earlier try finished but its answer was lost)
+          if (stage === 'confirm') {
+            if (c === 'auth/user-mismatch') say('That was a different Google account. Nothing was deleted. Tap "Delete account and all data" again and pick the account you signed in with.');
+            else if (c === 'auth/popup-closed-by-user' || c === 'auth/cancelled-popup-request') say('Nothing was deleted.');
+            else if (c === 'auth/popup-blocked') say('The Google window did not open. Nothing was deleted. Wait a moment and tap "Delete account and all data" again.');
+            else say('Google did not confirm' + (c ? ' (' + c + ')' : '') + '. Nothing was deleted. Please try again.');
+          } else say('Not finished: some data may already be deleted. Check the internet and tap "Delete account and all data" again to finish.');
+        });
     }
     /* check the sign-in is still valid (it can end on another device) */
     if (get(P + 'uid')) firebaseReady().then(function (f) { return userNow(f).then(function (u) {
@@ -505,6 +544,9 @@ footer{padding:26px 0 40px;color:var(--mute);font-size:15px;text-align:center}
 .acct-link{border:0;background:none;padding:6px 0;color:var(--blue);font:700 14px var(--body);text-decoration:underline;cursor:pointer}
 .acct-link.danger{color:#b23246}
 .acct-msg{width:100%;font:700 15px var(--body);color:var(--ink)}
+.acct-confirm{width:100%;display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-top:6px;padding:12px 14px;border:2px solid #b23246;border-radius:16px;background:#fff}
+.acct-btn.danger{background:#b23246;color:#fff;box-shadow:0 3px 0 #7d1f2f}
+.acct-confirm .acct-link{min-height:44px}
 footer a{color:inherit}
 #upd button{border:0;border-radius:999px;background:#ffd23f;color:#5a3d00;font:800 16px var(--display);padding:8px 16px;cursor:pointer;min-height:40px}
 </style>
@@ -519,7 +561,7 @@ footer a{color:inherit}
 <footer><div class="wrap" id="foot"></div></footer>
 <div id="upd" hidden role="status"><span>New games are ready</span><button type="button" id="updBtn">Refresh</button></div>
 <script>
-var DATA = {"v":1794146626010,"site":{"title":"Ten-Minute Games","tagline":"","sub":"","categories":[{"id":"math","name":"Math","emoji":"🧮","color":"orange","blurb":"Games for numbers, Roman numerals and times tables."},{"id":"chinese","name":"Chinese 中文","emoji":"🏮","color":"blue","blurb":"Chinese characters, one lesson at a time: meet them, build words, use them in sentences."},{"id":"science","name":"Science and the World","emoji":"🔬","color":"green","blurb":"The human body, history mysteries and our planet."},{"id":"food","name":"Food and Health Detectives","emoji":"🕵️","color":"pink","blurb":"Reading labels and spotting what packages really say."},{"id":"steam","name":"Little STEAM Lab","emoji":"🧊","color":"purple","blurb":"Puzzles and things to build with your hands."},{"id":"money","name":"Money Smarts","emoji":"🐷","color":"teal","blurb":"Saving, interest and how money grows."}],"promises":[],"about":{"title":"Made for two kids first, then shared with yours","text":"We make these games at home for our own two curious kids, building them with AI and testing them together as we go. Now we are sharing them with yours."},"disclaimer":"For learning at home. Signing in is optional: we keep only a parent’s sign-in, the nicknames they type and the game progress."},"games":[{"id":"mail-to-grandpa","category":"chinese","title":"Mail to Grandpa 寄信给爷爷","emoji":"✉️","blurb":"Learn 15 Chinese characters about letters and mail, practise asking 是不是 questions, write and send a letter to Grandpa, then play Mail Bingo. Five levels, about ten minutes each.","note":"","book":4,"lesson":1,"href":"games/chinese/mail-to-grandpa.html?home=..%2F..%2Fchinese%2Fbook-4.html"},{"id":"treasure-island","category":"chinese","title":"Treasure Island 宝岛一日游","emoji":"🏝️","blurb":"Learn 15 Chinese characters on a day out: bridges, lions and an island. Practise saying 可真…啊!, write a postcard, then play Island Bingo. Five levels, about ten minutes each.","note":"","book":4,"lesson":2,"href":"games/chinese/treasure-island.html?home=..%2F..%2Fchinese%2Fbook-4.html"},{"id":"mirror-palace","category":"chinese","title":"Mirror Palace 参观凡尔赛宫","emoji":"🏰","blurb":"Learn 14 Chinese characters on a visit to a palace full of mirrors, practise saying \"more than\" with 多, write a diary page, then play Palace Bingo. Five levels, about ten minutes each.","note":"","book":4,"lesson":3,"href":"games/chinese/mirror-palace.html?home=..%2F..%2Fchinese%2Fbook-4.html"},{"id":"sunny-farm","category":"chinese","title":"Sunny Farm 阳光农场","emoji":"☀️","blurb":"Learn 10 Chinese characters on a sunny weekend at Grandma's farm, practise saying \"if not this, then not that\" with two 不, write a letter to Mom, then play Farm Bingo. Five levels, about ten minutes each.","note":"","book":4,"lesson":4,"href":"games/chinese/sunny-farm.html?home=..%2F..%2Fchinese%2Fbook-4.html"},{"id":"river-camp","category":"chinese","title":"River Camp 河边露营","emoji":"⛺","blurb":"Learn 12 Chinese characters on a camping trip by the river with Uncle, practise saying \"neither … nor …\" with 既不…也不…, write a postcard to Grandpa, then play Camp Bingo. Five levels, about ten minutes each.","note":"","book":4,"lesson":5,"href":"games/chinese/river-camp.html?home=..%2F..%2Fchinese%2Fbook-4.html"},{"id":"lantern-night","category":"chinese","title":"Lantern Night 中秋灯会","emoji":"🏮","blurb":"Learn 12 Chinese characters on a Mid-Autumn lantern night, practise asking \"isn't it …?\" with 不是…吗, write a letter to a pen pal, then play Lantern Bingo. Five levels, about ten minutes each.","note":"","book":4,"lesson":6,"href":"games/chinese/lantern-night.html?home=..%2F..%2Fchinese%2Fbook-4.html"},{"id":"rice-field","category":"chinese","title":"Rice Field 稻田一日","emoji":"🌾","blurb":"Learn 15 Chinese characters from two old poems on a day at the rice fields, practise saying \"every single one\" with 个个都, write a thank-you letter to the farmer, then play Rice Bingo. Five levels, about ten minutes each.","note":"","book":4,"lesson":7,"href":"games/chinese/rice-field.html?home=..%2F..%2Fchinese%2Fbook-4.html"},{"id":"kitten-rescue","category":"chinese","title":"Kitten Rescue 救小猫","emoji":"🐱","blurb":"Learn 14 Chinese characters while friends rescue a kitten stuck in a tree, practise saying \"some … and some …\" with 有的…有的…, write a story for the class newsletter, then play Park Bingo. Five levels, about ten minutes each.","note":"","book":4,"lesson":8,"href":"games/chinese/kitten-rescue.html?home=..%2F..%2Fchinese%2Fbook-4.html"},{"id":"star-night","category":"chinese","title":"Star Night 数星星","emoji":"🔭","blurb":"Learn 13 Chinese characters on a trip to the planetarium and a night of stars, practise showing which way things move with 来 and 去, write a letter to an astronaut, then play Star Bingo. Five levels, about ten minutes each.","note":"","book":4,"lesson":9,"href":"games/chinese/star-night.html?home=..%2F..%2Fchinese%2Fbook-4.html"},{"id":"riddle-picnic","category":"chinese","title":"Riddle Picnic 猜谜野餐","emoji":"🧩","blurb":"Learn 12 Chinese characters at a riddle picnic by the lake, practise asking riddle questions like 什么白白天上飘, write a letter to Grandma, then play Riddle Bingo. Five levels, about ten minutes each.","note":"","book":4,"lesson":10,"href":"games/chinese/riddle-picnic.html?home=..%2F..%2Fchinese%2Fbook-4.html"},{"id":"nature-detective","category":"chinese","title":"Nature Detective 自然小侦探","emoji":"🔍","blurb":"Learn 14 Chinese characters on a nature walk in the park, practise saying what is happening right now with 正在…呢, write a nature journal, then play Nature Bingo. Five levels, about ten minutes each.","note":"","book":4,"lesson":11,"href":"games/chinese/nature-detective.html?home=..%2F..%2Fchinese%2Fbook-4.html"},{"id":"space-dream","category":"chinese","title":"Space Dream 太空梦","emoji":"🚀","blurb":"Learn 14 Chinese characters about a dream of going to space, practise saying dates with 年, 月 and 日, write a letter to your future self, then play Space Bingo. Five levels, about ten minutes each.","note":"","book":4,"lesson":12,"href":"games/chinese/space-dream.html?home=..%2F..%2Fchinese%2Fbook-4.html"}],"view":{"cat":"chinese","book":4}};
+var DATA = {"v":1794162863093,"site":{"title":"Ten-Minute Games","tagline":"","sub":"","categories":[{"id":"math","name":"Math","emoji":"🧮","color":"orange","blurb":"Games for numbers, Roman numerals and times tables."},{"id":"chinese","name":"Chinese 中文","emoji":"🏮","color":"blue","blurb":"Chinese characters, one lesson at a time: meet them, build words, use them in sentences."},{"id":"science","name":"Science and the World","emoji":"🔬","color":"green","blurb":"The human body, history mysteries and our planet."},{"id":"food","name":"Food and Health Detectives","emoji":"🕵️","color":"pink","blurb":"Reading labels and spotting what packages really say."},{"id":"steam","name":"Little STEAM Lab","emoji":"🧊","color":"purple","blurb":"Puzzles and things to build with your hands."},{"id":"money","name":"Money Smarts","emoji":"🐷","color":"teal","blurb":"Saving, interest and how money grows."}],"promises":[],"about":{"title":"Made for two kids first, then shared with yours","text":"We make these games at home for our own two curious kids, building them with AI and testing them together as we go. Now we are sharing them with yours."},"disclaimer":"For learning at home. Signing in is optional: we keep only a parent’s sign-in, the nicknames they type and the game progress."},"games":[{"id":"mail-to-grandpa","category":"chinese","title":"Mail to Grandpa 寄信给爷爷","emoji":"✉️","blurb":"Learn 15 Chinese characters about letters and mail, practise asking 是不是 questions, write and send a letter to Grandpa, then play Mail Bingo. Five levels, about ten minutes each.","note":"","book":4,"lesson":1,"href":"games/chinese/mail-to-grandpa.html?home=..%2F..%2Fchinese%2Fbook-4.html"},{"id":"treasure-island","category":"chinese","title":"Treasure Island 宝岛一日游","emoji":"🏝️","blurb":"Learn 15 Chinese characters on a day out: bridges, lions and an island. Practise saying 可真…啊!, write a postcard, then play Island Bingo. Five levels, about ten minutes each.","note":"","book":4,"lesson":2,"href":"games/chinese/treasure-island.html?home=..%2F..%2Fchinese%2Fbook-4.html"},{"id":"mirror-palace","category":"chinese","title":"Mirror Palace 参观凡尔赛宫","emoji":"🏰","blurb":"Learn 14 Chinese characters on a visit to a palace full of mirrors, practise saying \"more than\" with 多, write a diary page, then play Palace Bingo. Five levels, about ten minutes each.","note":"","book":4,"lesson":3,"href":"games/chinese/mirror-palace.html?home=..%2F..%2Fchinese%2Fbook-4.html"},{"id":"sunny-farm","category":"chinese","title":"Sunny Farm 阳光农场","emoji":"☀️","blurb":"Learn 10 Chinese characters on a sunny weekend at Grandma's farm, practise saying \"if not this, then not that\" with two 不, write a letter to Mom, then play Farm Bingo. Five levels, about ten minutes each.","note":"","book":4,"lesson":4,"href":"games/chinese/sunny-farm.html?home=..%2F..%2Fchinese%2Fbook-4.html"},{"id":"river-camp","category":"chinese","title":"River Camp 河边露营","emoji":"⛺","blurb":"Learn 12 Chinese characters on a camping trip by the river with Uncle, practise saying \"neither … nor …\" with 既不…也不…, write a postcard to Grandpa, then play Camp Bingo. Five levels, about ten minutes each.","note":"","book":4,"lesson":5,"href":"games/chinese/river-camp.html?home=..%2F..%2Fchinese%2Fbook-4.html"},{"id":"lantern-night","category":"chinese","title":"Lantern Night 中秋灯会","emoji":"🏮","blurb":"Learn 12 Chinese characters on a Mid-Autumn lantern night, practise asking \"isn't it …?\" with 不是…吗, write a letter to a pen pal, then play Lantern Bingo. Five levels, about ten minutes each.","note":"","book":4,"lesson":6,"href":"games/chinese/lantern-night.html?home=..%2F..%2Fchinese%2Fbook-4.html"},{"id":"rice-field","category":"chinese","title":"Rice Field 稻田一日","emoji":"🌾","blurb":"Learn 15 Chinese characters from two old poems on a day at the rice fields, practise saying \"every single one\" with 个个都, write a thank-you letter to the farmer, then play Rice Bingo. Five levels, about ten minutes each.","note":"","book":4,"lesson":7,"href":"games/chinese/rice-field.html?home=..%2F..%2Fchinese%2Fbook-4.html"},{"id":"kitten-rescue","category":"chinese","title":"Kitten Rescue 救小猫","emoji":"🐱","blurb":"Learn 14 Chinese characters while friends rescue a kitten stuck in a tree, practise saying \"some … and some …\" with 有的…有的…, write a story for the class newsletter, then play Park Bingo. Five levels, about ten minutes each.","note":"","book":4,"lesson":8,"href":"games/chinese/kitten-rescue.html?home=..%2F..%2Fchinese%2Fbook-4.html"},{"id":"star-night","category":"chinese","title":"Star Night 数星星","emoji":"🔭","blurb":"Learn 13 Chinese characters on a trip to the planetarium and a night of stars, practise showing which way things move with 来 and 去, write a letter to an astronaut, then play Star Bingo. Five levels, about ten minutes each.","note":"","book":4,"lesson":9,"href":"games/chinese/star-night.html?home=..%2F..%2Fchinese%2Fbook-4.html"},{"id":"riddle-picnic","category":"chinese","title":"Riddle Picnic 猜谜野餐","emoji":"🧩","blurb":"Learn 12 Chinese characters at a riddle picnic by the lake, practise asking riddle questions like 什么白白天上飘, write a letter to Grandma, then play Riddle Bingo. Five levels, about ten minutes each.","note":"","book":4,"lesson":10,"href":"games/chinese/riddle-picnic.html?home=..%2F..%2Fchinese%2Fbook-4.html"},{"id":"nature-detective","category":"chinese","title":"Nature Detective 自然小侦探","emoji":"🔍","blurb":"Learn 14 Chinese characters on a nature walk in the park, practise saying what is happening right now with 正在…呢, write a nature journal, then play Nature Bingo. Five levels, about ten minutes each.","note":"","book":4,"lesson":11,"href":"games/chinese/nature-detective.html?home=..%2F..%2Fchinese%2Fbook-4.html"},{"id":"space-dream","category":"chinese","title":"Space Dream 太空梦","emoji":"🚀","blurb":"Learn 14 Chinese characters about a dream of going to space, practise saying dates with 年, 月 and 日, write a letter to your future self, then play Space Bingo. Five levels, about ten minutes each.","note":"","book":4,"lesson":12,"href":"games/chinese/space-dream.html?home=..%2F..%2Fchinese%2Fbook-4.html"}],"view":{"cat":"chinese","book":4}};
 var S = DATA.site, G = DATA.games;
 function E(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 if (S.tagline) document.getElementById('tagline').textContent = S.tagline; else document.getElementById('tagline').remove();
