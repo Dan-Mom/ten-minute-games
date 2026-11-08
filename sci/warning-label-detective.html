@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-Hans">
+<html lang="en">
 <head><script>/* Ten-Minute Games accounts: a parent signs in with Google, adds children by nickname, and each child's game progress follows them
    to any computer or iPad. Signing in is optional; without it every game works exactly as before (progress stays on this device).
 
@@ -960,7 +960,7 @@ function freshProgress(){
   return {phase:"start",sceneIndex:0,hintsUsed:{},record:{},reviewModeUsed:false,startedAt:null,completedAt:null};
 }
 function freshState(){
-  return {v:1,level:"A",lang:"zh",reduced:false,showParent:false,byLevel:{A:freshProgress(),B:freshProgress()}};
+  return {v:1,level:"A",lang:"en",langChosen:false,reduced:false,showParent:false,byLevel:{A:freshProgress(),B:freshProgress()}};
 }
 function loadState(){
   try{
@@ -969,7 +969,8 @@ function loadState(){
     var s = JSON.parse(raw);
     if (!s || s.v !== 1 || !s.byLevel || !s.byLevel.A || !s.byLevel.B) return freshState();
     s.level = s.level === "B" ? "B" : "A";
-    s.lang = s.lang === "en" ? "en" : "zh";
+    s.lang = (s.langChosen === true && s.lang === "zh") ? "zh" : "en";   // opens in English like the other lessons; Chinese only if the child picked it (older saves had Chinese as the default)
+    s.langChosen = s.langChosen === true;
     s.reduced = s.reduced === true;
     s.showParent = s.showParent === true;
     return s;
@@ -1517,7 +1518,7 @@ function handle(act, val){
   var p = prog(), r = p.record, scene = SCENE_ORDER[p.sceneIndex];
   switch (act){
     case "set-level": state.level = val === "B" ? "B" : "A"; resetSceneView(); state.showParent = false; break;
-    case "set-lang": state.lang = val === "en" ? "en" : "zh"; break;
+    case "set-lang": state.lang = val === "en" ? "en" : "zh"; state.langChosen = true; break;
     case "toggle-reduced": state.reduced = !state.reduced; break;
     case "reset-ask": ui.confirmReset = true; break;
     case "reset-cancel": ui.confirmReset = false; break;
