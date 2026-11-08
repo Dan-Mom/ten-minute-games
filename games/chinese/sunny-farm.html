@@ -30,6 +30,7 @@
   function get(k) { return rawGet.call(LS, k); }
   function put(k, v) { try { rawSet.call(LS, k, v); } catch (e) {} }
   function del(k) { rawRemove.call(LS, k); }
+  function has(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
   function J(k, d) { try { var v = get(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
   function W(k, o) { put(k, JSON.stringify(o)); }
   function ours(k) { return typeof k === 'string' && (k.indexOf(P) === 0 || k.indexOf('firebase') === 0); }
@@ -54,6 +55,10 @@
     return changed;
   }
   swap();
+  /* The player this page was opened for. Another tab (or the home page, before Back brings this page out of memory) can switch the
+     player; from then on this page shows the wrong child, so its saves are kept for its own player and it reloads (see strayWrite). */
+  var pageKid = current();
+  function setCurrent(id) { put(P + 'current', id); pageKid = id; if (window.TMG) window.TMG.kid = id; }
 
   /* Every write a game makes is copied into the current player's store. For a child, the name is also listed under `changed` until it has reached the cloud.
      Until this page has heard from the cloud, writes only wait: a game saving as it opens must not make an out-of-date device look newest. */
@@ -62,17 +67,50 @@
     if (current() !== GUEST) { var old = store(current()); old.changed = {}; Object.keys(old.data).forEach(function (k) { old.changed[k] = 1; }); saveStore(current(), old); }
     del(P + 'dirty');
   }
-  function later() { clearTimeout(dirtyTimer); dirtyTimer = setTimeout(function () { cloud.push(); }, 3000); }
+  function onDevice(id, uid) { return !!uid && get(P + 'uid') === uid && J(P + 'family', { kids: [] }).kids.some(function (k) { return k.id === id; }); }
+  function bytes(s) { try { return new Blob([s]).size; } catch (e) { return unescape(encodeURIComponent(s)).length; } }   // Firestore counts UTF-8 bytes (a Chinese character is 3)
+  function bump(s) { s.seq = (s.seq || 0) + 1; s.updated = Date.now(); }   // seq counts saves, so two saves in the same millisecond are still told apart
+  function later() { clearTimeout(dirtyTimer); dirtyTimer = setTimeout(function () { cloud.push(pageKid); }, 3000); }
+  /* A save from a page whose player is no longer the current one (two tabs, or a page brought back by Back after the parent switched
+     child). The browser's values now belong to `cur`: put this key back the way `cur` had it, keep the save for the page's own player
+     (and send it), then reload so the page shows the right child. */
+  function strayWrite(k, v, cur) {
+    var other = store(cur), want = has(other.data, k) ? other.data[k] : null;
+    if (want === null) del(k); else put(k, want);
+    var nv = v === null ? null : String(v);
+    // signed out, or the child was removed, in another tab: this device was cleared on purpose, so nothing is kept for them
+    if ((pageKid !== GUEST && !onDevice(pageKid, get(P + 'uid'))) || (nv !== null && nv.length > MAX_VALUE)) { stale(); return; }
+    var s = store(pageKid), had = has(s.data, k) ? s.data[k] : null;
+    if (had !== nv) {
+      if (nv === null) delete s.data[k]; else s.data[k] = nv;
+      bump(s);
+      if (pageKid !== GUEST) (s.changed = s.changed || {})[k] = 1;
+      saveStore(pageKid, s);
+      if (pageKid !== GUEST) {   // send it before reloading (at most 3 s); if that fails, the next page that opens sends it (sendOthers)
+        var go = function () { clearTimeout(t); stale(); }, t = setTimeout(go, 3000);
+        cloud.push(pageKid).then(go, go);
+        return;
+      }
+    }
+    stale();
+  }
+  var reloading = false;
+  function stale() { if (!reloading && document.visibilityState !== 'hidden') { reloading = true; location.reload(); } }
+  function checkPlayer() { if (current() !== pageKid) stale(); }
+  window.addEventListener('pageshow', function (e) { if (e.persisted) checkPlayer(); });
+  window.addEventListener('storage', function (e) { if (e.key === P + 'current' || e.key === null) checkPlayer(); });
   function noteWrite(k, v) {
     if (ours(k)) return;
+    var id = current();
+    if (id !== pageKid) { strayWrite(k, v, id); return; }   // before the size check: a big save from a stale page must not stay on the wrong child
     if (v !== null && String(v).length > MAX_VALUE) return;
     var ks = known(); if (ks.indexOf(k) < 0) { ks.push(k); W(P + 'known', ks); }
-    var id = current(), s = store(id), had = Object.prototype.hasOwnProperty.call(s.data, k) ? s.data[k] : null;
+    var s = store(id), had = has(s.data, k) ? s.data[k] : null;
     if (had === (v === null ? null : String(v))) return;   // nothing new
     if (v === null) delete s.data[k]; else s.data[k] = String(v);
-    if (id === GUEST) { s.updated = Date.now(); saveStore(id, s); return; }
-    if (syncing) { waiting[k] = 1; saveStore(id, s); return; }
-    (s.changed = s.changed || {})[k] = 1; s.updated = Date.now(); saveStore(id, s);
+    if (id === GUEST) { bump(s); saveStore(id, s); return; }
+    if (syncing) { waiting[k] = 1; s.seq = (s.seq || 0) + 1; saveStore(id, s); return; }
+    (s.changed = s.changed || {})[k] = 1; bump(s); saveStore(id, s);
     later();
   }
   Storage.prototype.setItem = function (k, v) { rawSet.call(this, k, v); if (this === LS) noteWrite(String(k), String(v)); };
@@ -80,11 +118,11 @@
   /* the writes that were waiting now count as this child's changes */
   function settle() {
     syncing = false;
-    var ks = Object.keys(waiting), id = current(); waiting = {};
+    var ks = Object.keys(waiting), id = pageKid; waiting = {};   // the waiting saves were made by this page, for its own child
     if (!ks.length || id === GUEST) return;
     var s = store(id); s.changed = s.changed || {};
     ks.forEach(function (k) { s.changed[k] = 1; });
-    s.updated = Date.now(); saveStore(id, s); later();
+    bump(s); saveStore(id, s); later();
   }
   function reloadPage() {
     try {
@@ -100,7 +138,7 @@
   }
   /* The child was removed on another device: this device lets go too, and never writes them back. */
   function childGone(id) {
-    if (current() === id) { put(P + 'current', GUEST); swap(); }
+    if (current() === id) { setCurrent(GUEST); swap(); }
     dropKid(id);
     var fam = J(P + 'family', null);
     if (fam && fam.kids) { fam.kids = fam.kids.filter(function (k) { return k.id !== id; }); W(P + 'family', fam); }
@@ -122,27 +160,58 @@
   function userNow(f) { return new Promise(function (ok) { var off = f.auth.onAuthStateChanged(function (u) { off(); ok(u); }); }); }
   function kidsRef(f, uid) { return f.db.collection('families').doc(uid).collection('kids'); }
 
+  /* After an upload, the browser takes the cloud's values for games this device did not change. A key is only replaced when the browser
+     still holds what this device last knew (`before`), so nothing the browser holds that the store never saw (for example a value too big
+     to sync) is overwritten. `skip` = keys with changes not sent yet: they stay as they are. */
+  function applyToBrowser(id, before, after, skip) {
+    var ks = known(), grew = false;
+    Object.keys(after).forEach(function (k) { if (ks.indexOf(k) < 0) { ks.push(k); grew = true; } });
+    if (grew) W(P + 'known', ks);
+    if ((get(P + 'owner') || GUEST) !== id) return;
+    ks.forEach(function (k) {
+      if (has(skip, k)) return;
+      var was = has(before, k) ? before[k] : null, want = has(after, k) ? after[k] : null;
+      if (want === was || get(k) !== was) return;
+      if (want === null) del(k); else put(k, want);
+    });
+  }
+
   var cloud = {
-    /* upload a child's copy if it has changes. true = nothing is left unsent. `update`, not `set`: it fails on a child who has been removed instead of bringing them back. */
+    /* Upload a child's changes. true = nothing is left unsent.
+       Only the games this device changed are written: in one transaction the cloud copy is read, this device's changed keys are put into
+       it, and it is written back. So a device that has been open for a long time never puts its old copy of a game over newer progress
+       made on another device. The transaction fails on a child who has been removed (`not-found`), so they are never brought back. */
     push: function (id) {
       id = id || current();
       var uid = get(P + 'uid');
       if (id === GUEST || !uid) return Promise.resolve(true);
       if (syncing && id === current()) return ready.then(function () { return cloud.push(id); });
-      var s = store(id);
-      if (!Object.keys(s.changed || {}).length) return Promise.resolve(true);
+      var s = store(id), keys = Object.keys(s.changed || {});
+      if (!keys.length) return Promise.resolve(true);
       var name = (J(P + 'family', { kids: [] }).kids.filter(function (k) { return k.id === id; })[0] || {}).name || 'Player';
-      if (JSON.stringify(s.data).length > 900000) return Promise.resolve(false);   // a Firestore document holds at most 1 MB: keep it on this device only
+      var sent = null;
       return firebaseReady().then(function (f) {
-        return kidsRef(f, uid).doc(id).update({ name: name, data: s.data, updated: s.updated || Date.now() });
+        var ref = kidsRef(f, uid).doc(id);
+        return f.db.runTransaction(function (tx) {
+          return tx.get(ref).then(function (doc) {
+            if (!doc.exists) { var gone = new Error('removed'); gone.code = 'not-found'; throw gone; }
+            var c = doc.data() || {}, data = JSON.parse(JSON.stringify(c.data || {})), up = Math.max(Date.now(), (c.updated || 0) + 1);
+            keys.forEach(function (k) { if (has(s.data, k)) data[k] = s.data[k]; else delete data[k]; });
+            if (bytes(JSON.stringify(data)) > 900000) { var big = new Error('too big'); big.code = 'too-big'; throw big; }   // a Firestore document holds at most 1 MB: keep it on this device only
+            tx.update(ref, { name: name, data: data, updated: up });
+            sent = { data: data, updated: up };
+          });
+        });
       }).then(function () {
-        var now = store(id);
-        now.base = s.updated;   // the cloud now holds this version
-        if (now.updated === s.updated) now.changed = {};
-        saveStore(id, now);
+        if (!onDevice(id, uid)) return true;   // signed out or removed while this upload ran: do not bring the copy back to this device
+        var now = store(id), during = (now.seq || 0) !== (s.seq || 0) || now.updated !== s.updated, still = during ? (now.changed || {}) : {};
+        var data = JSON.parse(JSON.stringify(sent.data));
+        Object.keys(still).forEach(function (k) { if (has(now.data, k)) data[k] = now.data[k]; else delete data[k]; });   // saved while this upload ran: kept, sent next time
+        saveStore(id, { data: data, updated: Math.max(sent.updated, now.updated || 0), changed: still, base: sent.updated, seq: now.seq || 0 });   // base: the version the cloud now holds
+        applyToBrowser(id, now.data, data, still);
         return true;
       }, function (e) {
-        if (e && e.code === 'not-found') { childGone(id); if (!onHome) reloadPage(); return true; }
+        if (e && e.code === 'not-found') { childGone(id); if (!onHome && id === pageKid) reloadPage(); return true; }
         return false;
       });
     },
@@ -161,7 +230,7 @@
         /* the cloud is newer: take it, keeping only what this device changed and has not sent yet */
         var data = JSON.parse(JSON.stringify(c.data || {})), mineKeys = Object.keys(mine);
         mineKeys.forEach(function (k) { if (Object.prototype.hasOwnProperty.call(s.data, k)) data[k] = s.data[k]; else delete data[k]; });
-        saveStore(id, { data: data, updated: mineKeys.length ? Math.max(Date.now(), cu + 1) : cu, changed: mine, base: cu });
+        saveStore(id, { data: data, updated: mineKeys.length ? Math.max(Date.now(), cu + 1) : cu, changed: mine, base: cu, seq: (s.seq || 0) + 1 });   // seq moves on, so an upload running now keeps its own unsent marks
         waiting = {};
         var ks = known(); Object.keys(data).forEach(function (k) { if (ks.indexOf(k) < 0) ks.push(k); }); W(P + 'known', ks);
         var changed = false;
@@ -179,14 +248,20 @@
     setTimeout(function () { if (syncing) settle(); }, 20000);   // no answer for this long: what the child has been doing counts
     return cloud.pull().then(function (changed) { settle(); cloud.push(); return changed; });
   }
-  window.addEventListener('pagehide', function () { cloud.push(); });
-  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') cloud.push(); });
+  window.addEventListener('pagehide', function () { cloud.push(pageKid); });
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') cloud.push(pageKid); else checkPlayer(); });
 
   /* On a game page with a child playing: fetch their newest progress; if it differs from what the game already read, reload. */
   var ready = Promise.resolve();
   if (get(P + 'uid') && current() !== GUEST) {
     ready = syncNow().then(function (changed) { if (changed && !onHome) reloadPage(); });
   }
+  /* other children on this device with changes not sent yet (for example a save kept by strayWrite just before a reload): send them too */
+  function sendOthers() {
+    if (!get(P + 'uid')) return;
+    J(P + 'family', { kids: [] }).kids.forEach(function (k) { if (k.id !== current() && Object.keys(store(k.id).changed || {}).length) cloud.push(k.id); });
+  }
+  ready.then(function () { setTimeout(sendOthers, 1500); });
 
   /* ---------- the parent panel on the home page ---------- */
   function E(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
@@ -231,7 +306,7 @@
         kids.sort(function (a, b) { return a.name.localeCompare(b.name); });
         var before = J(P + 'family', { kids: [] }).kids;
         W(P + 'family', { kids: kids });
-        if (current() !== GUEST && !kids.some(function (k) { return k.id === current(); })) { put(P + 'current', GUEST); swap(); }
+        if (current() !== GUEST && !kids.some(function (k) { return k.id === current(); })) { setCurrent(GUEST); swap(); }
         before.forEach(function (o) { if (!kids.some(function (k) { return k.id === o.id; })) dropKid(o.id); });
         return kids;
       });
@@ -260,7 +335,7 @@
     }
     function choose(id) {
       cloud.push().then(function () {
-        put(P + 'current', id); swap();
+        setCurrent(id); swap();
         msg = id === GUEST ? 'Just looking: progress stays on this device.' : 'Now playing: ' + ((J(P + 'family', { kids: [] }).kids.filter(function (k) { return k.id === id; })[0] || {}).name || '');
         render();
         if (id !== GUEST) ready = syncNow();
@@ -276,7 +351,7 @@
     }
     /* leave this device as a guest device: the children's copies are taken off it. keepUnsent keeps any copy that has not reached the cloud yet. */
     function forgetDevice(keepUnsent) {
-      put(P + 'current', GUEST); swap();
+      setCurrent(GUEST); swap();
       J(P + 'family', { kids: [] }).kids.forEach(function (k) {
         if (keepUnsent && Object.keys(store(k.id).changed || {}).length) return;
         del(P + 'kid.' + k.id);
@@ -549,7 +624,7 @@ button{-webkit-appearance:none;appearance:none}
 .who{font:800 16px var(--display);color:var(--mute)}
 .srow{display:flex;align-items:flex-start;gap:10px}
 .srow .speak{flex:0 0 auto}
-.sline{font-size:30px;line-height:1.45}
+.sline{font-size:30px;line-height:1.45;min-width:0;overflow-wrap:anywhere}   /* always wraps inside its bubble (iPad Safari, 2026-11-07) */
 .newc{-webkit-appearance:none;appearance:none;border:0;background:none;margin:0;padding:0;font:inherit;line-height:inherit;color:var(--blue);text-decoration:underline;text-decoration-style:dotted;text-underline-offset:5px;cursor:pointer;display:inline}
 .newc.key{color:var(--red)}
 .newc.demo{cursor:default}
@@ -1054,7 +1129,7 @@ function storyLine(x) {   // the line with the lesson's characters coloured (tap
     var el;
     if (chars[ch]) { el = E('button', 'newc' + (inKey[n] ? ' key' : ''), ch); el.type = 'button'; el.setAttribute('aria-label', ch); el.onclick = function () { say(ch); }; }
     else if (inKey[n]) el = E('span', 'key', ch);
-    else { d.appendChild(document.createTextNode(ch)); return; }
+    else { var last = d.lastChild; if (last && last.nodeType === 3) last.appendData(ch); else d.appendChild(document.createTextNode(ch)); return; }   // plain text in one piece: iPad Safari did not wrap a line made of one-character pieces (2026-11-07)
     var nx = list[n + 1];
     if (nx && PUNCT.indexOf(nx) >= 0) { var keep = E('span', 'nobr'); keep.appendChild(el); keep.appendChild(document.createTextNode(nx)); el = keep; }   // a comma never starts a line
     d.appendChild(el);
