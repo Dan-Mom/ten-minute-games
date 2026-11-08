@@ -646,7 +646,7 @@ var UI = {
   startBegin: { zh: "开始学习", en: "Begin" },
   startBlurb: { zh: "大约 5 分钟。你要先猜一猜，再动手试一试，最后用自己的话说清楚。", en: "About 5 minutes. You will predict, try things, and then explain the idea in your own words." },
   noDataNote: { zh: "游戏不询问姓名，也不收集声音或图像。进度存在这个浏览器里；家长登录后会保存到家长的账号。", en: "This game asks for no name, voice, or photos. Progress stays in this browser unless a parent signs in; then it is saved to their account." },
-  toParentView: { zh: "看家长 / 审阅视图", en: "Open parent / reviewer view" },
+  toParentView: { zh: "看家长视图", en: "Open parent view" },
   replay: { zh: "再做一次", en: "Do it again" }
 };
 
@@ -930,10 +930,10 @@ var SUMMARY = {
 };
 
 var PARENT = {
-  title: { zh: "家长 / 审阅视图", en: "Parent / reviewer view" },
-  demoBanner: { zh:"这是本次样品运行的演示数据，保存在这个浏览器里；家长登录后会保存到家长的账号。游戏不询问孩子的姓名。课程里提到的色素与研究结论均来自公开资料，仅作科普用途，不是医疗建议&mdash;&mdash;如果对孩子的具体饮食或行为有疑问，请咨询医生。",
-            en:"This is demo data from this sample run, stored in this browser unless a parent signs in; then it is saved to their account. The game itself asks for no child name. The colorants and studies mentioned come from public sources for general education, not medical advice &mdash; a doctor can answer any specific concern about a child's diet or behavior." },
-  reviewUsedFlag: { zh: "本次使用过&ldquo;审阅模式&rdquo;跳转场景，时间和作答可能不代表孩子的真实完成情况。", en: "Review mode was used to jump between scenes, so times and answers may not reflect a real child run." },
+  title: { zh: "家长视图", en: "Parent view" },
+  demoBanner: { zh:"这是这次练习的记录，保存在这个浏览器里；家长登录后会保存到家长的账号。游戏不询问孩子的姓名。课程里提到的色素与研究结论均来自公开资料，仅作科普用途，不是医疗建议&mdash;&mdash;如果对孩子的具体饮食或行为有疑问，请咨询医生。",
+            en:"This is the record of this practice session, stored in this browser unless a parent signs in; then it is saved to their account. The game itself asks for no child name. The colorants and studies mentioned come from public sources for general education, not medical advice &mdash; a doctor can answer any specific concern about a child's diet or behavior." },
+  reviewUsedFlag: { zh: "这次练习中有几步是直接跳过去的，所以用时和答题情况可能不完整。", en: "Some steps in this practice were skipped, so the times and answers may be incomplete." },
   rowLevel:{zh:"难度",en:"Part"}, rowLang:{zh:"语言模式",en:"Language mode"}, rowPred:{zh:"最初的预测（不评分）",en:"Initial prediction (not scored)"},
   rowExpl:{zh:"最终解释",en:"Final explanation"}, rowTime:{zh:"完成总时间",en:"Total completion time"}, rowHints:{zh:"使用的提示",en:"Hints used"},
   evidenceTitle: { zh: "学习证据", en: "Learning evidence" },
@@ -1675,7 +1675,6 @@ function renderHeader(stepText, showStep){
     + '<div class="top-controls">'
     + '<div class="seg">' + ["A","B"].map(function(l){ return '<button type="button" class="'+(STATE.level===l?"active":"")+'" data-action="setLevel" data-value="'+l+'">'+(l==="A"?L(UI.levelA):L(UI.levelB))+'</button>'; }).join('') + '</div>'
     + '<div class="seg">' + ["zh","en"].map(function(l){ return '<button type="button" class="'+(STATE.lang===l?"active":"")+'" data-action="setLang" data-value="'+l+'">'+(l==="zh"?L(UI.langZh):L(UI.langEn))+'</button>'; }).join('') + '</div>'
-    + '<label class="chk"><input type="checkbox" '+(STATE.reviewMode?"checked":"")+' data-action="toggleReview"> '+L(UI.reviewMode)+'</label>'
     + '</div></div></header>';
 }
 function renderReviewBar(){

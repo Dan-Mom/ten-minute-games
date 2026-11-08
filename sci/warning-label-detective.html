@@ -604,7 +604,7 @@ var UI = {
   levelB:{zh:"挑战（Stretch）",en:"Stretch"},
   langZh:{zh:"中文",en:"中文"},
   langEn:{zh:"English",en:"English"},
-  reducedMotionPreview:{zh:"预览减少动画",en:"Preview reduced motion"},
+  reducedMotionPreview:{zh:"减少动画",en:"Reduce motion"},
   forcedAdvance:{zh:"（审阅：可强制前进）",en:"(review: force next)"},
   backToLesson:{zh:"回到课程",en:"Back to lesson"},
   progressStep:{zh:"第 {n} / 6 步",en:"Step {n} of 6"},
@@ -866,7 +866,7 @@ var SUMMARY = {
   yourEndLabel:{zh:"你最后的解释",en:"Your explanation now"},
   teaserLabel:{zh:"下一个问题",en:"Next question"},
   teaser:{zh:"那如果一包东西上没有贴这种警告标签，是不是就代表它完全没有这些化学物质呢？下次我们来查一查“没有标签”到底说明了什么。",en:"If a package doesn't carry this warning label at all, does that mean it definitely has none of these chemicals? Next time, let's investigate what “no label” really tells you."},
-  toParentView:{zh:"看家长 / 审阅视图",en:"Open parent / reviewer view"},
+  toParentView:{zh:"看家长视图",en:"Open parent view"},
   replay:{zh:"再做一次",en:"Do it again"},
   notRecorded:{zh:"（本次未记录）",en:"(not recorded this run)"}
 };
@@ -882,9 +882,9 @@ var EVIDENCE_STATE_LABEL = {
 };
 
 var PARENT = {
-  title:{zh:"家长 / 审阅视图",en:"Parent / reviewer view"},
-  demoBanner:{zh:"这是本次样品运行的演示数据，保存在这台设备上；家长登录后会保存到家长的账号。游戏不询问孩子的姓名。这不是医学或饮食建议——如果对具体的饮食安排有疑问，请咨询医生或营养师。",en:"This is demo data from this sample run, stored on this device unless a parent signs in; then it is saved to their account. The game itself asks for no child name. This is not medical or dietary advice — a doctor or dietitian can answer any specific concern about your family's diet."},
-  reviewUsedFlag:{zh:"本次使用过“审阅模式”跳转场景，时间和作答可能不代表孩子的真实完成情况。",en:"Review mode was used to jump between scenes, so times and answers may not reflect a real child run."},
+  title:{zh:"家长视图",en:"Parent view"},
+  demoBanner:{zh:"这是这次练习的记录，保存在这台设备上；家长登录后会保存到家长的账号。游戏不询问孩子的姓名。这不是医学或饮食建议——如果对具体的饮食安排有疑问，请咨询医生或营养师。",en:"This is the record of this practice session, stored on this device unless a parent signs in; then it is saved to their account. The game itself asks for no child name. This is not medical or dietary advice — a doctor or dietitian can answer any specific concern about your family's diet."},
+  reviewUsedFlag:{zh:"这次练习中有几步是直接跳过去的，所以用时和答题情况可能不完整。",en:"Some steps in this practice were skipped, so the times and answers may be incomplete."},
   rows:{
     level:{zh:"难度",en:"Part"},
     language:{zh:"语言模式",en:"Language mode"},
@@ -1407,8 +1407,7 @@ function renderParent(){
 /* ---------------------------------------------------------------- frame */
 
 function renderHeader(){
-  return '<div class="note">'+esc(L(UI.previewNote))+'</div>'+
-    '<header class="top"><div class="brand">'+magnifier("idle","mascot")+
+  return '<header class="top"><div class="brand">'+magnifier("idle","mascot")+
       '<div><div class="name">'+esc(L(UI.brandTitle))+'</div><div class="sub">'+esc(L(UI.brandSubtitle))+'</div></div></div>'+
     '<div class="controls">'+
       '<div class="segmented" role="group">'+
@@ -1461,7 +1460,7 @@ function render(focusKey){
       '<div class="step-line">' + esc(fillTemplate(L(UI.progressStep), {n: p.sceneIndex+1})) + ' · ' + esc(L(SCENE_LABEL[scene])) + ' · ' + SCENE_TIME_HINT[scene] + ' · ' + esc(L(level === "A" ? UI.levelA : UI.levelB)) + '</div>' +
       SCENE_RENDER[scene]();
   }
-  document.getElementById("app").innerHTML = renderHeader() + renderJump() + '<main id="stage">' + body + '</main>' + renderFooter() + renderDialog();
+  document.getElementById("app").innerHTML = renderHeader() + '<main id="stage">' + body + '</main>' + renderFooter() + renderDialog();
   ui.justRevealed = null;
   if (focusKey){
     var el = document.querySelector('[data-act="'+focusKey[0]+'"][data-val="'+focusKey[1]+'"]');

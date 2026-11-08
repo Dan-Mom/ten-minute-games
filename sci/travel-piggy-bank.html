@@ -609,7 +609,7 @@ var UI = {
   startBegin:{zh:"开始学习",en:"Begin"},
   startBlurb:{zh:"大约 5 分钟。你要先猜一猜，再动手试一试，最后用自己的话说清楚。",en:"About 5 minutes. You will predict, try things, and then explain the idea in your own words."},
   noDataNote:{zh:"游戏不询问姓名，也不收集声音或图像。进度存在这台设备上；家长登录后会保存到家长的账号。这是一个假想的家庭小游戏，不是真的银行产品，也不是理财建议。",en:"This game asks for no name, voice, or photos. Progress stays on this device unless a parent signs in; then it is saved to their account. This is a made-up family game, not a real bank product or financial advice."},
-  parentView:{zh:"家长 / 审阅视图",en:"Parent / reviewer view"},
+  parentView:{zh:"家长视图",en:"Parent view"},
   backToLesson:{zh:"回到课程",en:"Back to lesson"}
 };
 
@@ -826,7 +826,7 @@ var SUMMARY = {
   yourStartLabel:{zh:"你一开始的想法",en:"Your first idea"}, yourEndLabel:{zh:"你最后的解释",en:"Your explanation now"},
   teaserLabel:{zh:"下一个问题",en:"Next question"},
   teaser:{zh:"如果爸爸把利率从1%提高到2%，20天后你会多存多少钱？",en:"If Dad raised the rate from 1% to 2%, how much more would you have saved after 20 days?"},
-  toParentView:{zh:"看家长 / 审阅视图",en:"Open parent / reviewer view"}, replay:{zh:"再做一次",en:"Do it again"},
+  toParentView:{zh:"看家长视图",en:"Open parent view"}, replay:{zh:"再做一次",en:"Do it again"},
   notRecorded:{zh:"（本次未记录）",en:"(not recorded this run)"}
 };
 
@@ -838,9 +838,9 @@ var EVIDENCE_STATE_LABEL = {
 };
 
 var PARENT = {
-  title:{zh:"家长 / 审阅视图",en:"Parent / reviewer view"},
-  demoBanner:{zh:"这是本次样品运行的演示数据，保存在这台设备上；家长登录后会保存到家长的账号。游戏不询问孩子的姓名。这是一个假想的家庭小游戏，不是真的银行产品。",
-    en:"This is demo data from this sample run, stored on this device unless a parent signs in; then it is saved to their account. The game itself asks for no child name. This is a made-up family game, not a real bank product."},
+  title:{zh:"家长视图",en:"Parent view"},
+  demoBanner:{zh:"这是这次练习的记录，保存在这台设备上；家长登录后会保存到家长的账号。游戏不询问孩子的姓名。这是一个假想的家庭小游戏，不是真的银行产品。",
+    en:"This is the record of this practice session, stored on this device unless a parent signs in; then it is saved to their account. The game itself asks for no child name. This is a made-up family game, not a real bank product."},
   rows:{level:{zh:"难度",en:"Part"}, language:{zh:"语言模式",en:"Language mode"}, prediction:{zh:"最初的预测（不评分）",en:"Initial prediction (not scored)"},
     explanation:{zh:"最终解释",en:"Final explanation"}},
   evidenceTitle:{zh:"学习证据",en:"Learning evidence"},
@@ -1402,9 +1402,6 @@ function render(){
   document.documentElement.lang = lang === "zh" ? "zh-Hans" : "en";
   var prog = state;
   var html = '';
-  html += '<div class="note">'+ (lang==="zh"
-    ? '这是静态审阅文件——不使用任何本地开发服务器。直接在浏览器里打开这个 HTML 文件即可；以后的改动都会写进这一个文件里。'
-    : 'Static review file — no dev server involved. Just open this HTML file directly in a browser; future changes go into this one file.') + '</div>';
 
   html += '<header class="top">'+
     '<div class="brand"><div><div class="name">'+esc(pick(UI.brandTitle,lang))+'</div><div class="sub">'+esc(pick(UI.brandSubtitle,lang))+'</div></div></div>'+
