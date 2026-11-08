@@ -1,0 +1,810 @@
+<!doctype html>
+<html lang="en">
+<head>
+<base href="../">
+<meta charset="utf-8">
+<meta name="tmg-home" content="1">
+<script>/* Ten-Minute Games accounts: a parent signs in with Google, adds children by nickname, and each child's game progress follows them
+   to any computer or iPad. Signing in is optional; without it every game works exactly as before (progress stays on this device).
+
+   How progress is kept: every game already saves its progress in this browser (localStorage) under its own names. This script,
+   which build.cjs puts at the very top of every page, keeps one copy of those values per player ("guest" = not signed in, or a
+   child). When the player changes, the values in the browser are swapped before the game reads them. When a child is playing,
+   their copy is also saved to Firebase (Firestore: families/<parent uid>/kids/<child id>), and loaded back on other devices.
+   Only values written by these game pages are kept; nothing else in the browser is read or sent.
+
+   Public Firebase web config: allowed on the public site by PRIVACY-RULE.md exception five. Access is guarded by the Firestore
+   rules (each parent can only read and write their own family), not by hiding this. */
+(function () {
+  'use strict';
+  if (window.TMG) return;
+  var CONFIG = {
+    apiKey: 'AIzaSyDC-kbJIExCfhIsUkkShVIO8VtBTe3D7WI',
+    authDomain: 'ten-minute-games.firebaseapp.com',
+    projectId: 'ten-minute-games',
+    storageBucket: 'ten-minute-games.firebasestorage.app',
+    messagingSenderId: '448551703283',
+    appId: '1:448551703283:web:7f0c2b75a166f1fcbb1d86'
+  };
+  var SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
+  var P = 'tmg.', GUEST = 'guest', MAX_VALUE = 200000;
+  var LS; try { LS = window.localStorage; LS.getItem(P + 'x'); } catch (e) { LS = null; }
+  if (!LS) { window.TMG = { kid: GUEST, ready: Promise.resolve(), mountHome: function () {} }; return; }
+  var rawSet = Storage.prototype.setItem, rawRemove = Storage.prototype.removeItem, rawGet = Storage.prototype.getItem;
+  function get(k) { return rawGet.call(LS, k); }
+  function put(k, v) { try { rawSet.call(LS, k, v); } catch (e) {} }
+  function del(k) { rawRemove.call(LS, k); }
+  function has(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
+  function J(k, d) { try { var v = get(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
+  function W(k, o) { put(k, JSON.stringify(o)); }
+  function ours(k) { return typeof k === 'string' && (k.indexOf(P) === 0 || k.indexOf('firebase') === 0); }
+
+  function current() { return get(P + 'current') || GUEST; }
+  function store(id) { return J(P + 'kid.' + id, { data: {}, updated: 0 }); }
+  function saveStore(id, s) { W(P + 'kid.' + id, s); }
+  function known() { return J(P + 'known', []); }
+
+  /* Put player `id`'s values into the browser. The values sitting there now belong to `owner`: keep them first. */
+  function swap() {
+    var id = current(), owner = get(P + 'owner') || GUEST;
+    if (owner === id) return false;
+    var ks = known(), from = store(owner), to = store(id), changed = false;
+    ks.forEach(function (k) { var v = get(k); if (v === null) delete from.data[k]; else from.data[k] = v; });
+    saveStore(owner, from);
+    ks.forEach(function (k) {
+      var want = Object.prototype.hasOwnProperty.call(to.data, k) ? to.data[k] : null;
+      if (get(k) !== want) { changed = true; if (want === null) del(k); else put(k, want); }
+    });
+    put(P + 'owner', id);
+    return changed;
+  }
+  swap();
+  /* The player this page was opened for. Another tab (or the home page, before Back brings this page out of memory) can switch the
+     player; from then on this page shows the wrong child, so its saves are kept for its own player and it reloads (see strayWrite). */
+  var pageKid = current();
+  function setCurrent(id) { put(P + 'current', id); pageKid = id; if (window.TMG) window.TMG.kid = id; }
+
+  /* Every write a game makes is copied into the current player's store. For a child, the name is also listed under `changed` until it has reached the cloud.
+     Until this page has heard from the cloud, writes only wait: a game saving as it opens must not make an out-of-date device look newest. */
+  var dirtyTimer = 0, syncing = false, waiting = {}, onHome = !!document.querySelector('meta[name="tmg-home"]');
+  if (get(P + 'dirty') === '1') {          // left by an older version of this script: everything this child has here may be unsent
+    if (current() !== GUEST) { var old = store(current()); old.changed = {}; Object.keys(old.data).forEach(function (k) { old.changed[k] = 1; }); saveStore(current(), old); }
+    del(P + 'dirty');
+  }
+  function onDevice(id, uid) { return !!uid && get(P + 'uid') === uid && J(P + 'family', { kids: [] }).kids.some(function (k) { return k.id === id; }); }
+  function bytes(s) { try { return new Blob([s]).size; } catch (e) { return unescape(encodeURIComponent(s)).length; } }   // Firestore counts UTF-8 bytes (a Chinese character is 3)
+  function bump(s) { s.seq = (s.seq || 0) + 1; s.updated = Date.now(); }   // seq counts saves, so two saves in the same millisecond are still told apart
+  function later() { clearTimeout(dirtyTimer); dirtyTimer = setTimeout(function () { cloud.push(pageKid); }, 3000); }
+  /* A save from a page whose player is no longer the current one (two tabs, or a page brought back by Back after the parent switched
+     child). The browser's values now belong to `cur`: put this key back the way `cur` had it, keep the save for the page's own player
+     (and send it), then reload so the page shows the right child. */
+  function strayWrite(k, v, cur) {
+    var other = store(cur), want = has(other.data, k) ? other.data[k] : null;
+    if (want === null) del(k); else put(k, want);
+    var nv = v === null ? null : String(v);
+    // signed out, or the child was removed, in another tab: this device was cleared on purpose, so nothing is kept for them
+    if ((pageKid !== GUEST && !onDevice(pageKid, get(P + 'uid'))) || (nv !== null && nv.length > MAX_VALUE)) { stale(); return; }
+    var s = store(pageKid), had = has(s.data, k) ? s.data[k] : null;
+    if (had !== nv) {
+      if (nv === null) delete s.data[k]; else s.data[k] = nv;
+      bump(s);
+      if (pageKid !== GUEST) (s.changed = s.changed || {})[k] = 1;
+      saveStore(pageKid, s);
+      if (pageKid !== GUEST) {   // send it before reloading (at most 3 s); if that fails, the next page that opens sends it (sendOthers)
+        var go = function () { clearTimeout(t); stale(); }, t = setTimeout(go, 3000);
+        cloud.push(pageKid).then(go, go);
+        return;
+      }
+    }
+    stale();
+  }
+  var reloading = false;
+  function stale() { if (!reloading && document.visibilityState !== 'hidden') { reloading = true; location.reload(); } }
+  function checkPlayer() { if (current() !== pageKid) stale(); }
+  window.addEventListener('pageshow', function (e) { if (e.persisted) checkPlayer(); });
+  window.addEventListener('storage', function (e) { if (e.key === P + 'current' || e.key === null) checkPlayer(); });
+  function noteWrite(k, v) {
+    if (ours(k)) return;
+    var id = current();
+    if (id !== pageKid) { strayWrite(k, v, id); return; }   // before the size check: a big save from a stale page must not stay on the wrong child
+    if (v !== null && String(v).length > MAX_VALUE) return;
+    var ks = known(); if (ks.indexOf(k) < 0) { ks.push(k); W(P + 'known', ks); }
+    var s = store(id), had = has(s.data, k) ? s.data[k] : null;
+    if (had === (v === null ? null : String(v))) return;   // nothing new
+    if (v === null) delete s.data[k]; else s.data[k] = String(v);
+    if (id === GUEST) { bump(s); saveStore(id, s); return; }
+    if (syncing) { waiting[k] = 1; s.seq = (s.seq || 0) + 1; saveStore(id, s); return; }
+    (s.changed = s.changed || {})[k] = 1; bump(s); saveStore(id, s);
+    later();
+  }
+  Storage.prototype.setItem = function (k, v) { rawSet.call(this, k, v); if (this === LS) noteWrite(String(k), String(v)); };
+  Storage.prototype.removeItem = function (k) { rawRemove.call(this, k); if (this === LS) noteWrite(String(k), null); };
+  /* the writes that were waiting now count as this child's changes */
+  function settle() {
+    syncing = false;
+    var ks = Object.keys(waiting), id = pageKid; waiting = {};   // the waiting saves were made by this page, for its own child
+    if (!ks.length || id === GUEST) return;
+    var s = store(id); s.changed = s.changed || {};
+    ks.forEach(function (k) { s.changed[k] = 1; });
+    bump(s); saveStore(id, s); later();
+  }
+  function reloadPage() {
+    try {
+      var flag = 'tmg.reloaded.' + location.pathname, last = Number(sessionStorage.getItem(flag)) || 0;
+      if (Date.now() - last > 30000) { sessionStorage.setItem(flag, String(Date.now())); location.reload(); }
+    } catch (e) {}
+  }
+  /* A child's copies on this device: progress and the reward words. */
+  function dropKid(id) {
+    del(P + 'kid.' + id);
+    var end = '.rewards.' + id;
+    Object.keys(LS).forEach(function (k) { if (k.indexOf(P) === 0 && k.slice(-end.length) === end) del(k); });
+  }
+  /* The child was removed on another device: this device lets go too, and never writes them back. */
+  function childGone(id) {
+    if (current() === id) { setCurrent(GUEST); swap(); }
+    dropKid(id);
+    var fam = J(P + 'family', null);
+    if (fam && fam.kids) { fam.kids = fam.kids.filter(function (k) { return k.id !== id; }); W(P + 'family', fam); }
+  }
+
+  /* ---------- Firebase (loaded only when it is needed) ---------- */
+  var fb = null;
+  function loadScript(src) { return new Promise(function (ok, no) { var s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); }
+  function firebaseReady() {
+    if (fb) return fb;
+    fb = loadScript(SDK + 'firebase-app-compat.js')
+      .then(function () { return Promise.all([loadScript(SDK + 'firebase-auth-compat.js'), loadScript(SDK + 'firebase-firestore-compat.js')]); })
+      .then(function () {
+        var app = window.firebase.apps.length ? window.firebase.app() : window.firebase.initializeApp(CONFIG);
+        return { auth: app.auth(), db: app.firestore() };
+      });
+    return fb;
+  }
+  function userNow(f) { return new Promise(function (ok) { var off = f.auth.onAuthStateChanged(function (u) { off(); ok(u); }); }); }
+  function kidsRef(f, uid) { return f.db.collection('families').doc(uid).collection('kids'); }
+
+  /* After an upload, the browser takes the cloud's values for games this device did not change. A key is only replaced when the browser
+     still holds what this device last knew (`before`), so nothing the browser holds that the store never saw (for example a value too big
+     to sync) is overwritten. `skip` = keys with changes not sent yet: they stay as they are. */
+  function applyToBrowser(id, before, after, skip) {
+    var ks = known(), grew = false;
+    Object.keys(after).forEach(function (k) { if (ks.indexOf(k) < 0) { ks.push(k); grew = true; } });
+    if (grew) W(P + 'known', ks);
+    if ((get(P + 'owner') || GUEST) !== id) return;
+    ks.forEach(function (k) {
+      if (has(skip, k)) return;
+      var was = has(before, k) ? before[k] : null, want = has(after, k) ? after[k] : null;
+      if (want === was || get(k) !== was) return;
+      if (want === null) del(k); else put(k, want);
+    });
+  }
+
+  var cloud = {
+    /* Upload a child's changes. true = nothing is left unsent.
+       Only the games this device changed are written: in one transaction the cloud copy is read, this device's changed keys are put into
+       it, and it is written back. So a device that has been open for a long time never puts its old copy of a game over newer progress
+       made on another device. The transaction fails on a child who has been removed (`not-found`), so they are never brought back. */
+    push: function (id) {
+      id = id || current();
+      var uid = get(P + 'uid');
+      if (id === GUEST || !uid) return Promise.resolve(true);
+      if (syncing && id === current()) return ready.then(function () { return cloud.push(id); });
+      var s = store(id), keys = Object.keys(s.changed || {});
+      if (!keys.length) return Promise.resolve(true);
+      var name = (J(P + 'family', { kids: [] }).kids.filter(function (k) { return k.id === id; })[0] || {}).name || 'Player';
+      var sent = null;
+      return firebaseReady().then(function (f) {
+        var ref = kidsRef(f, uid).doc(id);
+        return f.db.runTransaction(function (tx) {
+          return tx.get(ref).then(function (doc) {
+            if (!doc.exists) { var gone = new Error('removed'); gone.code = 'not-found'; throw gone; }
+            var c = doc.data() || {}, data = JSON.parse(JSON.stringify(c.data || {})), up = Math.max(Date.now(), (c.updated || 0) + 1);
+            keys.forEach(function (k) { if (has(s.data, k)) data[k] = s.data[k]; else delete data[k]; });
+            if (bytes(JSON.stringify(data)) > 900000) { var big = new Error('too big'); big.code = 'too-big'; throw big; }   // a Firestore document holds at most 1 MB: keep it on this device only
+            tx.update(ref, { name: name, data: data, updated: up });
+            sent = { data: data, updated: up };
+          });
+        });
+      }).then(function () {
+        if (!onDevice(id, uid)) return true;   // signed out or removed while this upload ran: do not bring the copy back to this device
+        var now = store(id), during = (now.seq || 0) !== (s.seq || 0) || now.updated !== s.updated, still = during ? (now.changed || {}) : {};
+        var data = JSON.parse(JSON.stringify(sent.data));
+        Object.keys(still).forEach(function (k) { if (has(now.data, k)) data[k] = now.data[k]; else delete data[k]; });   // saved while this upload ran: kept, sent next time
+        saveStore(id, { data: data, updated: Math.max(sent.updated, now.updated || 0), changed: still, base: sent.updated, seq: now.seq || 0 });   // base: the version the cloud now holds
+        applyToBrowser(id, now.data, data, still);
+        return true;
+      }, function (e) {
+        if (e && e.code === 'not-found') { childGone(id); if (!onHome && id === pageKid) reloadPage(); return true; }
+        return false;
+      });
+    },
+    /* compare with the cloud; returns true when the values in the browser changed */
+    pull: function () {
+      var id = current(), uid = get(P + 'uid');
+      if (id === GUEST || !uid) return Promise.resolve(false);
+      return firebaseReady().then(function (f) { return kidsRef(f, uid).doc(id).get(); }).then(function (doc) {
+        if (!doc.exists) { childGone(id); return true; }
+        var c = doc.data(), s = store(id), cu = c.updated || 0, mine = s.changed || {};
+        var news = s.base != null ? cu !== s.base : cu > (s.updated || 0);   // has the cloud changed since this device last synced?
+        if (!news) {
+          if (cu < (s.updated || 0) && !Object.keys(mine).length) { s.changed = {}; Object.keys(s.data).forEach(function (k) { s.changed[k] = 1; }); saveStore(id, s); }
+          return false;
+        }
+        /* the cloud is newer: take it, keeping only what this device changed and has not sent yet */
+        var data = JSON.parse(JSON.stringify(c.data || {})), mineKeys = Object.keys(mine);
+        mineKeys.forEach(function (k) { if (Object.prototype.hasOwnProperty.call(s.data, k)) data[k] = s.data[k]; else delete data[k]; });
+        saveStore(id, { data: data, updated: mineKeys.length ? Math.max(Date.now(), cu + 1) : cu, changed: mine, base: cu, seq: (s.seq || 0) + 1 });   // seq moves on, so an upload running now keeps its own unsent marks
+        waiting = {};
+        var ks = known(); Object.keys(data).forEach(function (k) { if (ks.indexOf(k) < 0) ks.push(k); }); W(P + 'known', ks);
+        var changed = false;
+        if ((get(P + 'owner') || GUEST) === id) ks.forEach(function (k) {
+          var want = Object.prototype.hasOwnProperty.call(data, k) ? data[k] : null;
+          if (get(k) !== want) { changed = true; if (want === null) del(k); else put(k, want); }
+        });
+        return changed;
+      }, function () { return false; });
+    }
+  };
+  /* hear from the cloud, then send whatever is left to send */
+  function syncNow() {
+    syncing = true;
+    setTimeout(function () { if (syncing) settle(); }, 20000);   // no answer for this long: what the child has been doing counts
+    return cloud.pull().then(function (changed) { settle(); cloud.push(); return changed; });
+  }
+  window.addEventListener('pagehide', function () { cloud.push(pageKid); });
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') cloud.push(pageKid); else checkPlayer(); });
+
+  /* On a game page with a child playing: fetch their newest progress; if it differs from what the game already read, reload. */
+  var ready = Promise.resolve();
+  if (get(P + 'uid') && current() !== GUEST) {
+    ready = syncNow().then(function (changed) { if (changed && !onHome) reloadPage(); });
+  }
+  /* other children on this device with changes not sent yet (for example a save kept by strayWrite just before a reload): send them too */
+  function sendOthers() {
+    if (!get(P + 'uid')) return;
+    J(P + 'family', { kids: [] }).kids.forEach(function (k) { if (k.id !== current() && Object.keys(store(k.id).changed || {}).length) cloud.push(k.id); });
+  }
+  ready.then(function () { setTimeout(sendOthers, 1500); });
+
+  /* ---------- the parent panel on the home page ---------- */
+  function E(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function newId() { var a = new Uint8Array(9); crypto.getRandomValues(a); return Array.prototype.map.call(a, function (b) { return ('0' + b.toString(16)).slice(-2); }).join(''); }
+  function cleanName(s) { return String(s || '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 20); }
+
+  function mountHome(box) {
+    var msg = '', askDelete = null, deleting = false;   // askDelete: the loaded Firebase while the parent is asked to confirm with Google; deleting: Google window open or deletion running
+    function render() {
+      box.replaceChildren();
+      var uid = get(P + 'uid'), fam = J(P + 'family', { kids: [] }), cur = current();
+      if (!uid) askDelete = null;
+      if (deleting) {   // nothing else to tap until the deletion has finished or stopped
+      } else if (!uid) {
+        var b = E('button', 'acct-btn', 'Parent sign-in'); b.type = 'button'; b.onclick = signIn;
+        box.appendChild(b);
+        box.appendChild(E('span', 'acct-note', 'Optional: keep each child’s progress on every device.'));
+      } else {
+        var row = E('div', 'acct-kids');
+        fam.kids.forEach(function (k) {
+          var chip = E('button', 'acct-kid' + (k.id === cur ? ' on' : ''), (k.id === cur ? '▶ ' : '') + k.name); chip.type = 'button';
+          chip.setAttribute('aria-pressed', k.id === cur ? 'true' : 'false');
+          chip.onclick = function () { choose(k.id); };
+          row.appendChild(chip);
+        });
+        var g = E('button', 'acct-kid' + (cur === GUEST ? ' on' : ''), 'Just looking'); g.type = 'button'; g.onclick = function () { choose(GUEST); };
+        row.appendChild(g);
+        var add = E('button', 'acct-btn small', '+ Add child'); add.type = 'button'; add.onclick = addKid;
+        row.appendChild(add);
+        box.appendChild(row);
+        var tools = E('span', 'acct-tools');   // on the same row, right after "+ Add child"
+        var so = E('button', 'acct-link', 'Sign out'); so.type = 'button'; so.onclick = signOut; tools.appendChild(so);
+        var rm = E('button', 'acct-link', 'Remove a child'); rm.type = 'button'; rm.onclick = removeKid; tools.appendChild(rm);
+        var dl = E('button', 'acct-link danger', 'Delete account and all data'); dl.type = 'button'; dl.onclick = deleteAll; tools.appendChild(dl);
+        var pv = E('a', 'acct-link', 'Privacy'); pv.href = 'privacy.html'; tools.appendChild(pv);
+        row.appendChild(tools);
+      }
+      if (msg) box.appendChild(E('div', 'acct-msg', msg));
+      if (askDelete && uid) {
+        var cf = E('div', 'acct-confirm');
+        cf.appendChild(E('div', 'acct-msg', 'Last step: confirm with Google that it is you. Then the account, all children and all progress are deleted.'));
+        var yes = E('button', 'acct-btn danger', 'Confirm with Google and delete'); yes.type = 'button'; yes.onclick = reallyDelete; cf.appendChild(yes);
+        var no = E('button', 'acct-link', 'Cancel'); no.type = 'button'; no.onclick = function () { askDelete = null; say('Nothing was deleted.'); }; cf.appendChild(no);
+        box.appendChild(cf);
+      }
+    }
+    function say(t) { msg = t; render(); }
+    function loadFamily(f, uid) {
+      return kidsRef(f, uid).get().then(function (q) {
+        var kids = []; q.forEach(function (d) { kids.push({ id: d.id, name: cleanName(d.data().name) || 'Player' }); });
+        kids.sort(function (a, b) { return a.name.localeCompare(b.name); });
+        var before = J(P + 'family', { kids: [] }).kids;
+        W(P + 'family', { kids: kids });
+        if (current() !== GUEST && !kids.some(function (k) { return k.id === current(); })) { setCurrent(GUEST); swap(); }
+        before.forEach(function (o) { if (!kids.some(function (k) { return k.id === o.id; })) dropKid(o.id); });
+        return kids;
+      });
+    }
+    function signIn() {
+      if (deleting) return; askDelete = null;
+      say('Opening Google sign-in…');
+      firebaseReady().then(function (f) {
+        var p = new window.firebase.auth.GoogleAuthProvider();
+        return f.auth.signInWithPopup(p).then(function (r) { put(P + 'uid', r.user.uid); return loadFamily(f, r.user.uid); });
+      }).then(function (kids) { msg = kids.length ? 'Signed in. Pick who is playing.' : 'Signed in. Add your first child (a nickname is enough).'; render(); },
+        function (e) { say(e && e.code === 'auth/popup-closed-by-user' ? '' : 'Sign-in did not work' + (e && e.code ? ' (' + e.code + ')' : '') + '. Please try again.'); });
+    }
+    function addKid() {
+      if (deleting) return; askDelete = null;
+      var name = cleanName(window.prompt('Child’s nickname (not their full name):', ''));
+      if (!name) return;
+      var uid = get(P + 'uid'), id = newId(), fam = J(P + 'family', { kids: [] });
+      var guest = store(GUEST), first = fam.kids.length === 0 && Object.keys(guest.data).length > 0;
+      var start = { data: {}, updated: Date.now() };
+      if (first && window.confirm('Move the progress already on this device to ' + name + '?')) {
+        swap(); start = { data: JSON.parse(JSON.stringify(store(GUEST).data)), updated: Date.now() };
+      }
+      say('Adding ' + name + '…');
+      firebaseReady().then(function (f) {
+        return kidsRef(f, uid).doc(id).set({ name: name, data: start.data, updated: start.updated }).then(function () { return loadFamily(f, uid); });
+      }).then(function () { start.base = start.updated; saveStore(id, start); choose(id); }, function () { say('Could not add ' + name + '. Please try again.'); });
+    }
+    function choose(id) {
+      if (deleting) return; askDelete = null;
+      cloud.push().then(function () {
+        setCurrent(id); swap();
+        msg = id === GUEST ? 'Just looking: progress stays on this device.' : 'Now playing: ' + ((J(P + 'family', { kids: [] }).kids.filter(function (k) { return k.id === id; })[0] || {}).name || '');
+        render();
+        if (id !== GUEST) ready = syncNow();
+      });
+    }
+    function removeKid() {
+      if (deleting) return; askDelete = null;
+      var fam = J(P + 'family', { kids: [] }); if (!fam.kids.length) return;
+      var name = window.prompt('Type the nickname of the child to remove. Their progress is deleted everywhere.\n\n' + fam.kids.map(function (k) { return k.name; }).join(', '), '');
+      var k = fam.kids.filter(function (x) { return x.name === cleanName(name); })[0]; if (!k) return;
+      var uid = get(P + 'uid');
+      firebaseReady().then(function (f) { return kidsRef(f, uid).doc(k.id).delete().then(function () { return loadFamily(f, uid); }); })
+        .then(function () { dropKid(k.id); say(k.name + ' was removed.'); }, function () { say('Could not remove ' + k.name + '. Please try again.'); });
+    }
+    /* leave this device as a guest device: the children's copies are taken off it. keepUnsent keeps any copy that has not reached the cloud yet. */
+    function forgetDevice(keepUnsent) {
+      setCurrent(GUEST); swap();
+      J(P + 'family', { kids: [] }).kids.forEach(function (k) {
+        if (keepUnsent && Object.keys(store(k.id).changed || {}).length) return;
+        del(P + 'kid.' + k.id);
+      });
+      if (!keepUnsent) del(P + 'family');
+      del(P + 'uid');
+    }
+    /* never sign out while something has not reached the cloud: signing out takes the only copy off this device */
+    function signOut() {
+      if (deleting) return; askDelete = null;
+      var ids = J(P + 'family', { kids: [] }).kids.map(function (k) { return k.id; });
+      say('Saving…');
+      ready.then(function () { return Promise.all(ids.map(function (id) { return cloud.push(id); })); }).then(function (done) {
+        if (done.indexOf(false) >= 0) { say('Not signed out: some progress has not been saved yet. Check the internet and try again.'); return; }
+        return firebaseReady().then(function (f) { return f.auth.signOut(); }).then(function () { forgetDevice(); say('Signed out. This device is back to guest play.'); },
+          function () { forgetDevice(); say('Signed out on this device.'); });
+      });
+    }
+    /* Deleting a Google sign-in needs a recent sign-in. Safari only opens the Google window straight from a tap,
+       so: first tap asks, Firebase is loaded, then a second button opens the Google window inside its own tap,
+       and only after Google says yes is anything deleted. */
+    function deleteAll() {
+      if (deleting) return;
+      if (!window.confirm('Delete your account, all your children and all their progress? This cannot be undone.')) return;
+      askDelete = null; say('One moment…');
+      firebaseReady().then(function (f) { return userNow(f).then(function (u) {
+        if (!u || u.uid !== get(P + 'uid')) { forgetDevice(true); say('This device is no longer signed in. Sign in again, then delete.'); return; }
+        askDelete = f; say('');
+      }); }, function () { say('Could not reach Google. Check the internet and try again. Nothing was deleted.'); });
+    }
+    function reallyDelete() {
+      var f = askDelete, u = f && f.auth.currentUser, stage = 'confirm';
+      askDelete = null;
+      if (deleting) return;
+      if (!u || u.uid !== get(P + 'uid')) { say('This device is no longer signed in. Sign in again, then delete.'); return; }
+      var uid = u.uid;
+      deleting = true;
+      say('Waiting for Google… (close the Google window to cancel)');
+      function gone() { deleting = false; var ids = J(P + 'family', { kids: [] }).kids.map(function (k) { return k.id; }); forgetDevice(); ids.forEach(dropKid); say('Your account and all its data were deleted.'); }
+      u.reauthenticateWithPopup(new window.firebase.auth.GoogleAuthProvider())   // opened inside this tap, so Safari lets it open
+        .then(function () { stage = 'delete'; say('Deleting…'); return kidsRef(f, uid).get(); })
+        .then(function (q) { var jobs = []; q.forEach(function (d) { jobs.push(d.ref.delete()); }); return Promise.all(jobs); })
+        .then(function () { return u.delete(); })
+        .then(gone, function (e) {
+          var c = e && e.code;
+          deleting = false;
+          if (c === 'auth/user-not-found') { gone(); return; }   // the sign-in record is already gone (an earlier try finished but its answer was lost)
+          if (stage === 'confirm') {
+            if (c === 'auth/user-mismatch') say('That was a different Google account. Nothing was deleted. Tap "Delete account and all data" again and pick the account you signed in with.');
+            else if (c === 'auth/popup-closed-by-user' || c === 'auth/cancelled-popup-request') say('Nothing was deleted.');
+            else if (c === 'auth/popup-blocked') say('The Google window did not open. Nothing was deleted. Wait a moment and tap "Delete account and all data" again.');
+            else say('Google did not confirm' + (c ? ' (' + c + ')' : '') + '. Nothing was deleted. Please try again.');
+          } else say('Not finished: some data may already be deleted. Check the internet and tap "Delete account and all data" again to finish.');
+        });
+    }
+    /* check the sign-in is still valid (it can end on another device) */
+    if (get(P + 'uid')) firebaseReady().then(function (f) { return userNow(f).then(function (u) {
+      if (!u) { forgetDevice(true); render(); return; }
+      return loadFamily(f, u.uid).then(render);
+    }); }, function () {});
+    render();
+  }
+
+  window.TMG = { kid: current(), ready: ready, mountHome: mountHome, _swap: swap, _cloud: cloud };
+})();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Ten-Minute Games</title>
+<meta name="description" content="Learning games for curious kids. Each game teaches one idea in about ten minutes a level.">
+<meta name="theme-color" content="#7ccbff">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%2064%2064%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20role%3D%22img%22%20aria-label%3D%22Ten-Minute%20Games%22%3E%3Crect%20x%3D%2228%22%20y%3D%221.5%22%20width%3D%228%22%20height%3D%226%22%20rx%3D%222%22%20fill%3D%22%231d2b4f%22%2F%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2236%22%20r%3D%2224%22%20fill%3D%22%23ffffff%22%20stroke%3D%22%231d2b4f%22%20stroke-width%3D%226%22%2F%3E%3Cpath%20d%3D%22M32%2036%20L32%2015%20A21%2021%200%200%201%2050.2%2025.5%20Z%22%20fill%3D%22%23e8650a%22%2F%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2236%22%20r%3D%224%22%20fill%3D%22%231d2b4f%22%2F%3E%3Cpath%20d%3D%22M54%203%20L55.8%207.6%20L60.4%209.4%20L55.8%2011.2%20L54%2015.8%20L52.2%2011.2%20L47.6%209.4%20L52.2%207.6%20Z%22%20fill%3D%22%23ffd23f%22%20stroke%3D%22%231d2b4f%22%20stroke-width%3D%221.4%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ten-Minute Games">
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+:root{
+  color-scheme:light;
+  --ink:#1d2b4f; --mute:#4a587a; --page:#fff6e3; --card:#fff;
+  --orange:#d95b00; --orange-s:#ffe2c4; --orange-m:#ff9a3d;
+  --pink:#d6246e;   --pink-s:#ffd8ea;   --pink-m:#ff6fa8;
+  --teal:#0b8a7c;   --teal-s:#c8f3ec;   --teal-m:#2fd0bd;
+  --green:#1f8f45;  --green-s:#d3f4dd;  --green-m:#4fd37c;
+  --purple:#6d3fd8; --purple-s:#e4dbff; --purple-m:#a07cff;
+  --blue:#1b6fd1;   --blue-s:#d5e9ff;   --blue-m:#4fa8ff;
+  --display:"Baloo 2","Nunito","Trebuchet MS","Segoe UI Rounded",ui-rounded,system-ui,sans-serif;
+  --body:"Nunito","Trebuchet MS",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:76px}
+body{margin:0;background:var(--page);color:var(--ink);font:700 18px/1.55 var(--body);overflow-x:hidden}
+h1,h2,h3{font-family:var(--display);margin:0;line-height:1.1}
+.c-orange{--c:var(--orange);--cs:var(--orange-s);--cm:var(--orange-m)}
+.c-pink{--c:var(--pink);--cs:var(--pink-s);--cm:var(--pink-m)}
+.c-teal{--c:var(--teal);--cs:var(--teal-s);--cm:var(--teal-m)}
+.c-green{--c:var(--green);--cs:var(--green-s);--cm:var(--green-m)}
+.c-purple{--c:var(--purple);--cs:var(--purple-s);--cm:var(--purple-m)}
+.c-blue{--c:var(--blue);--cs:var(--blue-s);--cm:var(--blue-m)}
+.wrap{max-width:1100px;margin:0 auto;padding:0 16px}
+
+/* top bar */
+.top{position:sticky;top:0;z-index:30;background:rgba(255,246,227,.94);backdrop-filter:blur(6px);border-bottom:2px solid #f1dfb8}
+.top .wrap{display:flex;align-items:center;gap:12px;min-height:62px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);font:800 22px var(--display)}
+.brand svg{width:44px;height:44px}
+
+/* hero */
+.hero{position:relative;background:linear-gradient(180deg,#7ccbff 0%,#b9e6ff 60%,#fff0c9 100%);padding:34px 0 70px;overflow:hidden}
+.hero.bare{padding:0;height:14px}
+.hero h1{font-size:clamp(26px,4.2vw,44px);font-weight:800;color:#fff;text-shadow:0 4px 0 #1b6fd1,0 8px 0 rgba(27,111,209,.3);max-width:760px}
+.hero .sub{margin:14px 0 0;font:700 clamp(17px,2.2vw,21px)/1.45 var(--body);color:#12306b;max-width:620px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}
+.chip{background:rgba(255,255,255,.92);color:#12306b;border-radius:999px;padding:5px 14px;font:800 15px var(--display)}
+
+/* category tiles */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:14px;margin-top:14px;position:relative}
+.tile{position:relative;display:flex;flex-direction:column;gap:4px;text-decoration:none;color:#fff;border-radius:24px;padding:16px;min-height:150px;background:linear-gradient(150deg,var(--cm),var(--c));box-shadow:0 7px 0 rgba(20,30,60,.22),0 16px 26px rgba(20,30,60,.1);overflow:hidden;transition:transform .15s}
+.tile:hover{transform:translateY(-4px) rotate(-.5deg)}
+.tile::before{content:"";position:absolute;right:-34px;top:-34px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.16)}
+.tile .e{font-size:48px;line-height:1;filter:drop-shadow(0 5px 0 rgba(0,0,0,.18))}
+.tile h3{font-size:21px;text-shadow:0 2px 0 rgba(0,0,0,.18)}
+.tile span.n{font:800 14px var(--display);opacity:.95}
+
+/* category sections and game cards */
+section.cat{padding:38px 0 6px}
+.cat-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.cat-head .e{font-size:42px;line-height:1}
+.cat-head h2{font-size:clamp(26px,3.8vw,36px);font-weight:800;color:var(--c)}
+.lead{margin:4px 0 18px;color:var(--mute);font-size:18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:18px}
+.card{display:flex;flex-direction:column;text-decoration:none;color:inherit;background:var(--card);border:3px solid var(--cs);border-radius:24px;overflow:hidden;box-shadow:0 6px 0 var(--cs),0 12px 22px rgba(20,30,60,.08);transition:transform .15s}
+.card:hover{transform:translateY(-4px)}
+.card .art{height:104px;display:flex;align-items:center;justify-content:center;background:linear-gradient(150deg,var(--cs),#fff 140%);font-size:56px}
+.card .body{padding:12px 16px 16px;display:flex;flex-direction:column;gap:6px;flex:1}
+.card h3{font-size:21px}
+.card p{margin:0;font-size:16px;color:var(--mute);line-height:1.45}
+.card .play{margin-top:auto;align-self:flex-start;background:var(--c);color:#fff;border-radius:14px;padding:6px 18px;font:800 18px var(--display);box-shadow:0 4px 0 rgba(0,0,0,.22)}
+.card small{color:var(--mute);font-size:14px}
+
+/* a book's page: where you are, then one small tile per lesson */
+.crumbs{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:18px 0 0;font:800 18px var(--display)}
+.crumbs a{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:999px;background:#fff;color:var(--c);text-decoration:none;box-shadow:0 3px 0 var(--cs)}
+.crumbs .sep{color:var(--mute)}
+.crumbs b{color:var(--ink)}
+.lessons{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,160px),1fr));gap:14px}
+.card.lesson .art{height:76px;font-size:44px}
+.card.lesson .body{padding:10px 12px 14px;gap:2px}
+.card.lesson .num{font:800 15px var(--display);color:var(--c)}
+.card.lesson h3{font-size:18px;word-break:keep-all}
+
+/* about and footer */
+.about{margin:44px auto 0;background:#fff;border-radius:24px;padding:22px;box-shadow:0 6px 0 #f1dfb8}
+.about h2{font-size:26px}
+.about p{margin:8px 0 0;color:var(--mute)}
+footer{padding:26px 0 40px;color:var(--mute);font-size:15px;text-align:center}
+
+/* "a newer version is ready" banner */
+#upd{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:50;display:flex;align-items:center;gap:12px;background:#12306b;color:#fff;border-radius:999px;padding:8px 10px 8px 18px;box-shadow:0 8px 24px rgba(0,0,0,.25);font:800 16px var(--display);max-width:calc(100% - 32px)}
+#upd[hidden]{display:none}
+/* parent sign-in panel */
+.acct{max-width:1100px;margin:14px auto 0;padding:0 16px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.acct-btn{border:0;border-radius:999px;background:#fff;color:var(--blue);font:800 16px var(--display);min-height:44px;padding:0 16px;box-shadow:0 3px 0 #c9dbef;cursor:pointer}
+.acct-btn.small{min-height:40px;font-size:15px}
+.acct-note{font:700 15px var(--body);color:var(--mute)}
+.acct-kids{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.acct-kid{border:2px solid #c9dbef;border-radius:999px;background:#fff;color:var(--ink);font:800 16px var(--display);min-height:44px;padding:0 16px;cursor:pointer}
+.acct-kid.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.acct-tools{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px 14px;margin-left:6px}
+.acct-link{border:0;background:none;padding:6px 0;color:var(--blue);font:700 14px var(--body);text-decoration:underline;cursor:pointer}
+.acct-link.danger{color:#b23246}
+.acct-msg{width:100%;font:700 15px var(--body);color:var(--ink)}
+.acct-confirm{width:100%;display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-top:6px;padding:12px 14px;border:2px solid #b23246;border-radius:16px;background:#fff}
+.acct-btn.danger{background:#b23246;color:#fff;box-shadow:0 3px 0 #7d1f2f}
+.acct-confirm .acct-link{min-height:44px}
+footer a{color:inherit}
+#upd button{border:0;border-radius:999px;background:#ffd23f;color:#5a3d00;font:800 16px var(--display);padding:8px 16px;cursor:pointer;min-height:40px}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap"><a class="brand" href="#top"><span id="logo"><svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ten-Minute Games"><rect x="28" y="1.5" width="8" height="6" rx="2" fill="#1d2b4f"/><circle cx="32" cy="36" r="24" fill="#ffffff" stroke="#1d2b4f" stroke-width="6"/><path d="M32 36 L32 15 A21 21 0 0 1 50.2 25.5 Z" fill="#e8650a"/><circle cx="32" cy="36" r="4" fill="#1d2b4f"/><path d="M54 3 L55.8 7.6 L60.4 9.4 L55.8 11.2 L54 15.8 L52.2 11.2 L47.6 9.4 L52.2 7.6 Z" fill="#ffd23f" stroke="#1d2b4f" stroke-width="1.4" stroke-linejoin="round"/></svg></span><span>Ten-Minute Games</span></a></div></header>
+<main id="top">
+  <div class="hero"><div class="wrap"><h1 id="tagline"></h1><p class="sub" id="sub"></p><div class="chips" id="chips"></div></div></div>
+  <div class="acct" id="acct"></div>
+  <div class="wrap"><nav class="tiles" id="tiles" aria-label="Game corners"></nav><div id="cats"></div><div class="about" id="about"></div></div>
+</main>
+<footer><div class="wrap" id="foot"></div></footer>
+<div id="upd" hidden role="status"><span>New games are ready</span><button type="button" id="updBtn">Refresh</button></div>
+<script>
+var DATA = {"v":1794177472796,"site":{"title":"Ten-Minute Games","tagline":"","sub":"","categories":[{"id":"math","name":"Math","emoji":"🧮","color":"orange","blurb":"Games for numbers, Roman numerals and times tables."},{"id":"chinese","name":"Chinese 中文","emoji":"🏮","color":"blue","blurb":"Chinese characters, one lesson at a time: meet them, build words, use them in sentences."},{"id":"science","name":"Science and the World","emoji":"🔬","color":"green","blurb":"The human body, history mysteries and our planet."},{"id":"food","name":"Food and Health Detectives","emoji":"🕵️","color":"pink","blurb":"Reading labels and spotting what packages really say."},{"id":"steam","name":"Little STEAM Lab","emoji":"🧊","color":"purple","blurb":"Puzzles and things to build with your hands."},{"id":"money","name":"Money Smarts","emoji":"🐷","color":"teal","blurb":"Saving, interest and how money grows."}],"promises":[],"about":{"title":"Made for two kids first, then shared with yours","text":"We make these games at home for our own two curious kids, building them with AI and testing them together as we go. Now we are sharing them with yours."},"disclaimer":"For learning at home. Signing in is optional: we keep only a parent’s sign-in, the nicknames they type and the game progress."},"games":[{"id":"city-walk","category":"chinese","title":"City Walk 上街去","emoji":"🚦","blurb":"Learn 12 Chinese characters on a walk to the library, practise saying which way to go with 往, write a letter to Grandpa, then play Street Bingo. Five levels, about ten minutes each.","note":"","book":3,"lesson":1,"href":"games/chinese/city-walk.html?home=..%2F..%2Fchinese%2Fbook-3.html"}],"view":{"cat":"chinese","book":3}};
+var S = DATA.site, G = DATA.games;
+function E(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+if (S.tagline) document.getElementById('tagline').textContent = S.tagline; else document.getElementById('tagline').remove();
+if (S.sub) document.getElementById('sub').textContent = S.sub; else document.getElementById('sub').remove();
+(S.promises || []).forEach(function (t) { document.getElementById('chips').appendChild(E('span', 'chip', t)); });
+if (!S.tagline && !S.sub && !(S.promises || []).length) document.querySelector('.hero').classList.add('bare');   // nothing to say up top: keep only a short blue band
+
+var tiles = document.getElementById('tiles'), cats = document.getElementById('cats');
+/* books: a corner whose games have a book number (the Chinese lessons) shows one card per book on the home page,
+   and each book has its own page (DATA.view = { cat, book }) with one small tile per lesson. Fewer cards to scroll past. */
+var ZH = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二', '十三', '十四', '十五', '十六', '十七', '十八', '十九', '二十'];
+function zh(n) { return ZH[n] || String(n); }
+function bookName(n) { return 'Book ' + n + ' 第' + zh(n) + '册'; }
+function bookHref(cat, n) { return cat + '/book-' + n + '.html'; }
+var BOOK_ICONS = ['📕', '📗', '📘', '📙'];
+function bookIcon(n) { return BOOK_ICONS[n % BOOK_ICONS.length]; }
+function gameCard(g) {
+  var a = E('a', 'card'); a.href = g.href;
+  a.appendChild(E('div', 'art', g.emoji));
+  var b = E('div', 'body'); b.appendChild(E('h3', null, g.title)); b.appendChild(E('p', null, g.blurb));
+  if (g.note) b.appendChild(E('small', null, g.note));
+  b.appendChild(E('span', 'play', 'Play ▶'));
+  a.appendChild(b); return a;
+}
+var V = DATA.view;
+if (!V) {
+  S.categories.forEach(function (c) {
+    var list = G.filter(function (g) { return g.category === c.id; });
+    if (!list.length) return;                       // a corner with no games yet is not shown
+    var t = E('a', 'tile c-' + c.color); t.href = '#' + c.id;
+    t.appendChild(E('span', 'e', c.emoji)); t.appendChild(E('h3', null, c.name));
+    var nb = []; list.forEach(function (g) { if (g.book != null && nb.indexOf(g.book) < 0) nb.push(g.book); });
+    t.appendChild(E('span', 'n', list.every(function (g) { return g.book != null; })   // a corner made only of books: count books and lessons
+      ? nb.length + (nb.length === 1 ? ' book · ' : ' books · ') + list.length + (list.length === 1 ? ' lesson' : ' lessons')
+      : list.length + (list.length === 1 ? ' game' : ' games')));
+    tiles.appendChild(t);
+
+    var s = E('section', 'cat c-' + c.color); s.id = c.id;
+    var h = E('div', 'cat-head'); h.appendChild(E('span', 'e', c.emoji)); h.appendChild(E('h2', null, c.name)); s.appendChild(h);
+    s.appendChild(E('p', 'lead', c.blurb));
+    var grid = E('div', 'grid');
+    var books = [];
+    list.forEach(function (g) { if (g.book != null && books.indexOf(g.book) < 0) books.push(g.book); });
+    books.sort(function (a, b) { return a - b; });
+    books.forEach(function (n) {                    // one card per book
+      var inBook = list.filter(function (g) { return g.book === n; });
+      var a = E('a', 'card'); a.href = bookHref(c.id, n);
+      a.appendChild(E('div', 'art', bookIcon(n)));
+      var b = E('div', 'body'); b.appendChild(E('h3', null, bookName(n)));
+      b.appendChild(E('p', null, inBook.length + (inBook.length === 1 ? ' lesson' : ' lessons') + ', one game each.'));
+      b.appendChild(E('span', 'play', 'Open ▶'));
+      a.appendChild(b); grid.appendChild(a);
+    });
+    list.forEach(function (g) { if (g.book == null) grid.appendChild(gameCard(g)); });   // games that are not in a book
+    s.appendChild(grid); cats.appendChild(s);
+  });
+} else {
+  var c = S.categories.filter(function (x) { return x.id === V.cat; })[0] || S.categories[0];
+  var lessons = G.filter(function (g) { return g.category === V.cat && g.book === V.book; }).sort(function (a, b) { return a.lesson - b.lesson; });
+  document.title = bookName(V.book) + ' · ' + c.name + ' · ' + document.title;
+  var s = E('section', 'cat c-' + c.color);
+  var nav = E('nav', 'crumbs'); nav.setAttribute('aria-label', 'Where you are');
+  var home = E('a', null, '🏠 Home'); home.href = 'index.html';
+  var up = E('a', null, c.emoji + ' ' + c.name); up.href = 'index.html#' + c.id;
+  function sep() { var x = E('span', 'sep', '›'); x.setAttribute('aria-hidden', 'true'); return x; }
+  var here = E('b', null, bookIcon(V.book) + ' ' + bookName(V.book)); here.setAttribute('aria-current', 'page');
+  nav.appendChild(home); nav.appendChild(sep()); nav.appendChild(up); nav.appendChild(sep()); nav.appendChild(here);
+  document.querySelector('.brand').href = 'index.html';   // the logo goes to the home page
+  tiles.parentNode.insertBefore(nav, tiles); tiles.remove();
+  var h = E('div', 'cat-head'); h.appendChild(E('span', 'e', bookIcon(V.book))); h.appendChild(E('h2', null, bookName(V.book))); s.appendChild(h);
+  s.appendChild(E('p', 'lead', 'Pick a lesson. Each one is a game with five levels.'));
+  var grid = E('div', 'lessons');
+  lessons.forEach(function (g) {                    // one small tile per lesson, in lesson order
+    var a = E('a', 'card lesson'); a.href = g.href;
+    a.appendChild(E('div', 'art', g.emoji));
+    var b = E('div', 'body'); b.appendChild(E('span', 'num', 'Lesson ' + g.lesson + ' 第' + zh(g.lesson) + '课')); b.appendChild(E('h3', null, g.title));
+    a.appendChild(b); grid.appendChild(a);
+  });
+  s.appendChild(grid); cats.appendChild(s);
+  nav.className += ' c-' + c.color;
+}
+
+var ab = document.getElementById('about');
+if (S.about && !V) { ab.appendChild(E('h2', null, S.about.title)); ab.appendChild(E('p', null, S.about.text)); } else ab.remove();
+var ft = document.getElementById('foot'); ft.textContent = (S.disclaimer || '') + ' '; var pl = E('a', null, 'Privacy'); pl.href = 'privacy.html'; ft.appendChild(pl);
+if (window.TMG) TMG.mountHome(document.getElementById('acct'));
+
+/* a newer build only shows a small banner; nothing reloads by itself */
+(function () {
+  var bar = document.getElementById('upd');
+  function look() {
+    if (!window.fetch || location.protocol === 'file:') return;
+    fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); })
+      .then(function (j) { if (j && Number(j.v) > Number(DATA.v)) bar.hidden = false; }, function () {});
+  }
+  document.getElementById('updBtn').onclick = function () { location.reload(); };
+  look();
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') look(); });
+})();
+/* Chinese lessons offline: once a lesson has saved itself for offline use (its cache "zh-offline" exists), this page and the
+   book pages are kept too, so the way to the lesson also works with no internet. The worker is zh-sw.js at the site root. */
+try { if ('serviceWorker' in navigator && window.caches && /^https?:$/.test(location.protocol)) caches.has('zh-offline').then(function (has) {
+  if (has) navigator.serviceWorker.register(new URL('zh-sw.js', document.baseURI).href, { scope: new URL('./', document.baseURI).href }).catch(function () {});
+}, function () {}); } catch (e) {}
+</script>
+<script>(function backPill() {
+  try { if (window.parent !== window) return; } catch (e) { return; }
+  var h = '', m = /[?&]home=([^&]*)/.exec(location.search || '');
+  if (m) { try { h = decodeURIComponent(m[1]); } catch (e) { h = ''; } }
+  if (h && (!/^[A-Za-z0-9._%~/-]+$/.test(h) || h.indexOf('//') >= 0)) h = '';
+  var a = document.createElement('div');
+  a.setAttribute('style', 'position:fixed;z-index:2147483647;box-sizing:border-box;display:inline-flex;align-items:center;gap:8px');
+  if (h) {
+    var back = document.createElement('a'); back.href = h; back.textContent = '🏠 Home';
+    back.setAttribute('style', 'box-sizing:border-box;display:inline-flex;align-items:center;min-height:56px;padding:0 22px;border:3px solid #fff;background:#1f5f99;color:#fff;font:800 20px system-ui,sans-serif;border-radius:999px;white-space:nowrap;text-decoration:none;box-shadow:0 2px 10px rgba(0,0,0,.45)');
+    a.appendChild(back);
+  }
+  var upd = document.createElement('button'); upd.type = 'button';
+  upd.setAttribute('style', 'box-sizing:border-box;min-height:56px;padding:0 22px;border:3px solid #fff;background:#E8590C;color:#fff;font:800 20px system-ui,sans-serif;border-radius:999px;cursor:pointer;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,.45)');
+  a.appendChild(upd);
+  /* A page with a top bar keeps a spot for the buttons in it (<span data-pill-slot>): there they sit in the bar's own row, a little smaller,
+     and can never cover the title. Every other page gets the floating pill below. */
+  var slot = document.querySelector('[data-pill-slot]');
+  if (slot) {
+    a.setAttribute('style', 'box-sizing:border-box;display:inline-flex;align-items:center;flex-wrap:wrap;gap:6px');
+    [back, upd].forEach(function (el) { if (el) { el.style.minHeight = '44px'; el.style.padding = '0 14px'; el.style.fontSize = '17px'; el.style.borderWidth = '2px'; el.style.boxShadow = 'none'; } });
+  }
+  (slot || document.body).appendChild(a);
+  /* Update: get the newest copy of the site from the internet. With no internet nothing is touched, so offline games keep working.
+     Progress lives in localStorage and is never touched. Only this site's offline games are asked for their newest version (nothing is deleted); other apps on this web address are never touched. */
+  var LABEL = '🔄 Update', busy = false, KEY = 'tmg.justUpdated', small = false;
+  upd.textContent = LABEL;
+  function label() { return small && !busy ? '🔄' : LABEL; }
+  var showing = false;   // a short message (Updated ✓, No internet) is on the button
+  function say(t) { showing = true; upd.textContent = t; upd.setAttribute('aria-label', t); setTimeout(function () { showing = false; upd.textContent = label(); upd.setAttribute('aria-label', 'Update'); if (!slot) later(); }, 2500); }
+  /* No offline copy is ever deleted any more. Every offline worker of this site is asked for its newest version; a new version only
+     takes over once it has completely downloaded the game, so with bad Wi-Fi the old copy simply stays and the game keeps opening with
+     no internet. (Before 2026-11-07 Update deleted every offline copy, and those games then needed the internet until each was opened
+     online again.) For the offline game this page belongs to, wait until its new version is in charge (at most 20 s) before reloading,
+     so the child sees the newest version at once. Other workers carry on downloading after the reload. */
+  function wait(ms) { return new Promise(function (ok) { setTimeout(ok, ms); }); }
+  function inCharge(r) {   // 'ok', or 'failed' when the new version could not install (bad Wi-Fi): the old copy stays in charge
+    return new Promise(function (ok) {
+      var w = r.installing || r.waiting; if (!w) { ok('ok'); return; }
+      w.addEventListener('statechange', function () { if (w.state === 'activated') ok('ok'); else if (w.state === 'redundant') ok('failed'); });
+    });
+  }
+  function cap(p, ms) { return Promise.race([p, wait(ms).then(function () { throw new Error('too slow'); })]); }
+  function clearOffline(base) {
+    if (!navigator.serviceWorker || !navigator.serviceWorker.getRegistrations) return Promise.resolve();
+    var site = location.origin + base;
+    return navigator.serviceWorker.getRegistrations().then(function (rs) {
+      return Promise.all(rs.filter(function (r) { return r.scope.indexOf(site) === 0; }).map(function (r) {
+        var mine = r.scope !== site && location.href.indexOf(r.scope) === 0;   // this page's own offline game (not the site-wide Chinese worker)
+        var job = r.update().then(function () { return mine ? inCharge(r) : 'ok'; }, function () { return mine ? 'failed' : 'ok'; });
+        return Promise.race([job, wait(mine ? 20000 : 4000).then(function () { return mine ? 'failed' : 'ok'; })]);
+      }));
+    }).then(function (res) { return res.indexOf('failed') < 0; });   // false: this game's newest version did not arrive in time
+  }
+  upd.addEventListener('click', function () {
+    if (busy) return; busy = true; upd.textContent = 'Updating…'; upd.setAttribute('aria-label', 'Updating…'); if (!slot) later();
+    var ROOT = '/ten-minute-games/', p = location.pathname, i = p.indexOf(ROOT), base = i >= 0 ? p.slice(0, i + ROOT.length) : '/';
+    function fresh(u) { return cap(fetch(u, { cache: 'reload' }), 8000).catch(function () {}); }
+    var done = true;   // every step has a time limit, so "Updating…" never hangs on a Wi-Fi with no real internet
+    cap(fetch(base + 'version.json?t=' + Date.now(), { cache: 'no-store' }), 8000).then(function (r) { if (!r.ok) throw new Error('no copy'); })
+      .then(function () { return clearOffline(base).then(function (ok) { done = ok; }); })
+      .then(function () { return Promise.all([fresh(location.href), fresh(base + 'index.html')]); })
+      .then(function () { try { sessionStorage.setItem(KEY, done ? '1' : 'retry'); } catch (e) {} location.reload(); },
+            function () { busy = false; say('No internet'); });
+  });
+  try { var was = sessionStorage.getItem(KEY); if (was) { sessionStorage.removeItem(KEY); say(was === 'retry' ? 'Try again later' : 'Updated ✓'); } } catch (e) {}
+  if (slot) return;   // in a top bar: nothing to move around
+  /* The lessons keep their own buttons along the screen edges (Previous / Next in a footer, controls in a header), so a pill nailed to
+     one corner always sat on top of something. Keep the pill 44px tall (easy to tap) and, whenever the page layout changes, put it in
+     whichever of six edge spots does not cover a button, link or field (spots tried in this order: bottom-centre, bottom-left,
+     bottom-right, top-centre, top-left, top-right). Buttons that are always on screen (fixed or sticky) count much more than ones
+     that scroll away. It does not move during scrolling; once scrolling stops it moves only if its spot now covers something. */
+  var SPOTS = ['bc', 'bl', 'br', 'tc', 'tl', 'tr'], cur = '', timer = 0, room = false;
+  /* On a phone the two wide pills (about 300px) covered something in every spot, for example "Begin" on a lesson's first screen.
+     Below 560px wide they become two round 48px buttons (🏠 and 🔄, still easy to tap; the words stay for screen readers),
+     and the page gets room at the bottom so it can always scroll clear of them. */
+  if (back) { back.setAttribute('aria-label', 'Home'); back.title = 'Home'; }
+  if (!showing) upd.setAttribute('aria-label', 'Update'); upd.title = 'Update';
+  function sizeUp() {
+    var want = document.documentElement.clientWidth < 560;
+    if (want !== small) {
+      small = want;
+      [back, upd].forEach(function (el) { if (!el) return;
+        el.style.minHeight = small ? '48px' : '56px'; el.style.minWidth = small ? '48px' : '';
+        el.style.padding = small ? '0 10px' : '0 22px'; el.style.justifyContent = 'center'; });
+      if (back) back.textContent = small ? '🏠' : '🏠 Home';
+      if (!busy && !showing) upd.textContent = label();
+    }
+    if (small && !room) { room = true; document.body.style.paddingBottom = 'calc(' + (getComputedStyle(document.body).paddingBottom || '0px') + ' + 72px)'; }
+  }
+  var SEL = 'button,a[href],input,select,textarea,summary,label,[role=button],[role=tab],[tabindex]:not([tabindex="-1"])';
+  function put(s) {
+    var st = a.style, v = s.charAt(0) === 'b' ? 'bottom' : 'top', side = s.charAt(1);
+    st.top = st.bottom = st.left = st.right = 'auto'; st.transform = 'none';
+    st[v] = '10px'; st[v] = 'calc(10px + env(safe-area-inset-' + v + ', 0px))';
+    if (side === 'c') { st.left = '50%'; st.transform = 'translateX(-50%)'; }
+    else { var d = side === 'l' ? 'left' : 'right'; st[d] = '10px'; st[d] = 'calc(10px + env(safe-area-inset-' + d + ', 0px))'; }
+  }
+  function fixedish(e) {
+    for (var n = e; n && n.nodeType === 1; n = n.parentElement) { var p = getComputedStyle(n).position; if (p === 'fixed' || p === 'sticky') return true; }
+    return false;
+  }
+  function place() {
+    try {
+      sizeUp();
+      var W = document.documentElement.clientWidth, H = window.innerHeight, items = [], all, i, j;
+      a.style.pointerEvents = 'none'; all = document.querySelectorAll(SEL);   /* (while measuring, the pill itself must not count as covering anything) */
+      for (i = 0; i < all.length; i++) {
+        var e = all[i]; if (e === a || a.contains(e) || e.querySelector(SEL)) continue;
+        var cs = getComputedStyle(e); if (cs.display === 'none' || cs.visibility === 'hidden' || cs.pointerEvents === 'none') continue;
+        var r = e.getBoundingClientRect(); if (r.width < 2 || r.height < 2 || r.bottom <= 0 || r.top >= H || r.right <= 0 || r.left >= W) continue;
+        var t = document.elementFromPoint(Math.min(Math.max(r.left + r.width / 2, 0), W - 1), Math.min(Math.max(r.top + r.height / 2, 0), H - 1));
+        if (t && !e.contains(t)) continue;   /* hidden behind something else right now (for example scrolled under the footer): not a button the pill can cover */
+        items.push({ r: r, hard: fixedish(e) });
+      }
+      var res = {};
+      SPOTS.forEach(function (s) {
+        put(s); var b = a.getBoundingClientRect(), hard = 0, soft = 0;
+        items.forEach(function (it) { var q = it.r; if (q.left < b.right - 1 && q.right > b.left + 1 && q.top < b.bottom - 1 && q.bottom > b.top + 1) { if (it.hard) hard++; else soft++; } });
+        res[s] = { hard: hard, soft: soft };
+      });
+      var best = '', c = res[cur];
+      for (j = 0; j < SPOTS.length; j++) { var x = res[SPOTS[j]]; if (!best || x.hard < res[best].hard || (x.hard === res[best].hard && x.soft < res[best].soft)) best = SPOTS[j]; }
+      if (!(c && c.hard === 0 && (c.soft === 0 || res[best].hard > 0 || res[best].soft > 0))) cur = best;
+      put(cur); a.style.pointerEvents = '';
+    } catch (e) { put(cur || 'bl'); a.style.pointerEvents = ''; }
+  }
+  function later() { clearTimeout(timer); timer = setTimeout(function () { place(); timer = setTimeout(place, 500); }, 120); }
+  put('bc'); cur = 'bc'; place();
+  window.addEventListener('resize', later); window.addEventListener('orientationchange', later); window.addEventListener('load', later);
+  /* once scrolling has stopped, move only if the buttons now sit on top of something (place() keeps a free spot) */
+  var scrollTimer = 0; window.addEventListener('scroll', function () { clearTimeout(scrollTimer); scrollTimer = setTimeout(place, 400); }, { passive: true });
+  try { new MutationObserver(function (ms) { for (var i = 0; i < ms.length; i++) if (!a.contains(ms[i].target)) { later(); return; } }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden', 'disabled', 'aria-hidden', 'open'] }); } catch (e) { /* no observer: the spot is only worked out at load and on resize */ }
+})()</script><script>(function noZoom() {
+  var st = document.createElement('style');
+  // text-size-adjust: Safari enlarges text after a turn to landscape; manipulation: no double-tap zoom (rules that set their own touch-action, such as drag areas, still win)
+  st.textContent = 'html{-webkit-text-size-adjust:100%;text-size-adjust:100%}*{touch-action:manipulation}';
+  (document.head || document.documentElement).appendChild(st);
+  var stop = function (e) { e.preventDefault(); };
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (t) { document.addEventListener(t, stop, { passive: false }); });   // Safari's pinch
+  document.addEventListener('touchmove', function (e) { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });   // two fingers: no pinch
+})()</script></body>
+</html>
