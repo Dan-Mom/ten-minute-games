@@ -22,11 +22,11 @@ function ours(url) {
   if (url.origin === self.location.origin) {
     if (url.pathname.indexOf(ROOT) !== 0) return false;
     const r = rel(url);
-    return r === '' || r === 'index.html' || /^chinese\/book-\d+\.html$/.test(r) || r.indexOf('games/chinese/') === 0;
+    return r === '' || r === 'index.html' || /^chinese\/book-\d+\.html$/.test(r) || r.indexOf('games/chinese/') === 0 || r.indexOf('fonts/') === 0;
   }
-  return url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com';
+  return false;
 }
-function fixed(url) { return url.origin !== self.location.origin || /\.(mp3|svg)$/.test(url.pathname) || /\/strokes\/[0-9a-f]+\.json$/.test(url.pathname); }
+function fixed(url) { return url.origin !== self.location.origin || /\.(mp3|svg|woff2)$/.test(url.pathname) || /\/strokes\/[0-9a-f]+\.json$/.test(url.pathname); }
 function key(url) { return url.origin === self.location.origin ? url.origin + (rel(url) === '' ? url.pathname + 'index.html' : url.pathname) : url.href; }
 
 self.addEventListener('install', () => self.skipWaiting());

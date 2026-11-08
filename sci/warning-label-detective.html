@@ -595,17 +595,7 @@
 <script>
 "use strict";
 
-/* =========================================================================
-   Static preview build of the Warning Label Detective course, on
-   request: no dev server / localhost — a single HTML file, open directly
-   from disk. One agent per course builds its own preview; an integrating
-   agent later merges the course previews into one site.
-   All content ported 1:1 from
-   components/lessons/warning-label-detective/content.ts (source of truth).
-   Any future change to this course's copy or logic should be made in BOTH
-   places (the React source, and here) until/unless this file is retired.
-   No network requests, no external assets, no real child data.
-   ========================================================================= */
+/* Warning Label Detective: a one-file lesson. */
 
 function pick(copy, lang){ return lang === "zh" ? copy.zh : copy.en; }
 function pickLeveled(copy, level, lang){ return pick(copy[level], lang); }
@@ -665,7 +655,6 @@ var UI = {
   startBegin:{zh:"开始学习",en:"Begin"},
   startBlurb:{zh:"大约 5 分钟。你要先猜一猜，再动手试一试，最后用自己的话说清楚。",en:"About 5 minutes. You will predict, try things, and then explain the idea in your own words."},
   noDataNote:{zh:"游戏不询问姓名，也不收集声音或图像。进度存在这台设备上；家长登录后会保存到家长的账号。",en:"This game asks for no name, voice, or photos. Progress stays on this device unless a parent signs in; then it is saved to their account."},
-  previewNote:{zh:"审阅预览：直接双击打开即可，不需要 localhost。上方的场景标签可以随意跳转（会被记为“审阅跳转”）。所有内容与 components/lessons/warning-label-detective/content.ts 一一对应。",en:"Review preview: open this file directly — no localhost needed. The scene chips above jump anywhere (recorded as a review jump). All content mirrors components/lessons/warning-label-detective/content.ts."}
 };
 
 var VISUAL = {

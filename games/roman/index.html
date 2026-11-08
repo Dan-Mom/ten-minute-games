@@ -716,7 +716,7 @@ svg.star{width:34px;height:34px}svg.star.off{filter:grayscale(1) brightness(1.6)
 <noscript>Please turn on JavaScript to play Roman Numeral Kingdom Builder.</noscript>
 <script>
 'use strict';
-/* Host context (SYSTEM-CONTRACT 4.1, review R1): a host can pass ?profile=<id>&lang=<zh|en>&host=<origin> in the address (a cross-origin
+/* Host context: a host can pass ?profile=<id>&lang=<zh|en>&host=<origin> in the address (a cross-origin
    iframe host cannot set our window variables). Read it BEFORE any event is emitted or any save is loaded. window.PE_LEARNING_CONTEXT wins if set. */
 const cleanId=x=>String(x).replace(/[^A-Za-z0-9_.-]/g,'_').slice(0,40);
 /* only a real http(s) origin counts as a host: "*", "null", javascript: and garbage are rejected (review F4) */
@@ -728,7 +728,7 @@ const readContext=(search,c)=>{try{const q=new URLSearchParams(search);
   if(q.get('lang')&&!c.lang)c.lang=q.get('lang')}catch(e){}return c};
 try{window.PE_LEARNING_CONTEXT=readContext(location.search,(window.PE_LEARNING_CONTEXT&&typeof window.PE_LEARNING_CONTEXT==='object')?window.PE_LEARNING_CONTEXT:{})}catch(e){}
 /*==================================================================================================
-  LearningHook  -  progress events for the Five-Minute Academy system (SYSTEM-CONTRACT.md section 4, schema 1)
+  LearningHook  -  progress events kept on this device (schema 1)
   lesson_id: math.all.roman-numeral-kingdom      No personal data anywhere: `profile` is an anonymous random id.
 
   LearningHook.emit(name, data)  -> builds and delivers ONE event, never throws into the game:
@@ -745,7 +745,7 @@ try{window.PE_LEARNING_CONTEXT=readContext(location.search,(window.PE_LEARNING_C
     - gate_passed always fires when the gate opens (the game has no fail state): read data.correct / data.total (first-try answers), not "passed".
     - lp_events_v1 is ONE queue shared by every lesson on this browser origin, capped at 500 (oldest dropped): a host should take events through
       PE_LEARNING_HOOK, and treat the queue only as an offline fallback, never as storage.
-    - answer_checked.tag values (registry: SYSTEM-CONTRACT 4.1): repeat-limit, bad-subtract, bad-order, wrong-place, wrong-value.
+    - answer_checked.tag values: repeat-limit, bad-subtract, bad-order, wrong-place, wrong-value.
   Events (each fires once per real child action, never on re-render):
     started            {}                          first open per lesson+profile (remembered in localStorage lp_started_v1:<lesson>:<profile>)
     activity_completed {unit:"world1|2|3", activity:"symbol-catch|block-builder|memory-match|master-builder|speedy-catch",
@@ -756,7 +756,7 @@ try{window.PE_LEARNING_CONTEXT=readContext(location.search,(window.PE_LEARNING_C
     session_end        {seconds}                               on pagehide / tab hidden, once per hide (seconds visible since load or last return)
 ==================================================================================================*/
 /*==================================================================================================
-  Who is playing?  -  one save per child (SYSTEM-CONTRACT section 4.1: "save keys carry the profile")
+  Who is playing?  -  one save per child (save keys carry the profile)
   Four built-in animal slots, no names and no typing. Each slot has its OWN save (rnk_state:<slot>) and its OWN anonymous
   event id (lp_profile_v1:<slot>), so brothers and sisters on one iPad never overwrite each other and the parent
   dashboard can tell them apart. If a host app sets window.PE_LEARNING_CONTEXT.profile, that profile IS the slot (no picker).

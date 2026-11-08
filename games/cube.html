@@ -1372,7 +1372,7 @@ const Store = (function () {
   return { probe, get, set, get ok() { return ok; } };
 })();
 
-/* ================= HOST CONTEXT (the Five-Minute Thinkers site) ================= */
+/* ================= HOST CONTEXT (the site that opens this game) ================= */
 /* The site opens a lesson with ?profile=<animal>&host=<its own address>. Only a valid animal is a player; without one this page
    reports nothing at all and behaves exactly as a stand-alone page. Events go to this device's own storage and, when the page sits
    inside the site (same address), to the site page that holds it. Nothing is ever sent over the network. */
