@@ -642,6 +642,9 @@ button.ap.tapme{box-shadow:0 0 0 3px #f4b183}
   /*LINES-END*/
 
   var KEY = 'cookie-share.v1', REWARD_STEP = 6, REWARD_GOALS = 4;
+  /* every 6 stars, but the last goal leaves 3 stars of slack (decided 2026-11-08): it no longer needs 3 stars on every level */
+  function goalAt(i) { var g = (i + 1) * REWARD_STEP; return i === REWARD_GOALS - 1 ? Math.min(g, LEVELS.length * 3 - 3) : g; }
+  function goalsReached(n) { var k = 0; while (k < REWARD_GOALS && n >= goalAt(k)) k++; return k; }
   var app = document.getElementById('app');
   var st = load();
   var lastSay = '', voiceOn = true, screen = 0, keyHandler = null;
@@ -655,14 +658,14 @@ button.ap.tapme{box-shadow:0 0 0 3px #f4b183}
   function totalStars() { var n = 0; LEVELS.forEach(function (x, i) { n += (st.lv[i] && st.lv[i].stars) || 0; }); return n; }
   function drawStars() { document.getElementById('starTotal').textContent = '⭐ ' + totalStars(); }
   function unlocked(i) { return i === 0 || (st.lv[i - 1] && st.lv[i - 1].stars != null); }
-  /* Rewards: the child types one for every 6 stars. A child's own words stay on this device: the tmg. name keeps them out of the account sync. */
+  /* Rewards: the child types one for every 6 stars (the last goal leaves 3 stars of slack). A child's own words stay on this device: the tmg. name keeps them out of the account sync. */
   function rewardKey() { return 'tmg.cookie-share.rewards.' + ((window.TMG && window.TMG.kid) || 'guest'); }
   function rewards() { try { var r = JSON.parse(localStorage.getItem(rewardKey())); if (Array.isArray(r)) return r; } catch (e) {} return []; }
   function saveRewards(r) { try { localStorage.setItem(rewardKey(), JSON.stringify(r)); } catch (e) {} }
   function rewardText(i) { return String(rewards()[i] || '').trim(); }
   function nextReward() {
     var have = totalStars();
-    for (var i = 0; i < REWARD_GOALS; i++) { var goal = (i + 1) * REWARD_STEP; if (have < goal && rewardText(i)) return { text: rewardText(i), left: goal - have }; }
+    for (var i = 0; i < REWARD_GOALS; i++) { var goal = goalAt(i); if (have < goal && rewardText(i)) return { text: rewardText(i), left: goal - have }; }
     return null;
   }
   function newScreen() { screen++; keyHandler = null; hush(); app.replaceChildren(); drawStars(); window.scrollTo(0, 0); return screen; }
@@ -840,7 +843,7 @@ button.ap.tapme{box-shadow:0 0 0 3px #f4b183}
     p.appendChild(E('h2', null, 'You have ⭐ ' + have));
     p.appendChild(E('p', 'goal', 'Finish levels to earn stars. Type a reward for each star goal, then ask a grown-up to say yes. Your next reward shows on your level. These stay on this device.'));
     for (var i = 0; i < REWARD_GOALS; i++) (function (i) {
-      var goal = (i + 1) * REWARD_STEP, won = have >= goal, row = E('label', 'rrow' + (won ? ' won' : ''));
+      var goal = goalAt(i), won = have >= goal, row = E('label', 'rrow' + (won ? ' won' : ''));
       row.appendChild(E('b', null, '⭐ ' + goal));
       var input = E('input'); input.type = 'text'; input.maxLength = 40; input.placeholder = 'Type a reward'; input.value = rewards()[i] || '';
       input.setAttribute('aria-label', 'Reward at ' + goal + ' stars'); input.setAttribute('autocomplete', 'off');
@@ -1000,13 +1003,13 @@ button.ap.tapme{box-shadow:0 0 0 3px #f4b183}
     var n = marks.filter(Boolean).length, total = marks.length, stars = n >= Math.ceil(total * 0.9) ? 3 : n >= Math.ceil(total * 0.65) ? 2 : 1;
     var before = totalStars();
     L(lv).stars = Math.max(L(lv).stars || 0, stars); save(); newScreen();
-    var reached = Math.min(REWARD_GOALS, Math.floor(totalStars() / REWARD_STEP)), newGoal = reached > Math.floor(before / REWARD_STEP) ? reached : 0;
+    var reached = goalsReached(totalStars()), newGoal = reached > goalsReached(before) ? reached : 0;
     bar(lv, 'Level ' + (lv + 1) + ' · ' + LEVELS[lv].name, function () { hub(lv); });
     var s = E('div', 'panel done');
     s.appendChild(E('div', 'big-e', '🍪'));
     s.appendChild(E('h2', null, 'Level ' + (lv + 1) + ' done! ' + '⭐'.repeat(stars) + '☆'.repeat(3 - stars)));
     s.appendChild(E('p', 'hint', n + ' of ' + total + ' right the first time.'));
-    if (newGoal) s.appendChild(E('div', 'earned', '🎉 ' + (newGoal * REWARD_STEP) + ' stars! ' + (rewardText(newGoal - 1) ? 'You earned: ' + rewardText(newGoal - 1) : 'Type a reward for this goal.')));
+    if (newGoal) s.appendChild(E('div', 'earned', '🎉 ' + goalAt(newGoal - 1) + ' stars! ' + (rewardText(newGoal - 1) ? 'You earned: ' + rewardText(newGoal - 1) : 'Type a reward for this goal.')));
     var r = E('div', 'row');
     r.appendChild(B('btn alt', 'Play again', function () { play(lv); }));
     if (lv < LEVELS.length - 1) r.appendChild(B('btn', 'Level ' + (lv + 2) + ' →', function () { hub(lv + 1); }));
