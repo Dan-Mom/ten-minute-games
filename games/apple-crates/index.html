@@ -629,42 +629,37 @@ button.ap.tapme{box-shadow:0 0 0 3px #f4b183}
   function newScreen() { screen++; keyHandler = null; hush(); app.replaceChildren(); drawStars(); window.scrollTo(0, 0); return screen; }
   function later(fn, ms) { var s = screen; setTimeout(function () { if (s === screen) fn(); }, ms); }
 
-  /* read aloud: every line is recorded in advance (voice/<key>.mp3, made by 网站\make-voices.py). Only a line with no recording uses the device voice. */
-  var VKEYS = null, player = null, fallbackVoice = null, endTimer = 0;
+  /* read aloud: every line is recorded in advance (voice/<key>.mp3, made by 网站\make-voices.py). The device's own robot voice is never
+     used: a line with no recording, or one that is cut off or blocked, stays quiet, and 🔊 plays it again. (Until 2026-11-07 the robot
+     voice read lines said before voice/keys.json had arrived.) */
+  var VKEYS = null, player = null, endTimer = 0, waitFin = null;
   try { fetch('voice/keys.json').then(function (r) { return r.json(); }).then(function (k) { VKEYS = {}; k.forEach(function (x) { VKEYS[x] = 1; }); }, function () {}); } catch (e) {}
   function vkey(t) { t = String(t).replace(/＿/g, '').trim(); var h = 0x811c9dc5; for (var i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
-  function pickVoice() {
-    try {
-      var v = speechSynthesis.getVoices().filter(function (x) { return /^en(-|_)US/i.test(x.lang); });
-      var score = function (x) { return (/natural|neural|enhanced|premium/i.test(x.name) ? 4 : 0) + (/ava|jenny|aria|samantha|allison|susan|zoe|google us english/i.test(x.name) ? 2 : 0); };
-      fallbackVoice = v.sort(function (a, b) { return score(b) - score(a); })[0] || null;
-    } catch (e) {}
-  }
-  if (window.speechSynthesis) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
-  function hush() { clearTimeout(endTimer); if (player) { player.onended = null; try { player.pause(); } catch (e) {} } if (window.speechSynthesis) try { speechSynthesis.cancel(); } catch (e) {} }
-  function deviceSay(t) {
-    if (!window.speechSynthesis || !t) return;
-    try { var u = new SpeechSynthesisUtterance(t.replace(/ = \?/g, '').replace(/−/g, ' minus ').replace(/=/g, ' equals ').replace(/\+/g, ' plus ')); u.lang = 'en-US'; if (fallbackVoice) u.voice = fallbackVoice; u.rate = 0.88; u.pitch = 1.05; speechSynthesis.speak(u); } catch (e) {}
+  /* keep = true (the mute button): stop the sound but let a waiting step move on with its safety timer */
+  function hush(keep) {
+    if (!keep) { clearTimeout(endTimer); waitFin = null; if (player) player.onended = null; }
+    if (player) try { player.pause(); } catch (e) {}
   }
   /* then (optional) runs when the sentence has finished, or after a safe wait if the sound is off or blocked */
-  function say(t, then) {
+  function say(t, then, replay) {
     lastSay = t;
+    // 🔊 while a step is waiting for a line: the step keeps waiting and moves on after the replay (before 2026-11-07 the wait was lost and the round froze).
+    // Other lines (hints, the next step) never take over a wait: the waits they can overlap are optional.
+    var fin = replay && !then && waitFin && !waitFin.done ? waitFin : null;
     hush();
-    var once = false, s = screen, fin = function () { if (once) return; once = true; clearTimeout(endTimer); if (then && s === screen) then(); };
-    if (then) endTimer = setTimeout(fin, voiceOn ? 1000 + t.length * 95 : 700);
-    if (!voiceOn) return;
+    if (!fin && then) { var s = screen; fin = function () { if (fin.done) return; fin.done = true; clearTimeout(endTimer); if (s === screen) then(); }; }
+    waitFin = fin;
+    if (fin) endTimer = setTimeout(fin, voiceOn ? 1000 + t.length * 95 : 700);
+    if (!voiceOn || !t) return;
     var k = vkey(t);
-    if (VKEYS && VKEYS[k]) {
-      if (!player) player = new Audio();             // one player, reused, so iPad allows it to keep playing after the first tap
-      player.src = 'voice/' + k + '.mp3';
-      if (then) player.onended = fin;
-      var p = player.play(); if (p && p.catch) p.catch(function () {});   // interrupted or blocked: stay quiet (🔊 replays it) rather than switch to the device voice
-      return;
-    }
-    if (!VKEYS) deviceSay(t);
+    if (VKEYS && !VKEYS[k]) return;                 // no recording for this line: stay quiet (the safe wait above still moves things on)
+    if (!player) player = new Audio();               // one player, reused, so iPad allows it to keep playing after the first tap
+    player.src = 'voice/' + k + '.mp3';              // tried even before keys.json has arrived (every line has a recording)
+    player.onended = fin;                             // a recording that fails to load leaves it to the safety timer, as before
+    var p = player.play(); if (p && p.catch) p.catch(function () {});   // interrupted or blocked: stay quiet (🔊 replays it)
   }
-  document.getElementById('snd').onclick = function () { var v = voiceOn; voiceOn = true; say(lastSay); voiceOn = v; };
-  document.getElementById('mute').onclick = function () { voiceOn = !voiceOn; this.textContent = voiceOn ? '🗣️' : '🔇'; this.setAttribute('aria-label', voiceOn ? 'Turn the voice off' : 'Turn the voice on'); if (!voiceOn) hush(); };
+  document.getElementById('snd').onclick = function () { var v = voiceOn; voiceOn = true; say(lastSay, null, true); voiceOn = v; };
+  document.getElementById('mute').onclick = function () { voiceOn = !voiceOn; this.textContent = voiceOn ? '🗣️' : '🔇'; this.setAttribute('aria-label', voiceOn ? 'Turn the voice off' : 'Turn the voice on'); if (!voiceOn) hush(true); };
   var ctx = null;
   function plop(f, len) {
     try {
