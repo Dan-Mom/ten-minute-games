@@ -512,35 +512,34 @@ button{font-family:var(--display);cursor:pointer}
 
   /* read aloud: the child may not read every word yet.
      Every line is recorded in advance with a gentle voice (voice/<key>.mp3, made by 网站\make-voices.py; key = the same hash as
-     voice-lines.cjs). Only a line with no recording falls back to the device's own voice, picking its most natural female voice. */
-  var voiceOn = true, VKEYS = null, player = null, fallbackVoice = null;
+     voice-lines.cjs). The device's own robot voice is never used: a line whose recording is missing, is cut off by the next line, or is
+     blocked by the browser simply stays quiet, and 🔊 plays it again. (Before 2026-11-07 an interrupted line was repeated in the robot
+     voice, often on top of the next recording.) */
+  var voiceOn = true, VKEYS = null, player = null;
   try { fetch('voice/keys.json').then(function (r) { return r.json(); }).then(function (k) { VKEYS = {}; k.forEach(function (x) { VKEYS[x] = 1; }); }, function () {}); } catch (e) {}
   function vkey(t) { t = String(t).replace(/＿/g, '').trim(); var h = 0x811c9dc5; for (var i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
-  function pickVoice() {
-    try {
-      var v = speechSynthesis.getVoices().filter(function (x) { return /^en(-|_)US/i.test(x.lang); });
-      var score = function (x) { return (/natural|neural|enhanced|premium/i.test(x.name) ? 4 : 0) + (/ava|jenny|aria|samantha|allison|susan|zoe|google us english/i.test(x.name) ? 2 : 0); };
-      fallbackVoice = v.sort(function (a, b) { return score(b) - score(a); })[0] || null;
-    } catch (e) {}
-  }
-  if (window.speechSynthesis) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
-  function hush() { if (player) try { player.pause(); } catch (e) {} if (window.speechSynthesis) try { speechSynthesis.cancel(); } catch (e) {} }
-  function deviceSay(t) {
-    if (!window.speechSynthesis) return;
-    try { var u = new SpeechSynthesisUtterance(t.replace(/−/g, ' minus ').replace(/\+/g, ' plus ')); u.lang = 'en-US'; if (fallbackVoice) u.voice = fallbackVoice; u.rate = 0.88; u.pitch = 1.05; speechSynthesis.speak(u); } catch (e) {}
-  }
-  function say(t) {
+  function hush() { if (player) try { player.pause(); } catch (e) {} }
+  /* queue = true: if a line is still being said, wait for it to end (at most 6 s) before saying this one, so a timed prompt never cuts
+     off the line before it (for example "7 riders get off. First, the 4 riders in the last car get off." in level 4). Any newer line wins. */
+  var sayId = 0;
+  function say(t, queue) {
     lastSay = t;
     if (!voiceOn) return;
-    hush();
-    var k = vkey(t);
-    if (VKEYS && VKEYS[k]) {
-      if (!player) player = new Audio();          // one player, reused, so iPad allows it to keep playing after the first tap
-      player.src = 'voice/' + k + '.mp3';
-      var p = player.play(); if (p && p.catch) p.catch(function () { deviceSay(t); });
+    var id = ++sayId;
+    if (queue && player && !player.paused && !player.ended) {
+      var tm = 0, go = function () { player.removeEventListener('ended', go); clearTimeout(tm); if (id === sayId) sayNow(t); };
+      tm = setTimeout(go, 6000); player.addEventListener('ended', go);
       return;
     }
-    deviceSay(t);
+    sayNow(t);
+  }
+  function sayNow(t) {
+    hush();
+    var k = vkey(t);
+    if (VKEYS && !VKEYS[k]) return;             // no recording for this line: stay quiet
+    if (!player) player = new Audio();          // one player, reused, so iPad allows it to keep playing after the first tap
+    player.src = 'voice/' + k + '.mp3';         // tried even before keys.json has arrived (every line has a recording)
+    var p = player.play(); if (p && p.catch) p.catch(function () {});   // interrupted or blocked: stay quiet
   }
   document.getElementById('snd').onclick = function () { voiceOn = true; say(lastSay); };
 
@@ -631,7 +630,7 @@ button{font-family:var(--display);cursor:pointer}
       var stage = E('div', 'stage'); app.appendChild(stage);
       var p = E('div', 'prompt', promptText); stage.appendChild(p);
       say(promptText);
-      return { stage: stage, prompt: function (t) { p.textContent = t; say(t); } };
+      return { stage: stage, prompt: function (t, queue) { p.textContent = t; say(t, queue); } };
     }
     /* ask(): number buttons; resolves when the child taps the right one. first = right on the first tap. */
     function ask(stage, choices, right, onRight, hintText) {
@@ -675,7 +674,7 @@ button{font-family:var(--display);cursor:pointer}
       holder.appendChild(drawTrain([{ n: a }]));
       setTimeout(function () {
         holder.replaceChildren(drawTrain([{ n: a, cover: true }]));
-        f.prompt('How many seats are empty?');
+        f.prompt('How many seats are empty?', true);
         var peek = E('div', 'row'), pb = E('button', 'btn alt', '👀 Peek again'); pb.type = 'button';
         pb.onclick = function () { holder.replaceChildren(drawTrain([{ n: a }])); setTimeout(function () { holder.replaceChildren(drawTrain([{ n: a, cover: true }])); }, 1500); };
         peek.appendChild(pb); f.stage.appendChild(peek);
@@ -740,7 +739,7 @@ button{font-family:var(--display);cursor:pointer}
         var bond = E('div', 'bond');
         bond.innerHTML = '<span class="c">' + b + '</span> → <span class="c">' + ones + '</span> + <span class="c q">?</span>';
         f.stage.appendChild(bond);
-        f.prompt(ones + ' got off. ' + b + ' need to get off. How many more?');
+        f.prompt(ones + ' got off. ' + b + ' need to get off. How many more?', true);
         ask(f.stage, range(1, 9), more, function (ok1) {
           first = ok1; f.stage.querySelector('.pad').remove();
           var h = f.stage.querySelector('.hint'); if (h) h.remove();
