@@ -755,7 +755,7 @@ button{font-family:var(--display);cursor:pointer}
         ask(f.stage, options(a + b), a + b, function (ok2) {
           f.stage.querySelector('.pad').remove();
           var h2 = f.stage.querySelector('.hint'); if (h2) h2.remove();
-          cheer(f.stage, a + ' + ' + b + ' = ' + ten + (rest ? ' + ' + rest : '') + ' = <em>' + (a + b) + '</em>', function () { done(first && ok2); });
+          cheer(f.stage, a + ' + ' + b + ' = ' + (rest ? ten + ' + ' + rest + ' = ' : '') + '<em>' + (a + b) + '</em>', function () { done(first && ok2); });
         }, rest ? 'Start from ' + ten + ' and add ' + rest + '.' : 'The car is full: ' + ten + '.');
       }, 'The car has ' + ones + '. How many empty seats?');
     }

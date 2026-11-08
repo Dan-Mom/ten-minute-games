@@ -804,7 +804,7 @@ button.ap.tapme{box-shadow:0 0 0 3px #f4b183}
     w.appendChild(lotEl(s.crates, s.loose, opts));
     if (s.waiting) {
       var below = lotEl(s.waiting.crates, s.waiting.loose);
-      if (opts.onBring) { below.classList.add('tapme'); below.setAttribute('role', 'button'); below.setAttribute('aria-label', 'Bring the green apples over'); below.onclick = opts.onBring; }
+      if (opts.onBring) { below.classList.add('tapme'); below.setAttribute('role', 'button'); below.setAttribute('aria-label', 'Bring the green apples over'); below.tabIndex = 0; below.onclick = opts.onBring; below.onkeydown = function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); opts.onBring(); } }; }
       w.appendChild(below);
     }
     return w;
@@ -966,11 +966,13 @@ button.ap.tapme{box-shadow:0 0 0 3px #f4b183}
       p.appendChild(row);
     }
     function bring() {
+      if (!s.waiting || s.bringing) return;   // a quick double tap: only the first one brings the apples over
+      s.bringing = true;
       plop(420);
       var w = box.querySelector('.stall'), below = w && w.lastElementChild, first = w && w.firstElementChild;
       if (below && first) below.style.transform = 'translateY(' + (first.getBoundingClientRect().bottom - below.getBoundingClientRect().top - 60) + 'px)';
       later(function () {
-        s.crates = s.crates.concat(s.waiting.crates); s.loose = s.loose.concat(s.waiting.loose); s.waiting = null;
+        s.crates = s.crates.concat(s.waiting.crates); s.loose = s.loose.concat(s.waiting.loose); s.waiting = null; s.bringing = false;
         drawStall(box, s);
         maybePack();
       }, 420);
