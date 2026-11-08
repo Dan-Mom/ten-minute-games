@@ -11,7 +11,7 @@
  * replaces the one stored copy of that page, so every address of it opens the newest copy when offline.
  */
 const CACHE_PREFIX = "ttc-cache-";
-const CACHE_NAME = CACHE_PREFIX + "20261107c";
+const CACHE_NAME = CACHE_PREFIX + "20261107f";
 
 const PRECACHE_URLS = [
   "./Multiplication.html",
@@ -30,9 +30,16 @@ const PRECACHE_URLS = [
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      // cache each file individually so one missing file doesn't block the rest; "reload" skips the browser's own copy, so a new worker never stores an old page
+      // cache each file individually so a missing icon doesn't block the rest; "reload" skips the browser's own copy, so a new worker never stores an old page.
+      // The two game pages are required: if either fails (bad Wi-Fi), the install fails and the old worker keeps its complete copy, so the game still opens offline.
+      const REQUIRED = ["./Multiplication.html", "./dozen-galaxy.html"];
       return Promise.all(
-        PRECACHE_URLS.map((url) => cache.add(new Request(url, { cache: "reload" })).catch(() => {}))
+        PRECACHE_URLS.map((url) => {
+          // "?v=" = a fresh address, so GitHub's CDN cannot hand back an old page right after a publish; stored under the plain name
+          const job = fetch(new Request(url + "?v=" + CACHE_NAME, { cache: "reload" }))
+            .then((res) => { if (!res.ok) throw new Error("missing " + url); return cache.put(url, res); });
+          return REQUIRED.includes(url) ? job : job.catch(() => {});
+        })
       );
     }).then(() => self.skipWaiting())
   );
@@ -42,7 +49,8 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       // delete only OLD copies of THIS app's cache (same prefix); never another app's cache
-      Promise.all(keys.filter((k) => k.indexOf(CACHE_PREFIX) === 0 && k !== CACHE_NAME).map((k) => caches.delete(k)))
+      // only names like ttc-cache-20261107f: "ttc-cache-v1" belongs to another app on this web address and is never touched
+      Promise.all(keys.filter((k) => /^ttc-cache-\d/.test(k) && k !== CACHE_NAME).map((k) => caches.delete(k)))
     )
   );
   self.clients.claim();

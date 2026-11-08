@@ -11,7 +11,7 @@
  *   再按 206（部分内容）这个规格回给它。少了这一步，离线视频在 iPad 上就是黑屏。
  */
 
-const SHELL_CACHE = 'splinter-shell-v15';
+const SHELL_CACHE = 'splinter-shell-v18';
 const MEDIA_CACHE = 'splinter-media-v1';
 
 const QUIZ_KEYS = ['q1', 'q2', 'q3', 'right1', 'right2', 'right3', 'wrong', 'done'];
@@ -35,18 +35,30 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     (async () => {
       const cache = await caches.open(SHELL_CACHE);
-      // 一个一个存。某一个文件万一少了，不能让整个安装失败——
-      // 那样会变成「装不上，但也不告诉你为什么」。
+      // 一个一个存。图标、配音万一少了一个，不让整个安装失败。
+      // 但课文页面 Splinter.html 必须存到：存不到（网不好）就让这次安装失败，旧版本和它存好的完整副本继续用，没网照样能打开。
+      // （2026-11-07 以前课文页存不到也照样装上，然后把旧副本删掉，结果没网打不开。）
+      // 下载地址后面加 ?v=版本号：发布后几分钟内 GitHub 的服务器也不会给旧页面；存的时候用原来的名字。
+      // 配音、图标下载失败时，从旧版本存好的副本里拿同一个文件，离线时不会少声音。
+      let pageOk = false;
+      const fromOld = async (path) => {
+        for (const n of await caches.keys()) {
+          if (n !== SHELL_CACHE && n.indexOf('splinter-shell-') === 0) { const hit = await (await caches.open(n)).match(path); if (hit) return hit; }
+        }
+        return null;
+      };
       await Promise.all(
         SHELL_ASSETS.map(async (path) => {
           try {
-            const res = await fetch(path, { cache: 'reload' });
-            if (res.ok) await cache.put(path, res);
+            const res = await fetch(path + '?v=' + SHELL_CACHE, { cache: 'reload' });
+            if (res.ok) { await cache.put(path, res); if (path === 'Splinter.html') pageOk = true; return; }
           } catch (e) {
-            /* 少一个就少一个，不挡安装 */
+            /* 少一个就少一个，不挡安装（课文页除外，见下面） */
           }
+          if (path !== 'Splinter.html') { const old = await fromOld(path); if (old) await cache.put(path, old); }
         })
       );
+      if (!pageOk) throw new Error('lesson page not downloaded: keep the old copy');   // the half-filled new cache is removed by the next successful update
       await self.skipWaiting();
     })()
   );

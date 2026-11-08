@@ -1677,33 +1677,46 @@ window.addEventListener('DOMContentLoaded',()=>{if(Who.needChooser)Screens.go('w
   }
   (slot || document.body).appendChild(a);
   /* Update: get the newest copy of the site from the internet. With no internet nothing is touched, so offline games keep working.
-     Progress lives in localStorage and is never touched. Only this site's offline copies are cleared: other apps share this web address. */
+     Progress lives in localStorage and is never touched. Only this site's offline games are asked for their newest version (nothing is deleted); other apps on this web address are never touched. */
   var LABEL = '🔄 Update', busy = false, KEY = 'tmg.justUpdated';
   upd.textContent = LABEL;
   function say(t) { upd.textContent = t; setTimeout(function () { upd.textContent = LABEL; }, 2500); }
+  /* No offline copy is ever deleted any more. Every offline worker of this site is asked for its newest version; a new version only
+     takes over once it has completely downloaded the game, so with bad Wi-Fi the old copy simply stays and the game keeps opening with
+     no internet. (Before 2026-11-07 Update deleted every offline copy, and those games then needed the internet until each was opened
+     online again.) For the offline game this page belongs to, wait until its new version is in charge (at most 20 s) before reloading,
+     so the child sees the newest version at once. Other workers carry on downloading after the reload. */
+  function wait(ms) { return new Promise(function (ok) { setTimeout(ok, ms); }); }
+  function inCharge(r) {   // 'ok', or 'failed' when the new version could not install (bad Wi-Fi): the old copy stays in charge
+    return new Promise(function (ok) {
+      var w = r.installing || r.waiting; if (!w) { ok('ok'); return; }
+      w.addEventListener('statechange', function () { if (w.state === 'activated') ok('ok'); else if (w.state === 'redundant') ok('failed'); });
+    });
+  }
+  function cap(p, ms) { return Promise.race([p, wait(ms).then(function () { throw new Error('too slow'); })]); }
   function clearOffline(base) {
-    var jobs = [];
-    if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) {
-      // the Chinese lessons' offline worker (zh-sw.js) stays: it always gets pages from the internet first, and without it the
-      // home page and the saved lessons would not open offline until a lesson is opened online again
-      return Promise.all(rs.filter(function (r) { var w = r.active || r.waiting || r.installing; return r.scope.indexOf(location.origin + base) === 0 && !/\/zh-sw\.js$/.test((w && w.scriptURL) || ''); }).map(function (r) { return r.unregister(); }));
-    }));
-    if (window.caches) jobs.push(caches.keys().then(function (ks) {
-      return Promise.all(ks.filter(function (k) { return /^(ttc-cache-\d|rnk-roman-numeral-kingdom-|splinter-)/.test(k); }).map(function (k) { return caches.delete(k); }));
-    }));
-    return Promise.all(jobs);
+    if (!navigator.serviceWorker || !navigator.serviceWorker.getRegistrations) return Promise.resolve();
+    var site = location.origin + base;
+    return navigator.serviceWorker.getRegistrations().then(function (rs) {
+      return Promise.all(rs.filter(function (r) { return r.scope.indexOf(site) === 0; }).map(function (r) {
+        var mine = r.scope !== site && location.href.indexOf(r.scope) === 0;   // this page's own offline game (not the site-wide Chinese worker)
+        var job = r.update().then(function () { return mine ? inCharge(r) : 'ok'; }, function () { return mine ? 'failed' : 'ok'; });
+        return Promise.race([job, wait(mine ? 20000 : 4000).then(function () { return mine ? 'failed' : 'ok'; })]);
+      }));
+    }).then(function (res) { return res.indexOf('failed') < 0; });   // false: this game's newest version did not arrive in time
   }
   upd.addEventListener('click', function () {
     if (busy) return; busy = true; upd.textContent = 'Updating…';
     var ROOT = '/ten-minute-games/', p = location.pathname, i = p.indexOf(ROOT), base = i >= 0 ? p.slice(0, i + ROOT.length) : '/';
-    function fresh(u) { return fetch(u, { cache: 'reload' }).catch(function () {}); }
-    fetch(base + 'version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error('no copy'); })
-      .then(function () { return clearOffline(base); })
+    function fresh(u) { return cap(fetch(u, { cache: 'reload' }), 8000).catch(function () {}); }
+    var done = true;   // every step has a time limit, so "Updating…" never hangs on a Wi-Fi with no real internet
+    cap(fetch(base + 'version.json?t=' + Date.now(), { cache: 'no-store' }), 8000).then(function (r) { if (!r.ok) throw new Error('no copy'); })
+      .then(function () { return clearOffline(base).then(function (ok) { done = ok; }); })
       .then(function () { return Promise.all([fresh(location.href), fresh(base + 'index.html')]); })
-      .then(function () { try { sessionStorage.setItem(KEY, '1'); } catch (e) {} location.reload(); },
+      .then(function () { try { sessionStorage.setItem(KEY, done ? '1' : 'retry'); } catch (e) {} location.reload(); },
             function () { busy = false; say('No internet'); });
   });
-  try { if (sessionStorage.getItem(KEY)) { sessionStorage.removeItem(KEY); say('Updated ✓'); } } catch (e) {}
+  try { var was = sessionStorage.getItem(KEY); if (was) { sessionStorage.removeItem(KEY); say(was === 'retry' ? 'Try again later' : 'Updated ✓'); } } catch (e) {}
   if (slot) return;   // in a top bar: nothing to move around
   /* The lessons keep their own buttons along the screen edges (Previous / Next in a footer, controls in a header), so a pill nailed to
      one corner always sat on top of something. Keep the pill 44px tall (easy to tap) and, whenever the page layout changes, put it in

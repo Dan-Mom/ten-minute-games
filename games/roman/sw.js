@@ -6,7 +6,7 @@
    Another app on the same origin has a root worker that deletes every cache not named "ttc-cache-v1".
    So: we use our own uniquely-named cache, look ONLY in our own cache, and re-fill it on request ("ensure").
 */
-const VERSION = '202611070003'; // date+time stamp, not a version name: set it to the current date and time whenever the content changes
+const VERSION = '202611070006'; // date+time stamp, not a version name: set it to the current date and time whenever the content changes
 const PREFIX = 'rnk-roman-numeral-kingdom-';
 const CACHE = PREFIX + VERSION;
 const FILES = [
@@ -23,8 +23,10 @@ const SCOPE_PATH = new URL('./', self.location.href).pathname;
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE)
-      /* cache:'reload' = fetch a fresh copy, never the browser's old HTTP-cached one */
-      .then(cache => Promise.all(FILES.map(f => cache.add(new Request(f, { cache: 'reload' })))))
+      /* cache:'reload' = never the browser's old HTTP-cached copy; '?v=' = a fresh address, so GitHub's CDN cannot hand back an old page
+         for a few minutes after a publish. Stored under the plain name. Any file missing: the install fails and the old copy stays. */
+      .then(cache => Promise.all(FILES.map(f => fetch(new Request(f + (f.indexOf('?') < 0 ? '?' : '&') + 'v=' + VERSION, { cache: 'reload' }))
+        .then(res => { if (!res.ok) throw new Error('missing ' + f); return cache.put(f, res); }))))
       .then(() => self.skipWaiting())
   );
 });
