@@ -811,7 +811,18 @@ button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
   function factKey(a, b) { return Math.min(a, b) + 'x' + Math.max(a, b); }
   function okCount(a, b) { return st.facts[factKey(a, b)] || 0; }
   function credit(a, b) { var k = factKey(a, b); st.facts[k] = (st.facts[k] || 0) + 1; }
-  function newScreen() { screen++; keyHandler = null; hush(); app.replaceChildren(); drawStars(); window.scrollTo(0, 0); return screen; }
+  /* turning the iPad (or any width change) lays the blocks out again at the new size, without restarting the question */
+  var relayouts = [], lastW = window.innerWidth, lastH = window.innerHeight, sizeTimer = 0;
+  function onResize() {
+    clearTimeout(sizeTimer);
+    sizeTimer = setTimeout(function () {
+      if (window.innerWidth === lastW && Math.abs(window.innerHeight - lastH) < 120) return;   // small height changes (the Safari bar) leave the blocks alone
+      lastW = window.innerWidth; lastH = window.innerHeight;
+      relayouts.forEach(function (fn) { fn(); });
+    }, 250);
+  }
+  window.addEventListener('resize', onResize); window.addEventListener('orientationchange', onResize);
+  function newScreen() { screen++; keyHandler = null; relayouts = []; hush(); app.replaceChildren(); drawStars(); window.scrollTo(0, 0); return screen; }
   function later(fn, ms) { var s = screen; setTimeout(function () { if (s === screen) fn(); }, ms); }
 
   /* read aloud: every line is recorded in advance (voice/<key>.mp3, made by 网站\make-voices.py). The device's own robot voice is never
@@ -879,7 +890,7 @@ button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
   }
   function extent(cells) { var w = 0, h = 0; cells.forEach(function (q) { w = Math.max(w, q.x + 1); h = Math.max(h, q.y + 1); }); return { w: w, h: h }; }
   function Stage(parent, maxH) {
-    var el = E('div', 'stage'), blocks = {}, unit = 30, ox = 0;
+    var el = E('div', 'stage'), blocks = {}, unit = 30, ox = 0, fitWH = null, moved = [];
     parent.appendChild(el); parent.classList.add('stagebox');
     function roomH() {
       if (maxH) return maxH;
@@ -889,13 +900,23 @@ button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
       return Math.max(240, vh - (beside ? 260 : split ? 560 : 350));                  // what the heading, words, buttons and answer keys leave free
     }
     function fit(w, h) {
+      fitWH = [w, h];
       var W = el.clientWidth || 300, H = roomH();
       unit = Math.max(12, Math.min(96, Math.floor(W / w), Math.floor(H / h)));
       ox = Math.floor((W - w * unit) / 2);
       el.style.height = Math.ceil(h * unit) + 'px';
     }
-    function place(b, q) { var px = (ox + q.x * unit) + 'px', py = (q.y * unit) + 'px'; b.style.setProperty('--x', px); b.style.setProperty('--y', py); b.style.transform = 'translate(' + px + ',' + py + ')'; }
+    function place(b, q) { b._at = { x: q.x, y: q.y }; var px = (ox + q.x * unit) + 'px', py = (q.y * unit) + 'px'; b.style.setProperty('--x', px); b.style.setProperty('--y', py); b.style.transform = 'translate(' + px + ',' + py + ')'; }
     function style(b, q, extra) { var s = unit - Math.max(2, Math.round(unit * 0.09)); b.style.width = b.style.height = s + 'px'; b.className = 'b c' + (q.color || 0) + (q.ghost ? ' ghost' : '') + (extra || ''); }
+    function relayout() {
+      if (!fitWH || !el.isConnected) return;
+      fit(fitWH[0], fitWH[1]);
+      var s = unit - Math.max(2, Math.round(unit * 0.09));
+      Object.keys(blocks).forEach(function (id) { var b = blocks[id]; b.style.transitionDelay = '0ms'; b.style.width = b.style.height = s + 'px'; if (b._at) place(b, b._at); });
+      moved.forEach(function (fn) { fn(unit, ox); });
+    }
+    relayouts = relayouts.filter(function (fn) { return !fn.stage || fn.stage.isConnected; });   // pictures replaced on this screen are dropped
+    relayout.stage = el; relayouts.push(relayout);
     return {
       el: el,
       /* opts.size = [w, h] keeps one block size for a whole sequence */
@@ -920,13 +941,13 @@ button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
       /* whole groups of blocks the child slides to a target. Dragging most of the way, or a simple tap, finishes the move. */
       movable: function (cells, targets, done) {
         var ids = cells.map(function (q) { return q.id; }), els = ids.map(function (id) { return blocks[id]; }), down = null, finished = false;
-        var dx = targets[0].x - cells[0].x, dy = targets[0].y - cells[0].y, dist = Math.hypot(dx, dy) * unit;
+        var dx = targets[0].x - cells[0].x, dy = targets[0].y - cells[0].y;
         els.forEach(function (b) { b.classList.add('mv'); b.style.transitionDelay = '0ms'; });
         function at(ox2, oy2) { els.forEach(function (b, i) { b.style.transform = 'translate(' + (ox + cells[i].x * unit + ox2) + 'px,' + (cells[i].y * unit + oy2) + 'px)'; }); }
         function up(ev) {
           window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up);
           if (!down) return;
-          var mx = ev.clientX - down.x, my = ev.clientY - down.y, along = (mx * dx * unit + my * dy * unit) / (dist * dist), small = Math.hypot(mx, my) < 8;
+          var dist = Math.hypot(dx, dy) * unit, mx = ev.clientX - down.x, my = ev.clientY - down.y, along = (mx * dx * unit + my * dy * unit) / (dist * dist), small = Math.hypot(mx, my) < 8;
           down = null; els.forEach(function (b) { b.classList.remove('drag'); });
           if (small || along > 0.4) {
             finished = true;
@@ -943,6 +964,8 @@ button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
         };
       },
       unit: function () { return unit; }, ox: function () { return ox; },
+      /* fn(unit, ox) runs after the blocks are laid out again, for anything else drawn on the stage */
+      onRelayout: function (fn) { moved.push(fn); },
       place: place, get: function (id) { return blocks[id]; }
     };
   }
@@ -1159,12 +1182,17 @@ button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
     var box = E('div'); p.appendChild(box);
     var stage = Stage(box), n = r * c, cellsTarget = cellsOf(grid(r, c, null, { byIndex: true }));
     var pile = cellsOf({ scatter: n }).map(function (q) { return { id: q.id, x: q.x * Math.max(c, 5) / 6.1, y: r + 0.7 + q.y * 0.75, color: 0 }; });
-    var W = Math.max(c, 5) + 1, H = r + 0.7 + 3;
+    var W = Math.max(c, 5) + 1, H = Math.max(r + 0.7 + 3, Math.max.apply(null, pile.map(function (q) { return q.y + 1; })) + 0.1);   // room for the lowest loose block
     var offsetX = (W - c) / 2;
     var slots = cellsTarget.map(function (q) { return { x: q.x + offsetX, y: q.y, used: false }; });
     stage.show(pile, { size: [W, H] });
     var unit = stage.unit(), ox = stage.ox();
-    slots.forEach(function (s) { var e = E('div', 'slot'); var z = unit - Math.max(2, Math.round(unit * 0.09)); e.style.width = e.style.height = z + 'px'; e.style.transform = 'translate(' + (ox + s.x * unit) + 'px,' + (s.y * unit) + 'px)'; stage.el.insertBefore(e, stage.el.firstChild); });
+    function drawSlot(s) { var z = unit - Math.max(2, Math.round(unit * 0.09)); s.el.style.width = s.el.style.height = z + 'px'; s.el.style.transform = 'translate(' + (ox + s.x * unit) + 'px,' + (s.y * unit) + 'px)'; }
+    slots.forEach(function (s) { s.el = E('div', 'slot'); drawSlot(s); stage.el.insertBefore(s.el, stage.el.firstChild); });
+    stage.onRelayout(function (u, o) {
+      unit = u; ox = o; slots.forEach(drawSlot);
+      if (down) { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); down.b.classList.remove('drag'); down.b.style.zIndex = ''; down = null; }   // the screen turned mid-drag: the block goes back to its spot in the pile
+    });
     var placed = 0, down = null;
     pile.forEach(function (q) { var b = stage.get(q.id); b.classList.add('loose'); q.home = { x: q.x, y: q.y }; });
     function settle(q, slot) {
@@ -1377,10 +1405,16 @@ button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
     bar(0, '🔬 Block Lab', home);
     var p = E('div', 'panel'), eq = E('div', 'equation'), text = E('div', 'hint'); text.textContent = SAY.lab;
     p.appendChild(eq); p.appendChild(text);
-    var W = Math.min((app.clientWidth || 340) - 64, Math.max(420, window.innerHeight - 330)), unit = Math.floor(W / 10), SIDE = unit * 10;
-    var box = E('div', 'labbox'); box.style.width = SIDE + 'px'; box.style.height = SIDE + 'px';
-    box.style.backgroundImage = 'linear-gradient(#dfe9f3 1px,transparent 1px),linear-gradient(90deg,#dfe9f3 1px,transparent 1px)'; box.style.backgroundSize = unit + 'px ' + unit + 'px';
+    var unit = 30, box = E('div', 'labbox');
+    box.style.backgroundImage = 'linear-gradient(#dfe9f3 1px,transparent 1px),linear-gradient(90deg,#dfe9f3 1px,transparent 1px)';
     p.appendChild(box); app.appendChild(p);
+    function sizeBox() {
+      var W = Math.min((app.clientWidth || 340) - 64, Math.max(420, window.innerHeight - 330)), SIDE;
+      unit = Math.floor(W / 10); SIDE = unit * 10;
+      box.style.width = SIDE + 'px'; box.style.height = SIDE + 'px'; box.style.backgroundSize = unit + 'px ' + unit + 'px';
+    }
+    sizeBox();
+    relayouts.push(function () { sizeBox(); paint(); });
     var blocks = {}, handle = E('div', 'handle', '⤡'); handle.setAttribute('aria-hidden', 'true'); box.appendChild(handle);
     function paint() {
       eq.textContent = aLine(a, b);
@@ -1480,9 +1514,11 @@ button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
   (slot || document.body).appendChild(a);
   /* Update: get the newest copy of the site from the internet. With no internet nothing is touched, so offline games keep working.
      Progress lives in localStorage and is never touched. Only this site's offline games are asked for their newest version (nothing is deleted); other apps on this web address are never touched. */
-  var LABEL = '🔄 Update', busy = false, KEY = 'tmg.justUpdated';
+  var LABEL = '🔄 Update', busy = false, KEY = 'tmg.justUpdated', small = false;
   upd.textContent = LABEL;
-  function say(t) { upd.textContent = t; setTimeout(function () { upd.textContent = LABEL; }, 2500); }
+  function label() { return small && !busy ? '🔄' : LABEL; }
+  var showing = false;   // a short message (Updated ✓, No internet) is on the button
+  function say(t) { showing = true; upd.textContent = t; upd.setAttribute('aria-label', t); setTimeout(function () { showing = false; upd.textContent = label(); upd.setAttribute('aria-label', 'Update'); if (!slot) later(); }, 2500); }
   /* No offline copy is ever deleted any more. Every offline worker of this site is asked for its newest version; a new version only
      takes over once it has completely downloaded the game, so with bad Wi-Fi the old copy simply stays and the game keeps opening with
      no internet. (Before 2026-11-07 Update deleted every offline copy, and those games then needed the internet until each was opened
@@ -1508,7 +1544,7 @@ button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
     }).then(function (res) { return res.indexOf('failed') < 0; });   // false: this game's newest version did not arrive in time
   }
   upd.addEventListener('click', function () {
-    if (busy) return; busy = true; upd.textContent = 'Updating…';
+    if (busy) return; busy = true; upd.textContent = 'Updating…'; upd.setAttribute('aria-label', 'Updating…'); if (!slot) later();
     var ROOT = '/ten-minute-games/', p = location.pathname, i = p.indexOf(ROOT), base = i >= 0 ? p.slice(0, i + ROOT.length) : '/';
     function fresh(u) { return cap(fetch(u, { cache: 'reload' }), 8000).catch(function () {}); }
     var done = true;   // every step has a time limit, so "Updating…" never hangs on a Wi-Fi with no real internet
@@ -1524,8 +1560,25 @@ button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
      one corner always sat on top of something. Keep the pill 44px tall (easy to tap) and, whenever the page layout changes, put it in
      whichever of six edge spots does not cover a button, link or field (spots tried in this order: bottom-centre, bottom-left,
      bottom-right, top-centre, top-left, top-right). Buttons that are always on screen (fixed or sticky) count much more than ones
-     that scroll away. It never moves while the child is just scrolling, and stays where it is as long as its spot is free. */
-  var SPOTS = ['bc', 'bl', 'br', 'tc', 'tl', 'tr'], cur = '', timer = 0;
+     that scroll away. It does not move during scrolling; once scrolling stops it moves only if its spot now covers something. */
+  var SPOTS = ['bc', 'bl', 'br', 'tc', 'tl', 'tr'], cur = '', timer = 0, room = false;
+  /* On a phone the two wide pills (about 300px) covered something in every spot, for example "Begin" on a lesson's first screen.
+     Below 560px wide they become two round 48px buttons (🏠 and 🔄, still easy to tap; the words stay for screen readers),
+     and the page gets room at the bottom so it can always scroll clear of them. */
+  if (back) { back.setAttribute('aria-label', 'Home'); back.title = 'Home'; }
+  if (!showing) upd.setAttribute('aria-label', 'Update'); upd.title = 'Update';
+  function sizeUp() {
+    var want = document.documentElement.clientWidth < 560;
+    if (want !== small) {
+      small = want;
+      [back, upd].forEach(function (el) { if (!el) return;
+        el.style.minHeight = small ? '48px' : '56px'; el.style.minWidth = small ? '48px' : '';
+        el.style.padding = small ? '0 10px' : '0 22px'; el.style.justifyContent = 'center'; });
+      if (back) back.textContent = small ? '🏠' : '🏠 Home';
+      if (!busy && !showing) upd.textContent = label();
+    }
+    if (small && !room) { room = true; document.body.style.paddingBottom = 'calc(' + (getComputedStyle(document.body).paddingBottom || '0px') + ' + 72px)'; }
+  }
   var SEL = 'button,a[href],input,select,textarea,summary,label,[role=button],[role=tab],[tabindex]:not([tabindex="-1"])';
   function put(s) {
     var st = a.style, v = s.charAt(0) === 'b' ? 'bottom' : 'top', side = s.charAt(1);
@@ -1540,6 +1593,7 @@ button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
   }
   function place() {
     try {
+      sizeUp();
       var W = document.documentElement.clientWidth, H = window.innerHeight, items = [], all, i, j;
       a.style.pointerEvents = 'none'; all = document.querySelectorAll(SEL);   /* (while measuring, the pill itself must not count as covering anything) */
       for (i = 0; i < all.length; i++) {
@@ -1565,6 +1619,8 @@ button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
   function later() { clearTimeout(timer); timer = setTimeout(function () { place(); timer = setTimeout(place, 500); }, 120); }
   put('bc'); cur = 'bc'; place();
   window.addEventListener('resize', later); window.addEventListener('orientationchange', later); window.addEventListener('load', later);
+  /* once scrolling has stopped, move only if the buttons now sit on top of something (place() keeps a free spot) */
+  var scrollTimer = 0; window.addEventListener('scroll', function () { clearTimeout(scrollTimer); scrollTimer = setTimeout(place, 400); }, { passive: true });
   try { new MutationObserver(function (ms) { for (var i = 0; i < ms.length; i++) if (!a.contains(ms[i].target)) { later(); return; } }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden', 'disabled', 'aria-hidden', 'open'] }); } catch (e) { /* no observer: the spot is only worked out at load and on resize */ }
 })()</script><script>(function noZoom() {
   var st = document.createElement('style');

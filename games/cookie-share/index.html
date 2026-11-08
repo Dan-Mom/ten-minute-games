@@ -1044,9 +1044,11 @@ button.ap.tapme{box-shadow:0 0 0 3px #f4b183}
   (slot || document.body).appendChild(a);
   /* Update: get the newest copy of the site from the internet. With no internet nothing is touched, so offline games keep working.
      Progress lives in localStorage and is never touched. Only this site's offline games are asked for their newest version (nothing is deleted); other apps on this web address are never touched. */
-  var LABEL = '🔄 Update', busy = false, KEY = 'tmg.justUpdated';
+  var LABEL = '🔄 Update', busy = false, KEY = 'tmg.justUpdated', small = false;
   upd.textContent = LABEL;
-  function say(t) { upd.textContent = t; setTimeout(function () { upd.textContent = LABEL; }, 2500); }
+  function label() { return small && !busy ? '🔄' : LABEL; }
+  var showing = false;   // a short message (Updated ✓, No internet) is on the button
+  function say(t) { showing = true; upd.textContent = t; upd.setAttribute('aria-label', t); setTimeout(function () { showing = false; upd.textContent = label(); upd.setAttribute('aria-label', 'Update'); if (!slot) later(); }, 2500); }
   /* No offline copy is ever deleted any more. Every offline worker of this site is asked for its newest version; a new version only
      takes over once it has completely downloaded the game, so with bad Wi-Fi the old copy simply stays and the game keeps opening with
      no internet. (Before 2026-11-07 Update deleted every offline copy, and those games then needed the internet until each was opened
@@ -1072,7 +1074,7 @@ button.ap.tapme{box-shadow:0 0 0 3px #f4b183}
     }).then(function (res) { return res.indexOf('failed') < 0; });   // false: this game's newest version did not arrive in time
   }
   upd.addEventListener('click', function () {
-    if (busy) return; busy = true; upd.textContent = 'Updating…';
+    if (busy) return; busy = true; upd.textContent = 'Updating…'; upd.setAttribute('aria-label', 'Updating…'); if (!slot) later();
     var ROOT = '/ten-minute-games/', p = location.pathname, i = p.indexOf(ROOT), base = i >= 0 ? p.slice(0, i + ROOT.length) : '/';
     function fresh(u) { return cap(fetch(u, { cache: 'reload' }), 8000).catch(function () {}); }
     var done = true;   // every step has a time limit, so "Updating…" never hangs on a Wi-Fi with no real internet
@@ -1088,8 +1090,25 @@ button.ap.tapme{box-shadow:0 0 0 3px #f4b183}
      one corner always sat on top of something. Keep the pill 44px tall (easy to tap) and, whenever the page layout changes, put it in
      whichever of six edge spots does not cover a button, link or field (spots tried in this order: bottom-centre, bottom-left,
      bottom-right, top-centre, top-left, top-right). Buttons that are always on screen (fixed or sticky) count much more than ones
-     that scroll away. It never moves while the child is just scrolling, and stays where it is as long as its spot is free. */
-  var SPOTS = ['bc', 'bl', 'br', 'tc', 'tl', 'tr'], cur = '', timer = 0;
+     that scroll away. It does not move during scrolling; once scrolling stops it moves only if its spot now covers something. */
+  var SPOTS = ['bc', 'bl', 'br', 'tc', 'tl', 'tr'], cur = '', timer = 0, room = false;
+  /* On a phone the two wide pills (about 300px) covered something in every spot, for example "Begin" on a lesson's first screen.
+     Below 560px wide they become two round 48px buttons (🏠 and 🔄, still easy to tap; the words stay for screen readers),
+     and the page gets room at the bottom so it can always scroll clear of them. */
+  if (back) { back.setAttribute('aria-label', 'Home'); back.title = 'Home'; }
+  if (!showing) upd.setAttribute('aria-label', 'Update'); upd.title = 'Update';
+  function sizeUp() {
+    var want = document.documentElement.clientWidth < 560;
+    if (want !== small) {
+      small = want;
+      [back, upd].forEach(function (el) { if (!el) return;
+        el.style.minHeight = small ? '48px' : '56px'; el.style.minWidth = small ? '48px' : '';
+        el.style.padding = small ? '0 10px' : '0 22px'; el.style.justifyContent = 'center'; });
+      if (back) back.textContent = small ? '🏠' : '🏠 Home';
+      if (!busy && !showing) upd.textContent = label();
+    }
+    if (small && !room) { room = true; document.body.style.paddingBottom = 'calc(' + (getComputedStyle(document.body).paddingBottom || '0px') + ' + 72px)'; }
+  }
   var SEL = 'button,a[href],input,select,textarea,summary,label,[role=button],[role=tab],[tabindex]:not([tabindex="-1"])';
   function put(s) {
     var st = a.style, v = s.charAt(0) === 'b' ? 'bottom' : 'top', side = s.charAt(1);
@@ -1104,6 +1123,7 @@ button.ap.tapme{box-shadow:0 0 0 3px #f4b183}
   }
   function place() {
     try {
+      sizeUp();
       var W = document.documentElement.clientWidth, H = window.innerHeight, items = [], all, i, j;
       a.style.pointerEvents = 'none'; all = document.querySelectorAll(SEL);   /* (while measuring, the pill itself must not count as covering anything) */
       for (i = 0; i < all.length; i++) {
@@ -1129,6 +1149,8 @@ button.ap.tapme{box-shadow:0 0 0 3px #f4b183}
   function later() { clearTimeout(timer); timer = setTimeout(function () { place(); timer = setTimeout(place, 500); }, 120); }
   put('bc'); cur = 'bc'; place();
   window.addEventListener('resize', later); window.addEventListener('orientationchange', later); window.addEventListener('load', later);
+  /* once scrolling has stopped, move only if the buttons now sit on top of something (place() keeps a free spot) */
+  var scrollTimer = 0; window.addEventListener('scroll', function () { clearTimeout(scrollTimer); scrollTimer = setTimeout(place, 400); }, { passive: true });
   try { new MutationObserver(function (ms) { for (var i = 0; i < ms.length; i++) if (!a.contains(ms[i].target)) { later(); return; } }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden', 'disabled', 'aria-hidden', 'open'] }); } catch (e) { /* no observer: the spot is only worked out at load and on resize */ }
 })()</script><script>(function noZoom() {
   var st = document.createElement('style');
