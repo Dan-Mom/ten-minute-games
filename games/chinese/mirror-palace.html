@@ -667,9 +667,12 @@ button{-webkit-appearance:none;appearance:none}
 .newc.demo{cursor:default}
 .pyl{font:700 18px var(--body);color:var(--blue);margin-top:2px}
 .nopy .pyl{display:none}
+.noen .bubble .mean{display:none}
 .bubble .mean{font-size:17px}
 .patn{margin-top:4px;font:800 15px var(--display);color:var(--red)}
 .sctl{position:sticky;bottom:0;margin:12px -20px -20px;padding:12px 20px 16px;background:rgba(255,255,255,.96);border-radius:0 0 26px 26px}
+.sctl .togs{display:inline-flex;gap:8px;flex-wrap:nowrap}
+@media (max-width:600px){.sctl .togs .btn{padding-left:10px;padding-right:10px;font-size:15px}}
 .today{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;margin:6px auto 10px;max-width:680px}
 .tlab{font:800 15px var(--display);color:var(--mute);margin-right:4px}
 .tchar{-webkit-appearance:none;appearance:none;min-width:44px;min-height:44px;padding:0 6px;border:2px solid #ddd;border-radius:12px;background:#fff;color:#b9b9b9;font-size:24px;line-height:1}
@@ -951,27 +954,14 @@ var pending = null, pendBtn = null, navAt = 0;   // the one move waiting for the
    first tap, and for anything not decoded yet, the <audio> player is used. iPad and iPhone always use the <audio> player: there Web
    Audio crackled (2026-11-07, and again on 2026-11-08 when a replayed line trembled), and older iPads let it obey silent mode. No
    AudioContext is made up front on iPad: beep() makes its own inside a tap (one made early can sound crackly on iOS). */
-/* LESSON.timing (a test, 2026-11-08): after each sound started by a tap, a small badge shows the seconds from the tap until the words
-   are heard (start + the silence before them). For the owner's iPad measurements; off in every lesson unless set. */
-var lastTap = 0, badgeTimer = 0;
-function heard(lead) {
-  if (!LESSON.timing || !lastTap) return;
-  var ms = performance.now() - lastTap + lead * 1000; lastTap = 0;
-  if (ms > 5000) return;
-  var b = document.getElementById('tapTimer');
-  if (!b) { b = document.createElement('div'); b.id = 'tapTimer'; b.setAttribute('aria-hidden', 'true');
-    b.style.cssText = 'position:fixed;left:8px;bottom:calc(8px + env(safe-area-inset-bottom));z-index:2147483646;background:#1f2937;color:#fff;font:800 16px system-ui,sans-serif;padding:6px 10px;border-radius:10px;opacity:.85;pointer-events:none';
-    document.body.appendChild(b); }
-  b.textContent = '⏱ ' + (ms / 1000).toFixed(2) + ' s' + (srcNode ? ' WA' : ' A');
-  clearTimeout(badgeTimer); badgeTimer = setTimeout(function () { b.textContent = ''; }, 2500);
-}
 var IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && 'ontouchend' in document);
-/* LESSON.iosFast (2026-11-08, the owner: on iPad a tap took about a second to sound). First try (star-night) trembled on replay; this
-   second try (city-walk) runs the context at the recordings' own 24000 Hz and has no fades. on iPad and iPhone too, every
-   recording plays through Web Audio, decoded in memory and trimmed to the words, so it starts at once. To avoid the crackle heard on
-   2026-11-07: the context is made inside the first tap (never at page load), the <audio> player is never used for the voice once it
-   exists (no mixing of the two), and every sound fades in and out over 5 ms. */
-var IOS_FAST = IOS && !!LESSON.iosFast && !!navigator.audioSession;   // iOS 17+ only: before that, Web Audio goes quiet with the silent switch on
+/* iPad sound (2026-11-08): on iPad and iPhone (iOS 17+) every recording plays through Web Audio, decoded in memory and trimmed to
+   the words, so a tap sounds at once, as on computers. Earlier tries trembled on the owner's iPad (11-07; 11-08 with a context at
+   the device rate and 5 ms fades); since the context runs at the recordings' own 24000 Hz with no fades, it is clean and fast
+   (tried in city-walk, then made the setting for every lesson). The context is made inside the first tap, the <audio> player is
+   never used for the voice once it exists (no mixing), and recordings are decoded one at a time. A lesson can set iosFast: false.
+   iOS before 17 keeps the <audio> player (Web Audio there goes quiet with the silent switch on). */
+var IOS_FAST = IOS && LESSON.iosFast !== false && !!navigator.audioSession;   // iOS 17+ only: before that, Web Audio goes quiet with the silent switch on
 // 2026-11-08: tried in star-night and turned off the same day: on the owner's iPad a replayed sound trembled. No lesson uses it now.
 var AC = null, BUF = {}, srcNode = null, loadingDone = null;   // loadingDone: a line being fetched or decoded before it plays (it counts as speaking)
 try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}   // iPad (iOS 17+): play even in silent mode, like the <audio> player
@@ -1012,7 +1002,6 @@ function silentUrl() {
   return (SILENT = URL.createObjectURL(new Blob([b], { type: 'audio/wav' })));
 }
 function unlockSound() {   // every tap: make sure Web Audio may play (iPad also pauses it after a call or another app)
-  lastTap = performance.now();
   startFast();
   if (!primed && !IOS_FAST && (!player || player.paused)) {
     primed = true;
@@ -1039,7 +1028,6 @@ function playBuf(k, done) {   // Web Audio: starts at once, ends when the words 
   node.connect(AC.destination);
   node.onended = function () { if (srcNode === node) srcNode = null; done(); };
   srcNode = node; node.start(0);
-  heard(0.10);   // the buffer keeps 0.10 s before the words
 }
 function speaking() {   // is a recording still being said? (an interrupted or paused one does not hold anything up)
   if (!voiceDone) return false;
@@ -1088,7 +1076,6 @@ function say(t) {
   }
   player.src = READY[k] || LESSON.voice + '/' + k + '.mp3';   // downloaded already: plays at once; else fetched now (also before the list has arrived)
   var p = player.play(); if (p && p.catch) p.catch(done);   // interrupted, blocked or missing: stay quiet (🔊 replays it)
-  if (p && p.then) p.then(function () { heard(tr ? (IOS || tr.s <= 0.12 ? tr.s : 0.10) : 0.2); }, function () {});
 }
 /* never cut a recording short. A tap on Next, Back, Quit, Levels or a level waits until the voice has finished; only the latest tap
    is kept (Quit then Next = Next, Next then Quit = Quit); a second tap within a third of a second of moving on is ignored (the next card's
@@ -1258,7 +1245,7 @@ function menu() {
 /* ---------- "Start here": the lesson's short talk (STORY), one line at a time, before level 1. No score.
    The lesson's characters are coloured and say themselves when tapped; the sentence-pattern line is marked too. ---------- */
 var HAS_STORY = typeof STORY !== 'undefined' && STORY && Array.isArray(STORY.lines) && STORY.lines.length > 0;
-var showPy = true;   // pinyin under each line: on, unless the child turns it off
+var showPy = true, showEn = true;   // pinyin and English under each line: on, unless the child turns them off (English toggle: the owner, 2026-11-08)
 function storyLine(x) {   // the line with the lesson's characters coloured (tap to hear) and, in the pattern line, the pattern's key words marked
   var s = x.s, inKey = [], chars = {};
   CHARS.forEach(function (c) { chars[c.c] = 1; });
@@ -1318,12 +1305,16 @@ function story(from) {   // from = how many lines to show at once, without readi
       b.classList.add('playing'); var w = voiceWait; b.wait = w; w.then(function () { if (b.wait === w) b.classList.remove('playing'); });
     }
   }
-  var talk = E('div', 'talk' + (showPy ? '' : ' nopy')); talk.setAttribute('aria-live', 'polite'); p.appendChild(talk);
+  var talk = E('div', 'talk' + (showPy ? '' : ' nopy') + (showEn ? '' : ' noen')); talk.setAttribute('aria-live', 'polite'); p.appendChild(talk);
   var ctl = E('div', 'row sctl'); p.appendChild(ctl);
   var pyb = E('button', 'btn ghost', ''); pyb.type = 'button';   // pinyin on or off, next to Next so it stays in reach
   function pyLabel() { pyb.innerHTML = 'Pinyin <span class="han">拼音</span>: ' + (showPy ? 'on' : 'off'); }
   pyLabel();
   pyb.onclick = function () { showPy = !showPy; pyLabel(); talk.classList.toggle('nopy', !showPy); };
+  var enb = E('button', 'btn ghost', ''); enb.type = 'button';   // English on or off
+  function enLabel() { enb.innerHTML = 'English <span class="han">英文</span>: ' + (showEn ? 'on' : 'off'); }
+  enLabel();
+  enb.onclick = function () { showEn = !showEn; enLabel(); talk.classList.toggle('noen', !showEn); };
   function add(silent) {
     var x = STORY.lines[shown++];
     save.storyAt = shown; store();   // where the talk is, for Continue
@@ -1345,7 +1336,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   function controls() {
     var hadFocus = ctl.contains(document.activeElement), main;   // keep the keyboard on the main button when the bar is redrawn
     ctl.innerHTML = '';
-    ctl.appendChild(pyb);
+    var togs = E('span', 'togs'); togs.appendChild(pyb); togs.appendChild(enb); ctl.appendChild(togs);   // the two on/off buttons stay side by side, also on a phone
     if (shown < STORY.lines.length) {
       main = E('button', 'btn', 'Next line <span class="han">下一句</span> ▶'); main.type = 'button';
       main.onclick = function () { afterVoice(function () { add(); }, main); };
