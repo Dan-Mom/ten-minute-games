@@ -501,7 +501,7 @@ button{font:inherit;cursor:pointer}
 .sentence{font-size:34px;line-height:1.6}
 .emoji{font-size:56px;line-height:1}
 .opts{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:18px}
-.opt{position:relative;width:110px;height:92px;border:3px solid #e9c46a;border-radius:14px;background:#fffaf0;font-family:var(--han);font-size:52px;color:var(--ink);box-shadow:0 5px 0 #e9c46a;overflow:hidden}
+.opt{position:relative;width:110px;height:92px;border:3px solid #e9c46a;border-radius:14px;background:#fffaf0;font-family:var(--han);font-size:52px;color:var(--ink);box-shadow:0 5px 0 #e9c46a;overflow:hidden;padding:0;display:inline-flex;align-items:center;justify-content:center}   /* iPad gives buttons ~1em padding: keep the character in the middle */
 .opt span{position:relative}
 .opt.ok{border-color:var(--green);background:var(--green-s);box-shadow:0 5px 0 var(--green)}
 .opt.no{border-color:var(--red);background:var(--red-s);box-shadow:0 5px 0 var(--red);animation:shake .3s}
@@ -516,7 +516,7 @@ button{font:inherit;cursor:pointer}
 .fly{animation:fly 1.6s ease-in forwards}
 @keyframes fly{to{transform:translate(60vw,-60vh) rotate(25deg) scale(.3);opacity:0}}
 
-/* level 4: bingo */
+/* level 5: bingo */
 .bgoal{font:800 22px var(--display);color:var(--blue)}
 .bhint{min-height:30px;margin-top:6px;color:var(--mute);font-size:18px}
 .bgrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;max-width:560px;margin:12px auto 0}
@@ -544,7 +544,7 @@ button{font:inherit;cursor:pointer}
 .bline.no{border-color:var(--red);animation:shake .3s}
 .endmark{font-family:var(--han);font-size:30px;color:var(--mute)}
 .tiles{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:16px;min-height:60px}
-.tile{min-height:56px;padding:6px 14px;border:3px solid #e9c46a;border-radius:14px;background:#fffaf0;color:var(--ink);font-family:var(--han);font-weight:700;font-size:28px;box-shadow:0 4px 0 #e9c46a;touch-action:manipulation}
+.tile{min-height:56px;padding:6px 14px;border:3px solid #e9c46a;border-radius:14px;background:#fffaf0;color:var(--ink);font-family:var(--han);font-weight:700;font-size:28px;box-shadow:0 4px 0 #e9c46a;touch-action:manipulation;-webkit-user-select:none;user-select:none}
 .tile.key{border-color:var(--red);box-shadow:0 4px 0 var(--red)}
 .bline .tile{background:#fff}
 .bleft{font:800 18px var(--display);color:var(--mute);margin-top:4px}
@@ -587,10 +587,9 @@ button{font:inherit;cursor:pointer}
 .big .panel.meetp{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.7fr);grid-template-rows:auto auto auto auto;column-gap:28px;align-content:center;align-items:center}
 .big .meetp>.say{grid-column:1;grid-row:1}.big .meetp>.charrow{grid-column:1;grid-row:2}.big .meetp>.py{grid-column:1;grid-row:3}.big .meetp>.mean{grid-column:1;grid-row:4;align-self:start}
 .big .meetp>.built{grid-column:2;grid-row:1 / 5;margin:0}.big .meetp>.row{grid-column:1 / 3;grid-row:5}
-.big .meetp .charrow{display:flex;justify-content:center;flex-wrap:nowrap;gap:10px}.big .meetp .card-big{font-size:104px}.big .meetp .old{max-width:150px;flex-direction:column;gap:0}.big .meetp .old .cap{text-align:center;margin-top:4px}.big .meetp .old img{width:78px;height:78px}.big .meetp .old .cap{font-size:12.5px}   /* sideways: the old form beside the character, so the card keeps its height */
+.big .meetp .charrow{display:flex;justify-content:center;flex-wrap:nowrap;gap:10px}.big .meetp .card-big{font-size:104px}.big .meetp .old{max-width:150px;flex-direction:column;gap:0}.big .meetp .old .cap{text-align:center;margin-top:4px;font-size:12.5px}.big .meetp .old img{width:78px;height:78px}   /* sideways: the old form beside the character, so the card keeps its height */
 .big .pat{font-size:40px;margin:0 0 2px}.big .exs{gap:5px;margin-top:6px}.big .ex{padding:2px 12px}.big .ex .han{font-size:26px}.big .ex .mean{font-size:16px}.big .panel{padding-top:12px;padding-bottom:12px}   /* the sentence-pattern card, sideways: a little tighter so "Got it" stays on screen */
 }
-.tile{-webkit-user-select:none;user-select:none}
 .big .panel>.built,.big .panel>.exs,.big .panel>.bline,.big .panel>.tiles,.big .panel>.letter{width:100%}   /* in the full-height card, keep these full width */
 .nav{display:flex;justify-content:space-between;gap:10px;margin:0 0 8px}
 .nav .btn{min-height:48px;font-size:18px;padding:4px 18px}
@@ -627,10 +626,7 @@ button{font:inherit;cursor:pointer}
 .big .old img{width:100px;height:100px}
 .big .old .cap{font-size:15px}
 .big .charrow .card-big{line-height:1}.big .old{flex-direction:row;gap:12px;max-width:none}.big .old .cap{text-align:left;max-width:230px;margin-top:0}   /* upright: the caption beside the drawing, so the card stays short */
-.credit{font-size:13px;color:var(--mute);text-align:center;margin-top:14px}
-/* round 6 */
 button{-webkit-appearance:none;appearance:none}
-.opt{padding:0;display:inline-flex;align-items:center;justify-content:center}   /* iPad gives buttons ~1em padding: keep the character in the middle */
 .opt.wide{justify-content:flex-start}
 .speak{padding:0}
 .big .charrow{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:18px}   /* the big character exactly in the middle, its old form to the right */
@@ -647,6 +643,7 @@ button{-webkit-appearance:none;appearance:none}
 .lvs.done .n{background:var(--green)}
 .lvs h3{font-size:21px}
 .lvs p{margin:2px 0 0;color:var(--mute);font-size:16px}
+.lvs .cont{color:var(--blue);font-weight:800}.lvs .sc{color:var(--green);font-weight:800}   /* "Continue…" and the score, coloured as on the level cards */
 .lvs .go{margin-left:auto;font-size:28px}
 .storyp{text-align:left}
 .storyp>.say{text-align:center}
@@ -654,10 +651,9 @@ button{-webkit-appearance:none;appearance:none}
 .stitle .sen{display:block;font:700 18px var(--body);color:var(--mute)}
 .shelp{text-align:center;color:var(--mute);font-size:16px;margin:0 0 10px}
 .talk{display:flex;flex-direction:column;gap:12px;max-width:680px;margin:0 auto}
-.bubble{align-self:flex-start;max-width:92%;background:#f3f7ff;border:3px solid var(--blue-s);border-radius:20px 20px 20px 6px;padding:8px 14px 10px}
+.bubble{align-self:flex-start;max-width:92%;background:#f3f7ff;border:3px solid var(--blue-s);border-radius:20px 20px 20px 6px;padding:8px 14px 10px;scroll-margin-bottom:110px;cursor:pointer;transition:box-shadow .2s}   /* a new line scrolls into view above the buttons */
 .bubble.right{align-self:flex-end;background:#fff8e8;border-color:#f1dfb8;border-radius:20px 20px 6px 20px}
 .bubble.patb{border-color:var(--red)}
-.bubble{scroll-margin-bottom:110px}   /* a new line scrolls into view above the buttons */
 .who{font:800 16px var(--display);color:var(--mute)}
 .srow{display:flex;align-items:flex-start;gap:10px}
 .srow .speak{flex:0 0 auto}
@@ -698,7 +694,6 @@ button{-webkit-appearance:none;appearance:none}
 .tchar{-webkit-appearance:none;appearance:none;min-width:44px;min-height:44px;padding:0 6px;border:2px solid #ddd;border-radius:12px;background:#fff;color:#b9b9b9;font-size:24px;line-height:1}
 .tchar.lit{border-color:var(--blue);color:var(--blue);background:var(--blue-s)}
 .nobr{white-space:nowrap}
-.bubble{cursor:pointer;transition:box-shadow .2s}
 .bubble.playing{box-shadow:0 0 0 4px var(--gold)}
 
 /* "Write it 写一写": stroke order (left) and writing with a finger (right), each in a 田字格 box */
@@ -728,13 +723,11 @@ button{-webkit-appearance:none;appearance:none}
 .wbtns .btn{min-height:46px;padding:6px 16px;font-size:18px}
 .wmsg{min-height:27px;margin:10px 0 4px;color:var(--blue-d)}
 .wwords{display:flex;flex-wrap:nowrap;align-items:center;justify-content:center;gap:8px;margin:2px auto 0;max-width:720px}   /* one row: a long meaning is cut short (… ) instead of making a second row below the screen */
-.wword{-webkit-appearance:none;appearance:none;border:2px solid var(--blue-s);background:#fff;border-radius:14px;padding:4px 12px;min-height:46px;font:inherit;color:var(--ink);line-height:1.2}
+.wword{-webkit-appearance:none;appearance:none;border:2px solid var(--blue-s);background:#fff;border-radius:14px;padding:4px 12px;min-height:46px;font:inherit;color:var(--ink);line-height:1.2;flex:0 1 auto;min-width:0}
 .wword .han{font-size:22px}
 .wword .wc{color:var(--blue)}
-.wword small{font:700 13px var(--body);color:var(--mute)}
+.wword small{font:700 13px var(--body);color:var(--mute);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;max-width:13em;margin:0 auto}   /* a long meaning takes two short lines */
 .wwords .tlab{flex:0 0 auto}
-.wword{flex:0 1 auto;min-width:0}
-.wword small{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;max-width:13em;margin:0 auto}   /* a long meaning takes two short lines */
 .hero .offl{margin-top:6px;font:800 15px var(--display);color:var(--green)}
 .hero .offl:empty{display:none}
 </style>
@@ -947,7 +940,8 @@ if (!isObj(save)) save = {};
 function store() { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) { /* private mode: progress just is not kept */ } }
 if (!isObj(save.done)) save.done = {}; if (!isObj(save.score)) save.score = {};
 if (!isObj(save.re)) delete save.re;   // a damaged second-try record is dropped
-if (save.write && (typeof save.write !== 'object' || Array.isArray(save.write))) delete save.write;   // "Write it": { character: 1 } for each one written
+if (!isObj(save.at)) delete save.at;   // the same for "where each level was left"
+if (save.write && !isObj(save.write)) delete save.write;   // "Write it": { character: 1 } for each one written
 Object.keys(save.score).forEach(function (k) { var s = save.score[k] || {}; save.score[k] = { got: +s.got || 0, of: +s.of || 0, half: +s.half || 0 }; if (isFinite(+s.pts) && s.pts != null) save.score[k].pts = Math.max(0, +s.pts); });   // numbers only: they are shown on the page
 if ('stamps' in save) { delete save.stamps; store(); }   // the old pile of stamps grew with every replay; scores per level replace it
 if (!save.v) {   // a sentence-pattern level was added as level 3, so levels 3 and 4 moved up one
@@ -974,9 +968,8 @@ function vkey(t) { t = String(t).replace(/＿/g, '').trim(); var h = 0x811c9dc5;
 var voiceWait = null, voiceDone = null;   // the recording now playing, and how to mark it finished
 var pending = null, pendBtn = null, navAt = 0;   // the one move waiting for the voice to end, and when the child last moved on
 /* Fast sound (computers): a recording that is downloaded and decoded (BUF) plays through Web Audio, which starts at once; until the
-   first tap, and for anything not decoded yet, the <audio> player is used. iPad and iPhone always use the <audio> player: there Web
-   Audio crackled (2026-11-07, and again on 2026-11-08 when a replayed line trembled), and older iPads let it obey silent mode. No
-   AudioContext is made up front on iPad: beep() makes its own inside a tap (one made early can sound crackly on iOS). */
+   first tap, and for anything not decoded yet, the <audio> player is used. On iPad and iPhone no AudioContext is made up front (one
+   made early can sound crackly on iOS): see IOS_FAST below. */
 var IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && 'ontouchend' in document);
 /* iPad sound (2026-11-08): on iPad and iPhone (iOS 17+) every recording plays through Web Audio, decoded in memory and trimmed to
    the words, so a tap sounds at once, as on computers. Earlier tries trembled on the owner's iPad (11-07; 11-08 with a context at
@@ -985,7 +978,6 @@ var IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navi
    never used for the voice once it exists (no mixing), and recordings are decoded one at a time. A lesson can set iosFast: false.
    iOS before 17 keeps the <audio> player (Web Audio there goes quiet with the silent switch on). */
 var IOS_FAST = IOS && LESSON.iosFast !== false && !!navigator.audioSession;   // iOS 17+ only: before that, Web Audio goes quiet with the silent switch on
-// 2026-11-08: tried in star-night and turned off the same day: on the owner's iPad a replayed sound trembled. No lesson uses it now.
 var AC = null, BUF = {}, srcNode = null, loadingDone = null;   // loadingDone: a line being fetched or decoded before it plays (it counts as speaking)
 try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}   // iPad (iOS 17+): play even in silent mode, like the <audio> player
 try { var ACx = window.AudioContext || window.webkitAudioContext; if (ACx && !IOS) AC = new ACx(); } catch (e) { AC = null; }
@@ -996,7 +988,7 @@ function watchAC() {
   };
 }
 if (AC) watchAC();
-function startFast() {   // iPad with LESSON.iosFast: inside the first tap, make the context and decode what is downloaded already
+function startFast() {   // iPad (IOS_FAST): inside the first tap, make the context and decode what is downloaded already
   if (AC || !IOS_FAST) return;
   var C = window.AudioContext || window.webkitAudioContext;
   try { AC = new C({ sampleRate: 24000 }); } catch (e) { try { AC = new C(); } catch (e2) { AC = null; return; } }   // the recordings' own rate: no converting on every play (2026-11-08)
@@ -1081,7 +1073,11 @@ function say(t) {
     };
     if (BUF[k]) go();
     else if (BLOBS[k]) queueTrim(k, BLOBS[k], go, true);
-    else fetch(LESSON.voice + '/' + k + '.mp3').then(function (r) { if (!r.ok) throw 0; return r.blob(); }).then(function (b) { BLOBS[k] = b; READY[k] = READY[k] || URL.createObjectURL(b); queueTrim(k, b, go, true); }, done);
+    else {
+      var got = false;
+      fetch(LESSON.voice + '/' + k + '.mp3').then(function (r) { if (!r.ok) throw 0; return r.blob(); }).then(function (b) { got = true; BLOBS[k] = b; queueTrim(k, b, go, true); }, done);
+      setTimeout(function () { if (!got && loadingDone === done) done(); }, 4000);   // slow internet: stay quiet rather than hold Next or Quit for long (decoding has its own limit)
+    }
     return;
   }
   if (IOS_FAST) { done(); return; }             // iPad before the first tap: nothing may play yet anyway, and the <audio> player is never used here
@@ -1144,7 +1140,7 @@ function trimOf(k, b, then) {   // then (optional): called once BUF[k] is ready,
 function warm(texts) {
   texts.forEach(function (t) {
     if (!t) return; var k = vkey(t); if (ASKED[k] || (VKEYS && !VKEYS[k])) return; ASKED[k] = 1;
-    try { fetch(LESSON.voice + '/' + k + '.mp3').then(function (r) { if (!r.ok) throw 0; return r.blob(); }).then(function (b) { BLOBS[k] = b; READY[k] = URL.createObjectURL(b); if (IOS_FAST) { if (AC) queueTrim(k, b); } else trimOf(k, b); }, function () { delete ASKED[k]; }); } catch (e) { delete ASKED[k]; }
+    try { fetch(LESSON.voice + '/' + k + '.mp3').then(function (r) { if (!r.ok) throw 0; return r.blob(); }).then(function (b) { BLOBS[k] = b; if (IOS_FAST) { if (AC) queueTrim(k, b); } else { READY[k] = URL.createObjectURL(b); trimOf(k, b); } }, function () { delete ASKED[k]; }); } catch (e) { delete ASKED[k]; }
   });
 }
 function levelTexts(steps) {   // every line a level can say: characters, radical names, examples, answers, options
@@ -1302,12 +1298,13 @@ function openStory() {
     [['▶ Continue 继续', function () { story(all); }], ['↺ Start over 重新开始', function () { story(0); }, true]]);
   story(0);
 }
+var storyRun = 0;   // each opening of the talk counts up, so a late "line heard" from an earlier one is ignored
 function story(from) {   // from = how many lines to show at once, without reading them (Continue)
   from = Math.max(0, Math.min(STORY.lines.length, Math.floor(+from) || 0));
   app.classList.remove('big', 'bwide'); app.classList.add('storyw');   // wide screens: buttons in side columns, the talk in the middle (2026-11-08)
   app.innerHTML = '';
   warm(STORY.lines.map(function (x) { return x.s; }).concat(CHARS.map(function (c) { return c.c; })));
-  var shown = 0, first = STORY.lines[0].who;
+  var shown = 0, first = STORY.lines[0].who, run = ++storyRun;
   var nav = E('div', 'nav');
   var ls = E('button', 'btn ghost', '✕ Quit 退出'); ls.type = 'button'; ls.onclick = function () { afterVoice(menu, ls); };
   nav.appendChild(E('span')); nav.appendChild(ls); app.appendChild(nav);
@@ -1340,7 +1337,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   enb.onclick = function () { showEn = !showEn; enLabel(); talk.classList.toggle('noen', !showEn); };
   function add(silent) {
     var x = STORY.lines[shown++];
-    save.storyAt = shown; store();   // where the talk is, for Continue
+    save.storyAt = silent ? shown : shown - 1; store();   // where the talk is, for Continue: a line counts as heard once its voice ends (below)
     var b = E('div', 'bubble' + (x.who === first ? '' : ' right') + (x.pat ? ' patb' : ''));   // the first speaker on the left, the other on the right
     b.appendChild(txt('div', 'who', x.who));
     var sp = E('button', 'speak', '🔊'); sp.type = 'button'; sp.setAttribute('aria-label', 'Listen to this line again');
@@ -1355,6 +1352,7 @@ function story(from) {   // from = how many lines to show at once, without readi
     if (silent) return;   // shown again from before: not read aloud
     try { b.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) { b.scrollIntoView(); }
     sayLine(b, x.s);
+    var at = shown; (voiceWait || Promise.resolve()).then(function () { if (run === storyRun && (Math.floor(+save.storyAt) || 0) === at - 1) { save.storyAt = at; store(); } });   // only for this run of the talk
   }
   function controls() {
     var hadFocus = ctl.contains(document.activeElement), main;   // keep the keyboard on the main button when the bar is redrawn
@@ -1425,10 +1423,10 @@ function openWrite() {
 function writeIt(at) {
   app.classList.remove('big', 'bwide', 'storyw');
   app.innerHTML = '';
-  if (!save.write || typeof save.write !== 'object' || Array.isArray(save.write)) save.write = {};
+  if (!isObj(save.write)) save.write = {};
   warm(CHARS.map(function (c) { return c.c; }));
   var cur = at || 0, demo = null, quiz = null, nextStroke = 0, total = 0, failed = false, lastS = 0;
-  if (!save.wslip || typeof save.wslip !== 'object' || Array.isArray(save.wslip)) save.wslip = {};
+  if (!isObj(save.wslip)) save.wslip = {};
   function slipped(c) { if (!written(c)) { save.wslip[c] = (+save.wslip[c] || 0) + 1; store(); } }   // each mistake or hint before the character was first written
   var nav = E('div', 'nav');
   var ls = E('button', 'btn ghost', '✕ Quit 退出'); ls.type = 'button'; ls.onclick = function () { afterVoice(menu, ls); };
@@ -1739,15 +1737,13 @@ function finish(L, r, old) {   // r = this play's result; old = the score it rep
   var p = E('div', 'panel');
   p.appendChild(E('div', 'card-big', L.letter ? '📬' : '🎉'));
   p.appendChild(E('h2', null, 'Level ' + L.n + ' done!'));
-  {
-    var box = E('div', 'result');
-    box.appendChild(E('div', 'big1', r.got + ' of ' + r.of + ' right the first time: ' + r.got + UNIT));
-    if (old) box.appendChild(E('div', null, 'This takes the place of your old score, ' + levelScore(old) + UNIT + '.'));
-    if (r.miss.length) box.appendChild(E('div', 'miss', 'Not right the first time: <span class="han">' + r.miss.join(' · ') + '</span>'));
-    box.appendChild(E('div', null, 'Lesson total: ' + fmt(lessonTotal()) + UNIT));
-    p.appendChild(box);
-    if (r.ids && r.ids.length) { p.appendChild(redoRow(L, r.ids, 2)); save.re = save.re || {}; save.re[L.n] = { ids: r.ids, round: 2 }; store(); }   // kept, so the missed ones can still be tried after leaving this page
-  }
+  var box = E('div', 'result');
+  box.appendChild(E('div', 'big1', r.got + ' of ' + r.of + ' right the first time: ' + r.got + UNIT));
+  if (old) box.appendChild(E('div', null, 'This takes the place of your old score, ' + levelScore(old) + UNIT + '.'));
+  if (r.miss.length) box.appendChild(E('div', 'miss', 'Not right the first time: <span class="han">' + r.miss.join(' · ') + '</span>'));
+  box.appendChild(E('div', null, 'Lesson total: ' + fmt(lessonTotal()) + UNIT));
+  p.appendChild(box);
+  if (r.ids && r.ids.length) { p.appendChild(redoRow(L, r.ids, 2)); save.re = save.re || {}; save.re[L.n] = { ids: r.ids, round: 2 }; store(); }   // kept, so the missed ones can still be tried after leaving this page
   if (L.letter) {
     p.appendChild(E('p', 'say', LESSON.letter.ready));
     var letter = E('div', 'letter'); letter.appendChild(E('span', 'st', LESSON.letter.stamp));
@@ -1908,7 +1904,7 @@ function bingo(L) {
       now = null; setTimeout(function () { afterVoice(call); }, 750);
     }
     function win() {
-      over = true; now = null; hint.textContent = ''; top.remove(); back.remove();
+      over = true; now = null; hint.textContent = ''; top.remove();   // ✕ Quit stays (it is always there)
       end.appendChild(E('div', 'bwin', '🎉 BINGO!'));
       var r = E('div', 'row'), last = cardNo === BINGO_GOALS.length - 1;
       var old = save.score[L.n], sc = bingoResult();
