@@ -673,6 +673,26 @@ button{-webkit-appearance:none;appearance:none}
 .sctl{position:sticky;bottom:0;margin:12px -20px -20px;padding:12px 20px 16px;background:rgba(255,255,255,.96);border-radius:0 0 26px 26px}
 .sctl .togs{display:inline-flex;gap:8px;flex-wrap:nowrap}
 @media (max-width:600px){.sctl .togs .btn{padding-left:10px;padding-right:10px;font-size:15px}}
+.sctl .mains{display:inline-flex;flex-wrap:wrap;justify-content:center;gap:10px}
+/* the new characters stay at the top of the screen while the talk scrolls (the owner, 2026-11-08) */
+.storyp .today{position:sticky;top:0;z-index:4;background:#fff;padding:6px 0;margin-top:0;box-shadow:0 6px 8px -6px rgba(0,0,0,.15)}
+.storyp .bubble{scroll-margin-top:170px}   /* a new line is not hidden under the sticky row */
+@media (min-width:900px){.storyp .bubble{scroll-margin-top:120px}}
+@media (max-width:600px){.storyp .today .tchar{min-width:40px;min-height:40px;font-size:21px}.storyp .today{gap:4px}}
+/* wide screens (iPad sideways): Pinyin/English on the left, the buttons that move on at the right, the talk gets the whole middle */
+.wrap.storyw{max-width:1180px}
+@media (min-width:900px){
+  .storyw .storyp{display:grid;grid-template-columns:172px minmax(0,1fr) 182px;column-gap:14px;align-items:start}
+  .storyw .storyp>*{grid-column:2}
+  .storyw .storyp .talk,.storyw .storyp .today{max-width:none}
+  .storyw .sctl{display:contents}
+  .storyw .sctl .togs,.storyw .sctl .mains{grid-row:1 / span 20;position:sticky;top:16px;align-self:start;display:flex;flex-direction:column;gap:10px}
+  .storyw .sctl .togs{grid-column:1}
+  .storyw .sctl .mains{grid-column:3}
+  .storyw .sctl .btn{width:100%;margin:0;padding-left:10px;padding-right:10px;font-size:17px}
+  .storyw .storyp .today{gap:4px}
+  .storyw .storyp .tlab{font-size:14px}
+}
 .today{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;margin:6px auto 10px;max-width:680px}
 .tlab{font:800 15px var(--display);color:var(--mute);margin-right:4px}
 .tchar{-webkit-appearance:none;appearance:none;min-width:44px;min-height:44px;padding:0 6px;border:2px solid #ddd;border-radius:12px;background:#fff;color:#b9b9b9;font-size:24px;line-height:1}
@@ -1181,7 +1201,7 @@ var LEVELS = [
 ];
 document.getElementById('lvbtn').onclick = function () { afterVoice(menu, this); };   // back to this game's level list, from anywhere
 function menu() {
-  app.classList.remove('big', 'bwide');
+  app.classList.remove('big', 'bwide', 'storyw');
   app.innerHTML = '';
   var h = E('div', 'hero');
   h.appendChild(E('div', 'big', LESSON.intro.emoji));
@@ -1270,7 +1290,7 @@ function openStory() {
 }
 function story(from) {   // from = how many lines to show at once, without reading them (Continue)
   from = Math.max(0, Math.min(STORY.lines.length, Math.floor(+from) || 0));
-  app.classList.remove('big', 'bwide');
+  app.classList.remove('big', 'bwide'); app.classList.add('storyw');   // wide screens: buttons in side columns, the talk in the middle (2026-11-08)
   app.innerHTML = '';
   warm(STORY.lines.map(function (x) { return x.s; }).concat(CHARS.map(function (c) { return c.c; })));
   var shown = 0, first = STORY.lines[0].who;
@@ -1326,10 +1346,11 @@ function story(from) {   // from = how many lines to show at once, without readi
     var hadFocus = ctl.contains(document.activeElement), main;   // keep the keyboard on the main button when the bar is redrawn
     ctl.innerHTML = '';
     var togs = E('span', 'togs'); togs.appendChild(pyb); togs.appendChild(enb); ctl.appendChild(togs);   // the two on/off buttons stay side by side, also on a phone
+    var mains = E('span', 'mains'); ctl.appendChild(mains);   // the buttons that move on (on a wide screen: the right-hand column)
     if (shown < STORY.lines.length) {
       main = E('button', 'btn', 'Next line <span class="han">下一句</span> ▶'); main.type = 'button';
       main.onclick = function () { afterVoice(function () { add(); }, main); };
-      ctl.appendChild(main);
+      mains.appendChild(main);
     } else {
       save.story = 1; store();
       var again = E('button', 'btn ghost', '↺ Hear it again'); again.type = 'button'; again.onclick = function () { afterVoice(function () { story(0); }, again); };
@@ -1338,7 +1359,7 @@ function story(from) {   // from = how many lines to show at once, without readi
       var nl = LEVELS.filter(function (L) { return !save.score[L.n] && !save.done[L.n]; })[0];
       main = E('button', 'btn', nl ? 'Play level ' + nl.n + ' ▶' : 'All levels ▶'); main.type = 'button';
       main.onclick = function () { afterVoice(function () { if (nl) open(nl); else menu(); }, main); };
-      ctl.appendChild(again); ctl.appendChild(main);
+      mains.appendChild(again); mains.appendChild(main);
     }
     if (hadFocus) try { main.focus({ preventScroll: true }); } catch (e) {}
   }
@@ -1388,7 +1409,7 @@ function openWrite() {
      ['↺ Start over 重新开始', function () { save.write = {}; save.wslip = {}; writeScore(); store(); showTotal(); writeIt(0); }, true]]);
 }
 function writeIt(at) {
-  app.classList.remove('big', 'bwide');
+  app.classList.remove('big', 'bwide', 'storyw');
   app.innerHTML = '';
   if (!save.write || typeof save.write !== 'object' || Array.isArray(save.write)) save.write = {};
   warm(CHARS.map(function (c) { return c.c; }));
@@ -1560,7 +1581,7 @@ function open(L) {
 
 /* ---------- one engine for every level: a queue of steps ---------- */
 function play(L, redo) {   // redo = { steps }: a second try at the questions missed the first time
-  app.classList.add('big'); app.classList.remove('bwide');   // levels 1-4 use the bigger sizes on a tablet
+  app.classList.add('big'); app.classList.remove('bwide', 'storyw');   // levels 1-4 use the bigger sizes on a tablet
   var steps = redo ? redo.steps : L.build(), total, i = 0, again = {}, res = {}, counter = null;   // res: question id -> 1 right the first time, 0 not
   function first(s, ok) { var isFirst = !(s.id in res); if (isFirst) { res[s.id] = ok ? 1 : 0; keep(); tally(); } return isFirst && ok; }   // only the first try counts
   function tally() { if (!counter) return; var r = 0, w = 0; Object.keys(res).forEach(function (k) { if (res[k]) r++; else w++; }); counter.innerHTML = '<b class="tr">✓ ' + r + '</b><b class="tw">✗ ' + w + '</b>'; }
@@ -1799,7 +1820,7 @@ function bingo(L) {
   if (save.bingo && !isObj(save.bingo)) delete save.bingo;
   var cn = save.bingo && save.bingo.cardNo, cardNo = cn === (cn | 0) && cn >= 0 && cn < BINGO_GOALS.length ? cn : 0;
   function start() {
-    app.classList.remove('big'); app.classList.add('bwide');   // the bingo card fills the width; sideways, the page is wider for the left column
+    app.classList.remove('big', 'storyw'); app.classList.add('bwide');   // the bingo card fills the width; sideways, the page is wider for the left column
     var goal = BINGO_GOALS[cardNo], items = null, calls = null, ci = 0, now = null, wrong = 0, over = false, marked = {};
     var res = {}, known = {}, kept = save.bingo && isObj(save.bingo.res) ? save.bingo.res : {};   // card:word -> 1 found on the first try, 0 not; adds up over the three cards
     CHARS.forEach(function (x) { known[x.c] = 1; }); WORDS.forEach(function (x) { known[x.w] = 1; });
