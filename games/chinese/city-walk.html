@@ -708,7 +708,7 @@ button{-webkit-appearance:none;appearance:none}
 .wword{-webkit-appearance:none;appearance:none;border:2px solid var(--blue-s);background:#fff;border-radius:14px;padding:4px 12px;min-height:46px;font:inherit;color:var(--ink);line-height:1.2}
 .wword .han{font-size:22px}
 .wword .wc{color:var(--blue)}
-.wword small{display:block;font:700 13px var(--body);color:var(--mute)}
+.wword small{font:700 13px var(--body);color:var(--mute)}
 .wwords .tlab{flex:0 0 auto}
 .wword{flex:0 1 auto;min-width:0}
 .wword small{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;max-width:13em;margin:0 auto}   /* a long meaning takes two short lines */
@@ -910,9 +910,11 @@ try {   // a save made under the old name moves over once (then the old name is 
   }
 } catch (e) {}
 var save = (function () { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } })();
+function isObj(x) { return !!x && typeof x === 'object' && !Array.isArray(x); }   // a saved record must be a plain object, or it is dropped
+if (!isObj(save)) save = {};
 function store() { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) { /* private mode: progress just is not kept */ } }
-save.done = save.done || {}; save.score = save.score || {};
-if (!save.re || typeof save.re !== 'object' || Array.isArray(save.re)) delete save.re;   // a damaged second-try record is dropped
+if (!isObj(save.done)) save.done = {}; if (!isObj(save.score)) save.score = {};
+if (!isObj(save.re)) delete save.re;   // a damaged second-try record is dropped
 if (save.write && (typeof save.write !== 'object' || Array.isArray(save.write))) delete save.write;   // "Write it": { character: 1 } for each one written
 Object.keys(save.score).forEach(function (k) { var s = save.score[k] || {}; save.score[k] = { got: +s.got || 0, of: +s.of || 0, half: +s.half || 0 }; if (isFinite(+s.pts) && s.pts != null) save.score[k].pts = Math.max(0, +s.pts); });   // numbers only: they are shown on the page
 if ('stamps' in save) { delete save.stamps; store(); }   // the old pile of stamps grew with every replay; scores per level replace it
@@ -939,48 +941,18 @@ try { fetch(LESSON.voice + '/keys.json').then(function (r) { return r.json(); })
 function vkey(t) { t = String(t).replace(/＿/g, '').trim(); var h = 0x811c9dc5; for (var i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
 var voiceWait = null, voiceDone = null;   // the recording now playing, and how to mark it finished
 var pending = null, pendBtn = null, navAt = 0;   // the one move waiting for the voice to end, and when the child last moved on
-/* Fast sound (computers): a recording that is downloaded and decoded (BUF) plays through Web Audio, which starts at once. Until the
-   first tap, and for anything not decoded yet, the <audio> player is used. iPad and iPhone always use the <audio> player (see IOS). */
-// iPad and iPhone keep the <audio> player for the voice: there the voice played through Web Audio had a crackling noise
-// (2026-11-07: on an iPad the first line of a talk, still on <audio>, was clean and every later line, on Web Audio, was not).
-// Older iPads also let Web Audio obey silent mode, which <audio> does not. There no AudioContext is made up front either: beep()
-// makes its own at the first beep, inside a tap, as before 2026-11-05 (one made early can sound crackly on iOS).
+/* Fast sound (computers): a recording that is downloaded and decoded (BUF) plays through Web Audio, which starts at once; until the
+   first tap, and for anything not decoded yet, the <audio> player is used. iPad and iPhone always use the <audio> player: there Web
+   Audio crackled (2026-11-07, and again on 2026-11-08 when a replayed line trembled), and older iPads let it obey silent mode. No
+   AudioContext is made up front on iPad: beep() makes its own inside a tap (one made early can sound crackly on iOS). */
 var IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && 'ontouchend' in document);
-/* LESSON.iosFast (2026-11-08, the owner: on iPad a tap took a while to sound; tried first in one lesson): on iPad and iPhone too, every
-   recording plays through Web Audio, decoded in memory and trimmed to the words, so it starts at once. To avoid the crackle heard on
-   2026-11-07: the context is made inside the first tap (never at page load), the <audio> player is never used for the voice once it
-   exists (no mixing of the two), and every sound fades in and out over 5 ms. */
-var IOS_FAST = IOS && !!LESSON.iosFast && !!navigator.audioSession;   // iOS 17+ only: before that, Web Audio goes quiet with the silent switch on
-// 2026-11-08: tried in star-night and turned off the same day: on the owner's iPad a replayed sound trembled. No lesson uses it now.
-var AC = null, BUF = {}, srcNode = null, srcGain = null, loadingDone = null;   // loadingDone: a line being fetched or decoded before it plays (it counts as speaking)
+var AC = null, BUF = {}, srcNode = null;
 try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}   // iPad (iOS 17+): play even in silent mode, like the <audio> player
 try { var ACx = window.AudioContext || window.webkitAudioContext; if (ACx && !IOS) AC = new ACx(); } catch (e) { AC = null; }
 var FAST = !!AC && !IOS;
-function watchAC() {
-  AC.onstatechange = function () {   // iPad paused the sound (a call, another app): a move waiting for this recording may go now
-    if (AC.state !== 'running' && srcNode && voiceDone) { var n = srcNode; srcNode = null; try { n.onended = null; n.stop(0); } catch (e) {} voiceDone(); }
-  };
-}
-if (AC) watchAC();
-function startFast() {   // iPad with LESSON.iosFast: inside the first tap, make the context and decode what is downloaded already
-  if (AC || !IOS_FAST) return;
-  try { var C = window.AudioContext || window.webkitAudioContext; AC = new C(); } catch (e) { AC = null; return; }
-  FAST = true; watchAC();
-  try { var OC = window.OfflineAudioContext || window.webkitOfflineAudioContext; DEC = new OC(1, 1, AC.sampleRate); } catch (e) { DEC = null; }   // decode off the playing context, at its rate
-  Object.keys(BLOBS).forEach(function (k) { if (!BUF[k]) queueTrim(k, BLOBS[k]); });
-}
-/* iPad: decode one recording at a time (a burst of ~100 at once can make an older iPad stutter); a line asked for now goes first */
-var TQ = [], TBUSY = false;
-function queueTrim(k, b, then, front) { var j = { k: k, b: b, then: then }; if (front) TQ.unshift(j); else TQ.push(j); runTrim(); }
-function runTrim() {
-  if (TBUSY) return;
-  var j = TQ.shift(); if (!j) return;
-  if (BUF[j.k]) { if (j.then) j.then(); return runTrim(); }
-  TBUSY = true;
-  var fired = false, cb = function () { if (fired) return; fired = true; TBUSY = false; if (j.then) j.then(); runTrim(); };
-  setTimeout(cb, 4000);   // a decode that never answers must not hold up the rest
-  trimOf(j.k, j.b, cb);
-}
+if (AC) AC.onstatechange = function () {   // iPad paused the sound (a call, another app): a move waiting for this recording may go now
+  if (AC.state !== 'running' && srcNode && voiceDone) { var n = srcNode; srcNode = null; try { n.onended = null; n.stop(0); } catch (e) {} voiceDone(); }
+};
 var SILENT = null, primed = false;   // a tiny silent sound, played once inside the first tap so iPad also allows the <audio> player later
 function silentUrl() {
   if (SILENT) return SILENT;
@@ -990,8 +962,8 @@ function silentUrl() {
   return (SILENT = URL.createObjectURL(new Blob([b], { type: 'audio/wav' })));
 }
 function unlockSound() {   // every tap: make sure Web Audio may play (iPad also pauses it after a call or another app)
-  startFast();
-  if (!primed && !IOS_FAST && (!player || player.paused)) {
+  if (ac && ac !== AC && ac.state !== 'running') try { ac.resume(); } catch (e) {}   // the beep's own sound system (made on iPad)
+  if (!primed && (!player || player.paused)) {
     primed = true;
     try { if (!player) player = new Audio(); var u = silentUrl(); player.src = u; var q = player.play();
       if (q && q.then) q.then(function () { if (player.src === u) player.pause(); }, function () {}); } catch (e) {}
@@ -1003,27 +975,10 @@ function unlockSound() {   // every tap: make sure Web Audio may play (iPad also
 ['touchend', 'pointerdown', 'mousedown', 'keydown'].forEach(function (ev) { document.addEventListener(ev, unlockSound, true); });
 function stopSound() {
   if (player) try { player.pause(); } catch (e) {}
-  if (srcNode) {
-    var n = srcNode, g = srcGain; srcNode = srcGain = null;
-    try {
-      n.onended = null;
-      if (g && IOS_FAST) { var t = AC.currentTime; g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(0, t + 0.005); n.stop(t + 0.006); }   // fade out: no click
-      else n.stop(0);
-    } catch (e) {}
-  }
-}
-function playBuf(k, done) {   // Web Audio: starts at once, ends when the words end
-  var node = AC.createBufferSource(); node.buffer = BUF[k];
-  if (IOS_FAST) {   // fade in over 5 ms, so no click
-    var g = AC.createGain(), t = AC.currentTime; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(1, t + 0.005);
-    node.connect(g); g.connect(AC.destination); srcGain = g;
-  } else node.connect(AC.destination);
-  node.onended = function () { if (srcNode === node) srcNode = srcGain = null; done(); };
-  srcNode = node; node.start(0);
+  if (srcNode) { var n = srcNode; srcNode = null; try { n.onended = null; n.stop(0); } catch (e) {} }
 }
 function speaking() {   // is a recording still being said? (an interrupted or paused one does not hold anything up)
   if (!voiceDone) return false;
-  if (loadingDone && loadingDone === voiceDone) return true;   // iPad: still being fetched or decoded, about to play
   if (srcNode) return !!AC && AC.state === 'running';
   return !!player && !player.paused && !player.ended;
 }
@@ -1033,27 +988,16 @@ function say(t) {
   var k = vkey(t);
   if (VKEYS && !VKEYS[k]) return;               // no recording for this text: stay quiet, never the device's robot voice
   var over = false, done;                       // each recording has its own "done", so a late signal from an old one cannot end this one
-  voiceWait = new Promise(function (r) { done = function () { if (over) return; over = true; if (voiceDone === done) voiceDone = null; if (loadingDone === done) loadingDone = null; r(); }; });
+  voiceWait = new Promise(function (r) { done = function () { if (over) return; over = true; if (voiceDone === done) voiceDone = null; r(); }; });
   voiceDone = done;
   setTimeout(done, 15000);                      // never wait for ever
   if (FAST && BUF[k] && AC.state === 'running') {   // decoded, trimmed to the words: starts at once and ends when the words end
-    try { playBuf(k, done); return; } catch (e) { srcNode = srcGain = null; }
+    try {
+      var node = AC.createBufferSource(); node.buffer = BUF[k]; node.connect(AC.destination);
+      node.onended = function () { if (srcNode === node) srcNode = null; done(); };
+      srcNode = node; node.start(0); return;
+    } catch (e) { srcNode = null; }
   }
-  if (IOS_FAST && AC) {   // iPad: not decoded yet, or the sound is paused (after a call): get it ready, then play (never through the <audio> player, which would mix the two)
-    loadingDone = done;
-    var play = function () { if (over) return; loadingDone = null; if (BUF[k] && AC.state === 'running') { try { playBuf(k, done); } catch (e) { done(); } } else done(); };
-    var go = function () {
-      if (over) return;
-      if (AC.state === 'running') return play();
-      try { var r = AC.resume(); if (r && r.then) r.then(play, done); else play(); } catch (e) { done(); }
-      setTimeout(function () { if (!over && AC.state !== 'running') done(); }, 1500);   // the sound stays paused (after a call): do not hold the child up
-    };
-    if (BUF[k]) go();
-    else if (BLOBS[k]) queueTrim(k, BLOBS[k], go, true);
-    else fetch(LESSON.voice + '/' + k + '.mp3').then(function (r) { if (!r.ok) throw 0; return r.blob(); }).then(function (b) { BLOBS[k] = b; READY[k] = READY[k] || URL.createObjectURL(b); queueTrim(k, b, go, true); }, done);
-    return;
-  }
-  if (IOS_FAST) { done(); return; }             // iPad before the first tap: nothing may play yet anyway, and the <audio> player is never used here
   if (!player) player = new Audio();            // one player, reused, so iPad keeps allowing it after the first tap
   player.onended = player.onerror = done;
   var tr = READY[k] && TRIM[k];               // where the words start and end in this recording, when known
@@ -1089,31 +1033,28 @@ function afterVoice(fn, btn, again) {
 }
 /* download the recordings a level will need as soon as it starts, so a tap plays them from memory with no wait */
 var READY = {}, ASKED = {};
-var TRIM = {}, DEC = null, BLOBS = {};   // per recording: where the speaking starts and ends (seconds), found once it is downloaded; the downloaded files
-function trimOf(k, b, then) {   // then (optional): called once BUF[k] is ready, or when decoding failed
-  var fin = function () { if (then) { var t = then; then = null; t(); } };
+var TRIM = {}, DEC = null;   // per recording: where the speaking starts and ends (seconds), found once it is downloaded
+function trimOf(k, b) {
   try {
-    if (!DEC) { var OC = window.OfflineAudioContext || window.webkitOfflineAudioContext; DEC = (FAST && AC) || (OC ? new OC(1, 1, 44100) : null); if (!DEC) return fin(); }
-    var dec = DEC, fr = new FileReader();
+    if (!DEC) { var OC = window.OfflineAudioContext || window.webkitOfflineAudioContext; DEC = (FAST && AC) || (OC ? new OC(1, 1, 44100) : null); if (!DEC) return; }
+    var fr = new FileReader();
     fr.onload = function () {
-      var ok = function (a) { try { var d = a.getChannelData(0), n = d.length, i = 0, j = n - 1; while (i < n && Math.abs(d[i]) < 0.01) i++; while (j > i && Math.abs(d[j]) < 0.01) j--; } catch (e) { return fin(); }
-        if (j <= i) return fin();
+      var ok = function (a) { var d = a.getChannelData(0), n = d.length, i = 0, j = n - 1; while (i < n && Math.abs(d[i]) < 0.01) i++; while (j > i && Math.abs(d[j]) < 0.01) j--;
+        if (j <= i) return;
         TRIM[k] = { s: i / a.sampleRate, e: j / a.sampleRate };
-        if (dec === AC || (IOS_FAST && AC)) try {   // keep just the words (from 0.10 s before to 0.12 s after): less memory, and it ends when the words end
+        if (DEC === AC) try {   // keep just the words (from 0.10 s before to 0.12 s after): less memory, and it ends when the words end
           var rate = a.sampleRate, from = Math.max(0, i - Math.round(0.10 * rate)), to = Math.min(n, j + Math.round(0.12 * rate));
           var b2 = AC.createBuffer(1, to - from, rate); b2.getChannelData(0).set(d.subarray(from, to)); BUF[k] = b2;
-        } catch (e) {}
-        fin(); };
-      try { var p = dec.decodeAudioData(fr.result, ok, fin); if (p && p.catch) p.catch(fin); } catch (e) { fin(); }
+        } catch (e) {} };
+      try { var p = DEC.decodeAudioData(fr.result, ok, function () {}); if (p && p.catch) p.catch(function () {}); } catch (e) {}
     };
-    fr.onerror = fin;
     fr.readAsArrayBuffer(b);
-  } catch (e) { fin(); }
+  } catch (e) {}
 }
 function warm(texts) {
   texts.forEach(function (t) {
     if (!t) return; var k = vkey(t); if (ASKED[k] || (VKEYS && !VKEYS[k])) return; ASKED[k] = 1;
-    try { fetch(LESSON.voice + '/' + k + '.mp3').then(function (r) { if (!r.ok) throw 0; return r.blob(); }).then(function (b) { BLOBS[k] = b; READY[k] = URL.createObjectURL(b); if (IOS_FAST) { if (AC) queueTrim(k, b); } else trimOf(k, b); }, function () { delete ASKED[k]; }); } catch (e) { delete ASKED[k]; }
+    try { fetch(LESSON.voice + '/' + k + '.mp3').then(function (r) { if (!r.ok) throw 0; return r.blob(); }).then(function (b) { READY[k] = URL.createObjectURL(b); trimOf(k, b); }, function () { delete ASKED[k]; }); } catch (e) { delete ASKED[k]; }
   });
 }
 function levelTexts(steps) {   // every line a level can say: characters, radical names, examples, answers, options
@@ -1161,9 +1102,14 @@ var ac = null;
    Now the colour comes first and the sound right after the screen has been drawn. The beep's sound system is still made inside the
    tap (beepPrep), as iPad allows it there. */
 function afterPaint(fn) { var go = function () { setTimeout(fn, 0); }; if (window.requestAnimationFrame) requestAnimationFrame(go); else go(); }
-function beepPrep() { try { ac = ac || AC || new (window.AudioContext || window.webkitAudioContext)(); if (ac.state !== 'running') { if (ac.resume) { var r = ac.resume(); if (r && r.catch) r.catch(function () {}); } var z = ac.createBufferSource(); z.buffer = ac.createBuffer(1, 1, 22050); z.connect(ac.destination); z.start(0); } } catch (e) {} }   // (older iPads: a silent sample inside the tap wakes it)
+function beepCtx() {   // the beep's sound system, made at the first beep and woken again after a phone call paused it
+  ac = ac || AC || new (window.AudioContext || window.webkitAudioContext)();
+  if (ac.state !== 'running' && ac.resume) { var r = ac.resume(); if (r && r.catch) r.catch(function () {}); }
+  return ac;
+}
+function beepPrep() { try { if (beepCtx().state !== 'running') { var z = ac.createBufferSource(); z.buffer = ac.createBuffer(1, 1, 22050); z.connect(ac.destination); z.start(0); } } catch (e) {} }   // inside the tap (older iPads: a silent sample wakes it)
 function beep(ok) {
-  try { ac = ac || AC || new (window.AudioContext || window.webkitAudioContext)(); if (ac.state !== 'running' && ac.resume) { var r = ac.resume(); if (r && r.catch) r.catch(function () {}); }   // also after a phone call paused it
+  try { beepCtx();
     var o = ac.createOscillator(), g = ac.createGain(); o.connect(g); g.connect(ac.destination);
     o.frequency.value = ok ? 880 : 220; g.gain.setValueAtTime(0.12, ac.currentTime); g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + (ok ? 0.25 : 0.35)); o.start(); o.stop(ac.currentTime + 0.4); } catch (e) { /* no sound */ }
 }
@@ -1341,7 +1287,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   else { var last = talk.lastChild; if (last) try { last.scrollIntoView({ block: 'nearest' }); } catch (e) {} }   // heard to the end: at the last line, by the buttons
 }
 
-/* ---------- "Write it 写一写": watch how a character is written, then write it with a finger in a 田字格 box. No score.
+/* ---------- "Write it 写一写": watch how a character is written, then write it with a finger in a 田字格 box (scored like a level, see writeScore).
    Only in a lesson that sets LESSON.write: its page also loads Hanzi Writer (_engine/hanzi-writer.min.js) and has a strokes/
    folder with one file per character (scripts/strokes.py). A character written to the end is ticked (save.write). ---------- */
 var HAS_WRITE = !!LESSON.write && typeof HanziWriter !== 'undefined';
@@ -1363,11 +1309,11 @@ window.addEventListener('resize', function () {   // turning the iPad: the boxes
 /* "Write it" scores like a level (the owner, 2026-11-07; ladder 2026-11-08): the first time a character is written in a round, 1¢ with no
    mistake and no hint, 0.5¢ with one, 0.25¢ with two, 0.1¢ with three, nothing with more (save.write[character] = the cents, or 'z'
    for written with nothing earned; save.wslip[character] = mistakes and hints so far). Writing it again later is practice. */
-function writeCents(v) { return v === true || v === '1' ? 1 : typeof v === 'number' && v > 0 ? v : 0; }
+function writeCents(v) { return v === true || v === '1' ? 1 : typeof v === 'number' && v > 0 ? Math.min(1, v) : 0; }
 function writeScore() {
-  var got = 0, half = 0, pts = 0, any = 0;
-  CHARS.forEach(function (c) { var v = save.write && save.write[c.c]; if (!v) return; any++; var x = writeCents(v); pts += x; if (x === 1) got++; else if (x) half++; });
-  if (any) save.score.write = { got: got, of: CHARS.length, half: half, pts: Math.round(pts * 100) / 100 }; else delete save.score.write;
+  var pts = 0, any = 0;
+  CHARS.forEach(function (c) { var v = save.write && save.write[c.c]; if (!v) return; any++; pts += writeCents(v); });
+  if (any) save.score.write = { of: CHARS.length, pts: Math.round(pts * 100) / 100 }; else delete save.score.write;
 }
 function openWrite() {
   var wn = CHARS.filter(function (c) { return written(c.c); }).length;
@@ -1455,7 +1401,7 @@ function writeIt(at) {
     msg.textContent = '';
     if (!demo) make();
     else { try { quiz.cancelQuiz(); } catch (e) {} try { demo.setCharacter(c); quiz.setCharacter(c); } catch (e) {} }
-    strokesOf(c).then(function (d) { if (CHARS[cur].c === c) { total = d.strokes.length; watch(); start(); } }, function () {});
+    strokesOf(c).then(function (d) { if (dEl.isConnected && CHARS[cur].c === c) { total = d.strokes.length; watch(); start(); } }, function () {});
   }
   function watch() { if (demo && !failed) try { demo.animateCharacter(); } catch (e) {} }
   function start() {
@@ -1523,11 +1469,11 @@ function writeIt(at) {
 
 /* a small question box over the page: title, words, and buttons [label, what it does, ghost?] */
 function askBox(title, html, buttons) {
-  var o = E('div', 'ask-over'), box = E('div', 'ask-box'), r = E('div', 'row');
+  var o = E('div', 'ask-over'), box = E('div', 'ask-box'), r = E('div', 'row'); box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', title);
   box.appendChild(E('h3', null, title)); box.appendChild(E('p', null, html));
   buttons.forEach(function (b, n) {
     var el = E('button', 'btn' + (b[2] ? ' ghost' : ''), b[0]); el.type = 'button';
-    el.onclick = function () { o.remove(); if (b[1]) b[1](); };
+    el.onclick = function () { navAt = Date.now(); o.remove(); if (b[1]) b[1](); };   // a double tap must not also answer the question underneath
     r.appendChild(el); if (n === 0) setTimeout(function () { el.focus(); }, 0);
   });
   box.appendChild(r); o.appendChild(box); document.body.appendChild(o);
@@ -1569,13 +1515,13 @@ function play(L, redo) {   // redo = { steps }: a second try at the questions mi
   var was = !redo && save.at && save.at[L.n];
   if (redo && redo.from) {   // came back to a second try left half way: same questions, same order, same answers so far
     var byKey2 = {}; steps.forEach(function (s) { byKey2[key(s)] = s; });
-    var back2 = redo.from.keys.map(function (k) { return byKey2[k]; });
-    if (back2.length && back2.every(Boolean)) { steps = back2; i = Math.min(Math.max(0, Math.floor(+redo.from.i) || 0), steps.length - 1); res = redo.from.res && typeof redo.from.res === 'object' && !Array.isArray(redo.from.res) ? redo.from.res : {}; }
+    var back2 = Array.isArray(redo.from.keys) ? redo.from.keys.map(function (k) { return byKey2[k]; }) : [];
+    if (back2.length && back2.every(Boolean)) { steps = back2; i = Math.min(Math.max(0, Math.floor(+redo.from.i) || 0), steps.length - 1); res = isObj(redo.from.res) ? redo.from.res : {}; }
   }
-  if (was) {   // came back to a level left half way: rebuild it in the saved order and go on from the saved step
+  if (was && Array.isArray(was.keys)) {   // came back to a level left half way: rebuild it in the saved order and go on from the saved step
     var byKey = {}; steps.forEach(function (s) { byKey[key(s)] = s; });
     var back = was.keys.map(function (k) { return byKey[k]; });
-    if (back.every(Boolean)) { steps = back; i = was.i; again = was.again || {}; res = was.res || {}; }
+    if (back.length && back.every(Boolean)) { steps = back; i = Math.min(Math.max(0, Math.floor(+was.i) || 0), steps.length - 1); again = isObj(was.again) ? was.again : {}; res = isObj(was.res) ? was.res : {}; }
   }
   total = steps.length;
   warm(levelTexts(steps));
@@ -1626,10 +1572,10 @@ function play(L, redo) {   // redo = { steps }: a second try at the questions mi
   }
   function build(p, s) {   // put the word tiles in order by tapping them
     var P = PATTERN[0], x = s.x, picked = [], wrong = 0, done = false, order;
-    do { order = shuffle(x.tiles.map(function (t, i) { return i; })); } while (x.ok.indexOf(order.map(function (i) { return x.tiles[i]; }).join('') + P.end) >= 0);
+    var tries = 0; do { order = shuffle(x.tiles.map(function (t, i) { return i; })); } while (++tries < 50 && x.ok.indexOf(order.map(function (i) { return x.tiles[i]; }).join('') + P.end) >= 0);   // (a build with only right orders would loop for ever)
     p.appendChild(E('p', 'say', 'Tap the words in the right order.'));
     var top = E('div', 'row'); top.appendChild(speakBtn(x.ok[0])); top.appendChild(E('div', 'mean', x.en)); p.appendChild(top);
-    var line = E('div', 'bline'), pool = E('div', 'tiles'), fb = E('div', 'fb');
+    var line = E('div', 'bline'), pool = E('div', 'tiles'), fb = E('div', 'fb'); fb.setAttribute('aria-live', 'polite');
     p.appendChild(line); p.appendChild(pool); p.appendChild(fb);
     /* a tap moves a tile into the sentence (at the end) or, from the sentence, back down */
     function tile(i, n) {   // n = its place in the sentence, or -1 while it waits below
@@ -1665,11 +1611,11 @@ function play(L, redo) {   // redo = { steps }: a second try at the questions mi
   function ask(p, s) {
     p.appendChild(E('p', 'say', s.prompt));
     if (s.top) p.appendChild(s.top());
-    var fb = E('div', 'fb'), opts = E('div', 'opts'), answered = false;
+    var fb = E('div', 'fb'), opts = E('div', 'opts'), answered = false; fb.setAttribute('aria-live', 'polite');
     s.opts.forEach(function (o) {
       var b = E('button', 'opt' + (s.wide ? ' wide' : '') + (s.word ? ' word' : '')); b.type = 'button'; b.appendChild(E('span', null, o));
       b.onclick = function () {
-        if (answered) return;
+        if (answered || Date.now() - navAt < 350) return;   // the second tap of a double tap on the button before
         if (o === s.answer) {
           answered = true; b.classList.add('ok'); beepPrep();   // the colour first, the sound right after it is drawn
           afterPaint(function () { if (!b.isConnected) return; say(s.sayAfter || o); beep(true); });
@@ -1689,7 +1635,7 @@ function play(L, redo) {   // redo = { steps }: a second try at the questions mi
   next();
 }
 function finish(L, r, old) {   // r = this play's result; old = the score it replaces (bingo saves its score itself and passes the old one)
-  if (arguments.length < 3) { old = save.score[L.n]; if (r) save.score[L.n] = { got: r.got, of: r.of, pts: r.got }; }
+  if (arguments.length < 3) { old = save.score[L.n]; save.score[L.n] = { got: r.got, of: r.of, pts: r.got }; }
   if (save.at) delete save.at[L.n];
   if (L.run) delete save.bingo;
   if (save.re) delete save.re[L.n];   // a new full play: the old second try no longer counts
@@ -1698,7 +1644,7 @@ function finish(L, r, old) {   // r = this play's result; old = the score it rep
   var p = E('div', 'panel');
   p.appendChild(E('div', 'card-big', L.letter ? '📬' : '🎉'));
   p.appendChild(E('h2', null, 'Level ' + L.n + ' done!'));
-  if (r) {
+  {
     var box = E('div', 'result');
     box.appendChild(E('div', 'big1', r.got + ' of ' + r.of + ' right the first time: ' + r.got + UNIT));
     if (old) box.appendChild(E('div', null, 'This takes the place of your old score, ' + levelScore(old) + UNIT + '.'));
@@ -1759,7 +1705,7 @@ function redoSteps(L, ids) {
 function redone(L, r, round) {   // the end of a second try: each one right this time earns this round's cents (0.5, 0.25, 0.1, then 0)
   if (save.re) delete save.re[L.n];   // this second try is finished
   var v = worth(round), gain = r.got * v;
-  var sc = save.score[L.n]; if (sc) { sc.pts = Math.round((scorePts(sc) + gain) * 100) / 100; sc.half = (sc.half || 0) + r.got; } store(); showTotal();
+  var sc = save.score[L.n]; if (sc) sc.pts = Math.round((scorePts(sc) + gain) * 100) / 100; store(); showTotal();
   app.innerHTML = '';
   var p = E('div', 'panel');
   p.appendChild(E('div', 'card-big', '🔁'));
@@ -1777,7 +1723,7 @@ function redone(L, r, round) {   // the end of a second try: each one right this
   p.appendChild(r2); app.appendChild(p);
 }
 
-/* ---------- level 4: bingo. Hear it, find it, mark it. Three cards, each asking a little more. ---------- */
+/* ---------- level 5: bingo. Hear it, find it, mark it. Three cards, each asking a little more. ---------- */
 var BINGO_LINES = (function () {
   var out = [], i, j;
   for (i = 0; i < 5; i++) { var r = [], c = []; for (j = 0; j < 5; j++) { r.push(i * 5 + j); c.push(j * 5 + i); } out.push(r, c); }
@@ -1790,11 +1736,12 @@ function bingoItems() {   // every one of the lesson's characters, plus words to
     .concat(shuffle(WORDS).slice(0, 24 - CHARS.length).map(function (x) { return { t: x.w, py: x.py, en: x.en }; }));
 }
 function bingo(L) {
-  var cardNo = save.bingo && save.bingo.cardNo < BINGO_GOALS.length ? save.bingo.cardNo : 0;
+  if (save.bingo && !isObj(save.bingo)) delete save.bingo;
+  var cn = save.bingo && save.bingo.cardNo, cardNo = cn === (cn | 0) && cn >= 0 && cn < BINGO_GOALS.length ? cn : 0;
   function start() {
     app.classList.remove('big'); app.classList.add('bwide');   // the bingo card fills the width; sideways, the page is wider for the left column
     var goal = BINGO_GOALS[cardNo], items = null, calls = null, ci = 0, now = null, wrong = 0, over = false, marked = {};
-    var res = {}, known = {}, kept = (save.bingo && save.bingo.res) || {};   // card:word -> 1 found on the first try, 0 not; adds up over the three cards
+    var res = {}, known = {}, kept = save.bingo && isObj(save.bingo.res) ? save.bingo.res : {};   // card:word -> 1 found on the first try, 0 not; adds up over the three cards
     CHARS.forEach(function (x) { known[x.c] = 1; }); WORDS.forEach(function (x) { known[x.w] = 1; });
     Object.keys(kept).forEach(function (k) { if (known[k.slice(k.indexOf(':') + 1)]) res[k] = kept[k] ? 1 : 0; });   // only real lesson words count (and are shown)
     function firstTap(ok) { var k = cardNo + ':' + now.t; if (!(k in res)) res[k] = ok ? 1 : 0; tally(); }
@@ -1803,12 +1750,12 @@ function bingo(L) {
       Object.keys(res).forEach(function (k) { if (res[k]) { got++; return; } ids.push(k); var t = k.slice(k.indexOf(':') + 1); if (!count[t]) { count[t] = 0; order.push(t); } count[t]++; });
       return { got: got, of: Object.keys(res).length, miss: order.map(function (t) { return count[t] > 1 ? t + ' ×' + count[t] : t; }), ids: ids };
     }
-    var was = save.bingo && save.bingo.cardNo === cardNo && save.bingo.cells ? save.bingo : null;
+    var was = save.bingo && save.bingo.cardNo === cardNo && Array.isArray(save.bingo.cells) && Array.isArray(save.bingo.calls) ? save.bingo : null;
     if (was) {   // came back to a card left half way
       var pool = {};
       CHARS.forEach(function (x) { pool[x.c] = { t: x.c, py: x.py, en: x.en }; }); WORDS.forEach(function (x) { pool[x.w] = { t: x.w, py: x.py, en: x.en }; });
       items = was.cells.map(function (t) { return pool[t]; }); calls = was.calls.map(function (t) { return pool[t]; });
-      if (items.every(Boolean) && calls.every(Boolean)) { ci = was.ci || 0; (was.marked || []).forEach(function (k) { marked[k] = 1; }); } else items = null;
+      if (items.length && calls.length && items.every(Boolean) && calls.every(Boolean)) { ci = Math.min(Math.max(0, Math.floor(+was.ci) || 0), calls.length - 1); (Array.isArray(was.marked) ? was.marked : []).forEach(function (k) { if (k === (k | 0) && k >= 0 && k < 25) marked[k] = 1; }); } else items = null;
     }
     if (!items) { items = shuffle(bingoItems()); calls = shuffle(items); }
     warm(calls.map(function (x) { return x.t; }).concat(['Bingo!']));
@@ -1824,13 +1771,13 @@ function bingo(L) {
     var counter = E('div', 'tally'); top.appendChild(counter);
     function tally() { var r = bingoResult(); counter.innerHTML = '<b class="tr">✓ ' + r.got + '</b><b class="tw">✗ ' + r.ids.length + '</b>'; }
     tally();
-    var hint = E('div', 'bhint'); p.appendChild(hint);
+    var hint = E('div', 'bhint'); hint.setAttribute('aria-live', 'polite'); p.appendChild(hint);
     var grid = E('div', 'bgrid'); p.appendChild(grid);
     var btns = [];
     cells.forEach(function (c, i) {
-      var b = E('button', 'bcell' + (c.free || marked[i] ? ' on' : '') + (c.free ? ' free' : '')); b.type = 'button'; b.textContent = c.free ? LESSON.bingoFree : c.t;
+      var b = E('button', 'bcell' + (c.free || marked[i] ? ' on' : '') + (c.free ? ' free' : '')); b.type = 'button'; b.textContent = c.free ? LESSON.bingoFree : c.t; b.setAttribute('aria-pressed', c.free || marked[i] ? 'true' : 'false');
       if (c.free) { marked[i] = 1; b.setAttribute('aria-label', 'Free space'); b.disabled = true; }
-      else b.onclick = function () { tap(c, i, b); };
+      else b.onclick = function () { if (Date.now() - navAt >= 350) tap(c, i, b); };
       btns.push(b); grid.appendChild(b);
     });
     var end = E('div', 'bend'); p.appendChild(end);
@@ -1859,7 +1806,7 @@ function bingo(L) {
         else { hint.textContent = now.py + ' · ' + now.en; btns.forEach(function (x, k) { if (cells[k].t === now.t) x.classList.add('peek'); }); }
         return;
       }
-      marked[i] = 1; b.classList.remove('peek'); b.classList.add('on'); beepPrep(); afterPaint(function () { if (b.isConnected) beep(true); }); keepCard(ci); firstTap(true); keepCard(ci);
+      marked[i] = 1; b.classList.remove('peek'); b.classList.add('on'); b.setAttribute('aria-pressed', 'true'); beepPrep(); afterPaint(function () { if (b.isConnected) beep(true); }); firstTap(true); keepCard(ci);
       hint.textContent = '';
       var done = linesDone();
       if (done >= goal.lines) return win();
@@ -1883,7 +1830,7 @@ function bingo(L) {
   start();
 }
 
-/* ---------- the three levels ---------- */
+/* ---------- levels 1 to 4: the steps each one asks ---------- */
 function level1() {   // meet 5, find them by pinyin, find them by sound; three groups
   var out = [];
   GROUPS.forEach(function (g, gi) {
@@ -1915,7 +1862,7 @@ function levelPattern() {   // explain the pattern, then five sentences: pick th
       top: function () { var d = E('div'); d.appendChild(E('div', 'sentence han', x.from)); d.appendChild(E('div', 'mean', x.en)); return d; } };
   }));
 }
-function level3() {   // the letter level: pick the missing word in each sentence
+function level3() {   // level 4, the letter: pick the missing word in each sentence (named level3 from before the pattern level was added)
   return SENTENCES.map(function (s, n) {
     var blank = '<span class="slot">' + s.a.replace(/./g, '？') + '</span>';
     return { id: 'x' + n, prompt: 'Pick the missing word.', word: true, answer: s.a, opts: shuffle([s.a].concat(s.no)), sayAfter: s.s.replace('＿', s.a),
