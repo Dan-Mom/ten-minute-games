@@ -973,7 +973,6 @@ function silentUrl() {
   return (SILENT = URL.createObjectURL(new Blob([b], { type: 'audio/wav' })));
 }
 function unlockSound() {   // every tap: make sure Web Audio may play (iPad also pauses it after a call or another app)
-  if (IOS_PRE) allowReady();
   if (ac && ac !== AC && ac.state !== 'running') try { ac.resume(); } catch (e) {}   // the beep's own sound system (made on iPad)
   if (!primed && (!player || player.paused)) {
     primed = true;
@@ -985,30 +984,13 @@ function unlockSound() {   // every tap: make sure Web Audio may play (iPad also
   try { var s = AC.createBufferSource(); s.buffer = AC.createBuffer(1, 1, 22050); s.connect(AC.destination); s.start(0); } catch (e) {}
 }
 ['touchend', 'pointerdown', 'mousedown', 'keydown'].forEach(function (ev) { document.addEventListener(ev, unlockSound, true); });
-/* LESSON.iosPreload (2026-11-08, tried first in city-walk): on iPad a tap took about a second to sound, because the one shared player
-   had to be set up again for every recording. Here every recording a level needs gets its own <audio> player, loaded when the level
-   starts, so a tap only has to press play. Still the <audio> player (Web Audio trembled on iPad), still from the very start of the
-   recording. A ready player that iPad does not allow yet (it was never played from a tap) falls back to the shared player. */
-var IOS_PRE = IOS && !!LESSON.iosPreload, PRE = {}, preCur = null;
-function readyPlayer(k) { if (PRE[k] || !READY[k]) return; var a = new Audio(); a.preload = 'auto'; a.src = READY[k]; try { a.load(); } catch (e) {} PRE[k] = a; }
-function allowReady() {   // inside a tap: play up to 4 ready players once, muted, so iPad lets them play later on their own (and loads them)
-  var n = 0;
-  Object.keys(PRE).forEach(function (k) {
-    var a = PRE[k]; if (n >= 4 || a._ok || a._trying || a === preCur) return; n++; a._trying = 1; a.muted = true;
-    var q; try { q = a.play(); } catch (e) { q = null; }
-    var back = function (ok) { a._trying = 0; if (a !== preCur) { try { a.pause(); if (a.currentTime > 0) a.currentTime = 0; } catch (e) {} } a.muted = false; if (ok) a._ok = 1; };
-    if (q && q.then) q.then(function () { back(true); }, function () { back(false); }); else back(false);
-  });
-}
 function stopSound() {
   if (player) try { player.pause(); } catch (e) {}
-  if (preCur) { var a = preCur; preCur = null; try { a.onended = a.onerror = a.onplaying = null; a.pause(); } catch (e) {} }
   if (srcNode) { var n = srcNode; srcNode = null; try { n.onended = null; n.stop(0); } catch (e) {} }
 }
 function speaking() {   // is a recording still being said? (an interrupted or paused one does not hold anything up)
   if (!voiceDone) return false;
   if (srcNode) return !!AC && AC.state === 'running';
-  if (preCur) return !preCur.paused && !preCur.ended;
   return !!player && !player.paused && !player.ended;
 }
 function say(t) {
@@ -1027,41 +1009,20 @@ function say(t) {
       srcNode = node; node.start(0); return;
     } catch (e) { srcNode = null; }
   }
-  var tr = READY[k] && TRIM[k];               // where the words start and end in this recording, when known
-  function endAtWords(el) {   // the words are over: moving on may go ahead (the silent tail is not waited for)
-    el.onplaying = function () { (function check() {
-      if (over) return; var left = tr.e + 0.12 - el.currentTime; if (left <= 0.02) return done(); setTimeout(check, Math.min(left, 0.5) * 1000);
-    })(); };
-  }
-  if (IOS_PRE && PRE[k]) {   // iPad, a ready player for this recording: play it at once
-    var a = PRE[k];
-    a.onended = function () { if (!a.ended) return; if (preCur === a) preCur = null; done(); };   // (a late "ended" from an earlier use is ignored)
-    a.onerror = function () { if (preCur === a) preCur = null; done(); };
-    a.onplaying = null; if (tr) endAtWords(a);
-    if (a.currentTime > 0 && !a.ended) try { a.currentTime = 0; } catch (e) {}   // an ended player starts again from 0 by itself; a seek costs time on iPad
-    preCur = a;
-    var q = a.play();
-    if (q && q.catch) q.catch(function () {   // not allowed yet (never played from a tap) or interrupted: the shared player says it
-      if (over || voiceDone !== done) return;   // a later say() took over (it paused this player, which also ends here)
-      if (preCur === a) preCur = null;
-      viaPlayer();
-    });
-    return;
-  }
-  viaPlayer();
-  function viaPlayer() {
   if (!player) player = new Audio();            // one player, reused, so iPad keeps allowing it after the first tap
   player.onended = player.onerror = done;
+  var tr = READY[k] && TRIM[k];               // where the words start and end in this recording, when known
   player.onloadedmetadata = player.onplaying = null;
   if (tr) {
     // skip the silence before the words (computers only: on iPad and iPhone the jump plus the player's slow start could cut off the
     // first character, as the owner heard in the talks on 2026-11-07, so there the recording plays from its very start, ~0.2 s of silence)
     if (!IOS) player.onloadedmetadata = function () { try { if (tr.s > 0.12 && player.currentTime < tr.s - 0.10) player.currentTime = tr.s - 0.10; } catch (e) {} };
-    endAtWords(player);
+    player.onplaying = function () { (function check() {   // the words are over: moving on may go ahead (the silent tail is not waited for)
+      if (over) return; var left = tr.e + 0.12 - player.currentTime; if (left <= 0.02) return done(); setTimeout(check, Math.min(left, 0.5) * 1000);
+    })(); };
   }
   player.src = READY[k] || LESSON.voice + '/' + k + '.mp3';   // downloaded already: plays at once; else fetched now (also before the list has arrived)
   var p = player.play(); if (p && p.catch) p.catch(done);   // interrupted, blocked or missing: stay quiet (🔊 replays it)
-  }
 }
 /* never cut a recording short. A tap on Next, Back, Quit, Levels or a level waits until the voice has finished; only the latest tap
    is kept (Quit then Next = Next, Next then Quit = Quit); a second tap within a third of a second of moving on is ignored (the next card's
@@ -1102,13 +1063,9 @@ function trimOf(k, b) {
   } catch (e) {}
 }
 function warm(texts) {
-  if (IOS_PRE && texts.length > 20) {   // a new level: free the ready players of lines it does not need (iPad memory); READY keeps the file
-    var need = {}; texts.forEach(function (t) { if (t) need[vkey(t)] = 1; });
-    Object.keys(PRE).forEach(function (k) { var a = PRE[k]; if (need[k] || a === preCur) return; try { a.removeAttribute('src'); a.load(); } catch (e) {} delete PRE[k]; });
-  }
   texts.forEach(function (t) {
     if (!t) return; var k = vkey(t); if (ASKED[k] || (VKEYS && !VKEYS[k])) return; ASKED[k] = 1;
-    try { fetch(LESSON.voice + '/' + k + '.mp3').then(function (r) { if (!r.ok) throw 0; return r.blob(); }).then(function (b) { READY[k] = URL.createObjectURL(b); trimOf(k, b); if (IOS_PRE) readyPlayer(k); }, function () { delete ASKED[k]; }); } catch (e) { delete ASKED[k]; }
+    try { fetch(LESSON.voice + '/' + k + '.mp3').then(function (r) { if (!r.ok) throw 0; return r.blob(); }).then(function (b) { READY[k] = URL.createObjectURL(b); trimOf(k, b); }, function () { delete ASKED[k]; }); } catch (e) { delete ASKED[k]; }
   });
 }
 function levelTexts(steps) {   // every line a level can say: characters, radical names, examples, answers, options
