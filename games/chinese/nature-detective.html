@@ -948,14 +948,58 @@ var pending = null, pendBtn = null, navAt = 0;   // the one move waiting for the
    first tap, and for anything not decoded yet, the <audio> player is used. iPad and iPhone always use the <audio> player: there Web
    Audio crackled (2026-11-07, and again on 2026-11-08 when a replayed line trembled), and older iPads let it obey silent mode. No
    AudioContext is made up front on iPad: beep() makes its own inside a tap (one made early can sound crackly on iOS). */
+/* LESSON.timing (a test, 2026-11-08): after each sound started by a tap, a small badge shows the seconds from the tap until the words
+   are heard (start + the silence before them). For the owner's iPad measurements; off in every lesson unless set. */
+var lastTap = 0, badgeTimer = 0;
+function heard(lead) {
+  if (!LESSON.timing || !lastTap) return;
+  var ms = performance.now() - lastTap + lead * 1000; lastTap = 0;
+  if (ms > 5000) return;
+  var b = document.getElementById('tapTimer');
+  if (!b) { b = document.createElement('div'); b.id = 'tapTimer'; b.setAttribute('aria-hidden', 'true');
+    b.style.cssText = 'position:fixed;left:8px;bottom:calc(8px + env(safe-area-inset-bottom));z-index:2147483646;background:#1f2937;color:#fff;font:800 16px system-ui,sans-serif;padding:6px 10px;border-radius:10px;opacity:.85;pointer-events:none';
+    document.body.appendChild(b); }
+  b.textContent = '⏱ ' + (ms / 1000).toFixed(2) + ' s' + (srcNode ? ' WA' : ' A');
+  clearTimeout(badgeTimer); badgeTimer = setTimeout(function () { b.textContent = ''; }, 2500);
+}
 var IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && 'ontouchend' in document);
-var AC = null, BUF = {}, srcNode = null;
+/* LESSON.iosFast (2026-11-08, the owner: on iPad a tap took about a second to sound). First try (star-night) trembled on replay; this
+   second try (city-walk) runs the context at the recordings' own 24000 Hz and has no fades. on iPad and iPhone too, every
+   recording plays through Web Audio, decoded in memory and trimmed to the words, so it starts at once. To avoid the crackle heard on
+   2026-11-07: the context is made inside the first tap (never at page load), the <audio> player is never used for the voice once it
+   exists (no mixing of the two), and every sound fades in and out over 5 ms. */
+var IOS_FAST = IOS && !!LESSON.iosFast && !!navigator.audioSession;   // iOS 17+ only: before that, Web Audio goes quiet with the silent switch on
+// 2026-11-08: tried in star-night and turned off the same day: on the owner's iPad a replayed sound trembled. No lesson uses it now.
+var AC = null, BUF = {}, srcNode = null, loadingDone = null;   // loadingDone: a line being fetched or decoded before it plays (it counts as speaking)
 try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}   // iPad (iOS 17+): play even in silent mode, like the <audio> player
 try { var ACx = window.AudioContext || window.webkitAudioContext; if (ACx && !IOS) AC = new ACx(); } catch (e) { AC = null; }
 var FAST = !!AC && !IOS;
-if (AC) AC.onstatechange = function () {   // iPad paused the sound (a call, another app): a move waiting for this recording may go now
-  if (AC.state !== 'running' && srcNode && voiceDone) { var n = srcNode; srcNode = null; try { n.onended = null; n.stop(0); } catch (e) {} voiceDone(); }
-};
+function watchAC() {
+  AC.onstatechange = function () {   // iPad paused the sound (a call, another app): a move waiting for this recording may go now
+    if (AC.state !== 'running' && srcNode && voiceDone) { var n = srcNode; srcNode = null; try { n.onended = null; n.stop(0); } catch (e) {} voiceDone(); }
+  };
+}
+if (AC) watchAC();
+function startFast() {   // iPad with LESSON.iosFast: inside the first tap, make the context and decode what is downloaded already
+  if (AC || !IOS_FAST) return;
+  var C = window.AudioContext || window.webkitAudioContext;
+  try { AC = new C({ sampleRate: 24000 }); } catch (e) { try { AC = new C(); } catch (e2) { AC = null; return; } }   // the recordings' own rate: no converting on every play (2026-11-08)
+  FAST = true; watchAC();
+  try { var OC = window.OfflineAudioContext || window.webkitOfflineAudioContext; DEC = new OC(1, 1, AC.sampleRate); } catch (e) { DEC = null; }   // decode off the playing context, at its rate
+  Object.keys(BLOBS).forEach(function (k) { if (!BUF[k]) queueTrim(k, BLOBS[k]); });
+}
+/* iPad: decode one recording at a time (a burst of ~100 at once can make an older iPad stutter); a line asked for now goes first */
+var TQ = [], TBUSY = false;
+function queueTrim(k, b, then, front) { var j = { k: k, b: b, then: then }; if (front) TQ.unshift(j); else TQ.push(j); runTrim(); }
+function runTrim() {
+  if (TBUSY) return;
+  var j = TQ.shift(); if (!j) return;
+  if (BUF[j.k]) { if (j.then) j.then(); return runTrim(); }
+  TBUSY = true;
+  var fired = false, cb = function () { if (fired) return; fired = true; TBUSY = false; if (j.then) j.then(); runTrim(); };
+  setTimeout(cb, 4000);   // a decode that never answers must not hold up the rest
+  trimOf(j.k, j.b, cb);
+}
 var SILENT = null, primed = false;   // a tiny silent sound, played once inside the first tap so iPad also allows the <audio> player later
 function silentUrl() {
   if (SILENT) return SILENT;
@@ -965,23 +1009,38 @@ function silentUrl() {
   return (SILENT = URL.createObjectURL(new Blob([b], { type: 'audio/wav' })));
 }
 function unlockSound() {   // every tap: make sure Web Audio may play (iPad also pauses it after a call or another app)
-  if (ac && ac !== AC && ac.state !== 'running') try { ac.resume(); } catch (e) {}   // the beep's own sound system (made on iPad)
-  if (!primed && (!player || player.paused)) {
+  lastTap = performance.now();
+  startFast();
+  if (!primed && !IOS_FAST && (!player || player.paused)) {
     primed = true;
     try { if (!player) player = new Audio(); var u = silentUrl(); player.src = u; var q = player.play();
       if (q && q.then) q.then(function () { if (player.src === u) player.pause(); }, function () {}); } catch (e) {}
   }
   if (!AC || AC.state === 'running') return;
   try { var r = AC.resume(); if (r && r.catch) r.catch(function () {}); } catch (e) {}
-  try { var s = AC.createBufferSource(); s.buffer = AC.createBuffer(1, 1, 22050); s.connect(AC.destination); s.start(0); } catch (e) {}
+  try { var s = AC.createBufferSource(); s.buffer = AC.createBuffer(1, 1, AC.sampleRate); s.connect(AC.destination); s.start(0); } catch (e) {}
 }
 ['touchend', 'pointerdown', 'mousedown', 'keydown'].forEach(function (ev) { document.addEventListener(ev, unlockSound, true); });
 function stopSound() {
   if (player) try { player.pause(); } catch (e) {}
-  if (srcNode) { var n = srcNode; srcNode = null; try { n.onended = null; n.stop(0); } catch (e) {} }
+  if (srcNode) {
+    var n = srcNode; srcNode = null;
+    try {
+      n.onended = null;
+      n.stop(0);
+    } catch (e) {}
+  }
+}
+function playBuf(k, done) {   // Web Audio: starts at once, ends when the words end
+  var node = AC.createBufferSource(); node.buffer = BUF[k];
+  node.connect(AC.destination);
+  node.onended = function () { if (srcNode === node) srcNode = null; done(); };
+  srcNode = node; node.start(0);
+  heard(0.10);   // the buffer keeps 0.10 s before the words
 }
 function speaking() {   // is a recording still being said? (an interrupted or paused one does not hold anything up)
   if (!voiceDone) return false;
+  if (loadingDone && loadingDone === voiceDone) return true;   // iPad: still being fetched or decoded, about to play
   if (srcNode) return !!AC && AC.state === 'running';
   return !!player && !player.paused && !player.ended;
 }
@@ -991,16 +1050,27 @@ function say(t) {
   var k = vkey(t);
   if (VKEYS && !VKEYS[k]) return;               // no recording for this text: stay quiet, never the device's robot voice
   var over = false, done;                       // each recording has its own "done", so a late signal from an old one cannot end this one
-  voiceWait = new Promise(function (r) { done = function () { if (over) return; over = true; if (voiceDone === done) voiceDone = null; r(); }; });
+  voiceWait = new Promise(function (r) { done = function () { if (over) return; over = true; if (voiceDone === done) voiceDone = null; if (loadingDone === done) loadingDone = null; r(); }; });
   voiceDone = done;
   setTimeout(done, 15000);                      // never wait for ever
   if (FAST && BUF[k] && AC.state === 'running') {   // decoded, trimmed to the words: starts at once and ends when the words end
-    try {
-      var node = AC.createBufferSource(); node.buffer = BUF[k]; node.connect(AC.destination);
-      node.onended = function () { if (srcNode === node) srcNode = null; done(); };
-      srcNode = node; node.start(0); return;
-    } catch (e) { srcNode = null; }
+    try { playBuf(k, done); return; } catch (e) { srcNode = null; }
   }
+  if (IOS_FAST && AC) {   // iPad: not decoded yet, or the sound is paused (after a call): get it ready, then play (never through the <audio> player, which would mix the two)
+    loadingDone = done;
+    var play = function () { if (over) return; loadingDone = null; if (BUF[k] && AC.state === 'running') { try { playBuf(k, done); } catch (e) { done(); } } else done(); };
+    var go = function () {
+      if (over) return;
+      if (AC.state === 'running') return play();
+      try { var r = AC.resume(); if (r && r.then) r.then(play, done); else play(); } catch (e) { done(); }
+      setTimeout(function () { if (!over && AC.state !== 'running') done(); }, 1500);   // the sound stays paused (after a call): do not hold the child up
+    };
+    if (BUF[k]) go();
+    else if (BLOBS[k]) queueTrim(k, BLOBS[k], go, true);
+    else fetch(LESSON.voice + '/' + k + '.mp3').then(function (r) { if (!r.ok) throw 0; return r.blob(); }).then(function (b) { BLOBS[k] = b; READY[k] = READY[k] || URL.createObjectURL(b); queueTrim(k, b, go, true); }, done);
+    return;
+  }
+  if (IOS_FAST) { done(); return; }             // iPad before the first tap: nothing may play yet anyway, and the <audio> player is never used here
   if (!player) player = new Audio();            // one player, reused, so iPad keeps allowing it after the first tap
   player.onended = player.onerror = done;
   var tr = READY[k] && TRIM[k];               // where the words start and end in this recording, when known
@@ -1015,6 +1085,7 @@ function say(t) {
   }
   player.src = READY[k] || LESSON.voice + '/' + k + '.mp3';   // downloaded already: plays at once; else fetched now (also before the list has arrived)
   var p = player.play(); if (p && p.catch) p.catch(done);   // interrupted, blocked or missing: stay quiet (🔊 replays it)
+  if (p && p.then) p.then(function () { heard(tr ? (IOS || tr.s <= 0.12 ? tr.s : 0.10) : 0.2); }, function () {});
 }
 /* never cut a recording short. A tap on Next, Back, Quit, Levels or a level waits until the voice has finished; only the latest tap
    is kept (Quit then Next = Next, Next then Quit = Quit); a second tap within a third of a second of moving on is ignored (the next card's
@@ -1036,28 +1107,31 @@ function afterVoice(fn, btn, again) {
 }
 /* download the recordings a level will need as soon as it starts, so a tap plays them from memory with no wait */
 var READY = {}, ASKED = {};
-var TRIM = {}, DEC = null;   // per recording: where the speaking starts and ends (seconds), found once it is downloaded
-function trimOf(k, b) {
+var TRIM = {}, DEC = null, BLOBS = {};   // per recording: where the speaking starts and ends (seconds), found once it is downloaded; the downloaded files
+function trimOf(k, b, then) {   // then (optional): called once BUF[k] is ready, or when decoding failed
+  var fin = function () { if (then) { var t = then; then = null; t(); } };
   try {
-    if (!DEC) { var OC = window.OfflineAudioContext || window.webkitOfflineAudioContext; DEC = (FAST && AC) || (OC ? new OC(1, 1, 44100) : null); if (!DEC) return; }
-    var fr = new FileReader();
+    if (!DEC) { var OC = window.OfflineAudioContext || window.webkitOfflineAudioContext; DEC = (FAST && AC) || (OC ? new OC(1, 1, 44100) : null); if (!DEC) return fin(); }
+    var dec = DEC, fr = new FileReader();
     fr.onload = function () {
-      var ok = function (a) { var d = a.getChannelData(0), n = d.length, i = 0, j = n - 1; while (i < n && Math.abs(d[i]) < 0.01) i++; while (j > i && Math.abs(d[j]) < 0.01) j--;
-        if (j <= i) return;
+      var ok = function (a) { try { var d = a.getChannelData(0), n = d.length, i = 0, j = n - 1; while (i < n && Math.abs(d[i]) < 0.01) i++; while (j > i && Math.abs(d[j]) < 0.01) j--; } catch (e) { return fin(); }
+        if (j <= i) return fin();
         TRIM[k] = { s: i / a.sampleRate, e: j / a.sampleRate };
-        if (DEC === AC) try {   // keep just the words (from 0.10 s before to 0.12 s after): less memory, and it ends when the words end
+        if (dec === AC || (IOS_FAST && AC)) try {   // keep just the words (from 0.10 s before to 0.12 s after): less memory, and it ends when the words end
           var rate = a.sampleRate, from = Math.max(0, i - Math.round(0.10 * rate)), to = Math.min(n, j + Math.round(0.12 * rate));
           var b2 = AC.createBuffer(1, to - from, rate); b2.getChannelData(0).set(d.subarray(from, to)); BUF[k] = b2;
-        } catch (e) {} };
-      try { var p = DEC.decodeAudioData(fr.result, ok, function () {}); if (p && p.catch) p.catch(function () {}); } catch (e) {}
+        } catch (e) {}
+        fin(); };
+      try { var p = dec.decodeAudioData(fr.result, ok, fin); if (p && p.catch) p.catch(fin); } catch (e) { fin(); }
     };
+    fr.onerror = fin;
     fr.readAsArrayBuffer(b);
-  } catch (e) {}
+  } catch (e) { fin(); }
 }
 function warm(texts) {
   texts.forEach(function (t) {
     if (!t) return; var k = vkey(t); if (ASKED[k] || (VKEYS && !VKEYS[k])) return; ASKED[k] = 1;
-    try { fetch(LESSON.voice + '/' + k + '.mp3').then(function (r) { if (!r.ok) throw 0; return r.blob(); }).then(function (b) { READY[k] = URL.createObjectURL(b); trimOf(k, b); }, function () { delete ASKED[k]; }); } catch (e) { delete ASKED[k]; }
+    try { fetch(LESSON.voice + '/' + k + '.mp3').then(function (r) { if (!r.ok) throw 0; return r.blob(); }).then(function (b) { BLOBS[k] = b; READY[k] = URL.createObjectURL(b); if (IOS_FAST) { if (AC) queueTrim(k, b); } else trimOf(k, b); }, function () { delete ASKED[k]; }); } catch (e) { delete ASKED[k]; }
   });
 }
 function levelTexts(steps) {   // every line a level can say: characters, radical names, examples, answers, options
@@ -1110,7 +1184,7 @@ function beepCtx() {   // the beep's sound system, made at the first beep and wo
   if (ac.state !== 'running' && ac.resume) { var r = ac.resume(); if (r && r.catch) r.catch(function () {}); }
   return ac;
 }
-function beepPrep() { try { if (beepCtx().state !== 'running') { var z = ac.createBufferSource(); z.buffer = ac.createBuffer(1, 1, 22050); z.connect(ac.destination); z.start(0); } } catch (e) {} }   // inside the tap (older iPads: a silent sample wakes it)
+function beepPrep() { try { if (beepCtx().state !== 'running') { var z = ac.createBufferSource(); z.buffer = ac.createBuffer(1, 1, ac.sampleRate); z.connect(ac.destination); z.start(0); } } catch (e) {} }   // inside the tap (older iPads: a silent sample wakes it)
 function beep(ok) {
   try { beepCtx();
     var o = ac.createOscillator(), g = ac.createGain(); o.connect(g); g.connect(ac.destination);
