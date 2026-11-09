@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Sound test</title>
+<meta name="robots" content="noindex">
+<style>
+body{margin:0;padding:16px;font:600 18px system-ui,sans-serif;background:#f6f8ff;color:#1d2b4f}
+h1{font-size:24px;margin:0 0 6px}
+p,ol{margin:6px 0 14px;line-height:1.5}
+.m{background:#fff;border:2px solid #cbd5f0;border-radius:16px;padding:14px;margin:0 0 14px}
+.m b{font-size:20px}
+button{font:800 22px system-ui,sans-serif;min-height:64px;padding:0 22px;border:0;border-radius:16px;background:#1b6fd1;color:#fff;margin:8px 8px 8px 0;cursor:pointer}
+button.late{background:#5b6b8f}
+.r{font:700 16px ui-monospace,monospace;color:#334;min-height:1.4em;white-space:pre-wrap}
+.note{color:#556;font-size:16px}
+</style>
+</head>
+<body>
+<h1>🔊 Sound test 声音测试</h1>
+<ol class="note">
+  <li>先测 C：每个按钮慢慢点 10 次，每次读一个词。</li>
+  <li>然后<b>重新打开这一页</b>（下拉刷新），再测 A 和 B，同样各点 10 次。</li>
+  <li>听两件事：点下去多久听到声音；有没有“滋滋”“咔咔”的杂音，或者完全没声音。</li>
+  <li>截图这一页发给我，并告诉我哪个方法听起来最干净。</li>
+</ol>
+<p class="note">数字是“点下去到听见字”用了多少毫秒（1000 毫秒 = 1 秒），数字越小，声音来得越快。灰色按钮是“点完 1 秒后自己读”，模仿游戏自己读题。</p>
+
+<div class="m"><b>方法 C</b><br><span class="note">先把声音准备好，去掉开头的空白</span><br>
+<button type="button" id="bc">▶ C</button><button type="button" class="late" id="bc2">▶ C 等1秒</button><div class="r" id="rc"></div></div>
+
+<div class="m"><b>方法 A（现在的做法）</b><br><span class="note">点了才把这个词放进去</span><br>
+<button type="button" id="ba">▶ A</button><div class="r" id="ra"></div></div>
+
+<div class="m"><b>方法 B</b><br><span class="note">每个词都提前放好</span><br>
+<button type="button" id="bb">▶ B</button><button type="button" class="late" id="bb2">▶ B 等1秒</button><div class="r" id="rb"></div></div>
+
+<p class="note" id="info"></p>
+<script>
+/* A test page only (not linked from the site): plays recordings of a published lesson in three ways and shows how long each took
+   from the tap until the words are heard, so the fastest clean way can be chosen for iPad. Nothing is saved or sent.
+   A = what the Chinese lessons do on iPad now (one shared <audio>, src set on the tap, from the very start of the file).
+   B = one <audio> per word, loaded before the tap. C = Web Audio: a context made inside the first tap, words decoded in memory,
+   the silence before the words trimmed to 0.05 s, with a 5 ms fade in and out. "Words heard at" = start + the silence before the words. */
+var VOICE = 'games/chinese/riddle-picnic-voice/';
+var LINES = ['舟字旁', '小船', '毛', '回答', '提手旁'];
+function vkey(t) { t = String(t).replace(/＿/g, '').trim(); var h = 0x811c9dc5; for (var i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
+var BLOB = {}, RAW = {}, LEAD = {};
+var info = document.getElementById('info');
+info.textContent = 'Loading… 正在准备…';
+function leadOf(ab) {   // seconds of silence before the words, measured once at load
+  var OC = window.OfflineAudioContext || window.webkitOfflineAudioContext, oc = new OC(1, 1, 44100);
+  return new Promise(function (ok) { oc.decodeAudioData(ab, function (a) { var d = a.getChannelData(0), i = 0; while (i < d.length && Math.abs(d[i]) < 0.01) i++; ok(i / a.sampleRate); }, function () { ok(0.2); }); });
+}
+Promise.all(LINES.map(function (t) {
+  return fetch(VOICE + vkey(t) + '.mp3').then(function (r) { if (!r.ok) throw new Error('missing ' + t); return r.arrayBuffer(); })
+    .then(function (ab) { RAW[t] = ab; BLOB[t] = URL.createObjectURL(new Blob([ab], { type: 'audio/mpeg' })); return leadOf(ab.slice(0)); })
+    .then(function (l) { LEAD[t] = l; });
+})).then(function () { prepB(); info.textContent = 'Ready 准备好了 · ' + navigator.userAgent; }, function (e) { info.textContent = 'Could not load the test words: ' + e.message; });
+
+function show(id, label, t, ms, extra) {
+  document.getElementById(id).textContent += label + ' ' + t + '  ' + Math.round(ms) + ' 毫秒' + (extra || '') + '\n';
+}
+function later(fn, late) { if (late) setTimeout(fn, 1000); else fn(); }
+
+/* A */
+var pa = null, na = 0;
+document.getElementById('ba').addEventListener('click', function () {
+  var t0 = performance.now(), n = na++ % LINES.length, t = LINES[n];
+  if (!pa) pa = new Audio();
+  pa.onplaying = function () { pa.onplaying = null; show('ra', 'A' + na + '.', t, performance.now() - t0 + LEAD[t] * 1000); };
+  pa.src = BLOB[t]; var p = pa.play(); if (p && p.catch) p.catch(function (e) { show('ra', 'A' + na + '.', t, 0, ' ✗ ' + e.name); });
+});
+/* B */
+var PB = {}, nb = 0;
+function prepB() { LINES.forEach(function (t) { var a = new Audio(); a.preload = 'auto'; a.src = BLOB[t]; try { a.load(); } catch (e) {} PB[t] = a; }); }
+function playB(late) {
+  var n = nb++ % LINES.length, t = LINES[n], a = PB[t], label = 'B' + nb + (late ? '(1秒)' : '') + '.', rs = a ? a.readyState : -1;
+  if (!a) return;
+  later(function () {
+    var t0 = performance.now();
+    Object.keys(PB).forEach(function (k) { if (PB[k] !== a) try { PB[k].pause(); } catch (e) {} });
+    a.onplaying = function () { a.onplaying = null; show('rb', label, t, performance.now() - t0 + LEAD[t] * 1000, '  ready=' + rs); };
+    try { a.currentTime = 0; } catch (e) {}
+    var p = a.play(); if (p && p.catch) p.catch(function (e) { show('rb', label, t, 0, ' ✗ ' + e.name + ' ready=' + rs); });
+  }, late);
+}
+document.getElementById('bb').addEventListener('click', function () { playB(false); });
+document.getElementById('bb2').addEventListener('click', function () { playB(true); });
+/* C */
+var ac = null, BUF = {}, nc = 0, node = null, gain = null, decoded = null;
+try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+function decodeAll() {
+  if (decoded) return decoded;
+  return (decoded = Promise.all(LINES.map(function (t) {
+    return new Promise(function (ok, no) { ac.decodeAudioData(RAW[t].slice(0), ok, no); }).then(function (a) {
+      var d = a.getChannelData(0), i = 0; while (i < d.length && Math.abs(d[i]) < 0.01) i++;
+      var from = Math.max(0, i - Math.round(0.05 * a.sampleRate)), b = ac.createBuffer(1, d.length - from, a.sampleRate);
+      b.getChannelData(0).set(d.subarray(from)); BUF[t] = b;
+    });
+  })));
+}
+function playC(late) {
+  var tap = performance.now(), n = nc++ % LINES.length, t = LINES[n], label = 'C' + nc + (late ? '(1秒)' : '') + '.';
+  if (!ac) { var C = window.AudioContext || window.webkitAudioContext; ac = new C(); gain = ac.createGain(); gain.connect(ac.destination); }
+  if (ac.state !== 'running') try { ac.resume(); } catch (e) {}
+  var first = !BUF[t];
+  decodeAll().then(function () {
+    var dec = performance.now() - tap;
+    later(function () {
+      var t0 = performance.now(), now = ac.currentTime;
+      if (node) try { gain.gain.setValueAtTime(gain.gain.value, now); gain.gain.linearRampToValueAtTime(0, now + 0.005); node.stop(now + 0.006); } catch (e) {}
+      var g = ac.createGain(); g.connect(ac.destination); g.gain.setValueAtTime(0, now + 0.006); g.gain.linearRampToValueAtTime(1, now + 0.011);
+      var s = ac.createBufferSource(); s.buffer = BUF[t]; s.connect(g); s.start(now + 0.006);
+      s.onended = function () { try { g.disconnect(); } catch (e) {} };
+      node = s; gain = g;
+      show('rc', label, t, performance.now() - t0 + 56, (first ? '  (第一次准备用了 ' + Math.round(dec) + ' 毫秒)' : '') + (ac.state !== 'running' ? '  ✗ ' + ac.state : ''));
+    }, late);
+  }, function (e) { show('rc', label, t, 0, ' ✗ ' + (e && e.message)); });
+}
+document.getElementById('bc').addEventListener('click', function () { playC(false); });
+document.getElementById('bc2').addEventListener('click', function () { playC(true); });
+</script>
+</body>
+</html>
