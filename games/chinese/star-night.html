@@ -857,8 +857,8 @@ var LESSON = {
   wrong: { pick: 'Not this one. Try another star.', pattern: 'Not this one. Is it moving toward me (来) or away (去)? Try another.' },
   letter: { ready: 'Your letter to the astronaut is ready. Tap Send!', stamp: '🚀', greeting: '亲爱的宇航员叔叔：', signRight: false },   // level 4: the finished letter
   bingoFree: '⭐',             // the free middle square
-  write: true,                 // the "Write it 写一写" page (needs hanzi-writer.min.js below and the strokes/ folder)
-  iosFast: true                // iPad: play the voice through Web Audio so a tap sounds at once (2026-11-08, tried in this lesson first)
+  write: true                  // the "Write it 写一写" page (needs hanzi-writer.min.js below and the strokes/ folder)
+  // iosFast was tried here on 2026-11-08 and turned off the same day: on the owner's iPad a replayed sound trembled (as on 2026-11-07)
 };
 </script>
 <script>
@@ -914,16 +914,21 @@ function store() { try { localStorage.setItem(KEY, JSON.stringify(save)); } catc
 save.done = save.done || {}; save.score = save.score || {};
 if (!save.re || typeof save.re !== 'object' || Array.isArray(save.re)) delete save.re;   // a damaged second-try record is dropped
 if (save.write && (typeof save.write !== 'object' || Array.isArray(save.write))) delete save.write;   // "Write it": { character: 1 } for each one written
-Object.keys(save.score).forEach(function (k) { var s = save.score[k] || {}; save.score[k] = { got: +s.got || 0, of: +s.of || 0, half: +s.half || 0 }; });   // numbers only: they are shown on the page
+Object.keys(save.score).forEach(function (k) { var s = save.score[k] || {}; save.score[k] = { got: +s.got || 0, of: +s.of || 0, half: +s.half || 0 }; if (isFinite(+s.pts) && s.pts != null) save.score[k].pts = Math.max(0, +s.pts); });   // numbers only: they are shown on the page
 if ('stamps' in save) { delete save.stamps; store(); }   // the old pile of stamps grew with every replay; scores per level replace it
 if (!save.v) {   // a sentence-pattern level was added as level 3, so levels 3 and 4 moved up one
   var moved = {}; Object.keys(save.done).forEach(function (k) { moved[+k >= 3 ? +k + 1 : k] = save.done[k]; }); save.done = moved; save.v = 2; store();
 }
-/* score: each level keeps the result of its latest finished play (1 cent per question right the first time, 0.5 cent on a second try); the lesson total adds them up */
-var UNIT = '¢';   // the score is money: 1¢ for each answer right the first time, 0.5¢ for one right on a second try
-function lessonTotal() { var t = 0; Object.keys(save.score).forEach(function (k) { t += (save.score[k].got || 0) + (save.score[k].half || 0) / 2; }); return t; }
-function fmt(x) { return String(Math.round(x * 10) / 10); }   // cents: 3.5 -> "3.5"
-function levelScore(sc) { return fmt(sc.got + (sc.half || 0) / 2); }
+/* score (the owner, 2026-11-08): each level keeps the result of its latest finished play. A question right in the first play earns 1 cent;
+   a missed one tried again earns less each round: 0.5 in the first second try, then 0.25, then 0.1, then nothing. "Write it" uses the
+   same ladder by mistakes and hints. The lesson total adds them up. sc.pts = the exact cents (older saves: got + half / 2). */
+var UNIT = '¢';
+var LADDER = [1, 0.5, 0.25, 0.1];
+function worth(round) { return LADDER[round - 1] || 0; }   // round 1 = the first play, 2 = the first second try, …
+function scorePts(sc) { return sc.pts != null ? sc.pts : (sc.got || 0) + (sc.half || 0) / 2; }
+function lessonTotal() { var t = 0; Object.keys(save.score).forEach(function (k) { t += scorePts(save.score[k]); }); return t; }
+function fmt(x) { return String(Math.round(x * 100) / 100); }   // cents: 3.75 -> "3.75"
+function levelScore(sc) { return fmt(scorePts(sc)); }
 function showTotal() { document.getElementById('stamps').textContent = '💰 ' + fmt(lessonTotal()) + UNIT; }
 showTotal();
 
@@ -946,6 +951,7 @@ var IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navi
    2026-11-07: the context is made inside the first tap (never at page load), the <audio> player is never used for the voice once it
    exists (no mixing of the two), and every sound fades in and out over 5 ms. */
 var IOS_FAST = IOS && !!LESSON.iosFast && !!navigator.audioSession;   // iOS 17+ only: before that, Web Audio goes quiet with the silent switch on
+// 2026-11-08: tried in star-night and turned off the same day: on the owner's iPad a replayed sound trembled. No lesson uses it now.
 var AC = null, BUF = {}, srcNode = null, srcGain = null, loadingDone = null;   // loadingDone: a line being fetched or decoded before it plays (it counts as speaking)
 try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}   // iPad (iOS 17+): play even in silent mode, like the <audio> player
 try { var ACx = window.AudioContext || window.webkitAudioContext; if (ACx && !IOS) AC = new ACx(); } catch (e) { AC = null; }
@@ -1173,7 +1179,7 @@ function menu() {
   var h = E('div', 'hero');
   h.appendChild(E('div', 'big', LESSON.intro.emoji));
   h.appendChild(E('h2', null, LESSON.intro.title));
-  h.appendChild(E('p', null, (HAS_STORY ? 'New here? Start with the story, then play the five levels. ' : '') + 'Five levels, about ten minutes each. Each answer right the first time earns 1¢, and a second try at a missed one earns 0.5¢. Play a level again to beat your score. Tap 🔊 to hear the Chinese.'));
+  h.appendChild(E('p', null, (HAS_STORY ? 'New here? Start with the story, then play the five levels. ' : '') + 'Five levels, about ten minutes each. Each answer right the first time earns 1¢. A missed one tried again earns 0.5¢, then 0.25¢, then 0.1¢. Play a level again to beat your score. Tap 🔊 to hear the Chinese.'));
   if (LESSON.offline) { var off = E('p', 'offl'); off.id = 'offl'; h.appendChild(off); }   // offline: how far saving has got (goOffline)
   app.appendChild(h);
   offlineNote();
@@ -1206,7 +1212,7 @@ function menu() {
       var wb = E('button', 'lvs lvw' + (all ? ' done' : '')); wb.type = 'button';
       wb.appendChild(E('span', 'n', all ? '✓' : '✍️'));
       var wt = E('div'); wt.appendChild(E('h3', null, 'Write it <span class="han">写一写</span>'));
-      wt.appendChild(E('p', null, 'Watch how each character is written, then write it with your finger. No mistakes: 1' + UNIT + '; with a mistake or a hint: 0.5' + UNIT + '.' + (wn ? ' ' + wn + ' of ' + CHARS.length + ' written.' : '')));
+      wt.appendChild(E('p', null, 'Watch how each character is written, then write it with your finger. No mistakes: 1' + UNIT + '; 1 mistake or hint: 0.5' + UNIT + '; 2: 0.25' + UNIT + '; 3: 0.1' + UNIT + '; more: 0' + UNIT + '.' + (wn ? ' ' + wn + ' of ' + CHARS.length + ' written.' : '')));
       var wsc = save.score.write; if (wsc) wt.appendChild(E('p', 'sc', '💰 ' + levelScore(wsc) + UNIT + ' of ' + wsc.of + UNIT));
       wb.appendChild(wt); wb.appendChild(E('span', 'go', '▶'));
       wb.onclick = function () { afterVoice(openWrite, wb); };
@@ -1349,12 +1355,14 @@ window.addEventListener('resize', function () {   // turning the iPad: the boxes
   clearTimeout(resizeAt); resizeAt = setTimeout(function () { if (writeRedraw) writeRedraw(); }, 250);
 });
 /* like a level: with some characters written already, ask "carry on, or start over?" (the owner, 2026-11-07) */
-/* "Write it" scores like a level (the owner, 2026-11-07): the first time a character is written in a round, 1¢ with no mistake and
-   no hint, else 0.5¢ (save.write[character] = 1 or 0.5). Writing it again later is practice. Start over clears the round. */
+/* "Write it" scores like a level (the owner, 2026-11-07; ladder 2026-11-08): the first time a character is written in a round, 1¢ with no
+   mistake and no hint, 0.5¢ with one, 0.25¢ with two, 0.1¢ with three, nothing with more (save.write[character] = the cents, or 'z'
+   for written with nothing earned; save.wslip[character] = mistakes and hints so far). Writing it again later is practice. */
+function writeCents(v) { return v === true || v === '1' ? 1 : typeof v === 'number' && v > 0 ? v : 0; }
 function writeScore() {
-  var got = 0, half = 0;
-  CHARS.forEach(function (c) { var v = save.write && save.write[c.c]; if (v === 1 || v === true || v === '1') got++; else if (v) half++; });
-  if (got + half) save.score.write = { got: got, of: CHARS.length, half: half }; else delete save.score.write;
+  var got = 0, half = 0, pts = 0, any = 0;
+  CHARS.forEach(function (c) { var v = save.write && save.write[c.c]; if (!v) return; any++; var x = writeCents(v); pts += x; if (x === 1) got++; else if (x) half++; });
+  if (any) save.score.write = { got: got, of: CHARS.length, half: half, pts: Math.round(pts * 100) / 100 }; else delete save.score.write;
 }
 function openWrite() {
   var wn = CHARS.filter(function (c) { return written(c.c); }).length;
@@ -1375,7 +1383,7 @@ function writeIt(at) {
   warm(CHARS.map(function (c) { return c.c; }));
   var cur = at || 0, demo = null, quiz = null, nextStroke = 0, total = 0, failed = false, lastS = 0;
   if (!save.wslip || typeof save.wslip !== 'object' || Array.isArray(save.wslip)) save.wslip = {};
-  function slipped(c) { if (!written(c)) { save.wslip[c] = 1; store(); } }   // a mistake or a hint before the character was first written
+  function slipped(c) { if (!written(c)) { save.wslip[c] = (+save.wslip[c] || 0) + 1; store(); } }   // each mistake or hint before the character was first written
   var nav = E('div', 'nav');
   var ls = E('button', 'btn ghost', '✕ Quit 退出'); ls.type = 'button'; ls.onclick = function () { afterVoice(menu, ls); };
   nav.appendChild(E('h2', 'wtitle', '✍️ Write it <span class="han">写一写</span>')); nav.appendChild(ls); app.appendChild(nav);
@@ -1465,12 +1473,12 @@ function writeIt(at) {
         onComplete: function () {
           if (CHARS[cur].c !== c) return;
           nextStroke = total;
-          var gain = written(c) ? 0 : save.wslip[c] ? 0.5 : 1;   // only the first time in a round counts; again later is practice
-          if (gain) { save.write[c] = gain; delete save.wslip[c]; writeScore(); store(); showTotal(); }
+          var fresh = !written(c), gain = fresh ? worth(1 + (+save.wslip[c] || 0)) : 0;   // only the first time in a round counts; again later is practice
+          if (fresh) { save.write[c] = gain || 'z'; delete save.wslip[c]; writeScore(); store(); showTotal(); }
           mark();
           var all = CHARS.every(function (x) { return written(x.c); });
-          var won = gain === 1 ? ' +1' + UNIT : gain ? ' +0.5' + UNIT + ' (in a new round, write it with no mistakes for 1' + UNIT + ')' : '';
-          msg.innerHTML = (all && gain ? 'You wrote all ' + CHARS.length + '! <span class="han">全写完了！</span>' : 'Well done! <span class="han">写得好！</span>') + won + ' '
+          var won = gain === 1 ? ' +1' + UNIT : gain ? ' +' + fmt(gain) + UNIT + ' (in a new round, write it with no mistakes for 1' + UNIT + ')' : fresh ? ' No cents this time. In a new round, write it with no mistakes for 1' + UNIT + '.' : '';
+          msg.innerHTML = (all && fresh ? 'You wrote all ' + CHARS.length + '! <span class="han">全写完了！</span>' : 'Well done! <span class="han">写得好！</span>') + won + ' '
             + (all ? '' : cur < CHARS.length - 1 ? 'Tap Next for the next character.' : 'Tap a character above that is not green yet.');
           beep(true);
           setTimeout(function () { if (qEl.isConnected && CHARS[cur].c === c && !speaking()) say(c); }, 450);
@@ -1529,8 +1537,8 @@ function open(L) {
   if (w) {
     var many = w.steps.length > 1 ? 's' : '';
     return askBox('Level ' + L.n + ': the missed questions', (w.started ? 'You were trying the missed questions again' : 'You have ' + w.steps.length + ' missed question' + many + ' to try again')
-        + ' (0.5' + UNIT + ' each). Try ' + (many ? 'them' : 'it') + ' now, or play the whole level again?' + now,
-      [['▶ Continue 继续', function () { play(L, w.started ? { steps: w.steps, ids: w.re.ids, from: w.re } : { steps: w.steps, ids: w.re.ids }); }], ['↺ Play the level again 重新开始', function () { delete save.re[L.n]; store(); go(); }, true]]);
+        + (worth(w.round) ? ' (' + fmt(worth(w.round)) + UNIT + ' each)' : ' (practice, no cents)') + '. Try ' + (many ? 'them' : 'it') + ' now, or play the whole level again?' + now,
+      [['▶ Continue 继续', function () { play(L, w.started ? { steps: w.steps, ids: w.re.ids, from: w.re, round: w.round } : { steps: w.steps, ids: w.re.ids, round: w.round }); }], ['↺ Play the level again 重新开始', function () { delete save.re[L.n]; store(); go(); }, true]]);
   }
   if (going) return askBox('Level ' + L.n + ': continue?', 'You stopped this level half way. Continue from where you were, or start the level again?' + now,
     [['▶ Continue 继续', go], ['↺ Start over 重新开始', fresh, true]]);
@@ -1550,7 +1558,8 @@ function play(L, redo) {   // redo = { steps }: a second try at the questions mi
     steps.forEach(function (s) { if (!s.id || seen[s.id]) return; seen[s.id] = 1; if (res[s.id] === 1) got++; else { ids.push(s.id); var l = s.label || s.answer || (s.x && s.x.ok[0]) || ''; if (miss.indexOf(l) < 0) miss.push(l); } });
     return { got: got, of: Object.keys(seen).length, miss: miss, ids: ids };
   }
-  function rightText(s) { return first(s, true) ? (redo ? 'Right! +0.5' : 'Right! +1') + UNIT : res[s.id] ? 'Right!' : 'Right! No cent this time: the first try was wrong.'; }
+  var round = redo ? Math.max(2, Math.floor(+redo.round) || 2) : 1, value = worth(round);
+  function rightText(s) { return first(s, true) ? (value ? 'Right! +' + fmt(value) + UNIT : 'Right! (practice: no cents now)') : res[s.id] ? 'Right!' : 'Right! No cent this time: the first try was wrong.'; }
   function key(s) { return s.id || (s.c ? 'm' + s.c.c : s.type); }
   var was = !redo && save.at && save.at[L.n];
   if (redo && redo.from) {   // came back to a second try left half way: same questions, same order, same answers so far
@@ -1565,9 +1574,9 @@ function play(L, redo) {   // redo = { steps }: a second try at the questions mi
   }
   total = steps.length;
   warm(levelTexts(steps));
-  function keep() { if (redo) { save.re = save.re || {}; save.re[L.n] = { ids: redo.ids, keys: steps.map(key), i: i - 1, res: res }; store(); return; } save.at = save.at || {}; save.at[L.n] = { keys: steps.map(key), i: i - 1, again: again, res: res }; store(); }   // saved at every step
+  function keep() { if (redo) { save.re = save.re || {}; save.re[L.n] = { ids: redo.ids, round: round, keys: steps.map(key), i: i - 1, res: res }; store(); return; } save.at = save.at || {}; save.at[L.n] = { keys: steps.map(key), i: i - 1, again: again, res: res }; store(); }   // saved at every step
   function next() {
-    if (i >= steps.length) return redo ? redone(L, result()) : finish(L, result());
+    if (i >= steps.length) return redo ? redone(L, result(), round) : finish(L, result());
     var s = steps[i++];
     keep();
     app.innerHTML = '';
@@ -1673,7 +1682,7 @@ function play(L, redo) {   // redo = { steps }: a second try at the questions mi
   next();
 }
 function finish(L, r, old) {   // r = this play's result; old = the score it replaces (bingo saves its score itself and passes the old one)
-  if (arguments.length < 3) { old = save.score[L.n]; if (r) save.score[L.n] = { got: r.got, of: r.of }; }
+  if (arguments.length < 3) { old = save.score[L.n]; if (r) save.score[L.n] = { got: r.got, of: r.of, pts: r.got }; }
   if (save.at) delete save.at[L.n];
   if (L.run) delete save.bingo;
   if (save.re) delete save.re[L.n];   // a new full play: the old second try no longer counts
@@ -1689,7 +1698,7 @@ function finish(L, r, old) {   // r = this play's result; old = the score it rep
     if (r.miss.length) box.appendChild(E('div', 'miss', 'Not right the first time: <span class="han">' + r.miss.join(' · ') + '</span>'));
     box.appendChild(E('div', null, 'Lesson total: ' + fmt(lessonTotal()) + UNIT));
     p.appendChild(box);
-    if (r.ids && r.ids.length) { p.appendChild(redoRow(L, r.ids)); save.re = save.re || {}; save.re[L.n] = { ids: r.ids }; store(); }   // kept, so the missed ones can still be tried after leaving this page
+    if (r.ids && r.ids.length) { p.appendChild(redoRow(L, r.ids, 2)); save.re = save.re || {}; save.re[L.n] = { ids: r.ids, round: 2 }; store(); }   // kept, so the missed ones can still be tried after leaving this page
   }
   if (L.letter) {
     p.appendChild(E('p', 'say', LESSON.letter.ready));
@@ -1712,7 +1721,7 @@ function finish(L, r, old) {   // r = this play's result; old = the score it rep
   app.appendChild(p);
 }
 
-/* after a level: the questions missed the first time can be tried again, for half a cent each */
+/* after a level: the questions missed the first time can be tried again, for fewer cents each round (0.5, 0.25, 0.1, then practice) */
 /* the missed questions of level L still waiting (a list, or a second try left half way), with their steps; a list whose
    questions are no longer in the lesson is dropped */
 function waiting(L) {
@@ -1720,11 +1729,11 @@ function waiting(L) {
   if (!re || !Array.isArray(re.ids) || !re.ids.length || !re.ids.every(function (x) { return typeof x === 'string'; })) return null;
   var steps = redoSteps(L, re.ids);
   if (!steps.length) { delete save.re[L.n]; store(); return null; }
-  return { re: re, steps: steps, started: Array.isArray(re.keys) && re.keys.length > 0 };
+  return { re: re, steps: steps, started: Array.isArray(re.keys) && re.keys.length > 0, round: Math.max(2, Math.floor(+re.round) || 2) };
 }
-function redoRow(L, ids) {
-  var r = E('div', 'row'), b = E('button', 'btn redo', '🔁 Try the ' + ids.length + ' missed again (0.5' + UNIT + ' each)'); b.type = 'button';
-  b.onclick = function () { afterVoice(function () { play(L, { steps: redoSteps(L, ids), ids: ids }); }, b); };
+function redoRow(L, ids, round) {
+  var v = worth(round), r = E('div', 'row'), b = E('button', 'btn redo', '🔁 Try the ' + ids.length + ' missed again (' + (v ? fmt(v) + UNIT + ' each' : 'practice, no cents') + ')'); b.type = 'button';
+  b.onclick = function () { afterVoice(function () { play(L, { steps: redoSteps(L, ids), ids: ids, round: round }); }, b); };
   r.appendChild(b); return r;
 }
 function redoSteps(L, ids) {
@@ -1740,20 +1749,21 @@ function redoSteps(L, ids) {
   var seen = {};
   return L.build().filter(function (s) { if (!s.id || seen[s.id] || ids.indexOf(s.id) < 0) return false; seen[s.id] = 1; return true; });
 }
-function redone(L, r) {   // the end of a second try: half a cent for each one right this time
+function redone(L, r, round) {   // the end of a second try: each one right this time earns this round's cents (0.5, 0.25, 0.1, then 0)
   if (save.re) delete save.re[L.n];   // this second try is finished
-  var sc = save.score[L.n]; if (sc) sc.half = (sc.half || 0) + r.got; store(); showTotal();
+  var v = worth(round), gain = r.got * v;
+  var sc = save.score[L.n]; if (sc) { sc.pts = Math.round((scorePts(sc) + gain) * 100) / 100; sc.half = (sc.half || 0) + r.got; } store(); showTotal();
   app.innerHTML = '';
   var p = E('div', 'panel');
   p.appendChild(E('div', 'card-big', '🔁'));
   p.appendChild(E('h2', null, 'Second try done!'));
   var box = E('div', 'result');
-  box.appendChild(E('div', 'big1', r.got + ' of ' + r.of + ' right this time: +' + fmt(r.got / 2) + UNIT));
+  box.appendChild(E('div', 'big1', r.got + ' of ' + r.of + ' right this time: +' + fmt(gain) + UNIT + (v ? '' : ' (practice)')));
   if (r.miss.length) box.appendChild(E('div', 'miss', 'Still not right: <span class="han">' + r.miss.join(' · ') + '</span>'));
-  if (sc) box.appendChild(E('div', null, 'Level ' + L.n + ' score: ' + fmt(sc.got + sc.half / 2) + UNIT + ' of ' + sc.of + UNIT));
+  if (sc) box.appendChild(E('div', null, 'Level ' + L.n + ' score: ' + levelScore(sc) + UNIT + ' of ' + sc.of + UNIT));
   box.appendChild(E('div', null, 'Lesson total: ' + fmt(lessonTotal()) + UNIT));
   p.appendChild(box);
-  if (r.ids.length) { p.appendChild(redoRow(L, r.ids)); save.re = save.re || {}; save.re[L.n] = { ids: r.ids }; store(); }   // the ones still missed wait for another try
+  if (r.ids.length) { p.appendChild(redoRow(L, r.ids, round + 1)); save.re = save.re || {}; save.re[L.n] = { ids: r.ids, round: round + 1 }; store(); }   // the ones still missed wait for another try, worth less
   var nextL = LEVELS[L.n], r2 = E('div', 'row');
   if (nextL) { var nx = E('button', 'btn', 'Level ' + nextL.n + ' ▶'); nx.type = 'button'; nx.onclick = function () { afterVoice(function () { open(nextL); }, nx); }; r2.appendChild(nx); }
   var bk = E('button', 'btn ghost', 'All levels'); bk.type = 'button'; bk.onclick = function () { afterVoice(menu, bk); }; r2.appendChild(bk);
@@ -1851,7 +1861,7 @@ function bingo(L) {
       end.appendChild(E('div', 'bwin', '🎉 BINGO!'));
       var r = E('div', 'row'), last = cardNo === BINGO_GOALS.length - 1;
       var old = save.score[L.n], sc = bingoResult();
-      if (last) { delete save.bingo; save.done[L.n] = 1; save.score[L.n] = { got: sc.got, of: sc.of }; save.re = save.re || {}; if (sc.ids.length) save.re[L.n] = { ids: sc.ids }; else delete save.re[L.n]; } else save.bingo = { cardNo: cardNo + 1, res: res }; store();   // coming back starts the next card
+      if (last) { delete save.bingo; save.done[L.n] = 1; save.score[L.n] = { got: sc.got, of: sc.of, pts: sc.got }; save.re = save.re || {}; if (sc.ids.length) save.re[L.n] = { ids: sc.ids, round: 2 }; else delete save.re[L.n]; } else save.bingo = { cardNo: cardNo + 1, res: res }; store();   // coming back starts the next card
       end.appendChild(E('div', 'tally', '<b class="tr">✓ ' + sc.got + '</b><b class="tw">✗ ' + sc.ids.length + '</b>'));
       var go = E('button', 'btn', last ? 'Finish ▶' : 'Next card ▶'); go.type = 'button';
       go.onclick = function () { afterVoice(function () { if (last) finish(L, sc, old); else { cardNo++; start(); } }, go); };
