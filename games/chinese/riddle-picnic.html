@@ -1152,6 +1152,11 @@ function built(x) {
 }
 /* tiny sounds for right and wrong, no files needed */
 var ac = null;
+/* iPad showed the green or red of an answer late (the owner, 2026-11-08): starting a sound before the colour held the screen for a moment.
+   Now the colour comes first and the sound right after the screen has been drawn. The beep's sound system is still made inside the
+   tap (beepPrep), as iPad allows it there. */
+function afterPaint(fn) { var go = function () { setTimeout(fn, 0); }; if (window.requestAnimationFrame) requestAnimationFrame(go); else go(); }
+function beepPrep() { try { ac = ac || AC || new (window.AudioContext || window.webkitAudioContext)(); if (ac.state !== 'running') { if (ac.resume) { var r = ac.resume(); if (r && r.catch) r.catch(function () {}); } var z = ac.createBufferSource(); z.buffer = ac.createBuffer(1, 1, 22050); z.connect(ac.destination); z.start(0); } } catch (e) {} }   // (older iPads: a silent sample inside the tap wakes it)
 function beep(ok) {
   try { ac = ac || AC || new (window.AudioContext || window.webkitAudioContext)(); if (ac.state !== 'running' && ac.resume) { var r = ac.resume(); if (r && r.catch) r.catch(function () {}); }   // also after a phone call paused it
     var o = ac.createOscillator(), g = ac.createGain(); o.connect(g); g.connect(ac.destination);
@@ -1475,7 +1480,7 @@ function writeIt(at) {
           var won = gain === 1 ? ' +1' + UNIT : gain ? ' +' + fmt(gain) + UNIT + ' (in a new round, write it with no mistakes for 1' + UNIT + ')' : fresh ? ' No cents this time. In a new round, write it with no mistakes for 1' + UNIT + '.' : '';
           msg.innerHTML = (all && fresh ? 'You wrote all ' + CHARS.length + '! <span class="han">全写完了！</span>' : 'Well done! <span class="han">写得好！</span>') + won + ' '
             + (all ? '' : cur < CHARS.length - 1 ? 'Tap Next for the next character.' : 'Tap a character above that is not green yet.');
-          beep(true);
+          beepPrep(); afterPaint(function () { if (qEl.isConnected) beep(true); });
           setTimeout(function () { if (qEl.isConnected && CHARS[cur].c === c && !speaking()) say(c); }, 450);
         }
       });
@@ -1642,11 +1647,12 @@ function play(L, redo) {   // redo = { steps }: a second try at the questions mi
       if (picked.length < x.tiles.length) return;
       var said = picked.map(function (i) { return x.tiles[i]; }).join('') + P.end;
       if (x.ok.indexOf(said) >= 0) {
-        done = true; line.classList.add('ok'); beep(true); fb.className = 'fb ok'; fb.textContent = rightText(s); say(said);
-        var r = E('div', 'row'); var go = E('button', 'btn', 'Next ▶'); go.type = 'button'; go.onclick = function () { afterVoice(next, go); }; r.appendChild(go); p.appendChild(r); go.focus();
+        done = true; line.classList.add('ok'); beepPrep(); fb.className = 'fb ok'; fb.textContent = rightText(s);
+        afterPaint(function () { if (!line.isConnected) return; beep(true); say(said); });
+        var r = E('div', 'row'); var go = E('button', 'btn', 'Next ▶'); go.type = 'button'; go.onclick = function () { afterVoice(next, go); }; r.appendChild(go); p.appendChild(r); go.focus();   // (the voice starts one frame after the colour, before a child can see and tap Next)
         return;
       }
-      wrong++; first(s, false); beep(false); line.classList.add('no'); fb.className = 'fb no';
+      wrong++; line.classList.add('no'); beepPrep(); afterPaint(function () { if (line.isConnected) beep(false); }); first(s, false); fb.className = 'fb no';
       fb.textContent = wrong < 2 ? 'Not quite. Tap a word to take it back.' : 'Try this order: ' + x.ok[0];
     }
     draw();
@@ -1660,12 +1666,13 @@ function play(L, redo) {   // redo = { steps }: a second try at the questions mi
       b.onclick = function () {
         if (answered) return;
         if (o === s.answer) {
-          answered = true; say(s.sayAfter || o); b.classList.add('ok'); beep(true);   // the sound first, then the rest
+          answered = true; b.classList.add('ok'); beepPrep();   // the colour first, the sound right after it is drawn
+          afterPaint(function () { if (!b.isConnected) return; say(s.sayAfter || o); beep(true); });
           fb.className = 'fb ok'; fb.textContent = rightText(s);
           if (s.after) s.after(p);
-          var r = E('div', 'row'); var go = E('button', 'btn', 'Next ▶'); go.type = 'button'; go.onclick = function () { afterVoice(next, go); }; r.appendChild(go); p.appendChild(r); go.focus();
+          var r = E('div', 'row'); var go = E('button', 'btn', 'Next ▶'); go.type = 'button'; go.onclick = function () { afterVoice(next, go); }; r.appendChild(go); p.appendChild(r); go.focus();   // (the voice starts one frame after the colour, before a child can see and tap Next)
         } else {
-          b.classList.add('no'); first(s, false); beep(false); fb.className = 'fb no'; fb.textContent = s.wide ? LESSON.wrong.pattern : LESSON.wrong.pick;
+          b.classList.add('no'); beepPrep(); afterPaint(function () { if (b.isConnected) beep(false); }); first(s, false); fb.className = 'fb no'; fb.textContent = s.wide ? LESSON.wrong.pattern : LESSON.wrong.pick;
           if (!again[s.id] && !s.wide && !redo) { again[s.id] = 1; steps.push(s); total++; }   // a missed question comes back once at the end (not in the sentence-pattern level)
         }
       };
@@ -1839,13 +1846,15 @@ function bingo(L) {
     function tap(c, i, b) {
       if (over || !now || marked[i]) return;
       if (c.t !== now.t) {
-        wrong++; firstTap(false); keepCard(ci - 1); beep(false); b.classList.add('no'); setTimeout(function () { b.classList.remove('no'); }, 350);
-        if (wrong === 1) { hint.textContent = 'Not this one. Listen again.'; say(now.t); }
+        b.classList.add('no'); setTimeout(function () { b.classList.remove('no'); }, 350); beepPrep();
+        wrong++; firstTap(false); keepCard(ci - 1);
+        var again1 = wrong === 1 ? now.t : null, was = now; afterPaint(function () { if (!b.isConnected || now !== was) return; beep(false); if (again1) say(again1); });
+        if (wrong === 1) { hint.textContent = 'Not this one. Listen again.'; }
         else if (wrong === 2) hint.textContent = now.py + ' · ' + now.en;
         else { hint.textContent = now.py + ' · ' + now.en; btns.forEach(function (x, k) { if (cells[k].t === now.t) x.classList.add('peek'); }); }
         return;
       }
-      marked[i] = 1; keepCard(ci); b.classList.remove('peek'); b.classList.add('on'); beep(true); firstTap(true); keepCard(ci);
+      marked[i] = 1; b.classList.remove('peek'); b.classList.add('on'); beepPrep(); afterPaint(function () { if (b.isConnected) beep(true); }); keepCard(ci); firstTap(true); keepCard(ci);
       hint.textContent = '';
       var done = linesDone();
       if (done >= goal.lines) return win();
@@ -1861,7 +1870,7 @@ function bingo(L) {
       var go = E('button', 'btn', last ? 'Finish ▶' : 'Next card ▶'); go.type = 'button';
       go.onclick = function () { afterVoice(function () { if (last) finish(L, sc, old); else { cardNo++; start(); } }, go); };
       r.appendChild(go); end.appendChild(r);
-      say('Bingo!'); go.focus();
+      afterPaint(function () { if (end.isConnected) say('Bingo!'); }); go.focus();
     }
     linesDone();   // a card picked up again shows its finished lines
     call();
