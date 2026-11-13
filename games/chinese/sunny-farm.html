@@ -1298,15 +1298,15 @@ function storyPart() {   // how many lines were heard, when the talk was left ha
   var n = Math.floor(+save.storyAt) || 0;
   return n > 0 && n < STORY.lines.length ? n : 0;
 }
-/* like a level (the owner, 2026-11-07): coming back asks Continue or Start over, the same two buttons as everywhere. Continue goes on
+/* like a level (the owner, 2026-11-07): coming back asks Continue, Start over or Skip, the same buttons as everywhere. Continue goes on
    from the line where the child stopped; a talk heard to the end before shows all its lines (tap one to hear it again) with the
    buttons for what comes next. A new talk just starts. */
 function openStory() {
   var n = storyPart(), all = STORY.lines.length;
-  if (n) return askBox('Start here: continue?', 'You heard ' + n + ' of the ' + all + ' lines. Continue from there, or start again from the first line?',
-    [['▶ Continue 继续', function () { story(n); }], ['↺ Start over 重新开始', function () { story(0); }, true]]);
-  if (save.story) return askBox('Start here: continue?', 'You heard all ' + all + ' lines last time. Continue to see them all, or start over from the first line?',
-    [['▶ Continue 继续', function () { story(all); }], ['↺ Start over 重新开始', function () { story(0); }, true]]);
+  if (n) return askBox('Start here: continue?', 'You heard ' + n + ' of the ' + all + ' lines. Continue from there, start again from the first line, or skip to level 1?',
+    [['▶ Continue 继续', function () { story(n); }], ['↺ Start over 重新开始', function () { story(0); }, true], skipBtn(LEVELS[0])]);
+  if (save.story) return askBox('Start here: continue?', 'You heard all ' + all + ' lines last time. Continue to see them all, start over from the first line, or skip to level 1?',
+    [['▶ Continue 继续', function () { story(all); }], ['↺ Start over 重新开始', function () { story(0); }, true], skipBtn(LEVELS[0])]);
   story(0);
 }
 var storyRun = 0;   // each opening of the talk counts up, so a late "line heard" from an earlier one is ignored
@@ -1377,11 +1377,10 @@ function story(from) {   // from = how many lines to show at once, without readi
     } else {
       save.story = 1; store();
       var again = E('button', 'btn ghost', '↺ Hear it again'); again.type = 'button'; again.onclick = function () { afterVoice(function () { story(0); }, again); };
-      // on to the first level not played yet (level 1 the first time; the owner, 2026-11-07: with level 1 done, "Play level 1" asked
-      // "play it again?", and "Not now" left the child on the story with nowhere to go); every level played: the level list
-      var nl = LEVELS.filter(function (L) { return !save.score[L.n] && !save.done[L.n]; })[0];
-      main = E('button', 'btn', nl ? 'Play level ' + nl.n + ' ▶' : 'All levels ▶'); main.type = 'button';
-      main.onclick = function () { afterVoice(function () { if (nl) open(nl); else menu(); }, main); };
+      // always on to level 1, played or not (the owner, 2026-11-12); a level played before asks Continue / Start over / Skip (open)
+      var nl = LEVELS[0];
+      main = E('button', 'btn', 'Play level ' + nl.n + ' ▶'); main.type = 'button';
+      main.onclick = function () { afterVoice(function () { open(nl); }, main); };
       mains.appendChild(again); mains.appendChild(main);
     }
     if (hadFocus) try { main.focus({ preventScroll: true }); } catch (e) {}
@@ -1409,7 +1408,7 @@ var resizeAt = 0;
 window.addEventListener('resize', function () {   // turning the iPad: the boxes take the new size (what is half written stays)
   clearTimeout(resizeAt); resizeAt = setTimeout(function () { if (writeRedraw) writeRedraw(); }, 250);
 });
-/* like a level: with some characters written already, ask "carry on, or start over?" (the owner, 2026-11-07) */
+/* like a level: with some characters written already, ask "carry on, start over, or skip to level 2?" (the owner, 2026-11-07; Skip 2026-11-12) */
 /* "Write it" scores like a level (the owner, 2026-11-07; ladder 2026-11-08): the first time a character is written in a round, 1¢ with no
    mistake and no hint, 0.5¢ with one, 0.25¢ with two, 0.1¢ with three, nothing with more (save.write[character] = the cents, or 'z'
    for written with nothing earned; save.wslip[character] = mistakes and hints so far). Writing it again later is practice. */
@@ -1425,11 +1424,11 @@ function openWrite() {
   var firstNew = 0; while (firstNew < CHARS.length - 1 && written(CHARS[firstNew].c)) firstNew++;
   var all = wn === CHARS.length;
   askBox(all ? 'Write it: all written!' : 'Write it: continue?',
-    (all ? 'You have written all ' + CHARS.length + '! Write them again just for practice (your green ticks and score stay), or start over (ticks and score go, and the new score takes their place)?'
-        : 'You have written ' + wn + ' of ' + CHARS.length + ' characters. Continue with the ones not written yet, or start over from the first (the green ticks and the score go)?')
+    (all ? 'You have written all ' + CHARS.length + '! Write them again for practice (ticks and score stay), start over (ticks and score go), or skip to level 2?'
+        : 'You have written ' + wn + ' of ' + CHARS.length + ' characters. Continue with the ones not written yet, start over from the first (the green ticks and the score go), or skip to level 2?')
       + (save.score.write ? ' Your score now: <b>' + levelScore(save.score.write) + UNIT + ' of ' + save.score.write.of + UNIT + '</b>.' : ''),
     [[all ? '▶ Write again 再写一遍' : '▶ Continue 继续', function () { writeIt(all ? 0 : firstNew); }],
-     ['↺ Start over 重新开始', function () { save.write = {}; save.wslip = {}; writeScore(); store(); showTotal(); writeIt(0); }, true]]);
+     ['↺ Start over 重新开始', function () { save.write = {}; save.wslip = {}; writeScore(); store(); showTotal(); writeIt(0); }, true], skipBtn(LEVELS[1])]);
 }
 function writeIt(at) {
   app.classList.remove('big', 'bwide', 'storyw');
@@ -1569,13 +1568,18 @@ function writeIt(at) {
   pick(Math.max(0, Math.min(CHARS.length - 1, cur)));
 }
 
+/* every "come back" box also offers a skip to what comes next (the owner, 2026-11-12: Skip to next level, Continue or Start over, on every level).
+   after = the level that comes next (null: the level list) */
+function skipBtn(after) {
+  return after ? ['⏭ Skip to level ' + after.n + ' 跳过', function () { open(after); }, true] : ['⏭ All levels 全部', menu, true];
+}
 /* a small question box over the page: title, words, and buttons [label, what it does, ghost?] */
 function askBox(title, html, buttons) {
   var o = E('div', 'ask-over'), box = E('div', 'ask-box'), r = E('div', 'row'); box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', title);
   box.appendChild(E('h3', null, title)); box.appendChild(E('p', null, html));
   buttons.forEach(function (b, n) {
     var el = E('button', 'btn' + (b[2] ? ' ghost' : ''), b[0]); el.type = 'button';
-    el.onclick = function () { navAt = Date.now(); o.remove(); if (b[1]) b[1](); };   // a double tap must not also answer the question underneath
+    el.onclick = function () { if (Date.now() - navAt < 350) return; navAt = Date.now(); o.remove(); if (b[1]) b[1](); };   // a double tap must not also answer the question underneath, nor tap the next box (Skip can open one at once)
     r.appendChild(el); if (n === 0) setTimeout(function () { el.focus(); }, 0);
   });
   box.appendChild(r); o.appendChild(box); document.body.appendChild(o);
@@ -1584,20 +1588,21 @@ function askBox(title, html, buttons) {
 function open(L) {
   var going = L.run ? save.bingo : save.at && save.at[L.n], sc = save.score[L.n];
   function go() { if (L.run) L.run(L); else play(L); }
+  var after = LEVELS[L.n], skip = skipBtn(after), ahead = after ? 'skip to level ' + after.n : 'go back to all levels';   // LEVELS[L.n] is the level after L (levels count from 1)
   function fresh() { if (L.run) delete save.bingo; else if (save.at) delete save.at[L.n]; store(); go(); }
   var w = !going && waiting(L);   // the missed questions: a second try left half way, or a list still waiting for its second try (2026-11-07)
   var now = sc ? ' Your score now: <b>' + levelScore(sc) + UNIT + ' of ' + sc.of + UNIT + '</b>. If you play the whole level again, the new score takes its place.' : '';
   if (w) {
     var many = w.steps.length > 1 ? 's' : '';
     return askBox('Level ' + L.n + ': the missed questions', (w.started ? 'You were trying the missed questions again' : 'You have ' + w.steps.length + ' missed question' + many + ' to try again')
-        + (worth(w.round) ? ' (' + fmt(worth(w.round)) + UNIT + ' each)' : ' (practice, no cents)') + '. Try ' + (many ? 'them' : 'it') + ' now, or play the whole level again?' + now,
-      [['▶ Continue 继续', function () { play(L, w.started ? { steps: w.steps, ids: w.re.ids, from: w.re, round: w.round } : { steps: w.steps, ids: w.re.ids, round: w.round }); }], ['↺ Play the level again 重新开始', function () { delete save.re[L.n]; store(); go(); }, true]]);
+        + (worth(w.round) ? ' (' + fmt(worth(w.round)) + UNIT + ' each)' : ' (practice, no cents)') + '. Try ' + (many ? 'them' : 'it') + ' now, play the whole level again, or ' + ahead + '?' + now,
+      [['▶ Continue 继续', function () { play(L, w.started ? { steps: w.steps, ids: w.re.ids, from: w.re, round: w.round } : { steps: w.steps, ids: w.re.ids, round: w.round }); }], ['↺ Play the level again 重新开始', function () { delete save.re[L.n]; store(); go(); }, true], skip]);
   }
-  if (going) return askBox('Level ' + L.n + ': continue?', 'You stopped this level half way. Continue from where you were, or start the level again?' + now,
-    [['▶ Continue 继续', go], ['↺ Start over 重新开始', fresh, true]]);
+  if (going) return askBox('Level ' + L.n + ': continue?', 'You stopped this level half way. Continue from where you were, start the level again, or ' + ahead + '?' + now,
+    [['▶ Continue 继续', go], ['↺ Start over 重新开始', fresh, true], skip]);
   if (!sc) return go();
-  askBox('Play level ' + L.n + ' again?', 'Your score now: <b>' + levelScore(sc) + UNIT + ' of ' + sc.of + UNIT + '</b>. When you finish, your new score takes its place, higher or lower.',
-    [['Play again', go], ['Not now', null, true]]);
+  askBox('Level ' + L.n + ': start over?', 'You finished this level. Your score now: <b>' + levelScore(sc) + UNIT + ' of ' + sc.of + UNIT + '</b>. Play it again and your new score will replace this one, even if it is lower. Or ' + ahead + '.',
+    [['↺ Start over 重新开始', go], skip]);
 }
 
 /* ---------- one engine for every level: a queue of steps ---------- */
