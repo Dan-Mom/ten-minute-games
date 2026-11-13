@@ -728,6 +728,7 @@ button{-webkit-appearance:none;appearance:none}
 .wword .wc{color:var(--blue)}
 .wword small{font:700 13px var(--body);color:var(--mute);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;max-width:13em;margin:0 auto}   /* a long meaning takes two short lines */
 .wwords .tlab{flex:0 0 auto}
+.pwords{margin-top:8px;flex-wrap:wrap}   /* level 1: words with the character left blank, under the pinyin */
 .hero .offl{margin-top:6px;font:800 15px var(--display);color:var(--green)}
 .hero .offl:empty{display:none}
 </style>
@@ -917,6 +918,32 @@ var HanziWriter=function(){"use strict";var t,e,r;const i="undefined"==typeof wi
 var app = document.getElementById('app');
 function E(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
 function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+/* a character that sounds the same as another of the lesson's characters (附 and 复 are both fù) is said as "word 的 character"
+   (附近的附) wherever the child must pick it by ear; 网站/voice-lines.cjs records the same text */
+function hearAs(t) {
+  var me = null; CHARS.forEach(function (x) { if (x.c === t) me = x; });
+  if (!me || !CHARS.some(function (x) { return x !== me && String(x.py || '').normalize('NFC') === String(me.py || '').normalize('NFC'); })) return t;
+  var w = WORDS.filter(function (x) { return x.w.length > 1 && x.w.indexOf(t) >= 0; })[0];
+  return w ? w.w + '的' + t : t;
+}
+function wordsOf(ch, n) {   // up to n words with this character: level 2's WORDS first, then the lesson's MORE_WORDS
+  var more = typeof MORE_WORDS !== 'undefined' && MORE_WORDS && Array.isArray(MORE_WORDS[ch]) ? MORE_WORDS[ch] : [], seen = {};
+  return WORDS.filter(function (w) { return w.w.indexOf(ch) >= 0; }).concat(more.filter(function (w) { return w && typeof w.w === 'string' && w.w.indexOf(ch) >= 0; }))
+    .filter(function (w) { if (seen[w.w]) return false; seen[w.w] = 1; return true; }).slice(0, n);
+}
+/* level 1 "Which card says…": besides the pinyin, one or two words with the character left blank (＿种 gèzhǒng · all kinds),
+   so the child hears and meets the character in words (the owner, 2026-11-09). Tap a word to hear it. Only where LESSON.pickWords is on. */
+function blankWords(ch) {
+  var ws = wordsOf(ch, 2); if (!ws.length) return null;
+  var d = E('div', 'wwords pwords');
+  ws.forEach(function (w) {
+    var b = E('button', 'wword'); b.type = 'button'; b.setAttribute('aria-label', w.py);
+    var h = E('span', 'han'); w.w.split('').forEach(function (x) { if (x === ch) h.appendChild(txt('b', 'wc', '＿')); else h.appendChild(document.createTextNode(x)); });
+    b.appendChild(h); b.appendChild(txt('small', null, w.py + ' · ' + w.en));
+    b.onclick = function () { say(w.w); }; d.appendChild(b);
+  });
+  return d;
+}
 function pick3(answer, no) { return shuffle([answer].concat(shuffle(CHARS.map(function (x) { return x.c; }).filter(function (c) { return c !== answer && (no || []).indexOf(c) < 0; })).slice(0, 2))); }
 var KEY = 'chinese.' + LESSON.id + '.v1';   // not "tmg.": the site's account script keeps tmg. names to itself, so a tmg. save never reached a child's profile
 try {   // a save made under the old name moves over once (then the old name is gone, so it cannot be copied to another child later)
@@ -1142,7 +1169,7 @@ function levelTexts(steps) {   // every line a level can say: characters, radica
     if (s.c) { out.push(s.c.c); PARTS.forEach(function (x) { if (x.c === s.c.c) out.push(x.name); }); }
     if (s.type === 'show') PATTERN[0].ex.forEach(function (e) { out.push(e.s); });
     if (s.x) out = out.concat(s.x.ok);
-    out = out.concat([s.answer, s.sayAfter, s.sayFirst], s.opts || []);
+    out = out.concat([s.answer, s.sayAfter, s.sayFirst], s.opts || [], s.hint || []);   // hint: level 1's blank-word hints
   });
   return out;
 }
@@ -1535,9 +1562,7 @@ function writeIt(at) {
     var t = E('div', 'wtext'); t.appendChild(txt('div', 'py', c.py)); t.appendChild(txt('div', 'mean', c.e + ' ' + c.en)); info.appendChild(t);
     info.appendChild(speakBtn(c.c));
     words.innerHTML = '';
-    var more = typeof MORE_WORDS !== 'undefined' && MORE_WORDS && Array.isArray(MORE_WORDS[c.c]) ? MORE_WORDS[c.c] : [];   // the lesson's extra words for this character
-    var ws = WORDS.filter(function (w) { return w.w.indexOf(c.c) >= 0; }).concat(more.filter(function (w) { return w && typeof w.w === 'string' && w.w.indexOf(c.c) >= 0; })), seen = {};
-    ws = ws.filter(function (w) { if (seen[w.w]) return false; seen[w.w] = 1; return true; }).slice(0, 3);   // three fit in one row under the boxes
+    var ws = wordsOf(c.c, 3);   // three fit in one row under the boxes
     if (ws.length) {
       words.appendChild(E('span', 'tlab', 'Words <span class="han">组词</span>'));
       ws.forEach(function (w) {
@@ -1704,7 +1729,7 @@ function play(L, redo) {   // redo = { steps }: a second try at the questions mi
         if (answered || Date.now() - navAt < 350) return;   // the second tap of a double tap on the button before
         if (o === s.answer) {
           answered = true; b.classList.add('ok'); beepPrep();   // the colour first, the sound right after it is drawn
-          afterPaint(function () { if (!b.isConnected) return; say(s.sayAfter || o); beep(true); });
+          afterPaint(function () { if (!b.isConnected) return; if (!s.sayFirst) say(s.sayAfter || o); beep(true); });   // a listening question was just heard: no second reading
           fb.className = 'fb ok'; fb.textContent = rightText(s);
           if (s.after) s.after(p);
           var r = E('div', 'row'); var go = E('button', 'btn', 'Next ▶'); go.type = 'button'; go.onclick = function () { afterVoice(next, go); }; r.appendChild(go); p.appendChild(r); go.focus();   // (the voice starts one frame after the colour, before a child can see and tap Next)
@@ -1778,9 +1803,9 @@ function redoSteps(L, ids) {
     var pool = CHARS.map(function (c) { return c.c; }).concat(WORDS.map(function (w) { return w.w; }));
     return ids.filter(function (id) { return pool.indexOf(id.slice(id.indexOf(':') + 1)) >= 0; }).map(function (id) {   // only words still in the lesson
       var t = id.slice(id.indexOf(':') + 1);   // id = card:word
-      return { id: id, label: t, prompt: 'Listen, then pick what you hear.', answer: t, word: true, sayFirst: t,
-        opts: shuffle([t].concat(shuffle(pool.filter(function (x) { return x !== t; })).slice(0, 2))),
-        top: function () { var d = E('div', 'row'); d.appendChild(speakBtn(t)); return d; } };
+      return { id: id, label: t, prompt: 'Listen, then pick what you hear.', answer: t, word: true, sayFirst: hearAs(t),
+        opts: shuffle([t].concat(shuffle(pool.filter(function (x) { return x !== t && hearAs(t).indexOf(x + '的') !== 0; })).slice(0, 2))),
+        top: function () { var d = E('div', 'row'); d.appendChild(speakBtn(hearAs(t))); return d; } };
     });
   }
   var seen = {};
@@ -1817,7 +1842,8 @@ var BINGO_LINES = (function () {
 var BINGO_GOALS = [{ lines: 1, text: 'Make 1 line' }, { lines: 2, text: 'Make 2 lines' }, { lines: 12, text: 'Fill the whole card' }];
 function bingoItems() {   // every one of the lesson's characters, plus words to fill the 24 squares (15 characters + 9 words, 14 + 10, …)
   return CHARS.map(function (x) { return { t: x.c, py: x.py, en: x.en }; })
-    .concat(shuffle(WORDS).slice(0, 24 - CHARS.length).map(function (x) { return { t: x.w, py: x.py, en: x.en }; }));
+    .concat(shuffle(WORDS.filter(function (x) { return !CHARS.some(function (c) { return hearAs(c.c) === x.w + '的' + c.c; }); }))   // not 附近 when 附 is called as 附近的附
+      .slice(0, 24 - CHARS.length).map(function (x) { return { t: x.w, py: x.py, en: x.en }; }));
 }
 function bingo(L) {
   if (save.bingo && !isObj(save.bingo)) delete save.bingo;
@@ -1842,7 +1868,7 @@ function bingo(L) {
       if (items.length && calls.length && items.every(Boolean) && calls.every(Boolean)) { ci = Math.min(Math.max(0, Math.floor(+was.ci) || 0), calls.length - 1); (Array.isArray(was.marked) ? was.marked : []).forEach(function (k) { if (k === (k | 0) && k >= 0 && k < 25) marked[k] = 1; }); } else items = null;
     }
     if (!items) { items = shuffle(bingoItems()); calls = shuffle(items); }
-    warm(calls.map(function (x) { return x.t; }).concat(['Bingo!']));
+    warm(calls.map(function (x) { return hearAs(x.t); }).concat(['Bingo!']));
     function keepCard(at) { save.bingo = { cardNo: cardNo, cells: items.map(function (x) { return x.t; }), calls: calls.map(function (x) { return x.t; }), ci: at, marked: Object.keys(marked).map(Number), res: res }; store(); }
     var cells = items.slice(0, 12).concat([{ free: true }], items.slice(12));
     app.innerHTML = '';
@@ -1850,7 +1876,7 @@ function bingo(L) {
     var p = E('div', 'panel bpanel'); app.appendChild(p);
     var gl = E('div', 'bgoal', goal.text), left = E('div', 'bleft'); gl.appendChild(left); p.appendChild(gl);
     var top = E('div', 'row btop');
-    var hear = E('button', 'btn hear', '🔊 Listen again <span class="han">再听一次</span>'); hear.setAttribute('aria-label', 'Listen again'); hear.type = 'button'; hear.onclick = function () { if (now) say(now.t); }; top.appendChild(hear);
+    var hear = E('button', 'btn hear', '🔊 Listen again <span class="han">再听一次</span>'); hear.setAttribute('aria-label', 'Listen again'); hear.type = 'button'; hear.onclick = function () { if (now) say(hearAs(now.t)); }; top.appendChild(hear);
     p.appendChild(top);
     var counter = E('div', 'tally'); top.appendChild(counter);
     function tally() { var r = bingoResult(); counter.innerHTML = '<b class="tr">✓ ' + r.got + '</b><b class="tw">✗ ' + r.ids.length + '</b>'; }
@@ -1870,7 +1896,7 @@ function bingo(L) {
     function call() {
       if (over || ci >= calls.length || !grid.isConnected) return;   // left the card (All levels, Home): stay quiet
       now = calls[ci++]; wrong = 0; hint.textContent = ''; peekOff(); keepCard(ci - 1);
-      say(now.t);
+      say(hearAs(now.t));
     }
     function linesDone() {
       var n = 0;
@@ -1884,7 +1910,7 @@ function bingo(L) {
       if (c.t !== now.t) {
         b.classList.add('no'); setTimeout(function () { b.classList.remove('no'); }, 350); beepPrep();
         wrong++; firstTap(false); keepCard(ci - 1);
-        var again1 = wrong === 1 ? now.t : null, was = now; afterPaint(function () { if (!b.isConnected || now !== was) return; beep(false); if (again1) say(again1); });
+        var again1 = wrong === 1 ? hearAs(now.t) : null, was = now; afterPaint(function () { if (!b.isConnected || now !== was) return; beep(false); if (again1) say(again1); });
         if (wrong === 1) { hint.textContent = 'Not this one. Listen again.'; }
         else if (wrong === 2) hint.textContent = now.py + ' · ' + now.en;
         else { hint.textContent = now.py + ' · ' + now.en; btns.forEach(function (x, k) { if (cells[k].t === now.t) x.classList.add('peek'); }); }
@@ -1921,11 +1947,12 @@ function level1() {   // meet 5, find them by pinyin, find them by sound; three 
     g.forEach(function (c) { out.push({ type: 'meet', c: c }); });
     shuffle(g).forEach(function (c) {
       out.push({ id: 'p' + c.c, prompt: LESSON.pick, answer: c.c, opts: pick3(c.c),
-        top: function () { var d = E('div'); d.appendChild(E('div', 'py', c.py)); d.appendChild(E('div', 'mean', c.e + ' ' + c.en)); return d; } });
+        top: function () { var d = E('div'); d.appendChild(E('div', 'py', c.py)); d.appendChild(E('div', 'mean', c.e + ' ' + c.en)); var bw = LESSON.pickWords && blankWords(c.c); if (bw) d.appendChild(bw); return d; },
+        hint: LESSON.pickWords ? wordsOf(c.c, 2).map(function (w) { return w.w; }) : null });
     });
     shuffle(g).forEach(function (c) {
-      out.push({ id: 's' + c.c, prompt: 'Listen, then pick the character you hear.', answer: c.c, opts: pick3(c.c), sayFirst: c.c,
-        top: function () { var d = E('div', 'row'); d.appendChild(speakBtn(c.c)); return d; } });
+      out.push({ id: 's' + c.c, prompt: 'Listen, then pick the character you hear.', answer: c.c, opts: pick3(c.c), sayFirst: hearAs(c.c),
+        top: function () { var d = E('div', 'row'); d.appendChild(speakBtn(hearAs(c.c))); return d; } });
     });
   });
   return out;
