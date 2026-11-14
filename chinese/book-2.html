@@ -284,6 +284,10 @@
         box.appendChild(b);
         box.appendChild(E('span', 'acct-note', 'Optional: keep each child’s progress on every device.'));
       } else {
+        /* a box that says plainly who is playing now, with big name buttons: a child should notice at once when the wrong name is on */
+        var who = E('div', 'acct-who'), me = fam.kids.filter(function (k) { return k.id === cur; })[0];
+        var now = E('p', 'acct-now', 'Playing now: '); now.appendChild(E('b', null, me ? '▶ ' + me.name : 'Just looking (saved on this device only)'));
+        who.appendChild(now);
         var row = E('div', 'acct-kids');
         fam.kids.forEach(function (k) {
           var chip = E('button', 'acct-kid' + (k.id === cur ? ' on' : ''), (k.id === cur ? '▶ ' : '') + k.name); chip.type = 'button';
@@ -295,13 +299,15 @@
         row.appendChild(g);
         var add = E('button', 'acct-btn small', '+ Add child'); add.type = 'button'; add.onclick = addKid;
         row.appendChild(add);
-        box.appendChild(row);
-        var tools = E('span', 'acct-tools');   // on the same row, right after "+ Add child"
+        who.appendChild(row);
+        who.appendChild(E('span', 'acct-ask', fam.kids.length > 1 ? 'Not you? Tap your own name before you play.' : fam.kids.length ? 'Tap + Add child for a brother or sister.' : 'Add a child to keep their progress.'));
+        box.appendChild(who);
+        var tools = E('span', 'acct-tools');   // grown-up links, small, at the bottom of the box
         var so = E('button', 'acct-link', 'Sign out'); so.type = 'button'; so.onclick = signOut; tools.appendChild(so);
         var rm = E('button', 'acct-link', 'Remove a child'); rm.type = 'button'; rm.onclick = removeKid; tools.appendChild(rm);
         var dl = E('button', 'acct-link danger', 'Delete account and all data'); dl.type = 'button'; dl.onclick = deleteAll; tools.appendChild(dl);
         var pv = E('a', 'acct-link', 'Privacy'); pv.href = 'privacy.html'; tools.appendChild(pv);
-        row.appendChild(tools);
+        who.appendChild(tools);
       }
       if (msg) box.appendChild(E('div', 'acct-msg', msg));
       if (askDelete && uid) {
@@ -476,6 +482,9 @@ h1,h2,h3{font-family:var(--display);margin:0;line-height:1.1}
 .top .wrap{display:flex;align-items:center;gap:12px;min-height:62px}
 .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);font:800 22px var(--display)}
 .brand svg{width:44px;height:44px}
+/* the 🔄 Update button sits at the right end of the top bar (back-pill.js fills [data-pill-slot]) */
+.pill-slot{margin-left:auto;display:inline-flex;flex:none}
+@media (max-width:430px){.brand{font-size:18px;gap:6px}.brand svg{width:34px;height:34px}.top .wrap{gap:8px}}
 
 /* hero */
 .hero{position:relative;background:linear-gradient(180deg,#7ccbff 0%,#b9e6ff 60%,#fff0c9 100%);padding:34px 0 70px;overflow:hidden}
@@ -485,14 +494,14 @@ h1,h2,h3{font-family:var(--display);margin:0;line-height:1.1}
 .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}
 .chip{background:rgba(255,255,255,.92);color:#12306b;border-radius:999px;padding:5px 14px;font:800 15px var(--display)}
 
-/* category tiles */
-.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:14px;margin-top:14px;position:relative}
-.tile{position:relative;display:flex;flex-direction:column;gap:4px;text-decoration:none;color:#fff;border-radius:24px;padding:16px;min-height:150px;background:linear-gradient(150deg,var(--cm),var(--c));box-shadow:0 7px 0 rgba(20,30,60,.22),0 16px 26px rgba(20,30,60,.1);overflow:hidden;transition:transform .15s}
-.tile:hover{transform:translateY(-4px) rotate(-.5deg)}
-.tile::before{content:"";position:absolute;right:-34px;top:-34px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.16)}
-.tile .e{font-size:48px;line-height:1;filter:drop-shadow(0 5px 0 rgba(0,0,0,.18))}
-.tile h3{font-size:21px;text-shadow:0 2px 0 rgba(0,0,0,.18)}
-.tile span.n{font:800 14px var(--display);opacity:.95}
+/* category tiles: small (about half the old size), the emoji left of the name */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:10px;margin-top:14px;position:relative}
+.tile{position:relative;display:grid;grid-template-columns:auto 1fr;align-items:center;gap:0 8px;text-decoration:none;color:#fff;border-radius:16px;padding:8px 10px;min-height:64px;background:linear-gradient(150deg,var(--cm),var(--c));box-shadow:0 4px 0 rgba(20,30,60,.22),0 8px 14px rgba(20,30,60,.08);overflow:hidden;transition:transform .15s}
+.tile:hover{transform:translateY(-2px)}
+.tile::before{content:"";position:absolute;right:-24px;top:-24px;width:70px;height:70px;border-radius:50%;background:rgba(255,255,255,.16)}
+.tile .e{grid-row:span 2;font-size:28px;line-height:1;filter:drop-shadow(0 3px 0 rgba(0,0,0,.18))}
+.tile h3{font-size:15px;line-height:1.15;text-shadow:0 1px 0 rgba(0,0,0,.18)}
+.tile span.n{font:800 12px var(--display);opacity:.95}
 
 /* category sections and game cards */
 section.cat{padding:38px 0 6px}
@@ -538,6 +547,17 @@ footer{padding:26px 0 40px;color:var(--mute);font-size:15px;text-align:center}
 .acct-kids{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .acct-kid{border:2px solid #c9dbef;border-radius:999px;background:#fff;color:var(--ink);font:800 16px var(--display);min-height:44px;padding:0 16px;cursor:pointer}
 .acct-kid.on{background:var(--blue);border-color:var(--blue);color:#fff}
+/* signed in: a clear "who is playing" box, so a child does not play on a brother's or sister's progress by mistake */
+.acct-who{width:100%;display:flex;flex-direction:column;gap:10px;padding:14px 16px;border:3px solid var(--blue);border-radius:20px;background:#fff;box-shadow:0 5px 0 #c9dbef}
+.acct-now{margin:0;font:800 clamp(20px,3vw,26px)/1.2 var(--display);color:var(--ink)}
+.acct-now b{color:var(--blue)}
+.acct-who .acct-kid{min-height:52px;font-size:19px;padding:0 20px}
+.acct-who .acct-kid.on{background:var(--blue);border-color:#ffd23f;box-shadow:0 0 0 4px #ffd23f;color:#fff}
+.acct-who .acct-btn.small{min-height:52px;font-size:17px}
+.acct-ask{font:700 15px var(--body);color:var(--mute);width:100%}
+.acct-who .acct-tools{margin-left:0;padding-top:4px;border-top:2px dashed #e3ecf7;width:100%;gap:0 18px}
+.acct-who .acct-link{min-height:44px;display:inline-flex;align-items:center}
+section.cat:focus,main:focus{outline:none}
 .acct-tools{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px 14px;margin-left:6px}
 .acct-link{border:0;background:none;padding:6px 0;color:var(--blue);font:700 14px var(--body);text-decoration:underline;cursor:pointer}
 .acct-link.danger{color:#b23246}
@@ -550,7 +570,7 @@ footer a{color:inherit}
 </style>
 </head>
 <body>
-<header class="top"><div class="wrap"><a class="brand" href="#top"><span id="logo"><svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ten-Minute Games"><rect x="28" y="1.5" width="8" height="6" rx="2" fill="#1d2b4f"/><circle cx="32" cy="36" r="24" fill="#ffffff" stroke="#1d2b4f" stroke-width="6"/><path d="M32 36 L32 15 A21 21 0 0 1 50.2 25.5 Z" fill="#e8650a"/><circle cx="32" cy="36" r="4" fill="#1d2b4f"/><path d="M54 3 L55.8 7.6 L60.4 9.4 L55.8 11.2 L54 15.8 L52.2 11.2 L47.6 9.4 L52.2 7.6 Z" fill="#ffd23f" stroke="#1d2b4f" stroke-width="1.4" stroke-linejoin="round"/></svg></span><span>Ten-Minute Games</span></a></div></header>
+<header class="top"><div class="wrap"><a class="brand" href="#top"><span id="logo"><svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ten-Minute Games"><rect x="28" y="1.5" width="8" height="6" rx="2" fill="#1d2b4f"/><circle cx="32" cy="36" r="24" fill="#ffffff" stroke="#1d2b4f" stroke-width="6"/><path d="M32 36 L32 15 A21 21 0 0 1 50.2 25.5 Z" fill="#e8650a"/><circle cx="32" cy="36" r="4" fill="#1d2b4f"/><path d="M54 3 L55.8 7.6 L60.4 9.4 L55.8 11.2 L54 15.8 L52.2 11.2 L47.6 9.4 L52.2 7.6 Z" fill="#ffd23f" stroke="#1d2b4f" stroke-width="1.4" stroke-linejoin="round"/></svg></span><span>Ten-Minute Games</span></a><span class="pill-slot" data-pill-slot></span></div></header>
 <main id="top">
   <div class="hero"><div class="wrap"><h1 id="tagline"></h1><p class="sub" id="sub"></p><div class="chips" id="chips"></div></div></div>
   <div class="acct" id="acct"></div>
@@ -559,7 +579,7 @@ footer a{color:inherit}
 <footer><div class="wrap" id="foot"></div></footer>
 <div id="upd" hidden role="status"><span>New games are ready</span><button type="button" id="updBtn">Refresh</button></div>
 <script>
-var DATA = {"v":1794682041713,"site":{"title":"Ten-Minute Games","tagline":"","sub":"","categories":[{"id":"math","name":"Math","emoji":"🧮","color":"orange","blurb":"Games for numbers, Roman numerals and times tables."},{"id":"chinese","name":"Chinese 中文","emoji":"🏮","color":"blue","blurb":"Chinese characters, one lesson at a time: meet them, build words, use them in sentences."},{"id":"science","name":"Science and the World","emoji":"🔬","color":"green","blurb":"The human body, history mysteries and our planet."},{"id":"food","name":"Food and Health Detectives","emoji":"🕵️","color":"pink","blurb":"Reading labels and spotting what packages really say."},{"id":"steam","name":"Little STEAM Lab","emoji":"🧊","color":"purple","blurb":"Puzzles and things to build with your hands."},{"id":"money","name":"Money Smarts","emoji":"🐷","color":"teal","blurb":"Saving, interest and how money grows."}],"promises":[],"about":{"title":"Made for two kids first, then shared with yours","text":"We make these games at home for our own two curious kids, building them with AI and testing them together as we go. Now we are sharing them with yours."},"disclaimer":"For learning at home. Signing in is optional: we keep only a parent’s sign-in, the nicknames they type and the game progress."},"games":[{"id":"school-show","category":"chinese","title":"School Show 学校表演会","emoji":"🎤","blurb":"Learn 11 Chinese characters about reading, writing, singing and drawing at the Chinese school show, practise saying where someone does something, write a letter to Grandma, then play Show Bingo. Five levels, about ten minutes each.","note":"","book":2,"lesson":1,"href":"games/chinese/school-show.html?home=..%2F..%2Fchinese%2Fbook-2.html"},{"id":"lost-and-found","category":"chinese","title":"Lost and Found 失物招领","emoji":"📦","blurb":"Learn 12 Chinese characters about books, pens and the classroom while finding the owners of the lost-and-found box, practise asking yes-or-no questions with 吗, write a letter to Grandpa, then play Lost and Found Bingo. Five levels, about ten minutes each.","note":"","book":2,"lesson":2,"href":"games/chinese/lost-and-found.html?home=..%2F..%2Fchinese%2Fbook-2.html"},{"id":"whose-voice","category":"chinese","title":"Whose Voice? 谁的声音","emoji":"👂","blurb":"Learn 13 Chinese characters about days, friends, listening and asking while playing a guess-the-voice game at home, practise asking who with 谁, write a letter to Grandpa, then play Voice Bingo. Five levels, about ten minutes each.","note":"","book":2,"lesson":3,"href":"games/chinese/whose-voice.html?home=..%2F..%2Fchinese%2Fbook-2.html"},{"id":"little-hosts","category":"chinese","title":"Little Hosts 小主人","emoji":"🫖","blurb":"Learn 12 Chinese characters about good manners while being a polite little host when Grandma visits, practise asking politely with 请, write a letter to Grandpa, then play Teatime Bingo. Five levels, about ten minutes each.","note":"","book":2,"lesson":4,"href":"games/chinese/little-hosts.html?home=..%2F..%2Fchinese%2Fbook-2.html"},{"id":"charity-sale","category":"chinese","title":"Charity Sale 爱心义卖","emoji":"🧁","blurb":"Learn 14 Chinese characters about buying, giving, toys and family at a school charity sale, practise saying what someone did with 了, write a letter to Grandma, then play Sale Bingo. Five levels, about ten minutes each.","note":"","book":2,"lesson":5,"href":"games/chinese/charity-sale.html?home=..%2F..%2Fchinese%2Fbook-2.html"},{"id":"helping-hands","category":"chinese","title":"Helping Hands 小帮手","emoji":"🧹","blurb":"Learn 11 Chinese characters about tidying up, washing and doing things yourself in a surprise clean-up for Mom, practise saying what someone can do with 会, write a letter to Grandma, then play Helper Bingo. Five levels, about ten minutes each.","note":"","book":2,"lesson":6,"href":"games/chinese/helping-hands.html?home=..%2F..%2Fchinese%2Fbook-2.html"},{"id":"grandpa-workshop","category":"chinese","title":"Grandpa’s Workshop 爷爷的工作间","emoji":"🔨","blurb":"Learn 12 Chinese characters about hands, brains, work and thinking while making little wooden boats with Grandpa, practise saying two things at once with 又……又……, write a letter to Grandma, then play Workshop Bingo. Five levels, about ten minutes each.","note":"","book":2,"lesson":7,"href":"games/chinese/grandpa-workshop.html?home=..%2F..%2Fchinese%2Fbook-2.html"},{"id":"shadow-game","category":"chinese","title":"Shadow Game 影子游戏","emoji":"🔦","blurb":"Learn 13 Chinese characters about light, far and near, and asking why as we play step-on-the-shadow under the street lamps, practise saying everywhere, everything and everyone with 都, write a letter to Grandpa, then play Shadow Bingo. Five levels, about ten minutes each.","note":"","book":2,"lesson":8,"href":"games/chinese/shadow-game.html?home=..%2F..%2Fchinese%2Fbook-2.html"},{"id":"bedtime-questions","category":"chinese","title":"Bedtime Questions 睡前的问题","emoji":"🌙","blurb":"Learn 11 Chinese characters about night, light, rivers, lakes and flying as we ask Grandma questions at bedtime, practise asking why with 为什么, write a letter to Auntie, then play Night Bingo. Five levels, about ten minutes each.","note":"","book":2,"lesson":9,"href":"games/chinese/bedtime-questions.html?home=..%2F..%2Fchinese%2Fbook-2.html"},{"id":"bean-diary","category":"chinese","title":"Bean Sprout Diary 豆芽日记","emoji":"🫘","blurb":"Learn 14 Chinese characters about seeds, sprouts, trees and melons as we grow beans at home and keep a diary, practise saying what someone wants to do with 要, write a letter to Grandpa, then play Bean Bingo. Five levels, about ten minutes each.","note":"","book":2,"lesson":10,"href":"games/chinese/bean-diary.html?home=..%2F..%2Fchinese%2Fbook-2.html"},{"id":"paper-boats","category":"chinese","title":"Paper Boat Race 纸船比赛","emoji":"⛵","blurb":"Learn 14 Chinese characters about rivers, names, countries and family at a paper boat race by the river, practise saying from where to where with 从……到……, write a letter to Grandma, then play Boat Bingo. Five levels, about ten minutes each.","note":"","book":2,"lesson":11,"href":"games/chinese/paper-boats.html?home=..%2F..%2Fchinese%2Fbook-2.html"},{"id":"seaside-trip","category":"chinese","title":"Seaside Trip 去海边","emoji":"🏖️","blurb":"Learn 14 Chinese characters about vacations, the sea, helping and being happy as we get ready for a seaside trip, practise saying what someone would like to do with 想, write a letter to Grandma, then play Seaside Bingo. Five levels, about ten minutes each.","note":"","book":2,"lesson":12,"href":"games/chinese/seaside-trip.html?home=..%2F..%2Fchinese%2Fbook-2.html"}],"view":{"cat":"chinese","book":2}};
+var DATA = {"v":1794687507397,"site":{"title":"Ten-Minute Games","tagline":"","sub":"","categories":[{"id":"math","name":"Math","emoji":"🧮","color":"orange","blurb":"Games for numbers, Roman numerals and times tables."},{"id":"chinese","name":"Chinese 中文","emoji":"🏮","color":"blue","blurb":"Chinese characters, one lesson at a time: meet them, build words, use them in sentences."},{"id":"science","name":"Science and the World","emoji":"🔬","color":"green","blurb":"The human body, history mysteries and our planet."},{"id":"food","name":"Food and Health Detectives","emoji":"🕵️","color":"pink","blurb":"Reading labels and spotting what packages really say."},{"id":"steam","name":"Little STEAM Lab","emoji":"🧊","color":"purple","blurb":"Puzzles and things to build with your hands."},{"id":"money","name":"Money Smarts","emoji":"🐷","color":"teal","blurb":"Saving, interest and how money grows."}],"promises":[],"about":{"title":"Made for two kids first, then shared with yours","text":"We make these games at home for our own two curious kids, building them with AI and testing them together as we go. Now we are sharing them with yours."},"disclaimer":"For learning at home. Signing in is optional: we keep only a parent’s sign-in, the nicknames they type and the game progress."},"games":[{"id":"school-show","category":"chinese","title":"School Show 学校表演会","emoji":"🎤","blurb":"Learn 11 Chinese characters about reading, writing, singing and drawing at the Chinese school show, practise saying where someone does something, write a letter to Grandma, then play Show Bingo. Five levels, about ten minutes each.","note":"","book":2,"lesson":1,"href":"games/chinese/school-show.html?home=..%2F..%2Fchinese%2Fbook-2.html"},{"id":"lost-and-found","category":"chinese","title":"Lost and Found 失物招领","emoji":"📦","blurb":"Learn 12 Chinese characters about books, pens and the classroom while finding the owners of the lost-and-found box, practise asking yes-or-no questions with 吗, write a letter to Grandpa, then play Lost and Found Bingo. Five levels, about ten minutes each.","note":"","book":2,"lesson":2,"href":"games/chinese/lost-and-found.html?home=..%2F..%2Fchinese%2Fbook-2.html"},{"id":"whose-voice","category":"chinese","title":"Whose Voice? 谁的声音","emoji":"👂","blurb":"Learn 13 Chinese characters about days, friends, listening and asking while playing a guess-the-voice game at home, practise asking who with 谁, write a letter to Grandpa, then play Voice Bingo. Five levels, about ten minutes each.","note":"","book":2,"lesson":3,"href":"games/chinese/whose-voice.html?home=..%2F..%2Fchinese%2Fbook-2.html"},{"id":"little-hosts","category":"chinese","title":"Little Hosts 小主人","emoji":"🫖","blurb":"Learn 12 Chinese characters about good manners while being a polite little host when Grandma visits, practise asking politely with 请, write a letter to Grandpa, then play Teatime Bingo. Five levels, about ten minutes each.","note":"","book":2,"lesson":4,"href":"games/chinese/little-hosts.html?home=..%2F..%2Fchinese%2Fbook-2.html"},{"id":"charity-sale","category":"chinese","title":"Charity Sale 爱心义卖","emoji":"🧁","blurb":"Learn 14 Chinese characters about buying, giving, toys and family at a school charity sale, practise saying what someone did with 了, write a letter to Grandma, then play Sale Bingo. Five levels, about ten minutes each.","note":"","book":2,"lesson":5,"href":"games/chinese/charity-sale.html?home=..%2F..%2Fchinese%2Fbook-2.html"},{"id":"helping-hands","category":"chinese","title":"Helping Hands 小帮手","emoji":"🧹","blurb":"Learn 11 Chinese characters about tidying up, washing and doing things yourself in a surprise clean-up for Mom, practise saying what someone can do with 会, write a letter to Grandma, then play Helper Bingo. Five levels, about ten minutes each.","note":"","book":2,"lesson":6,"href":"games/chinese/helping-hands.html?home=..%2F..%2Fchinese%2Fbook-2.html"},{"id":"grandpa-workshop","category":"chinese","title":"Grandpa’s Workshop 爷爷的工作间","emoji":"🔨","blurb":"Learn 12 Chinese characters about hands, brains, work and thinking while making little wooden boats with Grandpa, practise saying two things at once with 又……又……, write a letter to Grandma, then play Workshop Bingo. Five levels, about ten minutes each.","note":"","book":2,"lesson":7,"href":"games/chinese/grandpa-workshop.html?home=..%2F..%2Fchinese%2Fbook-2.html"},{"id":"shadow-game","category":"chinese","title":"Shadow Game 影子游戏","emoji":"🔦","blurb":"Learn 13 Chinese characters about light, far and near, and asking why as we play step-on-the-shadow under the street lamps, practise saying everywhere, everything and everyone with 都, write a letter to Grandpa, then play Shadow Bingo. Five levels, about ten minutes each.","note":"","book":2,"lesson":8,"href":"games/chinese/shadow-game.html?home=..%2F..%2Fchinese%2Fbook-2.html"},{"id":"bedtime-questions","category":"chinese","title":"Bedtime Questions 睡前的问题","emoji":"🌙","blurb":"Learn 11 Chinese characters about night, light, rivers, lakes and flying as we ask Grandma questions at bedtime, practise asking why with 为什么, write a letter to Auntie, then play Night Bingo. Five levels, about ten minutes each.","note":"","book":2,"lesson":9,"href":"games/chinese/bedtime-questions.html?home=..%2F..%2Fchinese%2Fbook-2.html"},{"id":"bean-diary","category":"chinese","title":"Bean Sprout Diary 豆芽日记","emoji":"🫘","blurb":"Learn 14 Chinese characters about seeds, sprouts, trees and melons as we grow beans at home and keep a diary, practise saying what someone wants to do with 要, write a letter to Grandpa, then play Bean Bingo. Five levels, about ten minutes each.","note":"","book":2,"lesson":10,"href":"games/chinese/bean-diary.html?home=..%2F..%2Fchinese%2Fbook-2.html"},{"id":"paper-boats","category":"chinese","title":"Paper Boat Race 纸船比赛","emoji":"⛵","blurb":"Learn 14 Chinese characters about rivers, names, countries and family at a paper boat race by the river, practise saying from where to where with 从……到……, write a letter to Grandma, then play Boat Bingo. Five levels, about ten minutes each.","note":"","book":2,"lesson":11,"href":"games/chinese/paper-boats.html?home=..%2F..%2Fchinese%2Fbook-2.html"},{"id":"seaside-trip","category":"chinese","title":"Seaside Trip 去海边","emoji":"🏖️","blurb":"Learn 14 Chinese characters about vacations, the sea, helping and being happy as we get ready for a seaside trip, practise saying what someone would like to do with 想, write a letter to Grandma, then play Seaside Bingo. Five levels, about ten minutes each.","note":"","book":2,"lesson":12,"href":"games/chinese/seaside-trip.html?home=..%2F..%2Fchinese%2Fbook-2.html"}],"view":{"cat":"chinese","book":2}};
 var S = DATA.site, G = DATA.games;
 function E(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 if (S.tagline) document.getElementById('tagline').textContent = S.tagline; else document.getElementById('tagline').remove();
@@ -584,12 +604,19 @@ function gameCard(g) {
   b.appendChild(E('span', 'play', 'Play ▶'));
   a.appendChild(b); return a;
 }
+/* a tile scrolls to its section without leaving "#section" in the address: a later reload (the 🔄 Update button) would jump there again */
+function jump(id) { return function (ev) {
+  if (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey || ev.button) return;   // a new tab or window: the normal link
+  var el = document.getElementById(id); if (!el) return; ev.preventDefault(); el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');   // keyboard and screen-reader users go on from the section
+  try { el.focus({ preventScroll: true }); } catch (e) {}
+}; }
 var V = DATA.view;
 if (!V) {
   S.categories.forEach(function (c) {
     var list = G.filter(function (g) { return g.category === c.id; });
     if (!list.length) return;                       // a corner with no games yet is not shown
-    var t = E('a', 'tile c-' + c.color); t.href = '#' + c.id;
+    var t = E('a', 'tile c-' + c.color); t.href = '#' + c.id; t.onclick = jump(c.id);
     t.appendChild(E('span', 'e', c.emoji)); t.appendChild(E('h3', null, c.name));
     var nb = []; list.forEach(function (g) { if (g.book != null && nb.indexOf(g.book) < 0) nb.push(g.book); });
     t.appendChild(E('span', 'n', list.every(function (g) { return g.book != null; })   // a corner made only of books: count books and lessons
@@ -646,6 +673,15 @@ var ab = document.getElementById('about');
 if (S.about && !V) { ab.appendChild(E('h2', null, S.about.title)); ab.appendChild(E('p', null, S.about.text)); } else ab.remove();
 var ft = document.getElementById('foot'); ft.textContent = (S.disclaimer || '') + ' '; var pl = E('a', null, 'Privacy'); pl.href = 'privacy.html'; ft.appendChild(pl);
 if (window.TMG) TMG.mountHome(document.getElementById('acct'));
+if (!V) document.querySelector('.brand').onclick = jump('top');
+/* opened as index.html#chinese (from a book page): go to that section, then drop the "#chinese" so a reload stays where the child is.
+   (After 🔄 Update, back-pill.js has already taken the "#..." away and puts the page back where it was.) */
+window.addEventListener('load', function () {
+  if (!location.hash) return;
+  var el = null; try { el = document.getElementById(decodeURIComponent(location.hash.slice(1))); } catch (e) {}
+  if (el) { var root = document.documentElement, was = root.style.scrollBehavior; root.style.scrollBehavior = 'auto'; el.scrollIntoView(true); root.style.scrollBehavior = was; }   // a jump, not a glide
+  try { history.replaceState(history.state, '', location.pathname + location.search); } catch (e) {}
+});
 
 /* a newer build only shows a small banner; nothing reloads by itself */
 (function () {
@@ -727,9 +763,31 @@ try { if ('serviceWorker' in navigator && window.caches && /^https?:$/.test(loca
     cap(fetch(base + 'version.json?t=' + Date.now(), { cache: 'no-store' }), 8000).then(function (r) { if (!r.ok) throw new Error('no copy'); })
       .then(function () { return clearOffline(base).then(function (ok) { done = ok; }); })
       .then(function () { return Promise.all([fresh(location.href), fresh(base + 'index.html')]); })
-      .then(function () { try { sessionStorage.setItem(KEY, done ? '1' : 'retry'); } catch (e) {} location.reload(); },
+      .then(function () {
+              try { sessionStorage.setItem(KEY, done ? '1' : 'retry'); sessionStorage.setItem(SPOT, JSON.stringify({ p: location.pathname + location.search, y: Math.round(window.scrollY || 0) })); } catch (e) {}
+              location.reload(); },
             function () { busy = false; say('No internet'); });
   });
+  /* After Update, come back to the same spot on the same page. Without this an iPad jumped to the "#section" left in the address by the
+     last category tile tapped. The spot is put back once at once and again while the page
+     finishes building (fonts, the sign-in panel), unless the child has started scrolling by then. */
+  var SPOT = 'tmg.updSpot';
+  try {
+    var sp = JSON.parse(sessionStorage.getItem(SPOT) || 'null'); sessionStorage.removeItem(SPOT);
+    if (sp && sp.p === location.pathname + location.search && sp.y >= 0) {
+      try { history.scrollRestoration = 'manual'; } catch (e) {}
+      // only the home and book pages: there a "#section" is just a place to scroll to (a game may use its "#..." to pick a tab)
+      if (location.hash && document.querySelector('meta[name="tmg-home"]')) try { history.replaceState(history.state, '', location.pathname + location.search); } catch (e) {}
+      var moved = false, auto = function () { try { history.scrollRestoration = 'auto'; } catch (e) {} }, stop = function () { moved = true; auto(); };   // Back from a game keeps its usual spot
+      ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(function (t) { window.addEventListener(t, stop, { passive: true, once: true }); });
+      var back2 = function () {
+        if (moved) return;
+        var root = document.documentElement, was = root.style.scrollBehavior; root.style.scrollBehavior = 'auto';   // no smooth glide
+        window.scrollTo(0, sp.y); root.style.scrollBehavior = was;
+      };
+      back2(); window.addEventListener('load', back2); [150, 600, 1500].forEach(function (ms) { setTimeout(back2, ms); }); setTimeout(auto, 1600);
+    }
+  } catch (e) {}
   try { var was = sessionStorage.getItem(KEY); if (was) { sessionStorage.removeItem(KEY); say(was === 'retry' ? 'Try again later' : 'Updated ✓'); } } catch (e) {}
   if (slot) return;   // in a top bar: nothing to move around
   /* The lessons keep their own buttons along the screen edges (Previous / Next in a footer, controls in a header), so a pill nailed to

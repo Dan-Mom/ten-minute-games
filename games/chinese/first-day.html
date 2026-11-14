@@ -280,6 +280,10 @@
         box.appendChild(b);
         box.appendChild(E('span', 'acct-note', 'Optional: keep each child’s progress on every device.'));
       } else {
+        /* a box that says plainly who is playing now, with big name buttons: a child should notice at once when the wrong name is on */
+        var who = E('div', 'acct-who'), me = fam.kids.filter(function (k) { return k.id === cur; })[0];
+        var now = E('p', 'acct-now', 'Playing now: '); now.appendChild(E('b', null, me ? '▶ ' + me.name : 'Just looking (saved on this device only)'));
+        who.appendChild(now);
         var row = E('div', 'acct-kids');
         fam.kids.forEach(function (k) {
           var chip = E('button', 'acct-kid' + (k.id === cur ? ' on' : ''), (k.id === cur ? '▶ ' : '') + k.name); chip.type = 'button';
@@ -291,13 +295,15 @@
         row.appendChild(g);
         var add = E('button', 'acct-btn small', '+ Add child'); add.type = 'button'; add.onclick = addKid;
         row.appendChild(add);
-        box.appendChild(row);
-        var tools = E('span', 'acct-tools');   // on the same row, right after "+ Add child"
+        who.appendChild(row);
+        who.appendChild(E('span', 'acct-ask', fam.kids.length > 1 ? 'Not you? Tap your own name before you play.' : fam.kids.length ? 'Tap + Add child for a brother or sister.' : 'Add a child to keep their progress.'));
+        box.appendChild(who);
+        var tools = E('span', 'acct-tools');   // grown-up links, small, at the bottom of the box
         var so = E('button', 'acct-link', 'Sign out'); so.type = 'button'; so.onclick = signOut; tools.appendChild(so);
         var rm = E('button', 'acct-link', 'Remove a child'); rm.type = 'button'; rm.onclick = removeKid; tools.appendChild(rm);
         var dl = E('button', 'acct-link danger', 'Delete account and all data'); dl.type = 'button'; dl.onclick = deleteAll; tools.appendChild(dl);
         var pv = E('a', 'acct-link', 'Privacy'); pv.href = 'privacy.html'; tools.appendChild(pv);
-        row.appendChild(tools);
+        who.appendChild(tools);
       }
       if (msg) box.appendChild(E('div', 'acct-msg', msg));
       if (askDelete && uid) {
@@ -2124,9 +2130,31 @@ goOffline();
     cap(fetch(base + 'version.json?t=' + Date.now(), { cache: 'no-store' }), 8000).then(function (r) { if (!r.ok) throw new Error('no copy'); })
       .then(function () { return clearOffline(base).then(function (ok) { done = ok; }); })
       .then(function () { return Promise.all([fresh(location.href), fresh(base + 'index.html')]); })
-      .then(function () { try { sessionStorage.setItem(KEY, done ? '1' : 'retry'); } catch (e) {} location.reload(); },
+      .then(function () {
+              try { sessionStorage.setItem(KEY, done ? '1' : 'retry'); sessionStorage.setItem(SPOT, JSON.stringify({ p: location.pathname + location.search, y: Math.round(window.scrollY || 0) })); } catch (e) {}
+              location.reload(); },
             function () { busy = false; say('No internet'); });
   });
+  /* After Update, come back to the same spot on the same page. Without this an iPad jumped to the "#section" left in the address by the
+     last category tile tapped. The spot is put back once at once and again while the page
+     finishes building (fonts, the sign-in panel), unless the child has started scrolling by then. */
+  var SPOT = 'tmg.updSpot';
+  try {
+    var sp = JSON.parse(sessionStorage.getItem(SPOT) || 'null'); sessionStorage.removeItem(SPOT);
+    if (sp && sp.p === location.pathname + location.search && sp.y >= 0) {
+      try { history.scrollRestoration = 'manual'; } catch (e) {}
+      // only the home and book pages: there a "#section" is just a place to scroll to (a game may use its "#..." to pick a tab)
+      if (location.hash && document.querySelector('meta[name="tmg-home"]')) try { history.replaceState(history.state, '', location.pathname + location.search); } catch (e) {}
+      var moved = false, auto = function () { try { history.scrollRestoration = 'auto'; } catch (e) {} }, stop = function () { moved = true; auto(); };   // Back from a game keeps its usual spot
+      ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(function (t) { window.addEventListener(t, stop, { passive: true, once: true }); });
+      var back2 = function () {
+        if (moved) return;
+        var root = document.documentElement, was = root.style.scrollBehavior; root.style.scrollBehavior = 'auto';   // no smooth glide
+        window.scrollTo(0, sp.y); root.style.scrollBehavior = was;
+      };
+      back2(); window.addEventListener('load', back2); [150, 600, 1500].forEach(function (ms) { setTimeout(back2, ms); }); setTimeout(auto, 1600);
+    }
+  } catch (e) {}
   try { var was = sessionStorage.getItem(KEY); if (was) { sessionStorage.removeItem(KEY); say(was === 'retry' ? 'Try again later' : 'Updated ✓'); } } catch (e) {}
   if (slot) return;   // in a top bar: nothing to move around
   /* The lessons keep their own buttons along the screen edges (Previous / Next in a footer, controls in a header), so a pill nailed to
