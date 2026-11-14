@@ -783,11 +783,11 @@ var PARTS = [
   { c: '物', parts: ['牜', '勿'], r: 0, rad: '牜', name: '牛字旁', npy: 'niú zì páng', means: 'an ox, cattle.', see: '牧 特 牲', how: 'An ox (牛); 勿 gives the sound (wù). 物 = thing: 动物 = animal; 礼物 = gift.' },
   { c: '海', parts: ['氵', '每'], r: 0, rad: '氵', name: '三点水', npy: 'sān diǎn shuǐ', means: 'water.', see: '河 江 洗 湖', how: 'Water (氵) and 每. 海 = sea: 大海 = the sea; 海边 = seaside.' },
   { c: '洋', parts: ['氵', '羊'], r: 0, rad: '氵', name: '三点水', npy: 'sān diǎn shuǐ', means: 'water.', see: '河 江 洗 湖', how: 'Water (氵); 羊 (sheep, yáng) gives the sound. 洋 = ocean: 海洋 = the ocean; 洋娃娃 = doll.' },
-  { c: '公', parts: ['八', '厶'], r: 0, rad: '八', name: '八字头', npy: 'bā zì tóu', means: 'eight; dividing.', see: '分 共 兵', how: 'Some say: 八 (dividing) over 厶 (what is one’s own): sharing fairly, for everyone. 公园 = park; 外公 = Grandpa (Mom’s dad).' },
+  { c: '公', parts: ['八', '厶'], r: 0, rad: '八', name: '八字', npy: 'bā zì', means: 'eight; dividing.', see: '分 共 兵 其', how: 'Some say: 八 (dividing) over 厶 (what is one’s own): sharing fairly, for everyone. 公园 = park; 外公 = Grandpa (Mom’s dad).' },
   { c: '泳', parts: ['氵', '永'], r: 0, rad: '氵', name: '三点水', npy: 'sān diǎn shuǐ', means: 'water.', see: '河 江 洗 湖', how: 'Water (氵); 永 gives the sound (yǒng). 泳 = swim: 游泳 = swim; 泳衣 = swimsuit.' },
   { c: '帮', parts: ['邦', '巾'], r: 1, rad: '巾', name: '巾字底', npy: 'jīn zì dǐ', means: 'a cloth.', see: '帽 帆 帐 帕', how: '邦 on top gives the sound (bāng); a cloth (巾) below. 帮 = help: 帮忙 = help out; 帮助 = help.' },
   { c: '点', parts: ['占', '灬'], r: 1, rad: '灬', name: '四点底', npy: 'sì diǎn dǐ', means: 'fire.', see: '热 照 然 熊', how: 'In old writing it was 點: black (黑) and 占 (the sound), a small black dot. Today the dots (灬) are its radical. 一点儿 = a little; 点心 = snack; 三点 = three o’clock.' },
-  { c: '务', parts: ['夂', '力'], r: 0, rad: '夂', name: '折文', npy: 'zhé wén', means: 'a foot walking. As a radical it does not add a meaning.', see: '冬 处 条 备', how: '夂 on top and strength (力) below: work you have to do. 家务 = housework; 服务 = service.' },
+  { c: '务', parts: ['夂', '力'], r: 1, rad: '力', name: '力字底', npy: 'lì zì dǐ', means: 'strength.', see: '加 动 助 努 勇', how: '夂 on top and strength (力) below: work you have to do. 家务 = housework; 服务 = service.' },
   { c: '活', parts: ['氵', '舌'], r: 0, rad: '氵', name: '三点水', npy: 'sān diǎn shuǐ', means: 'water.', see: '河 江 洗 湖', how: 'Water (氵) and 舌. 活 = alive; work: 活动 = activity; 生活 = life; 干活 = do work.' },
   { c: '快', parts: ['忄', '夬'], r: 0, rad: '忄', name: '竖心旁', npy: 'shù xīn páng', means: 'the heart; feelings.', see: '怕 忙 情 慢', how: 'The heart (忄); 夬 (guài) helps with the sound, as in 块 and 筷. 快 = fast; happy: 快乐 = happy; 快点儿 = hurry up.' },
   { c: '乐', parts: ['乐'], r: 0, rad: '丿', name: '撇', npy: 'piě', means: 'a falling stroke. As a radical it does not add a meaning.', see: '九 久 么 午', how: 'In old writing it was 樂. Some say it showed strings on a wooden stand: music. Said lè it means happy: 快乐 = happy. Said yuè it means music: 音乐.' }
@@ -816,8 +816,8 @@ var GROUPS = [CHARS.slice(0, 5), CHARS.slice(5, 10), CHARS.slice(10)];
 var WORDS = [
   { w: '放假', k: 1, py: 'fàngjià', en: 'school is out', e: '🎒', no: ['洋'] }, { w: '假期', k: 0, py: 'jiàqī', en: 'vacation', e: '🏖️', no: ['活'] },
   { w: '以后', k: 0, py: 'yǐhòu', en: 'after, later', e: '⏩' }, { w: '可以', k: 1, py: 'kěyǐ', en: 'can, may', e: '👍', no: ['乐'] },
-  { w: '旅游', k: 0, py: 'lǚyóu', en: 'sightseeing, travel', e: '🗺️' }, { w: '旅行', k: 0, py: 'lǚxíng', en: 'trip, travel', e: '🧳' },
-  { w: '动物', k: 1, py: 'dòngwù', en: 'animal', e: '🦀' }, { w: '礼物', k: 1, py: 'lǐwù', en: 'gift', e: '🎁' },
+  { w: '旅游', k: 0, py: 'lǚyóu', en: 'sightseeing, travel', e: '🗺️' }, { w: '旅行', k: 0, py: 'lǚxíng', en: 'trip, travel', e: '🧳', no: ['洋'] },
+  { w: '动物', k: 1, py: 'dòngwù', en: 'animal', e: '🦀' }, { w: '礼物', k: 1, py: 'lǐwù', en: 'gift', e: '🎁', no: ['乐'] },
   { w: '大海', k: 1, py: 'dàhǎi', en: 'the sea', e: '🌊', no: ['洋', '公'] }, { w: '海边', k: 0, py: 'hǎibiān', en: 'seaside', e: '🏖️' },
   { w: '海洋', k: 1, py: 'hǎiyáng', en: 'the ocean', e: '🐋', no: ['泳'] }, { w: '公园', k: 0, py: 'gōngyuán', en: 'park', e: '🏞️', no: ['乐'] },
   { w: '外公', k: 1, py: 'wàigōng', en: 'Grandpa (Mom’s dad)', e: '👴', no: ['海', '快', '务', '洋'] }, { w: '游泳', k: 1, py: 'yóuyǒng', en: 'swim', e: '🏊', no: ['乐'] },
@@ -853,7 +853,7 @@ var PATTERN = [
   { t: 'pick', from: '爷爷打算明天去钓鱼。（use 想）', a: '爷爷明天想去钓鱼。', no: ['爷爷明天去钓鱼想。', '爷爷明天去钓想鱼。'], en: 'Grandpa wants to go fishing tomorrow.' },
   { t: 'build', tiles: ['弟弟', '想', '学', '画画'], ok: ['弟弟想学画画。'], en: 'My little brother wants to learn to draw.' },
   { t: 'pick', from: '妹妹很喜欢小兔子，她要养一只。（use 想）', a: '妹妹想养一只小兔子。', no: ['妹妹养想一只小兔子。', '妹妹养一只想小兔子。'], en: 'My little sister wants to keep a bunny.' },
-  { t: 'build', tiles: ['周末', '我们', '想', '去', '看电影'], ok: ['周末我们想去看电影。', '我们周末想去看电影。', '我们想周末去看电影。'], en: 'This weekend we want to go and see a movie.' },
+  { t: 'build', tiles: ['晚饭后', '我们', '想', '去', '散步'], ok: ['晚饭后我们想去散步。', '我们晚饭后想去散步。', '我们想晚饭后去散步。'], en: 'After dinner we want to go for a walk.' },
   { t: 'build', tiles: ['大家', '都', '想', '喝', '冷饮'], ok: ['大家都想喝冷饮。'], en: 'Everyone wants a cold drink.' }
 ];
 /* level 4: our own letter to Grandma about getting ready for the seaside trip, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的奶奶：" */
@@ -870,7 +870,7 @@ var SENTENCES = [
   { s: '妈妈说，＿的时候一定要有大人陪着。', a: '游泳', no: ['点心', '海洋'], en: 'Mom says a grown-up must always be with us when we swim.' },
   { s: '海边还有很多好玩的＿，比如放风筝、堆沙子。', a: '活动', no: ['以后', '可以'], en: 'There are lots of fun things to do at the seaside too, like flying kites and building with sand.' },
   { s: '妈妈也给我们带了很多好吃的＿。', a: '点心', no: ['大海', '以后'], en: 'Mom also packed lots of tasty snacks for us.' },
-  { s: '弟弟说，这一定是他最＿的一个假期。', a: '快乐', no: ['海边', '礼物'], en: 'My brother says this is sure to be his happiest vacation ever.' },
+  { s: '弟弟说，明天他一定会玩得很＿。', a: '快乐', no: ['海边', '礼物'], en: 'My brother says he is sure to have a great time tomorrow.' },
   { s: '奶奶，我们回家＿，就去看您。', a: '以后', no: ['海洋', '点心'], en: 'Grandma, after we get home, we will come and see you.' },
   { s: '我们＿给您带一些漂亮的贝壳吗？', a: '可以', no: ['公园', '海洋'], en: 'May we bring you some pretty shells?' }
 ];
@@ -884,7 +884,7 @@ var STORY = { title: '去海边', en: 'Off to the seaside', lines: [
   { who: '👦 弟弟', s: '我扫地，姐姐擦桌子，一点儿也不难！', py: 'Wǒ sǎo dì, jiějie cā zhuōzi, yìdiǎnr yě bù nán!', en: 'I’ll sweep the floor and my big sister will wipe the table. It’s not hard at all!' },
   { who: '👧 我', s: '书上说海洋里有好多动物，海边能看到小螃蟹吗？', py: 'Shū shang shuō hǎiyáng li yǒu hǎoduō dòngwù, hǎibiān néng kàndào xiǎo pángxiè ma?', en: 'The book says there are lots of animals in the ocean. Can we see little crabs at the seaside?' },
   { who: '👩 妈妈', s: '能！不过下水游泳的时候，一定要有大人陪着。', py: 'Néng! Búguò xià shuǐ yóuyǒng de shíhou, yídìng yào yǒu dàren péizhe.', en: 'Yes! But when you go in the water to swim, a grown-up must always be with you.' },
-  { who: '👦 弟弟', s: '太好了！这一定是最快乐的假期！', py: 'Tài hǎo le! Zhè yídìng shì zuì kuàilè de jiàqī!', en: 'Hooray! This is going to be the happiest vacation ever!' }
+  { who: '👦 弟弟', s: '太好了！明天我们一定会玩得很快乐！', py: 'Tài hǎo le! Míngtiān wǒmen yídìng huì wán de hěn kuàilè!', en: 'Hooray! We’re going to have so much fun tomorrow!' }
 ] };
 
 /* ---------- this lesson's settings: the shared engine (../_engine/chinese-engine.js) reads them ---------- */
@@ -895,7 +895,7 @@ var LESSON = {
   levels: [
     { title: 'Meet the characters', zh: '认生字', text: 'Meet 14 new characters, then find each one among the shell cards.' },
     { title: 'Build the words', zh: '组词', text: 'Each word is missing one character. Pick the right shell card.' },
-    { title: 'Sentence pattern', zh: '句型 我想……', text: 'Learn to say what someone would like to do with 想: 我想吃冰淇淋 (I’d like some ice cream). Pick the right one, then build your own from word tiles.' },
+    { title: 'Sentence pattern', zh: '句型 谁想……', text: 'Learn to say what someone would like to do with 想: 我想吃冰淇淋 (I’d like some ice cream). Pick the right one, then build your own from word tiles.' },
     { title: 'Write the letter', zh: '写信', text: 'Finish our letter to Grandma about the seaside trip: pick the missing word in each sentence, then send it.' },
     { title: 'Seaside Bingo', zh: '海边 Bingo', text: 'Listen, then mark what you hear on your card. Make a line, then two lines, then fill the card.' }
   ],

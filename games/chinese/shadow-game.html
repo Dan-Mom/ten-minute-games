@@ -782,7 +782,7 @@ var PARTS = [
   { c: '也', parts: ['也'], r: 0, rad: '乙', name: '乙字', npy: 'yǐ zì', means: 'a bent stroke. As a radical it does not add a meaning.', see: '乞 买 书 了', how: '也 = also, too: 我也去 = I’m going too; 也许 = maybe.' },
   { c: '为', parts: ['为'], r: 0, rad: '丶', name: '点', npy: 'diǎn', means: 'one dot. As a radical it does not add a meaning.', see: '主 之 丸 义', how: 'In old writing it was 為: a hand leading an elephant to work. 为什么 = why; 因为 = because.' },
   { c: '什', parts: ['亻', '十'], r: 0, rad: '亻', name: '单人旁', npy: 'dān rén páng', means: 'a person. It is in characters about people.', see: '你 他 们 住', how: 'A person (亻) and 十. 什么 = what.' },
-  { c: '么', parts: ['么'], r: 0, rad: '丿', name: '撇', npy: 'piě', means: 'a falling stroke. As a radical it does not add a meaning.', see: '九 久 乐 午', how: 'Long ago 么 was another way to write 幺 (yāo, small). Today 么 is the end of question words: 什么 = what; 怎么 = how. It is said lightly: me.' },
+  { c: '么', parts: ['么'], r: 0, rad: '丿', name: '撇', npy: 'piě', means: 'a falling stroke. As a radical it does not add a meaning.', see: '九 久 乐 午', how: 'Long ago 么 was another way to write 幺 (yāo, small). Today 么 ends words like 什么 (what), 怎么 (how) and 那么 (so). It is said lightly: me.' },
   { c: '很', parts: ['彳', '艮'], r: 0, rad: '彳', name: '双人旁', npy: 'shuāng rén páng', means: 'walking on a road.', see: '往 行 街 得', how: 'A road (彳) and 艮. 很 = very: 很多 = many; 很好 = very good.' },
   { c: '远', parts: ['辶', '元'], r: 0, rad: '辶', name: '走之底', npy: 'zǒu zhī dǐ', means: 'walking, going.', see: '这 过 近 还', how: 'Walking (辶); 元 gives the sound (yuán, yuǎn). 远 = far: 很远 = very far; 永远 = forever.' },
   { c: '哪', parts: ['口', '那'], r: 0, rad: '口', name: '口字旁', npy: 'kǒu zì páng', means: 'a mouth. It is in characters about speaking.', see: '吃 叫 唱 吗', how: 'A mouth (口) and 那 (that), which gives the sound. 哪 = which: 哪里 = where; 哪儿 = where.' },
@@ -830,7 +830,7 @@ var MORE_WORDS = {
   '跟': [{ w: '跟我来', py: 'gēn wǒ lái', en: 'come with me' }],
   '也': [{ w: '我也是', py: 'wǒ yě shì', en: 'me too' }],
   '为': [{ w: '为了', py: 'wèile', en: 'in order to' }],
-  '什': [{ w: '干什么', py: 'gàn shénme', en: 'do what' }],
+  '什': [{ w: '干什么', py: 'gàn shénme', en: 'what (are you) doing' }],
   '么': [{ w: '那么', py: 'nàme', en: 'so, like that' }],
   '很': [{ w: '很好', py: 'hěn hǎo', en: 'very good' }],
   '远': [{ w: '很远', py: 'hěn yuǎn', en: 'very far' }],
@@ -844,7 +844,7 @@ var MORE_WORDS = {
    show = the explanation card, pick = the right sentence (a = right, no = wrong ones), build = tap the words in order (ok = every right order) */
 var PATTERN = [
   { t: 'show', shape: '哪儿／什么／谁 ＋ 都 ＋ ……', keys: ['都'], end: '。', ask: 'Which one is right? Look at where 都 is.',
-    what: 'Put 都 after a question word (usually right after it) to mean “every…”: 哪儿都 = everywhere, 什么都 = everything, 谁都 = everyone. 弟弟什么都想吃 = my little brother wants to eat everything. With 不 it means none: 我哪儿都不想去 = I don’t want to go anywhere.',
+    what: 'Put 都 after a question word (usually right after it) to mean “every…”: 哪儿都 = everywhere, 什么都 = everything, 谁都 = everyone. 弟弟什么都想吃 = my little brother wants to eat everything. With 不 it means none: 他什么都不说 = he won’t say anything.',
     ex: [{ s: '弟弟什么都想吃。', en: 'My little brother wants to eat everything.' }, { s: '谁都喜欢这只小狗。', en: 'Everyone likes this puppy.' }, { s: '我哪儿都找过了。', en: 'I’ve looked everywhere.' }] },
   { t: 'pick', from: '每个人都认识他。（use 谁都）', a: '谁都认识他。', no: ['谁认识他都。', '谁认识都他。'], en: 'Everyone knows him.' },
   { t: 'build', tiles: ['她', '什么', '都', '不怕'], ok: ['她什么都不怕。', '什么她都不怕。'], en: 'She isn’t afraid of anything.' },
@@ -854,13 +854,13 @@ var PATTERN = [
 ];
 /* level 4: our own letter to Grandpa about the shadow game, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的爷爷：" */
 var SENTENCES = [
-  { s: '昨天晚上天上没有＿，可是小区里的路灯很亮。', a: '月亮', no: ['因为', '觉得'], en: 'Last night there was no moon in the sky, but the street lamps in our neighborhood were bright.' },
+  { s: '今天晚上天上没有＿，可是小区里的路灯很亮。', a: '月亮', no: ['因为', '觉得'], en: 'Tonight there was no moon in the sky, but the street lamps in our neighborhood were bright.' },
   { s: '爸爸带我们玩踩影子的游戏，弟弟高兴得不知道先做＿。', a: '什么', no: ['首都', '永远'], en: 'Dad played step-on-the-shadow with us, and my little brother was so happy he didn’t know what to do first.' },
   { s: '弟弟先来踩我的影子，他问我：“你的影子跑到＿去了？”', a: '哪里', no: ['明天', '聪明'], en: 'My brother tried to step on my shadow first. He asked me, “Where has your shadow run off to?”' },
   { s: '我的影子在我后面，弟弟＿也踩不到。', a: '怎么', no: ['首都', '地方'], en: 'My shadow was behind me, and however hard he tried, my brother couldn’t step on it.' },
   { s: '弟弟举起手，影子也举起手；他学小兔子跳，影子也＿他跳。', a: '跟着', no: ['首都', '永远'], en: 'My brother raised his hand, and his shadow raised its hand; he hopped like a bunny, and his shadow hopped with him.' },
   { s: '我站到路灯下面，＿的影子一下子变短了。', a: '地上', no: ['因为', '怎么'], en: 'I stood right under the lamp, and my shadow on the ground suddenly got short.' },
-  { s: '弟弟走得离路灯越来越远，他觉得很奇怪：影子＿变得这么长？', a: '为什么', no: ['首都', '地方'], en: 'My brother walked farther and farther from the lamp and wondered: why did his shadow get so long?' },
+  { s: '弟弟离路灯越走越远，他觉得很奇怪：影子＿变得这么长？', a: '为什么', no: ['首都', '地方'], en: 'My brother walked farther and farther from the lamp and wondered: why did his shadow get so long?' },
   { s: '爸爸没有马上告诉我们，他笑着问：“你们＿呢？”', a: '觉得', no: ['永远', '因为'], en: 'Dad didn’t tell us right away. He smiled and asked, “What do you think?”' },
   { s: '我想，＿是因为我离路灯近，光从头上照下来，影子就短了。', a: '也许', no: ['首都', '地上'], en: 'I think maybe it’s because when I am close to the lamp, the light shines down from above my head, so the shadow is short.' },
   { s: '弟弟说，大人和小孩的影子＿黑色的。', a: '都是', no: ['明天', '怎么'], en: 'My brother says grown-ups’ and children’s shadows are all black.' },

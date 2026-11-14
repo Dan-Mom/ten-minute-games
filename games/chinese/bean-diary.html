@@ -773,7 +773,7 @@ var CHARS = [
   { c: '树', py: 'shù', en: 'tree', e: '🌳' }, { c: '瓜', py: 'guā', en: 'melon', e: '🍉' },
   { c: '伸', py: 'shēn', en: 'stretch out', e: '🙆' }, { c: '泥', py: 'ní', en: 'mud', e: '🟤' },
   { c: '怕', py: 'pà', en: 'be afraid', e: '😨' }, { c: '吹', py: 'chuī', en: 'blow', e: '🌬️' },
-  { c: '打', py: 'dǎ', en: 'hit; play; tie', e: '🏓' }, { c: '结', py: 'jié', en: 'tie; (said jiē) bear fruit', e: '🎀' }
+  { c: '打', py: 'dǎ', en: 'hit; play; tie', e: '🏓' }, { c: '结', py: 'jiē', en: 'bear (fruit, seeds); (said jié) tie', e: '🎀' }
 ];
 /* level 1: how each character is built. parts = the pieces (r = which piece is the radical; rest = a piece described in words),
    rad = the radical (部首) with its name, what it usually means, and other characters where you can see it; how = the meaning */
@@ -791,7 +791,7 @@ var PARTS = [
   { c: '怕', parts: ['忄', '白'], r: 0, rad: '忄', name: '竖心旁', npy: 'shù xīn páng', means: 'the heart; feelings.', see: '快 忙 情 慢', how: 'The heart (忄); 白 gives the sound. 怕 = be afraid: 害怕 = scared; 不怕 = not afraid.' },
   { c: '吹', parts: ['口', '欠'], r: 0, rad: '口', name: '口字旁', npy: 'kǒu zì páng', means: 'a mouth.', see: '吃 叫 唱 听', how: 'A mouth (口) and 欠, a person with an open mouth: blowing! 吹风 = be out in the wind; 吹气 = blow air.' },
   { c: '打', parts: ['扌', '丁'], r: 0, rad: '扌', name: '提手旁', npy: 'tí shǒu páng', means: 'a hand.', see: '拉 拍 找 拾', how: 'A hand (扌) and 丁. 打 = hit; play; tie: 打球 = play ball; 打结 = tie a knot; 打开 = open.' },
-  { c: '结', parts: ['纟', '吉'], r: 0, rad: '纟', name: '绞丝旁', npy: 'jiǎo sī páng', means: 'silk, thread.', see: '红 绿 线 给', how: 'Silk thread (纟); 吉 gives the sound (jí, jié). 结 = tie: 打结 = tie a knot; 结果 = result. Said jiē it means bear fruit: 结出豆子 = grow beans.' }
+  { c: '结', parts: ['纟', '吉'], r: 0, rad: '纟', name: '绞丝旁', npy: 'jiǎo sī páng', means: 'silk, thread.', see: '红 绿 线 给', how: 'Silk thread (纟); 吉 gives the sound (jí, jié). Said jiē it means bear fruit: 结出豆子 = grow beans. Said jié it means tie: 打结 = tie a knot; 结果 = result.' }
 ];
 /* level 1: each character long ago (public-domain drawings from Wikimedia Commons, Ancient Chinese characters project, in ancient/).
    kind = which old script; rad = when the character itself has no old form, its radical is shown instead (form = the old character drawn);
@@ -883,7 +883,7 @@ var STORY = { title: '豆芽日记', en: 'The bean sprout diary', lines: [
   { who: '👧 我', s: '妈妈，老师让我们在家种豆子，每天写观察日记。', py: 'Māma, lǎoshī ràng wǒmen zài jiā zhòng dòuzi, měi tiān xiě guānchá rìjì.', en: 'Mom, our teacher wants us to grow beans at home and write an observation diary every day.' },
   { who: '👩 妈妈', s: '好啊！你想种在泥土里，还是放在湿棉花上？', py: 'Hǎo a! Nǐ xiǎng zhòng zài nítǔ li, háishi fàng zài shī miánhua shang?', en: 'Great! Do you want to plant them in soil, or put them on wet cotton balls?' },
   { who: '👦 弟弟', s: '种在泥土里吧！我要帮忙浇水！', py: 'Zhòng zài nítǔ li ba! Wǒ yào bāngmáng jiāo shuǐ!', en: 'Plant them in the soil! I want to help water them!', pat: true },
-  { who: '👧 我', s: '过了五天，豆子发芽了，小芽从泥里伸出头来了！', py: 'Guòle wǔ tiān, dòuzi fā yá le, xiǎo yá cóng ní li shēnchū tóu lai le!', en: 'Five days later the beans sprouted, and a little shoot poked its head out of the mud!' },
+  { who: '👧 我', s: '过了五天，豆子发芽了！小芽伸出头来，像在跟我们说早上好。', py: 'Guòle wǔ tiān, dòuzi fā yá le! Xiǎo yá shēnchū tóu lai, xiàng zài gēn wǒmen shuō zǎoshang hǎo.', en: 'Five days later the beans sprouted! A little shoot poked its head out, as if saying good morning to us.' },
   { who: '👦 弟弟', s: '我们把它放到窗台上，让窗外的大树陪着它。', py: 'Wǒmen bǎ tā fàngdào chuāngtái shang, ràng chuāng wài de dà shù péizhe tā.', en: 'Let’s put it on the windowsill so the big tree outside can keep it company.' },
   { who: '👩 妈妈', s: '小心，今天风很大，别让风把小苗吹倒了。', py: 'Xiǎoxīn, jīntiān fēng hěn dà, bié ràng fēng bǎ xiǎo miáo chuīdǎo le.', en: 'Careful, it’s very windy today. Don’t let the wind blow the little plant over.' },
   { who: '👧 我', s: '不怕！我用一根小竹签扶着它，再用线打一个结。', py: 'Bú pà! Wǒ yòng yì gēn xiǎo zhúqiān fúzhe tā, zài yòng xiàn dǎ yí ge jié.', en: 'Don’t worry! I’ll prop it up with a little bamboo stick and tie it with a thread.' },

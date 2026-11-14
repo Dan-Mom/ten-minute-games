@@ -781,12 +781,12 @@ var PARTS = [
   { c: '岁', parts: ['山', '夕'], r: 0, rad: '山', name: '山字头', npy: 'shān zì tóu', means: 'a mountain.', see: '岸 岩 崇 崖', how: 'A mountain (山) on top and 夕 below. 岁 counts years of age: 七十岁 = seventy years old. 岁数 = age.' },
   { c: '昨', parts: ['日', '乍'], r: 0, rad: '日', name: '日字旁', npy: 'rì zì páng', means: 'the sun; time.', see: '明 晚 时 晴', how: 'The sun (日) shows it is about time; 乍 gives the sound (zhà, zuó). 昨天 = yesterday.' },
   { c: '给', parts: ['纟', '合'], r: 0, rad: '纟', name: '绞丝旁', npy: 'jiǎo sī páng', means: 'silk, thread.', see: '红 绿 线 纸', how: 'Silk thread (纟) and 合. Some say it first meant having enough thread. Today 给 means give: 送给 = give as a present.' },
-  { c: '蛋', parts: ['', '虫'], rest: 'top: 疋', r: 1, rad: '虫', name: '虫字底', npy: 'chóng zì dǐ', means: 'insects and small creatures.', see: '蚕 蟹 蛰', how: '蛋 = egg: 鸡蛋 = hen’s egg; 蛋糕 = cake. A trick: a little creature (虫) is at the bottom, as baby animals hatch from eggs.' },
+  { c: '蛋', parts: ['', '虫'], rest: 'top: 疋', r: 1, rad: '虫', name: '虫字底', npy: 'chóng zì dǐ', means: 'insects and small creatures.', see: '蚕 蜜 蟹 蛰', how: '蛋 = egg: 鸡蛋 = hen’s egg; 蛋糕 = cake. A trick: a little creature (虫) is at the bottom, as baby animals hatch from eggs.' },
   { c: '包', parts: ['勹', '巳'], r: 0, rad: '勹', name: '包字头', npy: 'bāo zì tóu', means: 'wrapping around.', see: '句 勾 匀 勿', how: 'Long ago 包 was a baby (巳) wrapped up inside its mother (勹). 包 = wrap; bag: 书包 = schoolbag; 面包 = bread.' },
-  { c: '果', parts: ['田', '木'], r: 1, rad: '木', name: '木字底', npy: 'mù zì dǐ', means: 'a tree, wood.', see: '架 染 桌', how: 'Long ago 果 was a tree (木) with fruit on top. 水果 = fruit; 苹果 = apple.' },
+  { c: '果', parts: ['田', '木'], r: 1, rad: '木', name: '木字底', npy: 'mù zì dǐ', means: 'a tree, wood.', see: '架 染 桌 案', how: 'Long ago 果 was a tree (木) with fruit on top. 水果 = fruit; 苹果 = apple.' },
   { c: '玩', parts: ['王', '元'], r: 0, rad: '王', name: '王字旁', npy: 'wáng zì páng', means: 'jade (on the left, 王 comes from 玉).', see: '现 球 理 珠', how: 'Jade (王); 元 gives the sound (yuán, wán). Long ago 玩 meant to play with jade. 玩具 = toy; 好玩 = fun.' },
   { c: '具', parts: ['', '八'], rest: 'top: 目 with a line below', r: 1, rad: '八', name: '八字底', npy: 'bā zì dǐ', means: 'the number eight; here two hands at the bottom.', see: '共 兵 典 其', how: 'Long ago 具 showed two hands (the bottom) holding up a cooking pot. 具 = tool: 玩具 = toy; 文具 = stationery.' },
-  { c: '哥', parts: ['哥'], r: 0, rad: '一', name: '横', npy: 'héng', means: 'one line across. As a radical it does not add a meaning.', see: '三 七 下 不', how: 'Two 可 one above the other. 哥哥 = big brother.' },
+  { c: '哥', parts: ['', '可'], rest: 'top: 可', r: 0, rad: '一', name: '横', npy: 'héng', means: 'one line across. As a radical it does not add a meaning.', see: '三 七 下 不', how: 'Two 可, one above the other; the radical is its first stroke 一. 哥哥 = big brother.' },
   { c: '姐', parts: ['女', '且'], r: 0, rad: '女', name: '女字旁', npy: 'nǚ zì páng', means: 'a woman or girl.', see: '妈 奶 好 她', how: 'A woman (女); 且 gives the sound (qiě, jiě). 姐姐 = big sister.' },
   { c: '张', parts: ['弓', '长'], r: 0, rad: '弓', name: '弓字旁', npy: 'gōng zì páng', means: 'a bow (for shooting arrows).', see: '引 强 弹 弦', how: 'A bow (弓); 长 gives the sound (cháng, zhāng). Long ago 张 meant to draw a bow. It counts flat things: 一张卡 = one card; 张开 = open wide.' },
   { c: '卡', parts: ['上', '卜'], r: 1, rad: '卜', name: '卜字', npy: 'bǔ zì', means: 'fortune-telling cracks long ago.', see: '占 卦', how: '卡 = card: 卡片 = card; 卡车 = truck. A trick: 上 on top and 下 below, so 卡 is stuck in between! When it means stuck, it is often read qiǎ.' },
@@ -847,8 +847,8 @@ var MORE_WORDS = {
    show = the explanation card, pick = the right sentence (a = right, no = wrong ones), build = tap the words in order (ok = every right order) */
 var PATTERN = [
   { t: 'show', shape: '谁 ＋ 做了 ＋ 什么', keys: ['了'], end: '。', ask: 'Which one is right? Look at where 了 is.',
-    what: 'To say what someone did, put 了 right after the doing word, then the thing: 弟弟吃了两个包子 = my little brother ate two buns. 了 at the very end (我写两封信了) means “already”; here, put it after the doing word.',
-    ex: [{ s: '弟弟吃了两个包子。', en: 'My little brother ate two buns.' }, { s: '我们看了一场电影。', en: 'We watched a film.' }, { s: '奶奶种了很多花。', en: 'Grandma planted lots of flowers.' }] },
+    what: 'To say what someone did, put 了 right after the doing word, then the thing: 弟弟吃了两个包子 = my little brother ate two buns. 了 at the very end (我吃饱了) means something has changed; here, put it after the doing word.',
+    ex: [{ s: '弟弟吃了两个包子。', en: 'My little brother ate two buns.' }, { s: '我们看了一场电影。', en: 'We watched a movie.' }, { s: '奶奶种了很多花。', en: 'Grandma planted lots of flowers.' }] },
   { t: 'pick', from: '小狗喝一碗水。（it already happened）', a: '小狗喝了一碗水。', no: ['小狗了喝一碗水。', '小狗喝一碗了水。'], en: 'The puppy drank a bowl of water.' },
   { t: 'build', tiles: ['我', '写', '了', '两封信'], ok: ['我写了两封信。', '我写两封信了。'], en: 'I wrote two letters.' },
   { t: 'pick', from: '爷爷讲一个故事。（it already happened）', a: '爷爷讲了一个故事。', no: ['爷爷了讲一个故事。', '爷爷讲一个了故事。'], en: 'Grandpa told a story.' },
@@ -871,8 +871,8 @@ var SENTENCES = [
   { s: '快结束的时候，连最后一杯＿也卖掉了。', a: '果汁', no: ['张开', '唱歌'], en: 'Near the end, even the very last cup of juice was sold.' },
   { s: '妈妈说，下次我们还可以卖一些用不着的＿，比如彩笔和尺子。', a: '文具', no: ['鸡蛋', '合唱'], en: 'Mom says next time we could also sell some stationery we don’t need, like colored pens and rulers.' },
   { s: '义卖的钱都捐给了小动物之家，弟弟说义卖比去公园还＿！', a: '好玩', no: ['卡片', '岁数'], en: 'All the money went to an animal shelter. My little brother says the sale was even more fun than going to the park!' },
-  { s: '回家的路上，我们去超市买了您爱吃的＿。', a: '水果', no: ['卡车', '唱歌'], en: 'On the way home we went to the supermarket and bought the fruit you like.' },
-  { s: '爸爸还顺便去菜市场＿，晚上给我们做了鱼。', a: '买菜', no: ['卡片', '唱歌'], en: 'Dad also stopped at the market to buy groceries and cooked fish for us in the evening.' }
+  { s: '回家的路上，我们去超市挑了您爱吃的＿。', a: '水果', no: ['卡车', '唱歌'], en: 'On the way home we went to the supermarket and picked out the fruit you like.' },
+  { s: '爸爸还顺便去菜市场＿，晚上给我们做了西红柿炒鸡蛋。', a: '买菜', no: ['卡片', '唱歌'], en: 'Dad also stopped at the market to buy groceries and made us tomato and egg stir-fry in the evening.' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
    s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */

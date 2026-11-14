@@ -780,9 +780,9 @@ var PARTS = [
   { c: '江', parts: ['氵', '工'], r: 0, rad: '氵', name: '三点水', npy: 'sān diǎn shuǐ', means: 'water.', see: '河 海 洗 湖', how: 'Water (氵); 工 gives the sound (gōng, jiāng). 江 = a big river: 江边 = riverside; 长江 = the Yangtze River.' },
   { c: '古', parts: ['十', '口'], r: 0, rad: '十', name: '十字', npy: 'shí zì', means: 'ten.', see: '南 直 克 博', how: 'Some say: ten (十) mouths (口) passing a story down, one after another, for a very long time. 古 = ancient, old: 古老 = ancient; 古代 = ancient times.' },
   { c: '国', parts: ['囗', '玉'], r: 0, rad: '囗', name: '国字框', npy: 'guó zì kuàng', means: 'a border all the way round.', see: '四 回 园 图', how: 'A border (囗) round 玉 (jade, a treasure). In old writing it was 國. 国 = country: 中国 = China; 外国 = a foreign country.' },
-  { c: '条', parts: ['夂', '木'], r: 0, rad: '夂', name: '折文', npy: 'zhé wén', means: 'a foot walking. As a radical it does not add a meaning.', see: '冬 处 务 备', how: 'In old writing it was 條: a long thin branch of a tree (木). 条 counts long thin things: 一条鱼 = a fish; 一条河 = a river; 面条 = noodles.' },
+  { c: '条', parts: ['夂', '木'], r: 0, rad: '夂', name: '折文', npy: 'zhé wén', means: 'a foot walking. As a radical it does not add a meaning.', see: '冬 处 备 夏', how: 'In old writing it was 條: a long thin branch of a tree (木). 条 counts long thin things: 一条鱼 = a fish; 一条河 = a river; 面条 = noodles.' },
   { c: '它', parts: ['宀', '匕'], r: 0, rad: '宀', name: '宝盖头', npy: 'bǎo gài tóu', means: 'a roof.', see: '家 字 安 室', how: 'Long ago 它 was a drawing of a snake. Today 它 = it, for animals and things: 它们 = they (not people).' },
-  { c: '名', parts: ['夕', '口'], r: 0, rad: '夕', name: '夕字旁', npy: 'xī zì páng', means: 'evening.', see: '多 外 够', how: 'Some say: in the evening dark (夕) people cannot see you, so you call out (口) your name. 名字 = name; 有名 = famous.' },
+  { c: '名', parts: ['夕', '口'], r: 0, rad: '夕', name: '夕字', npy: 'xī zì', means: 'evening.', see: '多 外 够 梦', how: 'Some say: in the evening dark (夕) people cannot see you, so you call out (口) your name. 名字 = name; 有名 = famous.' },
   { c: '叫', parts: ['口', '丩'], r: 0, rad: '口', name: '口字旁', npy: 'kǒu zì páng', means: 'a mouth. It is in characters about speaking.', see: '吃 唱 听 吗', how: 'A mouth (口); 丩 gives the sound (jiū, jiào). 叫 = call; be called: 我叫… = my name is…; 叫做 = be called.' },
   { c: '长', parts: ['长'], r: 0, rad: '长', name: '长字旁', npy: 'cháng zì páng', means: 'long. It is a radical of its own (old forms 長, 镸).', see: '長 镸', how: 'Long ago 长 showed a person with very long hair. Said cháng it means long: 很长 = very long; 长短 = length. Said zhǎng it means grow: 长大 = grow up.' },
   { c: '最', parts: ['曰', '取'], r: 0, rad: '曰', name: '冒字头', npy: 'mào zì tóu', means: 'saying. On top of a character it looks like a flat 日.', see: '冒 曼', how: '曰 on top and 取 (take) below. 最 = most: 最好 = best; 最后 = last.' },
@@ -852,7 +852,7 @@ var PATTERN = [
     ex: [{ s: '小猫从沙发跳到地上。', en: 'The kitten jumped from the sofa to the floor.' }, { s: '我们从一楼爬到了五楼。', en: 'We climbed from the first floor to the fifth floor.' }, { s: '爸爸从早上忙到晚上。', en: 'Dad is busy from morning till night.' }] },
   { t: 'pick', from: '小鸭子游过了小河。（use 从…到…）', a: '小鸭子从这边游到那边。', no: ['小鸭子到这边游从那边。', '小鸭子游从这边到那边。'], en: 'The duckling swam from this side to that side.' },
   { t: 'build', tiles: ['蚂蚁', '从', '门口', '爬到', '厨房'], ok: ['蚂蚁从门口爬到厨房。'], en: 'The ants crawled from the doorway to the kitchen.' },
-  { t: 'pick', from: '弟弟早上玩，晚上还在玩。（use 从…到…）', a: '弟弟从早上玩到晚上。', no: ['弟弟到早上玩从晚上。', '从弟弟早上玩到晚上。'], en: 'My little brother plays from morning till night.' },
+  { t: 'pick', from: '爷爷九点看报，十点看完。（use 从…到…）', a: '爷爷从九点看到十点。', no: ['爷爷到九点看从十点。', '从爷爷九点看到十点。'], en: 'Grandpa read from nine to ten o’clock.' },
   { t: 'build', tiles: ['小船', '从', '桥下', '漂到', '岸边'], ok: ['小船从桥下漂到岸边。'], en: 'The little boat drifted from under the bridge to the bank.' },
   { t: 'build', tiles: ['弟弟', '从', '一', '数到', '一百'], ok: ['弟弟从一数到一百。'], en: 'My little brother counted from one to a hundred.' }
 ];
@@ -861,7 +861,7 @@ var SENTENCES = [
   { s: '上个星期天，爸爸带我和弟弟去＿公园参加纸船比赛。', a: '江边', no: ['面条', '父母'], en: 'Last Sunday, Dad took my little brother and me to the riverside park for a paper boat race.' },
   { s: '比赛以前，我们要给自己的船起一个＿。', a: '名字', no: ['古代', '接着'], en: 'Before the race, we had to give our boats names.' },
   { s: '弟弟的船上画着一条小龙，所以他的船就＿“小龙”。', a: '叫做', no: ['面条', '长短'], en: 'My brother’s boat has a little dragon drawn on it, so his boat is called “Little Dragon”.' },
-  { s: '我们比了比两条船的＿，弟弟的船比我的长一点儿。', a: '长短', no: ['从前', '华人'], en: 'We compared how long our two boats were. My brother’s boat is a little longer than mine.' },
+  { s: '我们比了比两条船的＿，弟弟的船比我的长一点儿。', a: '长短', no: ['从前', '华人'], en: 'We compared how long our two boats were. My brother’s boat was a little longer than mine.' },
   { s: '那天来了很多华人小朋友，还有一些＿游客在看比赛。', a: '外国', no: ['长短', '接着'], en: 'Lots of Chinese kids came that day, and some visitors from other countries watched the race.' },
   { s: '小船要从一座＿的石桥下面出发，漂到大柳树旁边。', a: '古老', no: ['父母', '面条'], en: 'The boats had to start from under an old stone bridge and drift to a big willow tree.' },
   { s: '我们把船轻轻地放进小河里，＿就慢慢地漂走了。', a: '它们', no: ['有名', '古老'], en: 'We gently put our boats into the stream, and they slowly drifted away.' },
@@ -879,7 +879,7 @@ var SENTENCES = [
    s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '纸船比赛', en: 'The paper boat race', lines: [
   { who: '👨 爸爸', s: '星期天，江边公园有纸船比赛，我们一起去参加吧！', py: 'Xīngqītiān, jiāngbiān gōngyuán yǒu zhǐchuán bǐsài, wǒmen yìqǐ qù cānjiā ba!', en: 'On Sunday there is a paper boat race at the riverside park. Let’s go and join in!' },
-  { who: '👦 弟弟', s: '我的船上画着一条小龙，它的名字就叫“小龙”！', py: 'Wǒ de chuán shang huàzhe yì tiáo xiǎo lóng, tā de míngzi jiù jiào “Xiǎo Lóng”!', en: 'My boat has a little dragon drawn on it, so its name is “Little Dragon”!' },
+  { who: '👦 弟弟', s: '我的船上画着一条小龙，所以我叫它“小龙”，这个名字好听吧？', py: 'Wǒ de chuán shang huàzhe yì tiáo xiǎo lóng, suǒyǐ wǒ jiào tā “Xiǎo Lóng”, zhège míngzi hǎotīng ba?', en: 'My boat has a little dragon drawn on it, so I call it “Little Dragon”. Nice name, right?' },
   { who: '👧 我', s: '你们看，好多华人小朋友都来了，还有外国游客在看呢！', py: 'Nǐmen kàn, hǎoduō huárén xiǎopéngyou dōu lái le, hái yǒu wàiguó yóukè zài kàn ne!', en: 'Look, lots of Chinese kids have come, and visitors from other countries are watching!' },
   { who: '👨 爸爸', s: '小船要从古老的石桥下面漂到那棵大柳树旁边。', py: 'Xiǎo chuán yào cóng gǔlǎo de shíqiáo xiàmian piāodào nà kē dà liǔshù pángbiān.', en: 'The boats will drift from under the old stone bridge to that big willow tree.', pat: true },
   { who: '👦 弟弟', s: '出发了！我的“小龙”漂得最快！', py: 'Chūfā le! Wǒ de “Xiǎo Lóng” piāo de zuì kuài!', en: 'They’re off! My “Little Dragon” is the fastest!' },

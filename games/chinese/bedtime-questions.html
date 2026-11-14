@@ -777,7 +777,7 @@ var CHARS = [
    rad = the radical (部首) with its name, what it usually means, and other characters where you can see it; how = the meaning */
 var PARTS = [
   { c: '时', parts: ['日', '寸'], r: 0, rad: '日', name: '日字旁', npy: 'rì zì páng', means: 'the sun; light and time.', see: '明 晚 晴 昨', how: 'The sun (日) for time; 寸 is short for 寺, which gave the sound in 時. 时间 = time; 小时 = hour.' },
-  { c: '夜', parts: ['亠', ''], rest: 'below: 亻 and 夕 (the moon at dusk)', r: 0, rad: '亠', name: '京字头', npy: 'jīng zì tóu', means: 'a lid on top. As a radical it does not add a meaning.', see: '京 市 交 亮', how: 'Some say 夜 is a person with the moon (夕) beside them: night. 夜里 = at night; 半夜 = midnight.' },
+  { c: '夜', parts: ['亠', ''], rest: 'below: 亻 and 夕 (the moon at dusk)', r: 0, rad: '亠', name: '京字头', npy: 'jīng zì tóu', means: 'a lid on top. As a radical it does not add a meaning.', see: '京 市 交 亮', how: 'The moon (夕) at the side shows night; the rest comes from 亦 (yì), which gave the sound. 夜里 = at night; 半夜 = midnight.' },
   { c: '光', parts: ['⺌', ''], rest: 'below: 一 and 儿', r: 0, rad: '⺌', name: '小字头', npy: 'xiǎo zì tóu', means: 'small (a form of 小).', see: '尖 当 尚', how: 'Long ago 光 was a person carrying fire on their head: light! 阳光 = sunshine; 月光 = moonlight.' },
   { c: '河', parts: ['氵', '可'], r: 0, rad: '氵', name: '三点水', npy: 'sān diǎn shuǐ', means: 'water.', see: '海 洗 江 没', how: 'Water (氵); 可 gives the sound (kě, hé). 河 = river: 小河 = stream.' },
   { c: '流', parts: ['氵', ''], rest: 'right: 㐬', r: 0, rad: '氵', name: '三点水', npy: 'sān diǎn shuǐ', means: 'water.', see: '海 洗 江 没', how: 'Water (氵) on the left. 流 = flow: 河流 = river; 流动 = flow.' },
@@ -839,10 +839,10 @@ var PATTERN = [
   { t: 'show', shape: '谁／什么 ＋ 为什么 ＋ ……？', keys: ['为什么'], end: '？', ask: 'Which one is the right question? Look at where 为什么 is.',
     what: 'To ask why, put 为什么 before the doing or describing part: 天空为什么是蓝的？ = why is the sky blue? It can also come first: 为什么小猫爱晒太阳？ Do not add 吗. To answer, start with 因为 (because).',
     ex: [{ s: '天空为什么是蓝的？', en: 'Why is the sky blue?' }, { s: '为什么小猫爱晒太阳？', en: 'Why do kittens love lying in the sun?' }, { s: '你为什么笑？', en: 'Why are you laughing?' }] },
-  { t: 'pick', from: '你哭了。（ask why）', a: '你为什么哭？', no: ['你哭为什么？', '为你什么哭？'], en: 'Why are you crying?' },
+  { t: 'pick', from: '小兔子躲在草里。（ask why）', a: '小兔子为什么躲在草里？', no: ['小兔子躲为什么在草里？', '为小兔子什么躲在草里？'], en: 'Why is the bunny hiding in the grass?' },
   { t: 'build', tiles: ['弟弟', '为什么', '一直', '打哈欠'], ok: ['弟弟为什么一直打哈欠？', '为什么弟弟一直打哈欠？'], en: 'Why does my little brother keep yawning?' },
   { t: 'pick', from: '弟弟今天这么高兴。（ask why）', a: '弟弟今天为什么这么高兴？', no: ['弟弟今天这么为什么高兴？', '为什么弟弟今天这么高兴吗？'], en: 'Why is my little brother so happy today?' },
-  { t: 'build', tiles: ['小狗', '为什么', '一直', '汪汪叫'], ok: ['小狗为什么一直汪汪叫？', '为什么小狗一直汪汪叫？'], en: 'Why does the puppy keep barking?' },
+  { t: 'build', tiles: ['小狗', '为什么', '对着门汪汪叫'], ok: ['小狗为什么对着门汪汪叫？', '为什么小狗对着门汪汪叫？'], en: 'Why is the puppy barking at the door?' },
   { t: 'build', tiles: ['为什么', '树叶', '变黄了'], ok: ['为什么树叶变黄了？', '树叶为什么变黄了？'], en: 'Why have the leaves turned yellow?' }
 ];
 /* level 4: our own letter to Auntie about the bedtime questions, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的姑姑：" */
@@ -853,13 +853,13 @@ var SENTENCES = [
   { s: '我问：“那＿里的鱼还能游吗？”', a: '小河', no: ['飞机', '理想'], en: 'I asked, "Then can the fish in the stream still swim?"' },
   { s: '奶奶说能，鱼在冰下面慢慢地＿。', a: '游泳', no: ['湖边', '校长'], en: 'Grandma said yes, the fish swim slowly under the ice.' },
   { s: '弟弟又问，＿是从哪儿来的。', a: '月光', no: ['起飞', '长大'], en: 'Then my brother asked where moonlight comes from.' },
-  { s: '奶奶说，月亮自己不发光，它的光是＿照过去的。', a: '阳光', no: ['旅游', '校长'], en: 'Grandma said the moon doesn’t make its own light; its light is sunshine shining on it.' },
+  { s: '奶奶说，月亮自己不发光，我们看到的月光其实是＿。', a: '阳光', no: ['旅游', '校长'], en: 'Grandma said the moon doesn’t make its own light; the moonlight we see is really sunlight.' },
   { s: '我说，我＿了要坐飞船去月亮上看看。', a: '长大', no: ['湖边', '小时'], en: 'I said that when I grow up, I want to go to the moon in a spaceship.' },
   { s: '弟弟说他想当飞行员，开＿去很远的地方。', a: '飞机', no: ['理想', '河流'], en: 'My brother said he wanted to be a pilot and fly a plane to faraway places.' },
   { s: '奶奶说，这些都是很好的＿。', a: '理想', no: ['想家', '长大'], en: 'Grandma said those are both wonderful dreams.' },
   { s: '奶奶说，小孩子不能玩到＿，再不睡就要变成小猫头鹰了。', a: '半夜', no: ['游泳', '校长'], en: 'Grandma said children can’t stay up playing until midnight, and if we didn’t go to sleep now we would turn into little owls.' },
   { s: '今天下午，我们一家去＿散步，湖上真的结了一层薄冰，爸爸说千万不能走上去。', a: '湖边', no: ['理想', '长大'], en: 'This afternoon our family took a walk by the lake. There really was a thin layer of ice, and Dad said we must never walk on it.' },
-  { s: '姑姑，我们学校的＿说，下个月要带我们去天文馆。', a: '校长', no: ['小河', '月光'], en: 'Auntie, our principal says she will take us to the planetarium next month.' },
+  { s: '姑姑，我们学校的＿说，下个月要带我们去天文馆。', a: '校长', no: ['小河', '月光'], en: 'Auntie, our principal says we will go to the planetarium next month.' },
   { s: '您上次去北京＿，拍的照片真好看！', a: '旅游', no: ['河流', '起飞'], en: 'The photos you took on your trip to Beijing were beautiful!' },
   { s: '您在外地工作，一定很＿吧？我们都很想您。', a: '想家', no: ['湖边', '飞机'], en: 'You work far from home, so you must be homesick. We all miss you.' }
 ];
@@ -870,9 +870,9 @@ var STORY = { title: '睡前的问题', en: 'Bedtime questions', lines: [
   { who: '👦 弟弟', s: '奶奶，我还有一个问题：冬天湖面为什么会结冰？', py: 'Nǎinai, wǒ hái yǒu yí ge wèntí: dōngtiān húmiàn wèi shénme huì jié bīng?', en: 'Grandma, I have one more question: why does the lake freeze in winter?', pat: true },
   { who: '👵 奶奶', s: '因为天太冷了，水就冻成了冰。', py: 'Yīnwèi tiān tài lěng le, shuǐ jiù dòngchéngle bīng.', en: 'Because it’s so cold that the water turns into ice.' },
   { who: '👧 我', s: '那小河里的鱼呢？它们还能游吗？', py: 'Nà xiǎohé li de yú ne? Tāmen hái néng yóu ma?', en: 'What about the fish in the stream? Can they still swim?' },
-  { who: '👵 奶奶', s: '能！冰下面的水还在流动，鱼在下面慢慢地游。', py: 'Néng! Bīng xiàmiàn de shuǐ hái zài liúdòng, yú zài xiàmiàn mànmàn de yóu.', en: 'Yes! The water under the ice is still moving, and the fish swim slowly down there.' },
+  { who: '👵 奶奶', s: '能！冰下面的水还在流动，鱼在下面慢慢地游。', py: 'Néng! Bīng xiàmian de shuǐ hái zài liúdòng, yú zài xiàmian mànmàn de yóu.', en: 'Yes! The water under the ice is still moving, and the fish swim slowly down there.' },
   { who: '👦 弟弟', s: '我还想知道，夜里的月光是从哪儿来的？', py: 'Wǒ hái xiǎng zhīdào, yèli de yuèguāng shì cóng nǎr lái de?', en: 'And I want to know: where does the moonlight at night come from?' },
-  { who: '👵 奶奶', s: '月亮自己不发光，它的光是太阳照过去的。', py: 'Yuèliang zìjǐ bù fā guāng, tā de guāng shì tàiyáng zhào guoqu de.', en: 'The moon doesn’t make its own light. Its light comes from the sun shining on it.' },
+  { who: '👵 奶奶', s: '月亮自己不发光，它的光是从太阳那儿来的。', py: 'Yuèliang zìjǐ bù fā guāng, tā de guāng shì cóng tàiyáng nàr lái de.', en: 'The moon doesn’t make its own light. Its light comes from the sun.' },
   { who: '👧 我', s: '我长大了要坐飞船去月亮上看看！', py: 'Wǒ zhǎngdà le yào zuò fēichuán qù yuèliang shang kànkan!', en: 'When I grow up, I’ll go to the moon in a spaceship and see it for myself!' },
   { who: '👵 奶奶', s: '好啊！现在闭上眼睛，在梦里先去一次吧。', py: 'Hǎo a! Xiànzài bìshang yǎnjing, zài mèng li xiān qù yí cì ba.', en: 'Wonderful! Now close your eyes and go there in your dreams first.' }
 ] };

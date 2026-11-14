@@ -771,7 +771,7 @@ var CHARS = [
   { c: '脑', py: 'nǎo', en: 'brain', e: '🧠' }, { c: '工', py: 'gōng', en: 'work; worker', e: '🔨' },
   { c: '思', py: 'sī', en: 'think', e: '💭' }, { c: '考', py: 'kǎo', en: 'test; think over', e: '📝' },
   { c: '作', py: 'zuò', en: 'do, make', e: '✍️' }, { c: '万', py: 'wàn', en: 'ten thousand', e: '🔢' },
-  { c: '又', py: 'yòu', en: 'again; and also', e: '🔁' }, { c: '得', py: 'dé', en: 'get', e: '🏆' }
+  { c: '又', py: 'yòu', en: 'again; and also', e: '🔁' }, { c: '得', py: 'de', en: '(after a doing word: how it is done); get (dé)', e: '🏆' }
 ];
 /* level 1: how each character is built. parts = the pieces (r = which piece is the radical; rest = a piece described in words),
    rad = the radical (部首) with its name, what it usually means, and other characters where you can see it; how = the meaning */
@@ -782,12 +782,12 @@ var PARTS = [
   { c: '双', parts: ['又', '又'], r: 0, rad: '又', name: '又字旁', npy: 'yòu zì páng', means: 'a right hand; in many simple characters it stands in for a harder old part.', see: '对 难 观 欢', how: 'In old writing it was 雙: a hand holding two birds. A trick: today it looks like two hands (又又), a pair. 双手 = both hands; 一双鞋 = a pair of shoes.' },
   { c: '脑', parts: ['月', ''], rest: 'right: the top of a head', r: 0, rad: '月', name: '月字旁', npy: 'yuè zì páng', means: 'on the left of body words, 月 comes from 肉 (flesh, the body).', see: '脸 脚 肚 腿 胖', how: 'The body (月) and, on the right, the top of a head. 大脑 = brain; 电脑 = computer.' },
   { c: '工', parts: ['工'], r: 0, rad: '工', name: '工字', npy: 'gōng zì', means: 'work; a tool.', see: '左 巧 差 巨 巫', how: 'Some say long ago 工 was a carpenter’s square, a tool for measuring. 工作 = work; 工人 = worker.' },
-  { c: '思', parts: ['田', '心'], r: 0, rad: '田', name: '田字头', npy: 'tián zì tóu', means: 'a field.', see: '男 界 畏', how: 'In old writing the top was 囟, the top of the head, over a heart (心). Some say: thinking with head and heart. Your book links 思 to 心; dictionaries today file it under 田. 思考 = think.' },
+  { c: '思', parts: ['田', '心'], r: 0, rad: '田', name: '田字头', npy: 'tián zì tóu', means: 'a field.', see: '男 界 畏 留', how: 'In old writing the top was 囟, the top of the head, over a heart (心). Some say: thinking with head and heart. Your book links 思 to 心; dictionaries today file it under 田. 思考 = think.' },
   { c: '考', parts: ['耂', ''], rest: 'below: 丂', r: 0, rad: '耂', name: '老字头', npy: 'lǎo zì tóu', means: 'old (from 老).', see: '老 者', how: 'Long ago 考 showed an old person (耂) leaning on a stick. 考试 = test; 思考 = think.' },
   { c: '作', parts: ['亻', '乍'], r: 0, rad: '亻', name: '单人旁', npy: 'dān rén páng', means: 'a person. It is in characters about people.', see: '你 他 们 住', how: 'A person (亻) and 乍. 作 = do, make: 工作 = work; 作业 = homework.' },
   { c: '万', parts: ['万'], r: 0, rad: '一', name: '横', npy: 'héng', means: 'one line across. As a radical it does not add a meaning.', see: '三 七 下 不', how: 'Long ago 萬 was a drawing of a scorpion, borrowed for the number ten thousand. 一万 = ten thousand; 万一 = just in case.' },
   { c: '又', parts: ['又'], r: 0, rad: '又', name: '又字', npy: 'yòu zì', means: 'a right hand; in many simple characters it stands in for a harder old part.', see: '对 双 观 难', how: 'Long ago 又 was a drawing of a right hand. Today it means again: 又一次 = once again. 又……又…… = both … and ….' },
-  { c: '得', parts: ['彳', ''], rest: 'right: 旦 over 寸', r: 0, rad: '彳', name: '双人旁', npy: 'shuāng rén páng', means: 'walking on a road.', see: '很 往 行 街', how: 'Long ago 得 showed a hand picking up a shell (money) on the road: getting something. 得到 = get; 觉得 = feel. After a doing word it is said lightly: 做得好 (de).' }
+  { c: '得', parts: ['彳', ''], rest: 'right: 旦 over 寸', r: 0, rad: '彳', name: '双人旁', npy: 'shuāng rén páng', means: 'walking on a road.', see: '很 往 行 街', how: 'Long ago 得 showed a hand picking up a shell (money) on the road: getting something. 得到 (dé) = get; 觉得 = feel. After a doing word it is said lightly: 做得好 (de).' }
 ];
 /* level 1: each character long ago (public-domain drawings from Wikimedia Commons, Ancient Chinese characters project, in ancient/).
    kind = which old script; rad = when the character itself has no old form, its radical is shown instead (form = the old character drawn);
@@ -829,7 +829,7 @@ var MORE_WORDS = {
   '双': [{ w: '一双鞋', py: 'yì shuāng xié', en: 'a pair of shoes' }],
   '脑': [{ w: '脑子', py: 'nǎozi', en: 'brain, head' }],
   '工': [{ w: '工具', py: 'gōngjù', en: 'tool' }],
-  '思': [{ w: '思念', py: 'sīniàn', en: 'miss (someone)' }],
+  '思': [{ w: '有意思', py: 'yǒu yìsi', en: 'interesting, fun' }],
   '考': [{ w: '考一考', py: 'kǎo yi kǎo', en: 'give a little test' }],
   '作': [{ w: '作文', py: 'zuòwén', en: 'composition, essay' }],
   '万': [{ w: '一万', py: 'yí wàn', en: 'ten thousand' }],
@@ -860,7 +860,7 @@ var SENTENCES = [
   { s: '爷爷年轻的时候在工厂当＿，所以会做很多东西。', a: '工人', no: ['宝宝', '电脑'], en: 'When Grandpa was young, he was a factory worker, so he can make lots of things.' },
   { s: '我问爷爷：“＿船沉下去了怎么办？”', a: '万一', no: ['作家', '双手'], en: 'I asked Grandpa, "What if the boat sinks?"' },
   { s: '爷爷陪我们在水盆里试船，弟弟的船倒了，扶起来后＿倒了。', a: '又一次', no: ['意思', '千万'], en: 'Grandpa watched us test the boats in a basin. My brother’s boat tipped over, and after he set it up, it tipped over once again.' },
-  { s: '爸爸在＿上查了一下，原来一样大的木头比水轻，所以能浮起来。', a: '电脑', no: ['宝贝', '工作'], en: 'Dad looked it up on the computer: a piece of wood is lighter than the same amount of water, so it floats.' },
+  { s: '爷爷在＿上查了一下，原来一样大的木头比水轻，所以能浮起来。', a: '电脑', no: ['宝贝', '工作'], en: 'Grandpa looked it up on the computer: a piece of wood is lighter than the same amount of water, so it floats.' },
   { s: '做完船，我才去写＿，写得特别快。', a: '作业', no: ['宝宝', '大脑'], en: 'After the boats were done, I did my homework, and I did it really fast.' },
   { s: '我＿，自己动手做东西比买玩具还开心。', a: '觉得', no: ['大脑', '文件'], en: 'I think making things yourself is even more fun than buying toys.' },
   { s: '爷爷说，我们今天做了＿了不起的事。', a: '一件', no: ['电脑', '宝宝'], en: 'Grandpa said we did something amazing today.' },
@@ -870,7 +870,7 @@ var SENTENCES = [
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
    s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '爷爷的工作间', en: 'Grandpa’s workshop', lines: [
-  { who: '👴 爷爷', s: '今天我们在工作间做两只小木船，一人一只！', py: 'Jīntiān wǒmen zài gōngzuòjiān zuò liǎng zhī xiǎo mùchuán, yì rén yì zhī!', en: 'Today we’re making two little wooden boats in the workshop, one each!' },
+  { who: '👴 爷爷', s: '今天我们在工作间做两只小木船，你们一人一只！', py: 'Jīntiān wǒmen zài gōngzuòjiān zuò liǎng zhī xiǎo mùchuán, nǐmen yì rén yì zhī!', en: 'Today we’re making two little wooden boats in the workshop, one for each of you!' },
   { who: '👦 弟弟', s: '我要做一只又大又快的船！', py: 'Wǒ yào zuò yì zhī yòu dà yòu kuài de chuán!', en: 'I want to make a big, fast boat!', pat: true },
   { who: '👴 爷爷', s: '别着急，动手以前要先思考：船怎么才能浮起来？', py: 'Bié zháojí, dòngshǒu yǐqián yào xiān sīkǎo: chuán zěnme cái néng fú qilai?', en: 'Don’t rush. Before we start, we need to think: how can a boat float?' },
   { who: '👧 我', s: '我觉得船底要平，木头要轻。我用脑子想了好久！', py: 'Wǒ juéde chuándǐ yào píng, mùtou yào qīng. Wǒ yòng nǎozi xiǎngle hǎo jiǔ!', en: 'I think the bottom should be flat and the wood light. I thought about it for ages!' },

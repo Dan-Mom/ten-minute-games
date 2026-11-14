@@ -782,7 +782,7 @@ var PARTS = [
   { c: '别', parts: ['另', '刂'], r: 1, rad: '刂', name: '立刀旁', npy: 'lì dāo páng', means: 'a knife.', see: '刚 刻 判 剑', how: 'A knife (刂) on the right: cutting apart. 别 = other; don’t: 别人 = other people; 别急 = don’t worry.' },
   { c: '收', parts: ['丩', '攵'], r: 1, rad: '攵', name: '反文旁', npy: 'fǎn wén páng', means: 'a hand holding a stick; doing something.', see: '教 数 故 救', how: 'A hand with a stick (攵); 丩 gives the sound. 收 = gather, receive: 收到 = receive; 收拾 = tidy up.' },
   { c: '拾', parts: ['扌', '合'], r: 0, rad: '扌', name: '提手旁', npy: 'tí shǒu páng', means: 'a hand.', see: '打 拉 拍 找', how: 'A hand (扌) and 合. 拾 = pick up: 拾起 = pick up. In 收拾 (tidy up) it is said lightly: shōushi.' },
-  { c: '房', parts: ['户', '方'], r: 0, rad: '户', name: '户字头', npy: 'hù zì tóu', means: 'a door.', see: '扇 扁 启', how: 'A door (户); 方 gives the sound (fāng, fáng). 房 = house, room: 房间 = room; 书房 = study.' },
+  { c: '房', parts: ['户', '方'], r: 0, rad: '户', name: '户字头', npy: 'hù zì tóu', means: 'a door.', see: '扇 扁 启 肩', how: 'A door (户); 方 gives the sound (fāng, fáng). 房 = house, room: 房间 = room; 书房 = study.' },
   { c: '间', parts: ['门', '日'], r: 0, rad: '门', name: '门字框', npy: 'mén zì kuàng', means: 'a door or a gate.', see: '问 闪 闭 闹', how: 'Long ago it was also written 閒: the moon (月) shining through a gap in a gate (門). Today it has 日. 房间 = room; 时间 = time.' },
   { c: '还', parts: ['辶', '不'], r: 0, rad: '辶', name: '走之底', npy: 'zǒu zhī dǐ', means: 'walking, going.', see: '这 过 近 远', how: 'Walking (辶) and 不. 还 = still, also: 还是 = or. It can also be said huán, “give back”: 还书 = return a book.' },
   { c: '洗', parts: ['氵', '先'], r: 0, rad: '氵', name: '三点水', npy: 'sān diǎn shuǐ', means: 'water.', see: '河 海 江 没', how: 'Water (氵); 先 gives the sound (xiān, xǐ). 洗 = wash: 洗手 = wash your hands; 洗澡 = take a bath.' },
@@ -836,8 +836,8 @@ var MORE_WORDS = {
    show = the explanation card, pick = the right sentence (a = right, no = wrong ones), build = tap the words in order (ok = every right order) */
 var PATTERN = [
   { t: 'show', shape: '谁 ＋ 会 ＋ 做什么', keys: ['会'], end: '。', ask: 'Which one is right? Look at where 会 is.',
-    what: 'To say what someone can do (has learned to do), put 会 before the doing word: 弟弟会游泳 = my little brother can swim. To say can’t, use 不会: 我不会骑马 = I can’t ride a horse. (能 = able right now; 可以 = allowed.)',
-    ex: [{ s: '弟弟会游泳。', en: 'My little brother can swim.' }, { s: '奶奶会包饺子。', en: 'Grandma can make dumplings.' }, { s: '小鹦鹉会说“你好”。', en: 'The little parrot can say "hello".' }] },
+    what: 'To say what someone can do (has learned to do), put 会 before the doing word: 弟弟会拍皮球 = my little brother can bounce a ball. To say can’t, use 不会: 我不会骑马 = I can’t ride a horse. (能 = able right now; 可以 = allowed.)',
+    ex: [{ s: '弟弟会拍皮球。', en: 'My little brother can bounce a ball.' }, { s: '奶奶会包饺子。', en: 'Grandma can make dumplings.' }, { s: '小鹦鹉会说“你好”。', en: 'The little parrot can say "hello".' }] },
   { t: 'pick', from: '妹妹骑自行车。（she knows how）', a: '妹妹会骑自行车。', no: ['会妹妹骑自行车。', '妹妹骑会自行车。'], en: 'My little sister can ride a bike.' },
   { t: 'build', tiles: ['爷爷', '会', '下', '象棋'], ok: ['爷爷会下象棋。', '象棋爷爷会下。', '爷爷象棋会下。'], en: 'Grandpa can play Chinese chess.' },
   { t: 'pick', from: '小狗握手。（it knows how）', a: '小狗会握手。', no: ['小狗握手会。', '会小狗握手。'], en: 'The puppy can shake hands.' },
@@ -883,7 +883,7 @@ var LESSON = {
   levels: [
     { title: 'Meet the characters', zh: '认生字', text: 'Meet 11 new characters, then find each one among the broom cards.' },
     { title: 'Build the words', zh: '组词', text: 'Each word is missing one character. Pick the right broom card.' },
-    { title: 'Sentence pattern', zh: '句型 谁会……', text: 'Learn to say what someone can do with 会: 弟弟会游泳 (my little brother can swim). Pick the right one, then build your own from word tiles.' },
+    { title: 'Sentence pattern', zh: '句型 谁会……', text: 'Learn to say what someone can do with 会: 弟弟会拍皮球 (my little brother can bounce a ball). Pick the right one, then build your own from word tiles.' },
     { title: 'Write the letter', zh: '写信', text: 'Finish our letter to Grandma about the surprise tidy-up: pick the missing word in each sentence, then send it.' },
     { title: 'Helper Bingo', zh: '帮手 Bingo', text: 'Listen, then mark what you hear on your card. Make a line, then two lines, then fill the card.' }
   ],

@@ -830,9 +830,9 @@ var MORE_WORDS = {
   '谢': [{ w: '谢谢你', py: 'xièxie nǐ', en: 'thank you' }],
   '对': [{ w: '不对', py: 'bú duì', en: 'wrong, not right' }],
   '起': [{ w: '起床', py: 'qǐ chuáng', en: 'get out of bed' }],
-  '没': [{ w: '没用', py: 'méi yòng', en: 'useless' }],
+  '没': [{ w: '没错', py: 'méi cuò', en: 'that’s right' }],
   '关': [{ w: '关灯', py: 'guān dēng', en: 'turn off the light' }],
-  '系': [{ w: '系统', py: 'xìtǒng', en: 'system' }],
+  '系': [{ w: '联系', py: 'liánxì', en: 'get in touch' }],
   '再': [{ w: '再来', py: 'zài lái', en: 'come again' }],
   '做': [{ w: '做作业', py: 'zuò zuòyè', en: 'do homework' }],
   '孩': [{ w: '女孩', py: 'nǚhái', en: 'girl' }]
@@ -841,7 +841,7 @@ var MORE_WORDS = {
    show = the explanation card, pick = the right sentence (a = right, no = wrong ones), build = tap the words in order (ok = every right order) */
 var PATTERN = [
   { t: 'show', shape: '请 ＋ 谁 ＋ 做什么', keys: ['请'], end: '。', ask: 'Which one is polite and right? Look at where 请 is.',
-    what: 'To ask someone politely to do something, start with 请 (please), then who (a person, or 你, 您, 大家; you can leave it out), then what to do. 请您喝茶 = please have some tea. Who can also come first: 大家请安静。 您 is a polite “you” for grown-ups.',
+    what: 'To ask someone politely to do something, start with 请 (please), then who (a person, or 你, 您, 大家; you can leave it out), then what to do. 请您喝茶 = please have some tea. Who can also come first: 爷爷请喝茶。 您 is a polite “you” for grown-ups.',
     ex: [{ s: '请您喝茶。', en: 'Please have some tea.' }, { s: '请大家排好队。', en: 'Please line up, everyone.' }, { s: '请你把门关上。', en: 'Please close the door.' }] },
   { t: 'pick', from: '你开一下窗。（say it politely）', a: '请你开一下窗。', no: ['你开一下窗请。', '开一下窗请你。'], en: 'Please open the window.' },
   { t: 'build', tiles: ['请', '大家', '安静', '一下'], ok: ['请大家安静一下。', '大家请安静一下。'], en: 'Everyone, please be quiet for a moment.' },
@@ -857,7 +857,7 @@ var SENTENCES = [
   { s: '奶奶一进门就说：“我来晚了，＿！”', a: '对不起', no: ['日记', '有用'], en: 'As soon as Grandma came in, she said, "I’m late, sorry!"' },
   { s: '我说：“＿，奶奶，我们也刚准备好。”', a: '没关系', no: ['做饭', '有用'], en: 'I said, "It doesn’t matter, Grandma. We only just got ready too."' },
   { s: '妈妈和我给奶奶泡了一杯绿茶，奶奶笑着说：“＿你们！”', a: '谢谢', no: ['男孩', '关门'], en: 'Mom and I made Grandma a cup of green tea, and she smiled and said, "Thank you!"' },
-  { s: '我很＿地把点心摆成了一朵花。', a: '用心', no: ['对面', '日记'], en: 'I carefully arranged the snacks in the shape of a flower.' },
+  { s: '我很＿地把点心一盘一盘摆好。', a: '用心', no: ['对面', '日记'], en: 'I carefully set out the snacks plate by plate.' },
   { s: '妈妈说，学会招待客人很＿，下次我可以帮更多的忙。', a: '有用', no: ['关门', '对面'], en: 'Mom said learning to look after guests is very useful, and next time I can help even more.' },
   { s: '中午，爸爸给大家＿，做了奶奶最爱吃的鱼。', a: '做饭', no: ['孩子', '日记'], en: 'At noon Dad cooked for everyone and made Grandma’s favorite fish.' },
   { s: '吃完饭，我们＿去公园散步。', a: '一起', no: ['关系', '男孩'], en: 'After the meal we all went for a walk in the park together.' },
