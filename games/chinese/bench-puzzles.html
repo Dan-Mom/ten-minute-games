@@ -1806,7 +1806,7 @@ function finish(L, r, old) {   // r = this play's result; old = the score it rep
     SENTENCES.forEach(function (s, n) { var d = E('div', null, s.s.replace('＿', s.a)); if (LESSON.letter.signRight && n === SENTENCES.length - 1) d.style.textAlign = 'right'; letter.appendChild(d); });
     p.appendChild(letter);
     var r = E('div', 'row'); var send = E('button', 'btn', 'Send ✈️'); send.type = 'button';
-    send.onclick = function () { afterVoice(function () { letter.classList.add('fly'); beep(true); send.disabled = true; setTimeout(function () { if (letter.isConnected) menu(); }, 1700); }, send); };
+    send.onclick = function () { afterVoice(function () { letter.classList.add('fly'); beep(true); send.disabled = true; setTimeout(function () { if (letter.isConnected) { var nl = LEVELS[L.n]; if (nl) open(nl); else menu(); } }, 1700); }, send); };   // after the letter flies, go straight on to the next level (bingo)
     r.appendChild(send); p.appendChild(r);
   } else {
     var nextL = LEVELS[L.n];

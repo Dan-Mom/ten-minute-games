@@ -433,7 +433,7 @@
 </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Fruit Shop · 识字（一）</title>
+<title>Fruit Shop · 水果店</title>
 <meta name="theme-color" content="#c2410c">
 <link rel="stylesheet" href="../../fonts/fonts.css">
 <style>
@@ -755,7 +755,7 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 </head>
 <body>
-<header class="top"><h1>🍉 Fruit Shop <span class="han">识字（一）</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
+<header class="top"><h1>🍉 Fruit Shop <span class="han">水果店</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
 <div class="wrap" id="app"></div>
 <script>
 /* ---------- content (characters and words from the lesson; all sentences are our own) ---------- */
@@ -1830,7 +1830,7 @@ function finish(L, r, old) {   // r = this play's result; old = the score it rep
     SENTENCES.forEach(function (s, n) { var d = E('div', null, s.s.replace('＿', s.a)); if (LESSON.letter.signRight && n === SENTENCES.length - 1) d.style.textAlign = 'right'; letter.appendChild(d); });
     p.appendChild(letter);
     var r = E('div', 'row'); var send = E('button', 'btn', 'Send ✈️'); send.type = 'button';
-    send.onclick = function () { afterVoice(function () { letter.classList.add('fly'); beep(true); send.disabled = true; setTimeout(function () { if (letter.isConnected) menu(); }, 1700); }, send); };
+    send.onclick = function () { afterVoice(function () { letter.classList.add('fly'); beep(true); send.disabled = true; setTimeout(function () { if (letter.isConnected) { var nl = LEVELS[L.n]; if (nl) open(nl); else menu(); } }, 1700); }, send); };   // after the letter flies, go straight on to the next level (bingo)
     r.appendChild(send); p.appendChild(r);
   } else {
     var nextL = LEVELS[L.n];
