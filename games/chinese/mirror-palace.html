@@ -814,7 +814,7 @@ var WORDS = [
   { w: '镜子', k: 0, py: 'jìngzi', en: 'mirror', e: '🪞', no: ['样', '影', '窗', '林', '王'] }, { w: '窗户', k: 0, py: 'chuānghu', en: 'window', e: '🪟' },
   { w: '放映', k: 1, py: 'fàngyìng', en: 'show (a film)', e: '📽️' }, { w: '如同', k: 0, py: 'rútóng', en: 'just like', e: '🟰' },
   { w: '一样', k: 1, py: 'yíyàng', en: 'the same', e: '👯', no: ['些', '如'] }, { w: '香蕉', k: 0, py: 'xiāngjiāo', en: 'banana', e: '🍌' },
-  { w: '花香', k: 1, py: 'huāxiāng', en: 'the smell of flowers', e: '🌸', no: ['样', '镜', '窗', '影'] }, { w: '影子', k: 0, py: 'yǐngzi', en: 'shadow', e: '👤', no: ['镜', '样', '窗', '林', '王'] },
+  { w: '花香', k: 1, py: 'huāxiāng', en: 'the smell of flowers', e: '🌸', no: ['样', '镜', '窗', '影', '迷', '王'] }, { w: '影子', k: 0, py: 'yǐngzi', en: 'shadow', e: '👤', no: ['镜', '样', '窗', '林', '王'] },
   { w: '电影', k: 1, py: 'diànyǐng', en: 'movie', e: '🎬' }, { w: '迷路', k: 0, py: 'mílù', en: 'get lost', e: '🧭' },
   { w: '迷人', k: 0, py: 'mírén', en: 'charming', e: '😍' }
 ];
@@ -850,20 +850,20 @@ var PATTERN = [
 ];
 /* level 4: our own diary page, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "星期六　晴" */
 var SENTENCES = [
-  { s: '今天，爸爸妈妈带我去参观＿。', a: '凡尔赛宫', no: ['镜子', '香蕉'], en: 'Today Mom and Dad took me to visit the Palace of Versailles.' },
+  { s: '今天，妈妈带我去参观＿。', a: '凡尔赛宫', no: ['镜子', '香蕉'], en: 'Today Mom took me to visit the Palace of Versailles.' },
   { s: '很久以前，法国的国王住在这座＿里。', a: '王宫', no: ['窗户', '影子'], en: 'Long ago, the kings of France lived in this palace.' },
   { s: '王宫里的房间很多，每个房间都不＿。', a: '一样', no: ['迷路', '花香'], en: 'The palace has lots of rooms, and every room is different.' },
   { s: '我们走进一个漂亮的＿，里面挂着很多画。', a: '大厅', no: ['香蕉', '电影'], en: 'We walked into a huge hall with many paintings on the walls.' },
   { s: '最好玩的是镜厅，墙上有很多大＿。', a: '镜子', no: ['国王', '迷路'], en: 'The most fun was the Hall of Mirrors, with lots of big mirrors on the wall.' },
-  { s: '阳光从＿照进来，镜子里亮亮的。', a: '窗户', no: ['迷人', '这些'], en: 'Sunlight came in through the windows, and the mirrors shone.' },
   { s: '我在镜子里看到了好多个自己，真＿！', a: '有趣', no: ['王宫', '窗户'], en: 'I saw lots of me in the mirrors. So much fun!' },
+  { s: '阳光从＿照进来，镜子里亮亮的。', a: '窗户', no: ['迷人', '这些'], en: 'Sunlight came in through the windows, and the mirrors shone.' },
   { s: '＿镜子是三百多年前做的。', a: '这些', no: ['迷人', '花香'], en: 'These mirrors were made more than three hundred years ago.' },
   { s: '宫外的＿很大很大，我们走了很久。', a: '园林', no: ['镜子', '一样'], en: 'The gardens outside the palace are huge, and we walked for a long time.' },
-  { s: '花园里到处都是＿，蝴蝶飞来飞去。', a: '花香', no: ['大厅', '镜子'], en: 'The garden smelled of flowers everywhere, and butterflies flew around.' },
+  { s: '花园里到处都是＿，蝴蝶飞来飞去。', a: '花香', no: ['大厅', '迷路'], en: 'The garden smelled of flowers everywhere, and butterflies flew around.' },
   { s: '湖水里＿着蓝天和白云。', a: '倒映', no: ['迷人', '国王'], en: 'The lake reflected the blue sky and white clouds.' },
-  { s: '我跑来跑去，地上的＿也跟着我跑。', a: '影子', no: ['王宫', '窗户'], en: 'I ran around, and my shadow ran after me.' },
   { s: '这片园林＿一幅美丽的画。', a: '如同', no: ['这些', '有趣'], en: 'These gardens are just like a beautiful painting.' },
   { s: '园林太大了，我差一点儿就＿了。', a: '迷路', no: ['大厅', '花香'], en: 'The gardens were so big that I almost got lost.' },
+  { s: '我跑来跑去，地上的＿也跟着我跑。', a: '影子', no: ['王宫', '窗户'], en: 'I ran around, and my shadow ran after me.' },
   { s: '凡尔赛宫真＿，我还想再来一次！', a: '迷人', no: ['影子', '镜子'], en: 'Versailles is so charming. I want to come again!' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,

@@ -799,10 +799,10 @@ var GROUPS = [CHARS.slice(0, 5), CHARS.slice(5)];
 /* level 2: build a word. w = the word, k = which character is missing, no = characters that would also make a real word, so they are never offered */
 var WORDS = [
   { w: '生日', k: 1, py: 'shēngrì', en: 'birthday', e: '🎂', no: ['水', '火', '土'] }, { w: '月亮', k: 0, py: 'yuèliang', en: 'the moon', e: '🌕' },
-  { w: '爬山', k: 1, py: 'pá shān', en: 'climb a mountain', e: '🧗' }, { w: '石头', k: 0, py: 'shítou', en: 'stone', e: '🪨', no: ['木', '日', '山', '田', '月'] },
+  { w: '爬山', k: 1, py: 'pá shān', en: 'climb a mountain', e: '🧗' }, { w: '石头', k: 0, py: 'shítou', en: 'stone', e: '🪨', no: ['木', '日', '山', '田', '月', '火'] },
   { w: '田野', k: 0, py: 'tiányě', en: 'open fields', e: '🌾', no: ['山'] }, { w: '水果', k: 0, py: 'shuǐguǒ', en: 'fruit', e: '🍑', no: ['山'] },
   { w: '火车', k: 0, py: 'huǒchē', en: 'train', e: '🚂', no: ['水'] }, { w: '土豆', k: 0, py: 'tǔdòu', en: 'potato', e: '🥔' },
-  { w: '木头', k: 0, py: 'mùtou', en: 'wood', e: '🪵', no: ['石', '日', '山', '田', '月'] }, { w: '禾苗', k: 0, py: 'hémiáo', en: 'young crops', e: '🌱', no: ['火'] },
+  { w: '木头', k: 0, py: 'mùtou', en: 'wood', e: '🪵', no: ['石', '日', '山', '田', '月', '火'] }, { w: '禾苗', k: 0, py: 'hémiáo', en: 'young crops', e: '🌱', no: ['火'] },
   { w: '日出', k: 0, py: 'rìchū', en: 'sunrise', e: '🌅', no: ['月'] }, { w: '月饼', k: 0, py: 'yuèbing', en: 'mooncake', e: '🥮' },
   { w: '火山', k: 0, py: 'huǒshān', en: 'volcano', e: '🌋', no: ['石', '土'] }, { w: '水田', k: 1, py: 'shuǐtián', en: 'rice field (full of water)', e: '🌾', no: ['火', '土', '月'] },
   { w: '星期日', k: 2, py: 'xīngqīrì', en: 'Sunday', e: '📅' }
@@ -829,7 +829,7 @@ var PATTERN = [
   { t: 'pick', from: '新年是哪一天？', a: '新年是一月一日。', no: ['新年是一日一月。', '新年是月一日一。'], en: 'New Year’s Day is January 1st.' },
   { t: 'build', tiles: ['我们', '十月', '一日', '去', '爬山'], ok: ['我们十月一日去爬山。', '十月一日我们去爬山。'], en: 'We are going hiking on October 1st.' },
   { t: 'pick', from: '今天是几月几日？（July 4th）', a: '今天是七月四日。', no: ['今天是四日七月。', '今天是七日四月。'], en: 'Today is July 4th.' },
-  { t: 'build', tiles: ['奶奶', '的', '生日', '是', '九月', '九日'], ok: ['奶奶的生日是九月九日。'], en: 'Grandma’s birthday is September 9th.' },
+  { t: 'build', tiles: ['奶奶', '的', '生日', '是', '九月', '九日'], ok: ['奶奶的生日是九月九日。', '九月九日是奶奶的生日。'], en: 'Grandma’s birthday is September 9th.' },
   { t: 'build', tiles: ['爸爸', '八月', '二日', '回来'], ok: ['爸爸八月二日回来。', '八月二日爸爸回来。'], en: 'Dad is coming back on August 2nd.' }
 ];
 /* level 4: our own postcard to Mom and Dad from Grandpa and Grandma's farm, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的爸爸妈妈：" */
@@ -837,7 +837,7 @@ var SENTENCES = [
   { s: '今天是＿，我和弟弟在爷爷奶奶的农场。', a: '星期日', no: ['土豆', '月饼'], en: 'Today is Sunday. My brother and I are at Grandpa and Grandma’s farm.' },
   { s: '农场后面有一座大山，爷爷早上带我们去＿了。', a: '爬山', no: ['火车', '禾苗'], en: 'There is a big mountain behind the farm. Grandpa took us to climb it this morning.' },
   { s: '山上有很多大大小小的＿。', a: '石头', no: ['生日', '月亮'], en: 'There are lots of stones on the mountain, big and small.' },
-  { s: '山下是绿绿的＿，一眼看不到头。', a: '田野', no: ['火车', '月饼'], en: 'Below the mountain are green fields as far as you can see.' },
+  { s: '山下是绿绿的＿，一眼看不到头。', a: '田野', no: ['爬山', '月饼'], en: 'Below the mountain are green fields as far as you can see.' },
   { s: '爷爷家有一大片＿，田里都是水。', a: '水田', no: ['火山', '月饼'], en: 'Grandpa has a big rice field, full of water.' },
   { s: '田里的＿长得很快。', a: '禾苗', no: ['火车', '生日'], en: 'The young rice plants in the field grow fast.' },
   { s: '奶奶给我们吃了很多＿，有桃子，还有西瓜。', a: '水果', no: ['木头', '火山'], en: 'Grandma gave us lots of fruit: peaches and watermelon.' },

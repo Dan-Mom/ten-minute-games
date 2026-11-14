@@ -842,28 +842,27 @@ var PATTERN = [
     what: '终于 means "at last, finally", after waiting or trying for a long time. Put it right before the action, often with 了 at the end: 雨终于停了 = the rain finally stopped.',
     ex: [{ s: '雨终于停了。', en: 'The rain finally stopped.' }, { s: '我终于学会游泳了。', en: 'I\'ve finally learned to swim.' }, { s: '等了半天，公共汽车终于来了。', en: 'After a long wait, the bus finally came.' }] },
   { t: 'pick', from: '我们等了很久，后来妈妈回来了。', a: '妈妈终于回来了。', no: ['妈妈回来终于了。', '终于了妈妈回来。'], en: 'Mum finally came home.' },
-  { t: 'build', tiles: ['弟弟', '终于', '学会', '骑自行车', '了'], ok: ['弟弟终于学会骑自行车了。'], en: 'My little brother finally learned to ride a bike.' },
+  { t: 'build', tiles: ['弟弟', '终于', '学会', '骑自行车', '了'], ok: ['弟弟终于学会骑自行车了。', '终于弟弟学会骑自行车了。'], en: 'My little brother finally learned to ride a bike.' },
   { t: 'pick', from: '我找了很久，才找到钥匙。', a: '我终于找到钥匙了。', no: ['我找到钥匙终于了。', '我找到终于钥匙了。'], en: 'I finally found my key.' },
-  { t: 'build', tiles: ['花', '终于', '开', '了'], ok: ['花终于开了。'], en: 'The flowers have finally opened.' },
-  { t: 'build', tiles: ['我们', '终于', '爬到了', '山顶'], ok: ['我们终于爬到了山顶。'], en: 'We finally climbed to the top of the hill.' }
+  { t: 'build', tiles: ['花', '终于', '开', '了'], ok: ['花终于开了。', '终于花开了。'], en: 'The flowers have finally opened.' },
+  { t: 'build', tiles: ['我们', '终于', '爬到了', '山顶'], ok: ['我们终于爬到了山顶。', '终于我们爬到了山顶。'], en: 'We finally climbed to the top of the hill.' }
 ];
 /* level 4: our own letter to Grandpa about watching a rocket launch on TV, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的爷爷：" */
 var SENTENCES = [
-  { s: '昨天晚上，我们在电视上看火箭＿。', a: '发射', no: ['人民', '想念'], en: 'Last night we watched a rocket launch on TV.' },
+  { s: '昨天晚上，我们和您一起在电视上看火箭＿。', a: '发射', no: ['人民', '想念'], en: 'Last night we watched a rocket launch on TV with you.' },
   { s: '火箭一下子就＿了，后面喷着大火。', a: '升空', no: ['客人', '国旗'], en: 'The rocket shot up into the sky, with huge flames behind it.' },
   { s: '声音大得像＿一样。', a: '打雷', no: ['国旗', '工程'], en: 'It was as loud as thunder.' },
   { s: '这是一艘＿飞船，上面有宇航员。', a: '载人', no: ['想念', '顺利'], en: 'It was a crewed spacecraft, with astronauts on board.' },
+  { s: '妹妹说，她长大想去太空当＿。', a: '游客', no: ['工程', '想念'], en: 'My little sister says she wants to go to space as a tourist when she grows up.' },
   { s: '我还知道，天上有很多＿，能帮我们预报天气。', a: '卫星', no: ['客人', '英雄'], en: 'I also know there are lots of satellites up there that help us forecast the weather.' },
   { s: '我长大也想当一名＿，像宇航员一样。', a: '英雄', no: ['打雷', '想念'], en: 'When I grow up, I want to be a hero too, like the astronauts.' },
-  { s: '飞船上还有一面＿。', a: '国旗', no: ['想念', '发射'], en: 'There was a national flag on the spacecraft too.' },
+  { s: '纪念邮票上也有飞船和一面＿。', a: '国旗', no: ['想念', '发射'], en: 'The special stamp had a spacecraft and a national flag on it too.' },
   { s: '在中国，买东西用的钱叫＿。', a: '人民币', no: ['卫星', '英雄'], en: 'In China, the money people use to buy things is called RMB.' },
   { s: '造一艘飞船，是一个很大的＿。', a: '工程', no: ['打雷', '想念'], en: 'Building a spacecraft is a huge project.' },
   { s: '全国＿都很高兴。', a: '人民', no: ['打雷', '发射'], en: 'People all over the country were happy.' },
-  { s: '飞船在太空飞了几天，最后＿回到了地面。', a: '顺利', no: ['打雷', '想念'], en: 'The spacecraft flew in space for a few days and finally came back down safely.' },
-  { s: '今天家里来了几位＿，我们一起看了录像。', a: '客人', no: ['卫星', '发射'], en: 'Some guests came to our home today, and we watched the recording together.' },
-  { s: '我们球队赢了！大家一起庆祝＿。', a: '胜利', no: ['打雷', '载人'], en: 'Our team won! Everyone celebrated the victory together.' },
+  { s: '我们等了十分钟，飞船＿进入了太空。', a: '顺利', no: ['打雷', '想念'], en: 'We waited ten minutes, and the spacecraft got safely into space.' },
   { s: '谢谢您给我看的那枚＿，上面有一艘飞船。', a: '纪念币', no: ['工程', '升空'], en: 'Thank you for showing me that commemorative coin with a spacecraft on it.' },
-  { s: '爷爷，我很＿您，您什么时候再来我家？', a: '想念', no: ['卫星', '工程'], en: 'Grandpa, I miss you. When will you come to see us again?' }
+  { s: '爷爷，您刚走，我就开始＿您了！', a: '想念', no: ['卫星', '工程'], en: 'Grandpa, you have only just left and I already miss you!' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
    s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */

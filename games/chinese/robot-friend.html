@@ -816,9 +816,9 @@ var ANCIENT = {
 var GROUPS = [CHARS.slice(0, 6), CHARS.slice(6, 11), CHARS.slice(11)];
 /* level 2: build a word. w = the word, k = which character is missing, no = characters that would also make a real word, so they are never offered */
 var WORDS = [
-  { w: '大人', k: 1, py: 'dàren', en: 'grown-up', e: '🧑', no: ['头', '口', '手', '小', '多', '有'] }, { w: '头发', k: 0, py: 'tóufa', en: 'hair', e: '💇' },
+  { w: '大人', k: 1, py: 'dàren', en: 'grown-up', e: '🧑', no: ['头', '口', '手', '小', '多', '有', '个'] }, { w: '头发', k: 0, py: 'tóufa', en: 'hair', e: '💇' },
   { w: '节目', k: 1, py: 'jiémù', en: 'a show (on TV)', e: '📺' }, { w: '门口', k: 1, py: 'ménkǒu', en: 'doorway', e: '🚪', no: ['头'] },
-  { w: '耳朵', k: 0, py: 'ěrduo', en: 'ear', e: '👂' }, { w: '手指', k: 0, py: 'shǒuzhǐ', en: 'finger', e: '☝️' },
+  { w: '耳朵', k: 0, py: 'ěrduo', en: 'ear', e: '👂' }, { w: '手指', k: 0, py: 'shǒuzhǐ', en: 'finger', e: '☝️', no: ['小', '大'] },
   { w: '足球', k: 0, py: 'zúqiú', en: 'football (soccer)', e: '⚽', no: ['手', '大', '小', '头'] }, { w: '大象', k: 0, py: 'dàxiàng', en: 'elephant', e: '🐘', no: ['小'] },
   { w: '小狗', k: 0, py: 'xiǎogǒu', en: 'puppy', e: '🐶', no: ['大'] }, { w: '多少', k: 0, py: 'duōshao', en: 'how many', e: '❓', no: ['人'] },
   { w: '很少', k: 1, py: 'hěn shǎo', en: 'very few', e: '🤏', no: ['大', '小', '多'] }, { w: '我们', k: 0, py: 'wǒmen', en: 'we, us', e: '👨‍👩‍👧', no: ['人'] },

@@ -811,13 +811,13 @@ var ANCIENT = {
 var GROUPS = [CHARS.slice(0, 5), CHARS.slice(5, 10), CHARS.slice(10)];
 /* level 2: build a word. w = the word, k = which character is missing, no = characters that would also make a real word, so they are never offered */
 var WORDS = [
-  { w: '造纸', k: 0, py: 'zào zhǐ', en: 'make paper', e: '📜', no: ['皮', '片', '竹', '破'] }, { w: '白纸', k: 1, py: 'báizhǐ', en: 'white paper', e: '📄', no: ['布', '皮', '干'] },
+  { w: '造纸', k: 0, py: 'zào zhǐ', en: 'make paper', e: '📜', no: ['皮', '片', '竹', '破', '便'] }, { w: '白纸', k: 1, py: 'báizhǐ', en: 'white paper', e: '📄', no: ['布', '皮', '干'] },
   { w: '古代', k: 1, py: 'gǔdài', en: 'ancient times', e: '🏺', no: ['之'] }, { w: '现代', k: 1, py: 'xiàndài', en: 'modern times', e: '🏙️', no: ['打'] },
-  { w: '把手', k: 0, py: 'bǎshou', en: 'handle', e: '🚪', no: ['打'] }, { w: '竹子', k: 0, py: 'zhúzi', en: 'bamboo', e: '🎋', no: ['片', '皮', '把'] },
+  { w: '把手', k: 0, py: 'bǎshou', en: 'handle', e: '🚪', no: ['打'] }, { w: '竹子', k: 0, py: 'zhúzi', en: 'bamboo', e: '🎋', no: ['片', '皮', '把', '干'] },
   { w: '竹片', k: 1, py: 'zhúpiàn', en: 'bamboo strip', e: '🎍', no: ['纸', '布', '皮'] }, { w: '方便', k: 1, py: 'fāngbiàn', en: 'convenient, handy', e: '👍', no: ['片'] },
   { w: '公元', k: 1, py: 'gōngyuán', en: 'AD (in the year …)', e: '📅', no: ['布', '干', '决'] }, { w: '决心', k: 0, py: 'juéxīn', en: 'determination', e: '💪' },
   { w: '决定', k: 0, py: 'juédìng', en: 'decide', e: '🤔', no: ['打'] }, { w: '树皮', k: 1, py: 'shùpí', en: 'bark', e: '🌳', no: ['干'] },
-  { w: '皮包', k: 0, py: 'píbāo', en: 'leather bag', e: '👜', no: ['布', '纸', '打'] }, { w: '破布', k: 0, py: 'pòbù', en: 'rags', e: '🧽', no: ['干', '竹'] },
+  { w: '皮包', k: 0, py: 'píbāo', en: 'leather bag', e: '👜', no: ['布', '纸', '打', '破'] }, { w: '破布', k: 0, py: 'pòbù', en: 'rags', e: '🧽', no: ['干', '竹'] },
   { w: '打破', k: 1, py: 'dǎpò', en: 'break', e: '💥', no: ['造'] }, { w: '花布', k: 1, py: 'huābù', en: 'patterned cloth', e: '🌸', no: ['纸'] },
   { w: '打开', k: 0, py: 'dǎkāi', en: 'open', e: '📂', no: ['破'] }, { w: '干果', k: 0, py: 'gānguǒ', en: 'dried fruit and nuts', e: '🥜' },
   { w: '之一', k: 0, py: 'zhī yī', en: 'one of', e: '☝️', no: ['干', '决'] }
@@ -847,7 +847,7 @@ var PATTERN = [
     what: 'Use 是……的 to point out who, when, where or how something was done. It is for something that has already happened. Put 是 just before the part you want to point out, and 的 at the end: 这幅画是妹妹画的 = It was my little sister who painted this.',
     ex: [{ s: '这幅画是妹妹画的。', en: 'My little sister painted this picture.' }, { s: '我们是坐火车来的。', en: 'We came by train.' }, { s: '这个蛋糕是奶奶做的。', en: 'Granny made this cake.' }] },
   { t: 'pick', from: '外婆织了这件毛衣。', a: '这件毛衣是外婆织的。', no: ['这件毛衣是外婆织。', '这件毛衣外婆织的是。'], en: 'Grandma knitted this jumper.' },
-  { t: 'build', tiles: ['这个风筝', '是', '我', '自己', '做的'], ok: ['这个风筝是我自己做的。', '这个风筝我是自己做的。', '我自己做的是这个风筝。'], en: 'I made this kite myself.' },
+  { t: 'build', tiles: ['这个风筝', '是', '我', '自己', '做的'], ok: ['这个风筝是我自己做的。', '这个风筝我是自己做的。', '我自己做的是这个风筝。', '我是自己做的这个风筝。'], en: 'I made this kite myself.' },
   { t: 'pick', from: '小狗昨天来到我们家。', a: '小狗是昨天来我们家的。', no: ['是小狗昨天来我们家。', '小狗是昨天的来我们家。'], en: 'The puppy came to our home yesterday.' },
   { t: 'build', tiles: ['我们', '是', '走路', '去', '学校的'], ok: ['我们是走路去学校的。', '是我们走路去学校的。'], en: 'We walked to school.' },
   { t: 'build', tiles: ['这张纸', '是', '用旧报纸', '做', '的'], ok: ['这张纸是用旧报纸做的。', '用旧报纸做的是这张纸。'], en: 'This paper was made from old newspapers.' }
@@ -863,7 +863,7 @@ var SENTENCES = [
   { s: '我还带了一块小＿，剪成碎片放进纸浆里。', a: '花布', no: ['之一', '决定'], en: 'I also brought a small piece of patterned cloth and cut it into bits to put in the pulp.' },
   { s: '老师＿机器，把纸浆打得细细的。', a: '打开', no: ['竹片', '干果'], en: 'The teacher switched on the machine and beat the pulp until it was fine.' },
   { s: '纸浆要铺在＿做的小帘子上。', a: '竹片', no: ['皮包', '公元'], en: 'The pulp has to be spread on a little screen made of bamboo strips.' },
-  { s: '纸放在太阳下一个下午，终于＿了。', a: '晒干', no: ['打破', '花布'], en: 'The paper sat in the sun all afternoon, and at last it was dry.' },
+  { s: '纸放在太阳下一个下午，终于＿了。', a: '晒干', no: ['皮包', '花布'], en: 'The paper sat in the sun all afternoon, and at last it was dry.' },
   { s: '我＿在纸上画一朵小花，送给妈妈。', a: '决定', no: ['皮包', '白纸'], en: 'I decided to draw a little flower on my paper for Mum.' },
   { s: '妈妈说，＿的纸大多是用机器做的。', a: '现代', no: ['干果', '花布'], en: 'Mum said that paper today is mostly made by machines.' },
   { s: '妈妈把我的纸放进了她的＿里，说要好好收着。', a: '皮包', no: ['公元', '决心'], en: 'Mum put my paper in her leather bag and said she would keep it safe.' },

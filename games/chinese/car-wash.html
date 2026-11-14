@@ -812,14 +812,14 @@ var GROUPS = [CHARS.slice(0, 5), CHARS.slice(5, 10), CHARS.slice(10)];
 /* level 2: build a word. w = the word, k = which character is missing, no = characters that would also make a real word, so they are never offered */
 var WORDS = [
   { w: '加油', k: 0, py: 'jiāyóu', en: 'fill up; come on!', e: '💪', no: ['刷'] }, { w: '汽油', k: 1, py: 'qìyóu', en: 'petrol', e: '⛽' },
-  { w: '车站', k: 1, py: 'chēzhàn', en: 'bus stop', e: '🚏', no: ['速', '辆'] }, { w: '站住', k: 0, py: 'zhànzhù', en: 'stop! stand still', e: '✋', no: ['挡'] },
+  { w: '车站', k: 1, py: 'chēzhàn', en: 'bus stop', e: '🚏', no: ['速', '辆', '旁'] }, { w: '站住', k: 0, py: 'zhànzhù', en: 'stop! stand still', e: '✋', no: ['挡'] },
   { w: '宽阔', k: 1, py: 'kuānkuò', en: 'wide', e: '↔️' }, { w: '速度', k: 0, py: 'sùdù', en: 'speed', e: '🏎️', no: ['数'] },
   { w: '马路', k: 1, py: 'mǎlù', en: 'road', e: '🛣️', no: ['表'] }, { w: '路边', k: 0, py: 'lùbiān', en: 'roadside', e: '🚶', no: ['旁', '站'] },
   { w: '刷牙', k: 0, py: 'shuāyá', en: 'brush your teeth', e: '🪥' }, { w: '挡住', k: 0, py: 'dǎngzhù', en: 'block', e: '🛡️', no: ['站'] },
   { w: '干净', k: 1, py: 'gānjìng', en: 'clean', e: '✨' }, { w: '手表', k: 1, py: 'shǒubiǎo', en: 'watch', e: '⌚', no: ['指'] },
-  { w: '表演', k: 0, py: 'biǎoyǎn', en: 'perform', e: '🎭', no: ['加'] }, { w: '数字', k: 0, py: 'shùzì', en: 'number', e: '🔢' },
-  { w: '旁边', k: 0, py: 'pángbiān', en: 'beside', e: '👉', no: ['路'] }, { w: '谈话', k: 0, py: 'tánhuà', en: 'talk', e: '💬' },
-  { w: '手指', k: 1, py: 'shǒuzhǐ', en: 'finger', e: '☝️', no: ['表'] }, { w: '一辆', k: 1, py: 'yí liàng', en: 'one (vehicle)', e: '🚙', no: ['路', '站', '指', '旁'] }
+  { w: '表演', k: 0, py: 'biǎoyǎn', en: 'perform', e: '🎭', no: ['加', '路'] }, { w: '数字', k: 0, py: 'shùzì', en: 'number', e: '🔢' },
+  { w: '旁边', k: 0, py: 'pángbiān', en: 'beside', e: '👉', no: ['路', '站'] }, { w: '谈话', k: 0, py: 'tánhuà', en: 'talk', e: '💬' },
+  { w: '手指', k: 1, py: 'shǒuzhǐ', en: 'finger', e: '☝️', no: ['表'] }, { w: '一辆', k: 1, py: 'yí liàng', en: 'one (vehicle)', e: '🚙', no: ['路', '站', '指', '旁', '加'] }
 ];
 /* "Write it": more words with each character (common words, or words from the lesson), shown under the writing boxes with the
    words of level 2 that have it. w = the word, py = its pinyin, en = what it means */
@@ -840,11 +840,11 @@ var MORE_WORDS = {
 var PATTERN = [
   { t: 'show', shape: '先……，然后再……', keys: ['先', '然后'], end: '。', ask: 'Where do 先 and 然后再 go? Pick the right sentence.',
     what: 'To say what comes first and what comes next, put 先 before the first action and 然后再 before the next one: 我们先放好书包，然后再去玩 = we put our school bags away first, then go and play.',
-    ex: [{ s: '我们先放好书包，然后再去玩。', en: 'We put our school bags away first, then go and play.' }, { s: '妹妹先画画，然后再写作业。', en: 'My little sister draws first, then does her homework.' }, { s: '先过马路，然后再往右拐。', en: 'Cross the road first, then turn right.' }] },
+    ex: [{ s: '我们先放好书包，然后再去玩。', en: 'We put our school bags away first, then go and play.' }, { s: '妹妹先画画，然后再写作业。', en: 'My little sister draws first, then does her homework.' }, { s: '我们跟着妈妈先过马路，然后再往右拐。', en: 'We cross the road with Mom first, then turn right.' }] },
   { t: 'pick', from: '我写作业。写完以后，我看电视。', a: '我先写作业，然后再看电视。', no: ['我然后写作业，先再看电视。', '先我写作业，再然后看电视。'], en: 'I do my homework first, then watch TV.' },
   { t: 'build', tiles: ['我们', '先', '排队，', '然后再', '上车'], ok: ['我们先排队，然后再上车。'], en: 'We queue first, then get on the bus.' },
-  { t: 'pick', from: '弟弟穿衣服，穿好以后刷牙。', a: '弟弟先穿衣服，然后再刷牙。', no: ['弟弟然后穿衣服，先再刷牙。', '弟弟穿衣服先，然后再刷牙。'], en: 'My little brother gets dressed first, then brushes his teeth.' },
-  { t: 'build', tiles: ['妈妈', '先', '洗菜，', '然后再', '炒菜'], ok: ['妈妈先洗菜，然后再炒菜。'], en: 'Mum washes the vegetables first, then cooks them.' },
+  { t: 'pick', from: '弟弟穿衣服，穿好以后刷牙。', a: '弟弟先穿衣服，然后再刷牙。', no: ['弟弟然后穿衣服，先再刷牙。', '弟弟穿衣服，先然后再刷牙。'], en: 'My little brother gets dressed first, then brushes his teeth.' },
+  { t: 'build', tiles: ['爸爸', '先', '洗菜，', '然后再', '炒菜'], ok: ['爸爸先洗菜，然后再炒菜。'], en: 'Dad washes the vegetables first, then cooks them.' },
   { t: 'build', tiles: ['你', '先', '看一看，', '然后再', '说'], ok: ['你先看一看，然后再说。'], en: 'Have a look first, then speak.' }
 ];
 /* level 4: our own letter to Auntie (Mum's younger sister) about washing the car and a drive to the park, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的小姨：" */

@@ -810,10 +810,10 @@ var WORDS = [
   { w: '官员', k: 0, py: 'guānyuán', en: 'official', e: '🧑‍💼' }, { w: '墙上', k: 0, py: 'qiáng shang', en: 'on the wall', e: '🧱', no: ['腿', '秤', '主'] },
   { w: '小腿', k: 1, py: 'xiǎotuǐ', en: 'lower leg', e: '🦵', no: ['象', '官', '秤', '主'] }, { w: '重量', k: 0, py: 'zhòngliàng', en: 'weight', e: '🏋️', no: ['称'] },
   { w: '电子秤', k: 2, py: 'diànzǐchèng', en: 'electronic scale', e: '⚖️', no: ['称'] }, { w: '杀虫', k: 0, py: 'shāchóng', en: 'kill pests', e: '🐛', no: ['象'] },
-  { w: '切菜', k: 0, py: 'qiēcài', en: 'chop vegetables', e: '🔪', no: ['主', '称'] }, { w: '摇头', k: 0, py: 'yáotóu', en: 'shake your head', e: '🙅', no: ['墙', '重', '杀'] },
+  { w: '切菜', k: 0, py: 'qiēcài', en: 'chop vegetables', e: '🔪', no: ['主', '称'] }, { w: '摇头', k: 0, py: 'yáotóu', en: 'shake your head', e: '🙅', no: ['墙', '重', '杀', '象', '秤'] },
   { w: '主意', k: 0, py: 'zhǔyi', en: 'idea', e: '💡', no: ['称', '杀'] }, { w: '主人', k: 0, py: 'zhǔrén', en: 'owner, host', e: '🏠', no: ['官', '杀', '摇'] },
   { w: '下沉', k: 1, py: 'xiàchén', en: 'sink', e: '⛵', no: ['官', '称'] }, { w: '称赞', k: 1, py: 'chēngzàn', en: 'praise', e: '👏', no: ['重', '象'] },
-  { w: '赞美', k: 0, py: 'zànměi', en: 'praise, admire', e: '🌟' }, { w: '重要', k: 0, py: 'zhòngyào', en: 'important', e: '❗', no: ['主'] }
+  { w: '赞美', k: 0, py: 'zànměi', en: 'praise, admire', e: '🌟', no: ['称'] }, { w: '重要', k: 0, py: 'zhòngyào', en: 'important', e: '❗', no: ['主'] }
 ];
 /* "Write it": more words with each character (common words, or words from the lesson), shown under the writing boxes with the
    words of level 2 that have it. w = the word, py = its pinyin, en = what it means */
@@ -834,7 +834,7 @@ var PATTERN = [
   { t: 'show', shape: '称赞……是……', keys: ['称赞', '是'], end: '。', ask: 'Where do 称赞 and 是 go? Pick the right sentence.',
     what: '称赞 means "praise". First say who praises, then 称赞 and who is praised, then 是 and what they are: 同学们都称赞她是个好老师 = the pupils all praise her as a good teacher.',
     ex: [{ s: '同学们都称赞她是个好老师。', en: 'The pupils all praise her as a good teacher.' }, { s: '妈妈称赞弟弟是个勇敢的孩子。', en: 'Mum praised my little brother as a brave boy.' }, { s: '爷爷称赞我是他的好帮手。', en: 'Grandpa praises me as his good helper.' }] },
-  { t: 'pick', from: '奶奶说：“你是个小厨师。”', a: '奶奶称赞我是个小厨师。', no: ['奶奶是我称赞个小厨师。', '奶奶称赞是我个小厨师。'], en: 'Grandma praised me as a little chef.' },
+  { t: 'pick', from: '奶奶说：“你是个小画家。”', a: '奶奶称赞我是个小画家。', no: ['奶奶是我称赞个小画家。', '奶奶称赞是我个小画家。'], en: 'Grandma praised me as a little artist.' },
   { t: 'build', tiles: ['邻居们', '都称赞', '哥哥', '是个', '热心人'], ok: ['邻居们都称赞哥哥是个热心人。'], en: 'The neighbours all praise my big brother as a kind, helpful person.' },
   { t: 'pick', from: '老师说：“他是个爱读书的孩子。”', a: '老师称赞他是个爱读书的孩子。', no: ['老师是他称赞个爱读书的孩子。', '老师称赞他个爱读书的孩子是。'], en: 'The teacher praised him as a child who loves reading.' },
   { t: 'build', tiles: ['客人们', '称赞', '妈妈', '是个', '做菜高手'], ok: ['客人们称赞妈妈是个做菜高手。'], en: 'The guests praised Mum as a great cook.' },
@@ -849,12 +849,12 @@ var SENTENCES = [
   { s: '小象抬起一条＿，好像在跟我们打招呼。', a: '前腿', no: ['墙上', '主意'], en: 'The baby elephant lifted a front leg, as if it was saying hello to us.' },
   { s: '动物园的＿画着很多大象。', a: '墙上', no: ['重要', '称赞'], en: 'There were lots of elephants painted on the walls of the zoo.' },
   { s: '饲养员把西瓜＿，一块一块地喂小象。', a: '切开', no: ['称赞', '官员'], en: 'The zookeeper cut a watermelon open and fed it to the baby elephant piece by piece.' },
-  { s: '回家的路上，爸爸给我讲了曹冲＿的故事。', a: '称象', no: ['墙上', '重量'], en: 'On the way home, Dad told me the story of Cao Chong weighing the elephant.' },
+  { s: '在动物园里，爸爸给我讲了曹冲＿的故事。', a: '称象', no: ['墙上', '重量'], en: 'At the zoo, Dad told me the story of Cao Chong weighing the elephant.' },
   { s: '很久以前，曹冲的爸爸是个＿。', a: '大官', no: ['电子秤', '下沉'], en: 'Long ago, Cao Chong\'s father was a high official.' },
   { s: '那时候，人们都＿这个孩子很聪明。', a: '称赞', no: ['切开', '下沉'], en: 'Back then, people all praised this boy for being so clever.' },
+  { s: '饲养员叔叔问我累不累，我笑着＿，说我不累。', a: '摇头', no: ['电子秤', '官员'], en: 'The zookeeper asked if I was tired. I smiled, shook my head and said I was not tired.' },
   { s: '回到家，我想出了一个好＿：自己也来试一试。', a: '主意', no: ['墙上', '重量'], en: 'At home I came up with a good idea: to try it myself.' },
   { s: '我把玩具放进小船，船就慢慢＿了一点儿。', a: '下沉', no: ['摇头', '称赞'], en: 'I put some toys in a little boat, and it slowly sank down a bit.' },
-  { s: '弟弟问我累不累，我笑着＿，说我不累。', a: '摇头', no: ['电子秤', '官员'], en: 'My little brother asked if I was tired. I smiled, shook my head and said I was not tired.' },
   { s: '妈妈说，多动脑筋很＿。奶奶，您说对吗？', a: '重要', no: ['下沉', '前腿'], en: 'Mum says using your brain is important. Grandma, don\'t you think so?' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,

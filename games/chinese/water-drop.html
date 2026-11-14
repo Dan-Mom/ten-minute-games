@@ -809,9 +809,9 @@ var WORDS = [
   { w: '知道', k: 0, py: 'zhīdao', en: 'know', e: '💡', no: ['变', '跑'] }, { w: '变大', k: 0, py: 'biàn dà', en: 'get bigger', e: '⬆️' },
   { w: '成功', k: 0, py: 'chénggōng', en: 'success; succeed', e: '🏆' }, { w: '汽水', k: 0, py: 'qìshuǐ', en: 'fizzy drink', e: '🥤', no: ['冷', '掉', '跳', '跑'] },
   { w: '汽车', k: 0, py: 'qìchē', en: 'car', e: '🚗', no: ['跑', '冷', '候', '跳'] }, { w: '飘走', k: 0, py: 'piāozǒu', en: 'float away', e: '🎈', no: ['跑', '跳'] },
-  { w: '冷天', k: 0, py: 'lěngtiān', en: 'a cold day', e: '🥶', no: ['变', '成'] }, { w: '太冷', k: 1, py: 'tài lěng', en: 'too cold', e: '🧣' },
+  { w: '冷天', k: 0, py: 'lěngtiān', en: 'a cold day', e: '🥶', no: ['变', '成'] }, { w: '太冷', k: 1, py: 'tài lěng', en: 'too cold', e: '🧣', no: ['飘'] },
   { w: '水珠', k: 1, py: 'shuǐzhū', en: 'drop of water', e: '💧', no: ['汽'] }, { w: '珍珠', k: 1, py: 'zhēnzhū', en: 'pearl', e: '🦪' },
-  { w: '掉下来', k: 0, py: 'diào xiàlai', en: 'fall down', e: '🍂', no: ['跑', '跳', '飘', '冷'] }, { w: '时候', k: 1, py: 'shíhou', en: 'time, when', e: '⏰' },
+  { w: '掉下来', k: 0, py: 'diào xiàlai', en: 'fall down', e: '🍂', no: ['跑', '跳', '飘', '冷', '睡'] }, { w: '时候', k: 1, py: 'shíhou', en: 'time, when', e: '⏰' },
   { w: '有时候', k: 2, py: 'yǒushíhou', en: 'sometimes', e: '🔁' }, { w: '睡觉', k: 0, py: 'shuìjiào', en: 'sleep', e: '😴', no: ['知'] },
   { w: '午觉', k: 1, py: 'wǔjiào', en: 'nap', e: '🛌', no: ['睡'] }, { w: '跑步', k: 0, py: 'pǎobù', en: 'run, jog', e: '🏃' },
   { w: '跳高', k: 0, py: 'tiàogāo', en: 'high jump', e: '🤸', no: ['变'] }, { w: '跳舞', k: 0, py: 'tiàowǔ', en: 'dance', e: '💃', no: ['飘'] }
@@ -840,15 +840,15 @@ var PATTERN = [
     what: 'To ask if someone knows something, put the question inside 你知道……吗: 你知道 + 他叫什么 + 吗？ = Do you know what his name is? The question words (谁, 什么, 哪儿, 几) stay where they are, and 吗 goes at the very end.',
     ex: [{ s: '你知道今天谁过生日吗？', en: 'Do you know whose birthday it is today?' }, { s: '你们知道汽车为什么要停下来吗？', en: 'Do you know why the car has to stop?' }, { s: '他知道小鸟住在哪儿吗？', en: 'Does he know where the little bird lives?' }] },
   { t: 'pick', from: '谁会来？你知道吗？', a: '你知道谁会来吗？', no: ['你知道吗谁会来？', '知道你谁会来吗？'], en: 'Do you know who is coming?' },
-  { t: 'build', tiles: ['你', '知道', '小猫', '在哪儿', '吗'], ok: ['你知道小猫在哪儿吗？', '小猫知道你在哪儿吗？'], en: 'Do you know where the kitten is?' },
+  { t: 'build', tiles: ['你', '知道', '小猫', '在哪儿', '吗'], ok: ['你知道小猫在哪儿吗？', '小猫知道你在哪儿吗？', '小猫在哪儿你知道吗？'], en: 'Do you know where the kitten is?' },
   { t: 'pick', from: '今天星期几？爷爷知道吗？', a: '爷爷知道今天星期几吗？', no: ['爷爷知道吗今天星期几？', '今天爷爷星期几知道吗？'], en: 'Does Grandpa know what day it is today?' },
-  { t: 'build', tiles: ['你们', '知道', '雪', '是什么颜色的', '吗'], ok: ['你们知道雪是什么颜色的吗？'], en: 'Do you know what colour snow is?' },
-  { t: 'build', tiles: ['妹妹', '知道', '雪花', '是从哪儿来的', '吗'], ok: ['妹妹知道雪花是从哪儿来的吗？'], en: 'Does my little sister know where snowflakes come from?' }
+  { t: 'build', tiles: ['你们', '知道', '雪', '是什么颜色的', '吗'], ok: ['你们知道雪是什么颜色的吗？', '雪是什么颜色的你们知道吗？'], en: 'Do you know what colour snow is?' },
+  { t: 'build', tiles: ['妹妹', '知道', '雪花', '是从哪儿来的', '吗'], ok: ['妹妹知道雪花是从哪儿来的吗？', '雪花是从哪儿来的妹妹知道吗？'], en: 'Does my little sister know where snowflakes come from?' }
 ];
 /* level 4: our own letter to Dad (away on a trip) about a cold, snowy day with Grandpa, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的爸爸：" */
 var SENTENCES = [
   { s: '今天是个＿，外面下着小雨。', a: '冷天', no: ['跳高', '汽水'], en: 'Today was a cold day, with light rain outside.' },
-  { s: '爷爷问我窗户上的水珠是从哪儿来的，我说我不＿。', a: '知道', no: ['汽车', '跳舞'], en: 'Grandpa asked me where the water drops on the window came from. I said I didn\'t know.' },
+  { s: '爷爷问我窗户上的水珠是从哪儿来的，我一开始不＿。', a: '知道', no: ['汽车', '跳舞'], en: 'Grandpa asked me where the water drops on the window came from. At first I didn\'t know.' },
   { s: '爷爷说，水烧开了，会变成白白的＿。', a: '水汽', no: ['跑步', '珍珠'], en: 'Grandpa said that when water boils, it turns into white steam.' },
   { s: '水汽碰到冷冷的窗户，又变成了小＿。', a: '水珠', no: ['汽车', '午觉'], en: 'When the steam touches the cold window, it turns back into little drops of water.' },
   { s: '水珠越来越大，就一颗一颗地＿了。', a: '掉下来', no: ['跳高', '时候'], en: 'The drops got bigger and bigger, and slid down one by one.' },

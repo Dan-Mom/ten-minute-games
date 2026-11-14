@@ -813,9 +813,9 @@ var WORDS = [
   { w: '科学', k: 0, py: 'kēxué', en: 'science', e: '🔬' }, { w: '奇怪', k: 1, py: 'qíguài', en: 'strange', e: '🤨' },
   { w: '好奇', k: 1, py: 'hàoqí', en: 'curious', e: '🧐', no: ['气', '怪'] }, { w: '生气', k: 1, py: 'shēngqì', en: 'angry', e: '😠', no: ['机'] },
   { w: '空气', k: 1, py: 'kōngqì', en: 'air', e: '🌬️', no: ['位', '壶'] }, { w: '冲出来', k: 0, py: 'chōng chūlai', en: 'rush out', e: '💨', no: ['让', '试', '盖', '验'] },
-  { w: '让开', k: 0, py: 'ràngkāi', en: 'make way', e: '🚶', no: ['冲', '常'] }, { w: '常常', k: 0, py: 'chángcháng', en: 'often', e: '🔁' },
+  { w: '让开', k: 0, py: 'ràngkāi', en: 'make way', e: '🚶', no: ['冲', '常', '试'] }, { w: '常常', k: 0, py: 'chángcháng', en: 'often', e: '🔁' },
   { w: '试一试', k: 0, py: 'shì yi shì', en: 'have a try', e: '🧪' }, { w: '试验', k: 1, py: 'shìyàn', en: 'experiment', e: '🧪', no: ['机'] },
-  { w: '飞机', k: 1, py: 'fēijī', en: 'plane', e: '✈️' }, { w: '手机', k: 1, py: 'shǒujī', en: 'mobile phone', e: '📱', no: ['气'] },
+  { w: '飞机', k: 1, py: 'fēijī', en: 'plane', e: '✈️' }, { w: '手机', k: 1, py: 'shǒujī', en: 'mobile phone', e: '📱', no: ['气', '冲'] },
   { w: '一位', k: 1, py: 'yí wèi', en: 'one (polite, for a person)', e: '🧑' , no: ['壶', '气', '试'] }, { w: '座位', k: 1, py: 'zuòwèi', en: 'seat', e: '💺', no: ['机'] }
 ];
 /* "Write it": more words with each character (common words, or words from the lesson), shown under the writing boxes with the
@@ -845,7 +845,7 @@ var PATTERN = [
   { t: 'pick', from: '妹妹现在可以自己系鞋带了。', a: '妹妹能自己系鞋带了。', no: ['妹妹自己系鞋带能了。', '能妹妹自己系鞋带了。'], en: 'My little sister can tie her own shoelaces now.' },
   { t: 'build', tiles: ['太阳', '能', '让', '冰', '变成水'], ok: ['太阳能让冰变成水。'], en: 'The sun can turn ice into water.' },
   { t: 'pick', from: '这个机器人可以唱歌，也可以跳舞。', a: '这个机器人能唱歌，也能跳舞。', no: ['这个机器人唱歌能，也跳舞能。', '能这个机器人唱歌，也能跳舞。'], en: 'This robot can sing and dance too.' },
-  { t: 'build', tiles: ['我', '能', '用英语', '说', '你好'], ok: ['我能用英语说你好。', '我用英语能说你好。'], en: 'I can say hello in English.' },
+  { t: 'build', tiles: ['我', '能', '用英语', '说', '你好'], ok: ['我能用英语说你好。', '我用英语能说你好。', '你好我能用英语说。'], en: 'I can say hello in English.' },
   { t: 'build', tiles: ['一阵风', '能', '让', '风筝', '飞起来'], ok: ['一阵风能让风筝飞起来。'], en: 'A gust of wind can make the kite fly up.' }
 ];
 /* level 4: our own letter to Uncle (Mum's brother) about a day at the science museum, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的舅舅：" */
@@ -863,7 +863,7 @@ var SENTENCES = [
   { s: '妹妹说她要先学好＿，以后去英国看看。', a: '英语', no: ['水壶', '座位'], en: 'My sister said she will learn English well first, and visit Britain one day.' },
   { s: '我也要＿观察身边的东西，多问为什么。', a: '常常', no: ['飞机', '英国'], en: 'I want to look closely at things around me often, and keep asking why.' },
   { s: '回家的路上，我们看见天上有一架＿。', a: '飞机', no: ['水壶', '英语'], en: 'On the way home, we saw a plane in the sky.' },
-  { s: '妹妹说她长大了要发明会飞的＿。', a: '机器人', no: ['座位', '试验'], en: 'My sister said that when she grows up she will invent a flying robot.' },
+  { s: '妹妹说她长大了要发明会飞的＿。', a: '机器人', no: ['英语', '试验'], en: 'My sister said that when she grows up she will invent a flying robot.' },
   { s: '舅舅，你下次来，我们一起用气球＿吧！', a: '试一试', no: ['让开', '英国'], en: 'Uncle, next time you come, let\'s try it with a balloon together!' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,

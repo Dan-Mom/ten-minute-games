@@ -806,11 +806,11 @@ var WORDS = [
   { w: '教室', k: 0, py: 'jiàoshì', en: 'classroom', e: '🏫', no: ['本', '书'] }, { w: '卧室', k: 1, py: 'wòshì', en: 'bedroom', e: '🛏️' },
   { w: '里面', k: 0, py: 'lǐmiàn', en: 'inside', e: '📥', no: ['书', '那'] }, { w: '家里', k: 1, py: 'jiāli', en: 'at home', e: '🏠', no: ['书', '室', '教', '子'] },
   { w: '书包', k: 0, py: 'shūbāo', en: 'schoolbag', e: '🎒', no: ['那'] }, { w: '看书', k: 1, py: 'kàn shū', en: 'read (a book)', e: '📖', no: ['她'] },
-  { w: '干吗', k: 1, py: 'gànmá', en: 'what for; what are you doing', e: '🤔', no: ['子'] }, { w: '对不起', k: 1, py: 'duìbuqǐ', en: 'sorry', e: '🙇' },
+  { w: '干吗', k: 1, py: 'gànmá', en: 'what for; what are you doing', e: '🤔', no: ['子', '她'] }, { w: '对不起', k: 1, py: 'duìbuqǐ', en: 'sorry', e: '🙇' },
   { w: '那里', k: 0, py: 'nàli', en: 'there', e: '👉', no: ['书', '室'] }, { w: '那些', k: 0, py: 'nàxiē', en: 'those', e: '👆' },
   { w: '她们', k: 0, py: 'tāmen', en: 'they (girls or women)', e: '👭' }, { w: '铅笔', k: 1, py: 'qiānbǐ', en: 'pencil', e: '✏️' },
   { w: '毛笔', k: 1, py: 'máobǐ', en: 'writing brush', e: '🖌️', no: ['子'] }, { w: '本子', k: 0, py: 'běnzi', en: 'notebook', e: '📒', no: ['里', '教'] },
-  { w: '课本', k: 1, py: 'kèběn', en: 'textbook', e: '📚', no: ['室'] }, { w: '桌子', k: 1, py: 'zhuōzi', en: 'table, desk', e: '🪑' },
+  { w: '课本', k: 1, py: 'kèběn', en: 'textbook', e: '📚', no: ['室'] }, { w: '桌子', k: 1, py: 'zhuōzi', en: 'table, desk', e: '🪑', no: ['里'] },
   { w: '讲话', k: 0, py: 'jiǎnghuà', en: 'speak, talk', e: '🗣️', no: ['书'] }, { w: '讲故事', k: 0, py: 'jiǎng gùshi', en: 'tell a story', e: '📚', no: ['本', '那'] }
 ];
 /* "Write it": more words with each character (common words, or words from the lesson), shown under the writing boxes with the
@@ -833,7 +833,7 @@ var MORE_WORDS = {
    show = the explanation card, pick = the right sentence (a = right, no = wrong ones), build = tap the words in order (ok = every right order) */
 var PATTERN = [
   { t: 'show', shape: '一句话 ＋ 吗？', keys: ['吗'], end: '？', ask: 'Which one is the right question? Look at where 吗 is.',
-    what: 'To ask a yes-or-no question, say the sentence and put 吗 at the very end. The other words stay where they are: 你会游泳 → 你会游泳吗？ (Can you swim?) To answer, repeat the doing word: 会 / 不会, 喜欢 / 不喜欢. For a question with 了吗, answer 带了 / 没带 (use 没, not 不). Do not add 吗 when the question already has 什么, 谁 or 哪儿.',
+    what: 'For a yes-or-no question, say the sentence and put 吗 at the very end; the other words stay put: 你会游泳吗？ (Can you swim?) Answer with the doing word: 会 / 不会. For 了吗, answer 带了 / 没带 (没, not 不). No 吗 with 什么, 谁 or 哪儿.',
     ex: [{ s: '你会游泳吗？', en: 'Can you swim?' }, { s: '外面下雨了吗？', en: 'Is it raining outside?' }, { s: '小狗饿了吗？', en: 'Is the puppy hungry?' }] },
   { t: 'pick', from: '你今天带水壶了。（make it a question）', a: '你今天带水壶了吗？', no: ['吗你今天带水壶了？', '你今天吗带水壶了？'], en: 'Did you bring your water bottle today?' },
   { t: 'build', tiles: ['小猫', '睡觉', '了', '吗'], ok: ['小猫睡觉了吗？'], en: 'Has the kitten gone to sleep?' },
@@ -845,7 +845,7 @@ var PATTERN = [
 var SENTENCES = [
   { s: '今天，我们班的＿里放了一个“失物招领”的箱子。', a: '教室', no: ['讲话', '对不起'], en: 'Today a lost-and-found box was put in our classroom.' },
   { s: '箱子＿有很多东西：笔、本子，还有一顶帽子。', a: '里面', no: ['她们', '毛笔'], en: 'There were lots of things inside the box: pens, notebooks and even a hat.' },
-  { s: '我的好朋友找到了自己的＿，那是她最喜欢的一支笔。', a: '铅笔', no: ['那些', '讲话'], en: 'My good friend found her pencil. It is her favorite one.' },
+  { s: '一个男同学找回了他的铅笔盒，里面有他最喜欢的＿。', a: '铅笔', no: ['讲话', '对不起'], en: 'A boy in our class got back his pencil case, with his favorite pencil inside.' },
   { s: '我同桌找回了她的故事书，还有她的数学＿。', a: '课本', no: ['卧室', '干吗'], en: 'My deskmate got back her storybook and her math textbook.' },
   { s: '一个女同学的＿忘在教室里了，老师帮她收好了。', a: '书包', no: ['讲话', '对不起'], en: 'A girl in our class left her schoolbag in the classroom, and the teacher put it away safely for her.' },
   { s: '有一个男生拿错了同学的笔，他马上说：“＿！”', a: '对不起', no: ['看书', '本子'], en: 'A boy took a classmate’s pen by mistake, and he said "Sorry!" right away.' },

@@ -803,11 +803,11 @@ var ANCIENT = {
 var GROUPS = [CHARS.slice(0, 6), CHARS.slice(6)];
 /* level 2: build a word. w = the word, k = which character is missing, no = characters that would also make a real word, so they are never offered */
 var WORDS = [
-  { w: '红灯', k: 1, py: 'hóngdēng', en: 'red light', e: '🔴' }, { w: '路灯', k: 1, py: 'lùdēng', en: 'street lamp', e: '🏮' },
+  { w: '红灯', k: 1, py: 'hóngdēng', en: 'red light', e: '🔴' }, { w: '路灯', k: 1, py: 'lùdēng', en: 'street lamp', e: '🏮', no: ['宽'] },
   { w: '街道', k: 0, py: 'jiēdào', en: 'street', e: '🏙️', no: ['交', '通'] }, { w: '上街', k: 1, py: 'shàngjiē', en: 'go out into town', e: '🛍️', no: ['道', '交', '灯'] },
   { w: '知道', k: 1, py: 'zhīdào', en: 'know', e: '💡', no: ['交'] }, { w: '道路', k: 0, py: 'dàolù', en: 'road', e: '🛣️', no: ['通', '街'] },
   { w: '很宽', k: 1, py: 'hěn kuān', en: 'very wide', e: '↔️', no: ['忙', '通'] }, { w: '宽大', k: 0, py: 'kuāndà', en: 'roomy, loose', e: '👕', no: ['拉'] },
-  { w: '交通', k: 0, py: 'jiāotōng', en: 'traffic', e: '🚦', no: ['拉'] }, { w: '交朋友', k: 0, py: 'jiāo péngyou', en: 'make friends', e: '🤗', no: ['拉'] },
+  { w: '交通', k: 0, py: 'jiāotōng', en: 'traffic', e: '🚦', no: ['拉', '通'] }, { w: '交朋友', k: 0, py: 'jiāo péngyou', en: 'make friends', e: '🤗', no: ['拉'] },
   { w: '普通', k: 1, py: 'pǔtōng', en: 'ordinary', e: '🙂' }, { w: '通知', k: 0, py: 'tōngzhī', en: 'let people know; a notice', e: '📢' },
   { w: '帮忙', k: 1, py: 'bāngmáng', en: 'help', e: '🙋' }, { w: '急忙', k: 1, py: 'jímáng', en: 'in a hurry', e: '💨', no: ['停'] },
   { w: '往前', k: 0, py: 'wǎng qián', en: 'forward', e: '⬆️', no: ['灯'] }, { w: '来往', k: 1, py: 'láiwǎng', en: 'come and go', e: '🔁' },
@@ -850,8 +850,8 @@ var SENTENCES = [
   { s: '我拉着＿的手，弟弟拉着我的手。', a: '妹妹', no: ['路灯', '普通'], en: 'I held my little sister\'s hand, and my little brother held mine.' },
   { s: '我家门口的＿又宽又长，两边有很多小店。', a: '街道', no: ['帮忙', '来往'], en: 'The street outside our home is wide and long, with lots of little shops on both sides.' },
   { s: '周末路上的车很多，＿有点儿堵。', a: '交通', no: ['姐妹', '知道'], en: 'There were lots of cars at the weekend, and the traffic was a bit jammed.' },
-  { s: '走到路口，我们看见了＿，就站在那里等。', a: '红灯', no: ['普通', '来往'], en: 'At the corner we saw the red light, so we stood there and waited.' },
-  { s: '妹妹想往前跑，爸爸说："红灯要＿！"', a: '停下', no: ['宽大', '知道'], en: 'My little sister wanted to run ahead. Dad said, "At a red light you stop!"' },
+  { s: '走到路口，弟弟说是＿，我们就站在那里等。', a: '红灯', no: ['普通', '来往'], en: 'At the corner my little brother said the light was red, so we stood there and waited.' },
+  { s: '爸爸说："红灯要＿！"', a: '停下', no: ['宽大', '知道'], en: 'Dad said, "At a red light you stop!"' },
   { s: '绿灯亮了，我们手拉着手＿走。', a: '往前', no: ['路灯', '姐妹'], en: 'The light turned green, and we walked forward holding hands.' },
   { s: '爸爸说："我们都＿，过马路要走人行横道。"', a: '知道', no: ['宽大', '停车'], en: 'Dad said, "We all know we cross the road at the pedestrian crossing."' },
   { s: '这条街上＿的人很多，大家都出来玩。', a: '来往', no: ['宽大', '拉开'], en: 'Lots of people were coming and going on this street. Everyone was out having fun.' },

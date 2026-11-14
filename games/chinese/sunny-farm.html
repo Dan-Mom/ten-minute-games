@@ -802,7 +802,7 @@ var WORDS = [
   { w: '照相', k: 0, py: 'zhàoxiàng', en: 'take a photo', e: '📷', no: ['晒'] }, { w: '照片', k: 0, py: 'zhàopiàn', en: 'photo', e: '🖼️', no: ['晒'] },
   { w: '到处', k: 1, py: 'dàochù', en: 'everywhere', e: '🌍' }, { w: '好处', k: 1, py: 'hǎochù', en: 'a good point, benefit', e: '👍', no: ['康', '熟', '暖'] },
   { w: '寻找', k: 0, py: 'xúnzhǎo', en: 'look for', e: '🔍' }, { w: '寻宝', k: 0, py: 'xúnbǎo', en: 'treasure hunt', e: '🗺️', no: ['暖'] },
-  { w: '成熟', k: 1, py: 'chéngshú', en: 'ripe', e: '🍎', no: ['才'] }, { w: '熟人', k: 0, py: 'shúrén', en: 'someone you know well', e: '🤝', no: ['才', '服', '寻'] },
+  { w: '成熟', k: 1, py: 'chéngshú', en: 'ripe', e: '🍎', no: ['才'] }, { w: '熟人', k: 0, py: 'shúrén', en: 'someone you know well', e: '🤝', no: ['才', '服', '寻', '暖', '晒'] },
   { w: '衣服', k: 1, py: 'yīfu', en: 'clothes', e: '👕' }, { w: '校服', k: 1, py: 'xiàofú', en: 'school uniform', e: '🎒' },
   { w: '暖和', k: 0, py: 'nuǎnhuo', en: 'warm', e: '🧣' }, { w: '暖洋洋', k: 0, py: 'nuǎnyángyáng', en: 'warm and cosy', e: '☀️' },
   { w: '刚才', k: 1, py: 'gāngcái', en: 'just now', e: '⏱️', no: ['健'] }, { w: '天才', k: 1, py: 'tiāncái', en: 'a genius', e: '🧠', no: ['暖'] },
@@ -833,7 +833,7 @@ var PATTERN = [
   { t: 'build', tiles: ['不洗手，', '不能', '吃', '西瓜'], ok: ['不洗手，不能吃西瓜。', '不洗手，西瓜不能吃。'], en: 'No washing hands, no watermelon!' },
   { t: 'pick', from: '如果天气不暖和，种子就不会发芽。', a: '天不暖和，种子不发芽。', no: ['天不暖和，不种子发芽。', '天暖和不，种子不发芽。'], en: 'If the weather isn\'t warm, the seeds won\'t sprout.' },
   { t: 'build', tiles: ['衣服', '不晒干，', '不能', '穿'], ok: ['衣服不晒干，不能穿。', '不晒干，衣服不能穿。'], en: 'If the clothes aren\'t dried in the sun, you can\'t wear them.' },
-  { t: 'build', tiles: ['晚上', '不开灯，', '屋里', '不', '亮'], ok: ['晚上不开灯，屋里不亮。', '不开灯，晚上屋里不亮。'], en: 'At night, if you don\'t turn on the light, the room isn\'t bright.' }
+  { t: 'build', tiles: ['晚上', '不开灯，', '屋里', '不', '亮'], ok: ['晚上不开灯，屋里不亮。', '不开灯，晚上屋里不亮。', '晚上屋里不开灯，不亮。', '屋里晚上不开灯，不亮。'], en: 'At night, if you don\'t turn on the light, the room isn\'t bright.' }
 ];
 /* level 4: our own letter to Mom from Grandma's farm, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的妈妈：" */
 var SENTENCES = [
@@ -845,25 +845,24 @@ var SENTENCES = [
   { s: '奶奶说，常常晒被子有很多＿。', a: '好处', no: ['照相', '校服'], en: 'Grandma says sunning the quilts often is good for lots of things.' },
   { s: '果园里的苹果都＿了，又红又大。', a: '成熟', no: ['健身', '寻找'], en: 'The apples in the orchard are all ripe, big and red.' },
   { s: '我在鸡窝里＿鸡蛋，找到了五个！', a: '寻找', no: ['衣服', '成熟'], en: 'I looked for eggs in the henhouse and found five!' },
-  { s: '爷爷还和我在草地上玩了＿游戏。', a: '寻宝', no: ['暖和', '康复'], en: 'Grandpa also played a treasure-hunt game with me on the grass.' },
-  { s: '爷爷拿出手机，给我和小羊＿。', a: '照相', no: ['刚才', '健康'], en: 'Grandpa took a photo of me and the little lamb with his phone.' },
+  { s: '奶奶还和我在草地上玩了＿游戏。', a: '寻宝', no: ['暖和', '康复'], en: 'Grandma also played a treasure-hunt game with me on the grass.' },
+  { s: '奶奶拿出手机，给我和小羊＿。', a: '照相', no: ['刚才', '健康'], en: 'Grandma took a photo of me and the little lamb with her phone.' },
   { s: '我把＿发给你，你看我笑得多开心！', a: '照片', no: ['康复', '暖洋洋'], en: 'I\'m sending you the photo. Look how happy I am!' },
   { s: '我们＿吃了奶奶做的饭，真香！', a: '刚才', no: ['校服', '健身'], en: 'We just ate a meal Grandma made. It was so good!' },
-  { s: '爷爷每天早上都在院子里＿。', a: '健身', no: ['照片', '衣服'], en: 'Every morning Grandpa exercises in the yard.' },
-  { s: '你别担心，奶奶已经完全＿了。', a: '康复', no: ['校服', '照片'], en: 'Don\'t worry, Grandma is completely better now.' },
+  { s: '奶奶每天早上都在院子里＿。', a: '健身', no: ['照片', '衣服'], en: 'Every morning Grandma exercises in the yard.' },
   { s: '我在这里吃得好，睡得好，身体很＿。', a: '健康', no: ['寻找', '照片'], en: 'I eat well and sleep well here, and I feel very healthy.' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
    s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '奶奶家的周末', en: 'A weekend at Grandma\'s', lines: [
-  { who: '🧒 我', s: '奶奶，阳光照进屋里来了，好暖和！', py: 'Nǎinai, yángguāng zhào jìn wū li lai le, hǎo nuǎnhuo!', en: 'Grandma, the sunshine is coming into the room. It\'s so warm!' },
+  { who: '🧒 我', s: '奶奶，太阳才出来，就把屋里照得好暖和！', py: 'Nǎinai, tàiyáng cái chūlai, jiù bǎ wū li zhào de hǎo nuǎnhuo!', en: 'Grandma, the sun has only just come up, and it is already shining warm into the room!' },
   { who: '👵 奶奶', s: '那我们去院子里晒衣服吧！晒干的衣服，有太阳的味道。', py: 'Nà wǒmen qù yuànzi li shài yīfu ba! Shàigān de yīfu, yǒu tàiyáng de wèidao.', en: 'Then let\'s go and dry the clothes in the yard! Clothes dried in the sun smell like sunshine.' },
   { who: '🧒 我', s: '果园里的苹果熟了吗？', py: 'Guǒyuán li de píngguǒ shú le ma?', en: 'Are the apples in the orchard ripe?' },
   { who: '👵 奶奶', s: '熟了！你去寻找最红的那个吧！', py: 'Shú le! Nǐ qù xúnzhǎo zuì hóng de nàge ba!', en: 'They are! Go and look for the reddest one!' },
   { who: '🧒 我', s: '奶奶，苹果为什么这么红？', py: 'Nǎinai, píngguǒ wèishénme zhème hóng?', en: 'Grandma, why are the apples so red?' },
   { who: '👵 奶奶', s: '因为太阳天天照着它们。不晒太阳，苹果不红。', py: 'Yīnwèi tàiyáng tiāntiān zhàozhe tāmen. Bú shài tàiyáng, píngguǒ bù hóng.', en: 'Because the sun shines on them every day. No sun, no red apples.', pat: true },
-  { who: '🧒 我', s: '那我也天天出来跑一跑、晒晒太阳，这样身体才会更健康！', py: 'Nà wǒ yě tiāntiān chūlai pǎo yi pǎo, shàishai tàiyáng, zhèyàng shēntǐ cái huì gèng jiànkāng!', en: 'Then I\'ll come out every day too, to run around in the sun. That\'s how I\'ll get even healthier!' },
-  { who: '👵 奶奶', s: '好啊！晒太阳的好处可多了。', py: 'Hǎo a! Shài tàiyáng de hǎochù kě duō le.', en: 'Good idea! Being out in the sun is good for you in lots of ways.' }
+  { who: '🧒 我', s: '我把最红的苹果送给您，祝奶奶身体健康！', py: 'Wǒ bǎ zuì hóng de píngguǒ sòng gěi nín, zhù nǎinai shēntǐ jiànkāng!', en: 'I\'ll give you the reddest apple. I hope you stay healthy, Grandma!' },
+  { who: '👵 奶奶', s: '谢谢！今天你帮了我很多忙，这就是有小帮手的好处！', py: 'Xièxie! Jīntiān nǐ bāngle wǒ hěn duō máng, zhè jiù shì yǒu xiǎo bāngshǒu de hǎochù!', en: 'Thank you! You helped me a lot today. That\'s the good thing about having a little helper!' }
 ] };
 
 /* ---------- this lesson's settings: the shared engine (../_engine/chinese-engine.js) reads them ---------- */

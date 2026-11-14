@@ -803,12 +803,12 @@ var ANCIENT = {
 var GROUPS = [CHARS.slice(0, 6), CHARS.slice(6)];
 /* level 2: build a word. w = the word, k = which character is missing, no = characters that would also make a real word, so they are never offered */
 var WORDS = [
-  { w: '开心', k: 0, py: 'kāixīn', en: 'happy', e: '😊', no: ['好', '真'] }, { w: '开车', k: 0, py: 'kāichē', en: 'drive', e: '🚗', no: ['好', '早'] },
-  { w: '好了', k: 1, py: 'hǎo le', en: 'all right; done!', e: '👌', no: ['车', '说', '高', '早'] }, { w: '认真', k: 1, py: 'rènzhēn', en: 'careful, paying attention', e: '🧐', no: ['了'] },
-  { w: '高山', k: 0, py: 'gāoshān', en: 'high mountain', e: '🏔️', no: ['开'] }, { w: '高兴', k: 1, py: 'gāoxìng', en: 'happy', e: '😄', no: ['开', '见', '了'] },
+  { w: '开心', k: 0, py: 'kāixīn', en: 'happy', e: '😊', no: ['好', '真'] }, { w: '开车', k: 0, py: 'kāichē', en: 'drive', e: '🚗', no: ['好', '早', '真'] },
+  { w: '好了', k: 1, py: 'hǎo le', en: 'all right; done!', e: '👌', no: ['车', '说', '高', '早', '好'] }, { w: '认真', k: 1, py: 'rènzhēn', en: 'careful, paying attention', e: '🧐', no: ['了'] },
+  { w: '高山', k: 0, py: 'gāoshān', en: 'high mountain', e: '🏔️', no: ['开'] }, { w: '高兴', k: 1, py: 'gāoxìng', en: 'happy', e: '😄', no: ['开', '见', '了', '高'] },
   { w: '火车', k: 1, py: 'huǒchē', en: 'train', e: '🚂', no: ['了'] }, { w: '再见', k: 1, py: 'zàijiàn', en: 'goodbye', e: '👋', no: ['说', '开', '好'] },
-  { w: '说话', k: 0, py: 'shuōhuà', en: 'talk', e: '🗣️', no: ['好', '真'] }, { w: '早上', k: 0, py: 'zǎoshang', en: 'morning', e: '🌅', no: ['车'] },
-  { w: '你好', k: 0, py: 'nǐ hǎo', en: 'hello', e: '👋', no: ['真', '说'] }, { w: '你们', k: 1, py: 'nǐmen', en: 'you (more than one)', e: '👥', no: ['好', '说', '早'] },
+  { w: '说话', k: 0, py: 'shuōhuà', en: 'talk', e: '🗣️', no: ['好', '真'] }, { w: '早上', k: 0, py: 'zǎoshang', en: 'morning', e: '🌅', no: ['车', '好'] },
+  { w: '你好', k: 0, py: 'nǐ hǎo', en: 'hello', e: '👋', no: ['真', '说', '好'] }, { w: '你们', k: 1, py: 'nǐmen', en: 'you (more than one)', e: '👥', no: ['好', '说', '早'] },
   { w: '好人', k: 0, py: 'hǎorén', en: 'a good, kind person', e: '😇', no: ['真', '高'] }
 ];
 /* "Write it": more words with each character (common words, or words from the lesson), shown under the writing boxes with the

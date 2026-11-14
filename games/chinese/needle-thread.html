@@ -811,7 +811,7 @@ var WORDS = [
   { w: '慈母', k: 0, py: 'címǔ', en: 'loving mother', e: '👩' }, { w: '毛线', k: 1, py: 'máoxiàn', en: 'wool', e: '🧶' },
   { w: '针线', k: 1, py: 'zhēnxiàn', en: 'needle and thread', e: '🪡' }, { w: '临走', k: 0, py: 'línzǒu', en: 'just before leaving', e: '🚪', no: ['独'] },
   { w: '秘密', k: 1, py: 'mìmì', en: 'secret', e: '🤫' }, { w: '缝衣服', k: 0, py: 'féng yīfu', en: 'sew clothes', e: '🧵' },
-  { w: '恐怕', k: 0, py: 'kǒngpà', en: 'I\'m afraid that', e: '😟' }, { w: '迟到', k: 0, py: 'chídào', en: 'be late', e: '⏰', no: ['归', '临', '独'] },
+  { w: '恐怕', k: 0, py: 'kǒngpà', en: 'I\'m afraid that', e: '😟' }, { w: '迟到', k: 0, py: 'chídào', en: 'be late', e: '⏰', no: ['归', '临', '独', '缝'] },
   { w: '回归', k: 1, py: 'huíguī', en: 'return', e: '🔁', no: ['绝'] }, { w: '一寸', k: 1, py: 'yí cùn', en: 'one cun (about 3 cm)', e: '📏', no: ['线', '绝'] },
   { w: '拒绝', k: 1, py: 'jùjué', en: 'refuse', e: '✋' }, { w: '灭火', k: 0, py: 'mièhuǒ', en: 'put out a fire', e: '🧯' },
   { w: '老翁', k: 1, py: 'lǎowēng', en: 'old man', e: '👴' }, { w: '独自', k: 0, py: 'dúzì', en: 'alone', e: '🧍' },
@@ -845,7 +845,7 @@ var PATTERN = [
 var SENTENCES = [
   { s: '＿的时候，你在灯下给我缝扣子。', a: '临走', no: ['独自', '毛线'], en: 'Just before I left, you sewed a button on for me under the lamp.' },
   { s: '你拿出＿，给我把扣子缝得好好的。', a: '针线', no: ['寒冷', '拒绝'], en: 'You took out a needle and thread and sewed my button on firmly.' },
-  { s: '奶奶说，她小时候就学会了＿。', a: '缝衣服', no: ['老翁', '秘密'], en: 'Granny said she learned to sew clothes when she was little.' },
+  { s: '爷爷说，他小时候就学会了＿。', a: '缝衣服', no: ['老翁', '秘密'], en: 'Grandpa said he learned to sew clothes when he was little.' },
   { s: '你说：“＿夏令营那边会很冷，多带一件衣服。”', a: '恐怕', no: ['秘密', '老翁'], en: 'You said, "I\'m afraid it will be cold at summer camp. Take an extra layer."' },
   { s: '我每天早上都准时起床，一次也没有＿。', a: '迟到', no: ['慈母', '老翁'], en: 'I get up on time every morning, and I haven\'t been late once.' },
   { s: '爷爷说，有一首古诗写的就是＿给孩子缝衣服。', a: '慈母', no: ['寒假', '拒绝'], en: 'Grandpa said there is an old poem about a loving mother sewing clothes for her child.' },
@@ -853,11 +853,11 @@ var SENTENCES = [
   { s: '我的个子好像又长高了＿。', a: '一寸', no: ['老翁', '秘密'], en: 'I think I\'ve grown about a cun (3 cm) taller again.' },
   { s: '有个小朋友想抄我的作业，我＿了他。', a: '拒绝', no: ['慈母', '寒冷'], en: 'Someone wanted to copy my homework, and I said no.' },
   { s: '老师说，看见着火了，不能自己去＿，要马上告诉大人。', a: '灭火', no: ['秘密', '临走'], en: 'The teacher said that if you see a fire, don\'t try to put it out yourself; tell a grown-up at once.' },
-  { s: '营地的老师给我们讲了一首诗，说的是一个＿在雪中钓鱼。', a: '老翁', no: ['秘密', '拒绝'], en: 'A camp teacher told us a poem about an old man fishing in the snow.' },
+  { s: '我还记得爷爷讲的那首诗，说的是一个＿在雪中钓鱼。', a: '老翁', no: ['秘密', '拒绝'], en: 'I still remember the poem Grandpa told us, about an old man fishing in the snow.' },
   { s: '那个老翁＿坐在小船上。', a: '独自', no: ['寒假', '毛线'], en: 'The old man sat alone in a little boat.' },
   { s: '诗里的江边非常＿，下着大雪。', a: '寒冷', no: ['秘密', '临走'], en: 'In the poem it is very cold by the river, and heavy snow is falling.' },
   { s: '等＿到了，我想和你一起去看雪。', a: '寒假', no: ['拒绝', '慈母'], en: 'When the winter holidays come, I want to go and see the snow with you.' },
-  { s: '奶奶在用＿给我织一顶帽子。', a: '毛线', no: ['拒绝', '独自'], en: 'Granny is knitting me a hat with wool.' },
+  { s: '爷爷在用＿给我织一顶帽子。', a: '毛线', no: ['拒绝', '独自'], en: 'Grandpa is knitting me a hat with wool.' },
   { s: '妈妈，我告诉你一个＿：我为你画了一张画！', a: '秘密', no: ['寒冷', '灭火'], en: 'Mum, I\'ll tell you a secret: I drew a picture for you!' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines; the poem lines are quoted from the two Tang poems.

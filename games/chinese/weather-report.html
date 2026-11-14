@@ -807,7 +807,7 @@ var WORDS = [
   { w: '地上', k: 0, py: 'dì shang', en: 'on the ground', e: '🍂', no: ['天'] }, { w: '春风', k: 0, py: 'chūnfēng', en: 'spring breeze', e: '🌸', no: ['秋', '冬', '夏'] },
   { w: '夏天', k: 0, py: 'xiàtiān', en: 'summer', e: '☀️', no: ['春', '秋', '冬', '雨', '雪', '天'] }, { w: '中秋节', k: 1, py: 'Zhōngqiū Jié', en: 'the Mid-Autumn Festival', e: '🥮' },
   { w: '冬天', k: 0, py: 'dōngtiān', en: 'winter', e: '❄️', no: ['春', '夏', '秋', '雨', '雪', '天'] }, { w: '雪花', k: 0, py: 'xuěhuā', en: 'snowflake', e: '❄️', no: ['雨', '春', '天'] },
-  { w: '电灯', k: 0, py: 'diàndēng', en: 'electric light', e: '💡', no: ['天'] }, { w: '雨伞', k: 0, py: 'yǔsǎn', en: 'umbrella', e: '☂️' },
+  { w: '电灯', k: 0, py: 'diàndēng', en: 'electric light', e: '💡', no: ['天', '风', '地'] }, { w: '雨伞', k: 0, py: 'yǔsǎn', en: 'umbrella', e: '☂️' },
   { w: '地图', k: 0, py: 'dìtú', en: 'map', e: '🗺️', no: ['云'] }
 ];
 /* "Write it": more words with each character (common words, or words from the lesson), shown under the writing boxes with the
@@ -839,7 +839,7 @@ var PATTERN = [
 ];
 /* level 4: our own letter to Grandma about our weather show, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的奶奶：" */
 var SENTENCES = [
-  { s: '今天我和弟弟在家做了一个＿节目。', a: '天气', no: ['雪人', '地图'], en: 'Today my brother and I made a weather show at home.' },
+  { s: '今天我和弟弟在家做了一个＿预报节目。', a: '天气', no: ['雪人', '地图'], en: 'Today my brother and I made a weather report show at home.' },
   { s: '我们站在一张大＿前面，就像真正的天气预报员一样。', a: '地图', no: ['雨伞', '雪花'], en: 'We stood in front of a big map, just like real weather reporters.' },
   { s: '我说，春天来了，＿暖暖的，花都开了。', a: '春风', no: ['雪人', '地图'], en: 'I said: spring is here, the spring breeze is warm, and the flowers are out.' },
   { s: '＿很热，我们常常和爸爸妈妈去海边玩水。', a: '夏天', no: ['雪人', '地图'], en: 'Summer is hot, and we often go to the beach with Mom and Dad to play in the water.' },

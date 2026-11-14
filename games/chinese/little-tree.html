@@ -806,10 +806,10 @@ var ANCIENT = {
 var GROUPS = [CHARS.slice(0, 5), CHARS.slice(5, 9), CHARS.slice(9)];
 /* level 2: build a word. w = the word, k = which character is missing, no = characters that would also make a real word, so they are never offered */
 var WORDS = [
-  { w: '守门员', k: 0, py: 'shǒuményuán', en: 'goalkeeper', e: '🧤' }, { w: '守住', k: 0, py: 'shǒuzhù', en: 'guard, hold on to', e: '🛡️' },
+  { w: '守门员', k: 0, py: 'shǒuményuán', en: 'goalkeeper', e: '🧤' }, { w: '守住', k: 0, py: 'shǒuzhù', en: 'guard, hold on to', e: '🛡️', no: ['待'] },
   { w: '等待', k: 1, py: 'děngdài', en: 'wait', e: '⏳', no: ['急', '死'] }, { w: '接待', k: 1, py: 'jiēdài', en: 'welcome guests', e: '🤝' },
   { w: '一棵', k: 1, py: 'yì kē', en: 'one (tree)', e: '🌳', no: ['剑', '撞', '息', '急', '死'] }, { w: '休息', k: 0, py: 'xiūxi', en: 'rest', e: '😴' },
-  { w: '消息', k: 1, py: 'xiāoxi', en: 'news', e: '📰' }, { w: '撞到', k: 0, py: 'zhuàngdào', en: 'bump into', e: '💥', no: ['赶', '待', '每', '求'] },
+  { w: '消息', k: 1, py: 'xiāoxi', en: 'news', e: '📰' }, { w: '撞到', k: 0, py: 'zhuàngdào', en: 'bump into', e: '💥', no: ['赶', '待', '每', '求', '守'] },
   { w: '饿死了', k: 1, py: 'è sǐ le', en: 'starving!', e: '🍽️', no: ['急'] }, { w: '每天', k: 0, py: 'měitiān', en: 'every day', e: '📅' },
   { w: '从此', k: 1, py: 'cóngcǐ', en: 'from then on', e: '➡️' }, { w: '请求', k: 1, py: 'qǐngqiú', en: 'request', e: '🙏' },
   { w: '求救', k: 0, py: 'qiújiù', en: 'call for help', e: '🆘', no: ['急', '待'] }, { w: '宝剑', k: 1, py: 'bǎojiàn', en: 'sword', e: '⚔️' },
@@ -847,12 +847,12 @@ var SENTENCES = [
   { s: '可是我只是看着它＿，不给它浇水。', a: '等待', no: ['宝剑', '从此'], en: 'But I only looked at it and didn\'t water it. I just waited.' },
   { s: '爷爷说小树渴了。我听了，＿去拿水壶。', a: '赶快', no: ['宝剑', '消息'], en: 'Grandpa said the little tree was thirsty. When I heard that, I hurried to get the watering can.' },
   { s: '＿，我天天给小树浇水。', a: '从此', no: ['着急', '宝剑'], en: 'From then on, I watered the little tree every day.' },
-  { s: '弟弟一进门就喊：“我＿！”', a: '饿死了', no: ['从此', '宝剑'], en: 'My little brother came in shouting, "I\'m starving!"' },
-  { s: '下午，弟弟的玩具＿从小桥上掉到了小河里。', a: '宝剑', no: ['消息', '每天'], en: 'In the afternoon, my brother\'s toy sword fell into the stream.' },
+  { s: '上午，弟弟的玩具＿从小桥上掉到了小河里。', a: '宝剑', no: ['消息', '每天'], en: 'In the morning, my brother\'s toy sword fell into the stream.' },
   { s: '弟弟很＿，做了一个记号。', a: '着急', no: ['从此', '一棵'], en: 'My brother was worried and made a mark.' },
   { s: '他大声＿：“谁来帮帮我？”', a: '求救', no: ['休息', '一棵'], en: 'He called out for help: "Who can help me?"' },
   { s: '他跑得太急，还不小心＿了栏杆。', a: '撞到', no: ['每天', '接待'], en: 'He ran so fast that he bumped into the railing.' },
   { s: '爷爷用网子把剑捞上来以后，我们坐下来＿了一会儿。', a: '休息', no: ['宝剑', '守住'], en: 'After Grandpa fished the sword out with a net, we sat down and rested for a while.' },
+  { s: '弟弟一进门就喊：“我＿！”', a: '饿死了', no: ['从此', '宝剑'], en: 'My little brother came in shouting, "I\'m starving!"' },
   { s: '晚上，我们在家＿来做客的王阿姨。', a: '接待', no: ['一棵', '赶快'], en: 'In the evening, we welcomed Auntie Wang, who came to visit.' },
   { s: '第二天踢球，我当＿，守住了好几个球。', a: '守门员', no: ['消息', '从此'], en: 'The next day we played football. I was the goalkeeper and saved several shots.' },
   { s: '舅妈，我有一个好＿：小苹果树长出新叶子了！', a: '消息', no: ['赶快', '着急'], en: 'Auntie, I have good news: the little apple tree has grown new leaves!' },

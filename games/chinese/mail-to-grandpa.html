@@ -811,14 +811,14 @@ var ANCIENT = {
 var GROUPS = [CHARS.slice(0, 5), CHARS.slice(5, 10), CHARS.slice(10, 15)];
 /* level 2: build a word. w = the word, k = which character is missing, no = characters that would also make a real word, so they are never offered */
 var WORDS = [
-  { w: '信封', k: 0, py: 'xìnfēng', en: 'envelope', e: '✉️' }, { w: '封面', k: 0, py: 'fēngmiàn', en: 'front cover (of a book)', e: '📕', no: ['全', '场', '平'] }, { w: '邮票', k: 1, py: 'yóupiào', en: 'postage stamp', e: '📮' },
+  { w: '信封', k: 0, py: 'xìnfēng', en: 'envelope', e: '✉️' }, { w: '封面', k: 0, py: 'fēngmiàn', en: 'front cover (of a book)', e: '📕', no: ['全', '场', '平', '票'] }, { w: '邮票', k: 1, py: 'yóupiào', en: 'postage stamp', e: '📮' },
   { w: '邮件', k: 0, py: 'yóujiàn', en: 'mail, email', e: '📧', no: ['信', '取'] }, { w: '城市', k: 0, py: 'chéngshì', en: 'city', e: '🏙️', no: ['全'] },
-  { w: '长城', k: 1, py: 'Chángchéng', en: 'the Great Wall', e: '🧱', no: ['安', '进'] }, { w: '北京', k: 1, py: 'Běijīng', en: 'Beijing', e: '🏯', no: ['平', '城'] },
+  { w: '长城', k: 1, py: 'Chángchéng', en: 'the Great Wall', e: '🧱', no: ['安', '进', '孙'] }, { w: '北京', k: 1, py: 'Běijīng', en: 'Beijing', e: '🏯', no: ['平', '城'] },
   { w: '广场', k: 0, py: 'guǎngchǎng', en: 'town square', e: '🕊️', no: ['全', '进'] }, { w: '操场', k: 1, py: 'cāochǎng', en: 'playground', e: '⚽' },
   { w: '安全', k: 0, py: 'ānquán', en: 'safe', e: '🦺' }, { w: '全家', k: 0, py: 'quánjiā', en: 'the whole family', e: '👨‍👩‍👧‍👦', no: ['安', '孙'] },
   { w: '平安', k: 0, py: 'píng\'ān', en: 'safe and sound', e: '🙏' }, { w: '提问', k: 0, py: 'tíwèn', en: 'ask a question', e: '✋' },
-  { w: '取票', k: 0, py: 'qǔpiào', en: 'pick up tickets', e: '🎫', no: ['邮', '全'] }, { w: '进步', k: 0, py: 'jìnbù', en: 'get better, progress', e: '📈', no: ['信', '平', '安'] },
-  { w: '孙女', k: 0, py: 'sūnnǚ', en: 'granddaughter', e: '👧' }, { w: '孙子', k: 0, py: 'sūnzi', en: 'grandson', e: '👦', no: ['票', '场'] }
+  { w: '取票', k: 0, py: 'qǔpiào', en: 'pick up tickets', e: '🎫', no: ['邮', '全', '平'] }, { w: '进步', k: 0, py: 'jìnbù', en: 'get better, progress', e: '📈', no: ['信', '平', '安'] },
+  { w: '孙女', k: 0, py: 'sūnnǚ', en: 'granddaughter', e: '👧', no: ['信'] }, { w: '孙子', k: 0, py: 'sūnzi', en: 'grandson', e: '👦', no: ['票', '场', '提', '信'] }
 ];
 /* "Write it": more words with each character (common words, or words from the lesson), shown under the writing boxes with the
    words of level 2 that have it. w = the word, py = its pinyin, en = what it means */
@@ -860,8 +860,8 @@ var SENTENCES = [
   { s: '您住的＿很大，有很多高楼。', a: '城市', no: ['邮件', '孙女'], en: 'The city you live in is big, with lots of tall buildings.' },
   { s: '听说您家旁边有一个大＿。', a: '广场', no: ['安全', '提出'], en: 'I heard there is a big square next to your home.' },
   { s: '我们学校也有一个大＿，我每天在那里跑步。', a: '操场', no: ['平安', '邮票'], en: 'Our school has a big playground too, and I run there every day.' },
-  { s: '我想＿一个问题：北京的冬天冷不冷？', a: '提出', no: ['城市', '信封'], en: 'I want to ask a question: are winters in Beijing cold?' },
   { s: '我的中文有了很大的＿，老师夸我了。', a: '进步', no: ['北京', '广场'], en: 'My Chinese got much better, and my teacher praised me.' },
+  { s: '我想＿一个问题：北京的冬天冷不冷？', a: '提出', no: ['城市', '信封'], en: 'I want to ask a question: are winters in Beijing cold?' },
   { s: '放假的时候，我们＿要去看您。', a: '全家', no: ['邮票', '操场'], en: 'In the holidays our whole family will come to see you.' },
   { s: '妈妈订好了机票，到时候去机场＿。', a: '取票', no: ['平安', '进步'], en: 'Mom booked the flight and will pick up the tickets at the airport.' },
   { s: '坐飞机很＿，您不用担心。', a: '安全', no: ['信封', '孙女'], en: 'Flying is safe, so please do not worry.' },

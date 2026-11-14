@@ -814,10 +814,10 @@ var WORDS = [
   { w: '超市', k: 0, py: 'chāoshì', en: 'supermarket', e: '🛒', no: ['各', '行'] }, { w: '超人', k: 0, py: 'chāorén', en: 'superhero', e: '🦸', no: ['商', '行', '各'] },
   { w: '城市', k: 1, py: 'chéngshì', en: 'city', e: '🏙️' }, { w: '各种', k: 0, py: 'gè zhǒng', en: 'all kinds of', e: '🌈', no: ['品'] },
   { w: '颜色', k: 0, py: 'yánsè', en: 'colour', e: '🎨', no: ['各', '行'] }, { w: '练习', k: 0, py: 'liànxí', en: 'practise', e: '✏️' },
-  { w: '许多', k: 0, py: 'xǔduō', en: 'many', e: '🔢', no: ['超'] }, { w: '漂亮', k: 0, py: 'piàoliang', en: 'pretty', e: '✨' },
+  { w: '许多', k: 0, py: 'xǔduō', en: 'many', e: '🔢', no: ['超'] }, { w: '漂亮', k: 0, py: 'piàoliang', en: 'pretty', e: '✨', no: ['超'] },
   { w: '尺子', k: 0, py: 'chǐzi', en: 'ruler', e: '📏', no: ['刀', '鞋'] }, { w: '卷笔刀', k: 2, py: 'juǎnbǐdāo', en: 'pencil sharpener', e: '✏️' },
   { w: '剪刀', k: 1, py: 'jiǎndāo', en: 'scissors', e: '✂️' }, { w: '一支', k: 1, py: 'yì zhī', en: 'one (pen)', e: '🖊️', no: ['行', '刀', '尺', '品'] },
-  { w: '一行字', k: 1, py: 'yì háng zì', en: 'a line of words', e: '📝' }, { w: '商店', k: 0, py: 'shāngdiàn', en: 'shop', e: '🏪', no: ['鞋'] },
+  { w: '一行字', k: 1, py: 'yì háng zì', en: 'a line of words', e: '📝' }, { w: '商店', k: 0, py: 'shāngdiàn', en: 'shop', e: '🏪', no: ['鞋', '各'] },
   { w: '鞋子', k: 0, py: 'xiézi', en: 'shoes', e: '👟', no: ['尺', '刀'] }, { w: '用品', k: 1, py: 'yòngpǐn', en: 'things you use', e: '🧴', no: ['刀', '尺'] },
   { w: '制造', k: 0, py: 'zhìzào', en: 'make, manufacture', e: '🏭' }
 ];
@@ -844,7 +844,7 @@ var PATTERN = [
     ex: [{ s: '要是明天天晴，我们就去公园。', en: 'If it\'s sunny tomorrow, we\'ll go to the park.' }, { s: '要是你累了，就坐下来休息。', en: 'If you\'re tired, sit down and rest.' }, { s: '要是小狗饿了，它就会叫。', en: 'If the puppy is hungry, it barks.' }] },
   { t: 'pick', from: '如果你冷，你可以穿我的外套。', a: '要是你冷，就穿我的外套吧。', no: ['就你冷，要是穿我的外套吧。', '你冷要是，就穿我的外套吧。'], en: 'If you\'re cold, wear my coat.' },
   { t: 'build', tiles: ['要是', '作业做完了，', '我们', '就', '去踢球'], ok: ['要是作业做完了，我们就去踢球。', '我们要是作业做完了，就去踢球。'], en: 'If our homework is done, we\'ll go and play football.' },
-  { t: 'pick', from: '天黑了。我们回家吧。', a: '要是天黑了，我们就回家。', no: ['要是天黑了，就我们回家。', '天黑了要是，我们就回家。'], en: 'If it gets dark, we\'ll go home.' },
+  { t: 'pick', from: '天黑了。我们回家吧。', a: '要是天黑了，我们就回家。', no: ['要是天黑了，我们回家就。', '天黑了要是，我们就回家。'], en: 'If it gets dark, we\'ll go home.' },
   { t: 'build', tiles: ['要是', '你想看，', '我', '就', '借给你'], ok: ['要是你想看，我就借给你。'], en: 'If you want to read it, I\'ll lend it to you.' },
   { t: 'build', tiles: ['要是', '下雪了，', '我们', '就', '堆雪人'], ok: ['要是下雪了，我们就堆雪人。'], en: 'If it snows, we\'ll build a snowman.' }
 ];
@@ -862,7 +862,7 @@ var SENTENCES = [
   { s: '我在本子的第一页写了＿：好好学习。', a: '一行字', no: ['剪刀', '超人'], en: 'On the first page of my notebook I wrote a line: study hard.' },
   { s: '旁边的＿里有很多运动鞋。', a: '商店', no: ['颜色', '练习'], en: 'The shop next door had lots of trainers.' },
   { s: '我的旧＿太小了，妈妈说下次再买新的。', a: '鞋子', no: ['城市', '颜色'], en: 'My old shoes are too small. Mum said we\'ll buy new ones next time.' },
-  { s: '那家店卖的都是学习＿。', a: '用品', no: ['超人', '剪刀'], en: 'That shop sells only things for school.' },
+  { s: '回家后，我和弟弟开了一个小商店，只卖学习＿。', a: '用品', no: ['超人', '剪刀'], en: 'Back home, my little brother and I opened a little shop that sells only things for school.' },
   { s: '这些文具都是在中国＿的。', a: '制造', no: ['尺子', '鞋子'], en: 'All this stationery was made in China.' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,

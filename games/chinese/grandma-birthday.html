@@ -811,16 +811,16 @@ var ANCIENT = {
 var GROUPS = [CHARS.slice(0, 5), CHARS.slice(5, 10), CHARS.slice(10)];
 /* level 2: build a word. w = the word, k = which character is missing, no = characters that would also make a real word, so they are never offered */
 var WORDS = [
-  { w: '好的', k: 1, py: 'hǎo de', en: 'OK, sure', e: '👌' }, { w: '大家', k: 1, py: 'dàjiā', en: 'everyone', e: '👨‍👩‍👧', no: ['爷', '妈', '把', '的'] },
-  { w: '家人', k: 0, py: 'jiārén', en: 'family members', e: '👪', no: ['有', '放', '这'] }, { w: '回家', k: 1, py: 'huíjiā', en: 'go home', e: '🏠', no: ['到', '放'] },
+  { w: '好的', k: 1, py: 'hǎo de', en: 'OK, sure', e: '👌' }, { w: '大家', k: 1, py: 'dàjiā', en: 'everyone', e: '👨‍👩‍👧', no: ['爷', '妈', '把', '的', '有'] },
+  { w: '家人', k: 0, py: 'jiārén', en: 'family members', e: '👪', no: ['有', '放', '这', '完'] }, { w: '回家', k: 1, py: 'huíjiā', en: 'go home', e: '🏠', no: ['到', '放'] },
   { w: '这里', k: 0, py: 'zhèlǐ', en: 'here', e: '📍', no: ['家'] }, { w: '这个', k: 0, py: 'zhège', en: 'this one', e: '👇', no: ['有'] },
   { w: '没有', k: 1, py: 'méiyǒu', en: 'not have; didn’t', e: '🚫', no: ['完', '到', '回', '给', '放'] }, { w: '有用', k: 0, py: 'yǒuyòng', en: 'useful', e: '🧰', no: ['家'] },
   { w: '爷爷', k: 0, py: 'yéye', en: 'grandpa (Dad’s father)', e: '👴' }, { w: '奶奶', k: 0, py: 'nǎinai', en: 'grandma (Dad’s mother)', e: '👵' },
-  { w: '牛奶', k: 1, py: 'niúnǎi', en: 'milk', e: '🥛' }, { w: '爸爸', k: 1, py: 'bàba', en: 'dad', e: '👨', no: ['妈'] },
+  { w: '牛奶', k: 1, py: 'niúnǎi', en: 'milk', e: '🥛' }, { w: '爸爸', k: 1, py: 'bàba', en: 'dad', e: '👨', no: ['妈', '的'] },
   { w: '妈妈', k: 0, py: 'māma', en: 'mom', e: '👩', no: ['爸', '奶'] }, { w: '和好', k: 0, py: 'héhǎo', en: 'make up (be friends again)', e: '🤝', no: ['放', '完'] },
   { w: '暖和', k: 1, py: 'nuǎnhuo', en: 'warm', e: '🧣' }, { w: '放学', k: 0, py: 'fàngxué', en: 'school is out', e: '🔔' },
   { w: '回来', k: 0, py: 'huílai', en: 'come back', e: '↩️', no: ['到'] }, { w: '迟到', k: 1, py: 'chídào', en: 'be late', e: '⏰' },
-  { w: '送给', k: 1, py: 'sònggěi', en: 'give (as a present)', e: '🎁', no: ['回', '到', '完'] }, { w: '吃完', k: 1, py: 'chīwán', en: 'finish eating', e: '🍽️', no: ['到', '的', '奶'] },
+  { w: '送给', k: 1, py: 'sònggěi', en: 'give (as a present)', e: '🎁', no: ['回', '到', '完', '的'] }, { w: '吃完', k: 1, py: 'chīwán', en: 'finish eating', e: '🍽️', no: ['到', '的', '奶'] },
   { w: '把手', k: 0, py: 'bǎshou', en: 'handle', e: '🚪', no: ['放', '回', '到'] }
 ];
 /* "Write it": more words with each character (common words, or words from the lesson), shown under the writing boxes with the
@@ -868,7 +868,7 @@ var SENTENCES = [
   { s: '爸爸路上堵车，＿了一会儿，可是正好赶上唱生日歌。', a: '迟到', no: ['牛奶', '把手'], en: 'Dad got stuck in traffic and was a little late, but he made it in time for the birthday song.' },
   { s: '爷爷指着院子说：“＿的花是我种的。”', a: '这里', no: ['牛奶', '把手'], en: 'Grandpa pointed at the yard and said, "I planted the flowers here."' },
   { s: '我＿奶奶一幅画，奶奶说要挂在客厅里。', a: '送给', no: ['和好', '这里'], en: 'I gave Grandma a picture I painted, and she said she’ll hang it in the living room.' },
-  { s: '这次你＿来，大家都很想你。', a: '没有', no: ['爷爷', '和好'], en: 'You didn’t come this time, and everyone missed you.' },
+  { s: '这次你＿来，大家都很想你。', a: '没有', no: ['牛奶', '和好'], en: 'You didn’t come this time, and everyone missed you.' },
   { s: '妈妈问我：“要不要再吃一块蛋糕？”我说：“＿，谢谢妈妈！”', a: '好的', no: ['和好', '有用'], en: 'Mom asked me, "Would you like another piece of cake?" I said, "Yes, please. Thanks, Mom!"' },
   { s: '大家＿蛋糕以后，一起看了爸爸拍的照片。', a: '吃完', no: ['牛奶', '把手'], en: 'After everyone finished the cake, we looked at the photos Dad took.' },
   { s: '晚上九点，客人们都＿了。', a: '回家', no: ['牛奶', '把手'], en: 'At nine in the evening, the guests all went home.' }

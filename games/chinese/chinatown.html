@@ -811,10 +811,10 @@ var WORDS = [
   { w: '强大', k: 0, py: 'qiángdà', en: 'strong, powerful', e: '💪', no: ['越'] }, { w: '华侨', k: 1, py: 'huáqiáo', en: 'Chinese people living abroad', e: '🌏' },
   { w: '集中', k: 0, py: 'jízhōng', en: 'gather together', e: '🧲' }, { w: '集市', k: 0, py: 'jíshì', en: 'market', e: '🛒' },
   { w: '功课', k: 0, py: 'gōngkè', en: 'homework', e: '📝', no: ['史', '舞', '节'] }, { w: '成功', k: 1, py: 'chénggōng', en: 'success; succeed', e: '🏆', no: ['集'] },
-  { w: '买卖', k: 1, py: 'mǎimai', en: 'business', e: '💰' }, { w: '卖东西', k: 0, py: 'mài dōngxi', en: 'sell things', e: '🏪', no: ['贴'] },
-  { w: '越过', k: 0, py: 'yuèguò', en: 'go over', e: '🏃', no: ['卖', '贴', '强', '功'] }, { w: '春节', k: 1, py: 'Chūnjié', en: 'Spring Festival', e: '🧧' },
+  { w: '买卖', k: 1, py: 'mǎimai', en: 'business', e: '💰' }, { w: '卖东西', k: 0, py: 'mài dōngxi', en: 'sell things', e: '🏪', no: ['贴', '集'] },
+  { w: '越过', k: 0, py: 'yuèguò', en: 'go over', e: '🏃', no: ['卖', '贴', '强', '功', '舞', '集'] }, { w: '春节', k: 1, py: 'Chūnjié', en: 'Spring Festival', e: '🧧' },
   { w: '节日', k: 0, py: 'jiérì', en: 'festival', e: '🎉', no: ['集'] }, { w: '贴对联', k: 0, py: 'tiē duìlián', en: 'put up couplets', e: '🧧', no: ['卖'] },
-  { w: '跳舞', k: 1, py: 'tiàowǔ', en: 'dance', e: '💃' }, { w: '舞狮子', k: 0, py: 'wǔ shīzi', en: 'lion dance', e: '🦁' }
+  { w: '跳舞', k: 1, py: 'tiàowǔ', en: 'dance', e: '💃' }, { w: '舞狮子', k: 0, py: 'wǔ shīzi', en: 'lion dance', e: '🦁', no: ['卖'] }
 ];
 /* "Write it": more words with each character (common words, or words from the lesson), shown under the writing boxes with the
    words of level 2 that have it. w = the word, py = its pinyin, en = what it means */
@@ -840,7 +840,7 @@ var PATTERN = [
   { t: 'build', tiles: ['公园里的', '花', '越来越', '多了'], ok: ['公园里的花越来越多了。'], en: 'There are more and more flowers in the park.' },
   { t: 'build', tiles: ['我们的', '城市', '越来越', '漂亮'], ok: ['我们的城市越来越漂亮。'], en: 'Our city is getting prettier and prettier.' }
 ];
-/* level 4: our own letter to Granny about New Year in Chinatown, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的奶奶：" */
+/* level 4: our own letter to Grandma about New Year in Chinatown, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的奶奶：" */
 var SENTENCES = [
   { s: '＿快到了，我们全家去唐人街玩。', a: '春节', no: ['功课', '史书'], en: 'Spring Festival was coming, so the whole family went to Chinatown.' },
   { s: '我们的车＿了一座大桥，就到了唐人街。', a: '越过', no: ['集中', '跳舞'], en: 'Our car went over a big bridge, and then we were in Chinatown.' },
@@ -857,7 +857,7 @@ var SENTENCES = [
   { s: '回家以后，我先把＿做完了。', a: '功课', no: ['舞狮子', '华侨'], en: 'When we got home, I finished my homework first.' },
   { s: '春节是中国人最重要的＿。', a: '节日', no: ['功课', '买卖'], en: 'Spring Festival is the most important festival for Chinese people.' },
   { s: '爸爸说，唐人街附近还有一个＿，什么都有卖。', a: '集市', no: ['跳舞', '成功'], en: 'Dad said there is also a market near Chinatown that sells everything.' },
-  { s: '奶奶，我们的春节晚会办得很＿，下次你也来吧！', a: '成功', no: ['历史', '华侨'], en: 'Granny, our New Year party was a great success. Come next time!' }
+  { s: '奶奶，我第一次自己贴对联，一下子就＿了！下次你也来看吧！', a: '成功', no: ['历史', '华侨'], en: 'Grandma, I put up the couplets by myself for the first time, and got it right straight away! Come and see next time!' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
    s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
@@ -881,12 +881,12 @@ var LESSON = {
     { title: 'Meet the characters', zh: '认生字', text: 'Meet 13 new characters, then find each one among the lantern cards.' },
     { title: 'Build the words', zh: '组词', text: 'Each word is missing one character. Pick the right lantern card.' },
     { title: 'Sentence pattern', zh: '句型 越来越……', text: 'Learn to say "more and more" with 越来越, as in 天越来越黑 (it is getting darker and darker). Pick the right sentence, then build your own from word tiles.' },
-    { title: 'Write the letter', zh: '写信', text: 'Finish our letter to Granny about New Year in Chinatown: pick the missing word in each sentence, then send it.' },
+    { title: 'Write the letter', zh: '写信', text: 'Finish our letter to Grandma about New Year in Chinatown: pick the missing word in each sentence, then send it.' },
     { title: 'Festival Bingo', zh: '春节 Bingo', text: 'Listen, then mark what you hear on your card. Make a line, then two lines, then fill the card.' }
   ],
   pick: 'Which lantern card says…',                    // level 1: find the character
   wrong: { pick: 'Not this one. Try another lantern card.', pattern: 'Not this one. Look at where 越来越 goes, and try another.' },
-  letter: { ready: 'Your letter to Granny is ready. Tap Send!', stamp: '🏮', greeting: '亲爱的奶奶：', signRight: false },   // level 4: the finished letter
+  letter: { ready: 'Your letter to Grandma is ready. Tap Send!', stamp: '🏮', greeting: '亲爱的奶奶：', signRight: false },   // level 4: the finished letter
   bingoFree: '🏮',             // the free middle square
   write: true                  // the "Write it 写一写" page (needs hanzi-writer.min.js below and the strokes/ folder)
 };

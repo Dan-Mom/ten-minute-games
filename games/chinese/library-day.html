@@ -813,14 +813,14 @@ var ANCIENT = {
 var GROUPS = [CHARS.slice(0, 4), CHARS.slice(4, 8), CHARS.slice(8, 12), CHARS.slice(12)];
 /* level 2: build a word. w = the word, k = which character is missing, no = characters that would also make a real word, so they are never offered */
 var WORDS = [
-  { w: '父亲', k: 0, py: 'fùqīn', en: 'father', e: '👨' }, { w: '穷人', k: 0, py: 'qióngrén', en: 'poor people', e: '🪙', no: ['伟'] },
-  { w: '因为', k: 0, py: 'yīnwèi', en: 'because', e: '❔', no: ['所', '改', '合', '译'] }, { w: '所以', k: 0, py: 'suǒyǐ', en: 'so, therefore', e: '➡️' },
+  { w: '父亲', k: 0, py: 'fùqīn', en: 'father', e: '👨' }, { w: '穷人', k: 0, py: 'qióngrén', en: 'poor people', e: '🪙', no: ['伟', '留'] },
+  { w: '因为', k: 0, py: 'yīnwèi', en: 'because', e: '❔', no: ['所', '改', '合', '译', '误'] }, { w: '所以', k: 0, py: 'suǒyǐ', en: 'so, therefore', e: '➡️' },
   { w: '但是', k: 0, py: 'dànshì', en: 'but', e: '↩️' }, { w: '改正', k: 0, py: 'gǎizhèng', en: 'correct (a mistake)', e: '✏️' },
-  { w: '留学', k: 0, py: 'liúxué', en: 'study abroad', e: '✈️', no: ['所', '性'] }, { w: '黑暗', k: 1, py: 'hēi\'àn', en: 'dark', e: '🌑' },
+  { w: '留学', k: 0, py: 'liúxué', en: 'study abroad', e: '✈️', no: ['所', '性', '改', '译'] }, { w: '黑暗', k: 1, py: 'hēi\'àn', en: 'dark', e: '🌑' },
   { w: '合作', k: 0, py: 'hézuò', en: 'work together', e: '🤝', no: ['改', '译'] }, { w: '合适', k: 1, py: 'héshì', en: 'suitable, just right', e: '👕', no: ['译'] },
   { w: '错误', k: 1, py: 'cuòwù', en: 'mistake', e: '❌', no: ['译'] }, { w: '检查', k: 0, py: 'jiǎnchá', en: 'check', e: '🔍', no: ['暗'] },
   { w: '性格', k: 0, py: 'xìnggé', en: 'personality', e: '🌱', no: ['合', '暗'] }, { w: '部分', k: 0, py: 'bùfen', en: 'part', e: '🍕', no: ['改'] },
-  { w: '伟大', k: 0, py: 'wěidà', en: 'great', e: '🌟' }, { w: '翻译', k: 1, py: 'fānyì', en: 'translate', e: '🌐', no: ['检'] }
+  { w: '伟大', k: 0, py: 'wěidà', en: 'great', e: '🌟', no: ['改'] }, { w: '翻译', k: 1, py: 'fānyì', en: 'translate', e: '🌐', no: ['检'] }
 ];
 /* "Write it": more words with each character (common words, or words from the lesson), shown under the writing boxes with the
    words of level 2 that have it. w = the word, py = its pinyin, en = what it means */
@@ -844,10 +844,10 @@ var PATTERN = [
     what: '因为 means "because" and 所以 means "so". Put 因为 before the reason and 所以 before what happens because of it: 因为下雨了，所以我们在家看书 = because it rained, we read at home.',
     ex: [{ s: '因为下雨了，所以我们在家看书。', en: 'Because it rained, we read at home.' }, { s: '因为妹妹很累，所以她早早就睡了。', en: 'Because my little sister was tired, she went to bed early.' }, { s: '因为这本书很有意思，所以我一口气就看完了。', en: 'Because this book was so interesting, I read it all in one go.' }] },
   { t: 'pick', from: '路上车很多。我们来晚了。', a: '因为路上车很多，所以我们来晚了。', no: ['所以路上车很多，因为我们来晚了。', '因为我们来晚了，所以路上车很多。'], en: 'Because there was lots of traffic, we were late.' },
-  { t: 'build', tiles: ['因为', '天太黑了', '所以', '我们', '开了灯'], ok: ['因为天太黑了所以我们开了灯。'], en: 'Because it was too dark, we turned on the light.' },
+  { t: 'build', tiles: ['因为', '天太黑了', '所以', '我们', '开了灯'], ok: ['因为天太黑了所以我们开了灯。', '我们因为天太黑了所以开了灯。'], en: 'Because it was too dark, we turned on the light.' },
   { t: 'pick', from: '姐姐练习了很多次。她跳得很好。', a: '因为姐姐练习了很多次，所以她跳得很好。', no: ['所以姐姐练习了很多次，因为她跳得很好。', '因为姐姐练习了很多次，因为她跳得很好。'], en: 'Because my big sister practised many times, she dances very well.' },
   { t: 'build', tiles: ['因为', '我', '起晚了', '所以', '没吃早饭'], ok: ['因为我起晚了所以没吃早饭。', '我因为起晚了所以没吃早饭。'], en: 'Because I got up late, I didn\'t have breakfast.' },
-  { t: 'build', tiles: ['因为', '花', '需要水', '所以', '我', '每天给它浇水'], ok: ['因为花需要水所以我每天给它浇水。'], en: 'Because the flower needs water, I water it every day.' }
+  { t: 'build', tiles: ['因为', '花', '需要水', '所以', '我', '每天给它浇水'], ok: ['因为花需要水所以我每天给它浇水。', '我因为花需要水所以每天给它浇水。', '花因为需要水所以我每天给它浇水。'], en: 'Because the flower needs water, I water it every day.' }
 ];
 /* level 4: our own letter to Grandpa about a day at the library and a book about Li Shizhen, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的爷爷：" */
 var SENTENCES = [
@@ -857,8 +857,8 @@ var SENTENCES = [
   { s: '我借了一本书，讲的是一位＿的医学家，叫李时珍。', a: '伟大', no: ['部分', '检查'], en: 'I borrowed a book about a great doctor and scientist called Li Shizhen.' },
   { s: '李时珍有一位当医生的＿。', a: '父亲', no: ['部分', '错误'], en: 'Li Shizhen\'s father was a doctor.' },
   { s: '那时候，很多＿看不起病。', a: '穷人', no: ['性格', '翻译'], en: 'In those days, lots of poor people could not pay to see a doctor.' },
-  { s: '李时珍看到旧书里写错了不少地方，就决心把它们＿过来。', a: '改正', no: ['黑暗', '穷人'], en: 'Li Shizhen saw that the old books had lots of things wrong, so he made up his mind to put them right.' },
-  { s: '他一次又一次地＿各种药材。', a: '检查', no: ['伟大', '黑暗'], en: 'He checked every medicine again and again.' },
+  { s: '他发现旧书里写错了不少地方，就一次又一次地＿各种药材。', a: '检查', no: ['伟大', '黑暗'], en: 'He found that the old books had lots of things wrong, so he checked every medicine again and again.' },
+  { s: '后来，他把很多错的地方都＿过来了。', a: '改正', no: ['黑暗', '穷人'], en: 'Later he put lots of the wrong things right.' },
   { s: '＿他非常认真，所以写出了一本了不起的书。', a: '因为', no: ['但是', '合适'], en: 'Because he was so careful, he wrote an amazing book.' },
   { s: '写这本书很难，＿李时珍没有放弃，用了二十七年才写完。', a: '但是', no: ['伟大', '部分'], en: 'Writing this book was hard, but Li Shizhen did not give up; it took him 27 years.' },
   { s: '现在这本书已经被＿成很多种文字了。', a: '翻译', no: ['留学', '性格'], en: 'Now the book has been translated into many languages.' },

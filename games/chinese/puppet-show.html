@@ -807,12 +807,12 @@ var GROUPS = [CHARS.slice(0, 5), CHARS.slice(5, 9), CHARS.slice(9)];
 /* level 2: build a word. w = the word, k = which character is missing, no = characters that would also make a real word, so they are never offered */
 var WORDS = [
   { w: '大灰狼', k: 2, py: 'dà huī láng', en: 'big bad wolf', e: '🐺' }, { w: '干活儿', k: 0, py: 'gàn huór', en: 'do work', e: '🧹' },
-  { w: '捉弄', k: 1, py: 'zhuōnòng', en: 'play a trick on', e: '😜' }, { w: '大声', k: 1, py: 'dàshēng', en: 'loudly', e: '📢', no: ['喊', '骗', '理', '干'] },
+  { w: '捉弄', k: 1, py: 'zhuōnòng', en: 'play a trick on', e: '😜' }, { w: '大声', k: 1, py: 'dàshēng', en: 'loudly', e: '📢', no: ['喊', '骗', '理', '干', '谎', '狼'] },
   { w: '笑声', k: 1, py: 'xiàoshēng', en: 'laughter', e: '😄' }, { w: '喊叫', k: 0, py: 'hǎnjiào', en: 'shout', e: '🗣️', no: ['狼'] },
   { w: '立刻', k: 1, py: 'lìkè', en: 'at once', e: '⚡' }, { w: '根本', k: 0, py: 'gēnběn', en: 'at all', e: '🚫' },
-  { w: '树根', k: 1, py: 'shùgēn', en: 'tree root', e: '🌳' }, { w: '撒谎', k: 0, py: 'sāhuǎng', en: 'tell a lie', e: '🤥' },
+  { w: '树根', k: 1, py: 'shùgēn', en: 'tree root', e: '🌳', no: ['干'] }, { w: '撒谎', k: 0, py: 'sāhuǎng', en: 'tell a lie', e: '🤥' },
   { w: '谎话', k: 0, py: 'huǎnghuà', en: 'a lie', e: '🙊', no: ['喊', '骗'] }, { w: '被子', k: 0, py: 'bèizi', en: 'quilt', e: '🛏️', no: ['根', '骗'] },
-  { w: '欺骗', k: 0, py: 'qīpiàn', en: 'deceive', e: '🎭' }, { w: '骗人', k: 0, py: 'piàn rén', en: 'trick people', e: '🃏', no: ['狼', '喊', '理', '欺'] },
+  { w: '欺骗', k: 0, py: 'qīpiàn', en: 'deceive', e: '🎭', no: ['被'] }, { w: '骗人', k: 0, py: 'piàn rén', en: 'trick people', e: '🃏', no: ['狼', '喊', '理', '欺', '弄'] },
   { w: '道理', k: 1, py: 'dàolǐ', en: 'reason, sense', e: '💡' }
 ];
 /* "Write it": more words with each character (common words, or words from the lesson), shown under the writing boxes with the
@@ -835,23 +835,23 @@ var PATTERN = [
     ex: [{ s: '蛋糕被弟弟吃完了。', en: 'The cake was eaten up by my little brother.' }, { s: '风筝被大风吹走了。', en: 'The kite was blown away by the strong wind.' }, { s: '我的作业被小狗咬破了。', en: 'My homework was chewed up by the puppy.' }] },
   { t: 'pick', from: '妹妹打破了杯子。', a: '杯子被妹妹打破了。', no: ['妹妹被杯子打破了。', '杯子打破被妹妹了。'], en: 'The cup was broken by my little sister.' },
   { t: 'build', tiles: ['我的', '雨伞', '被', '风', '吹坏了'], ok: ['我的雨伞被风吹坏了。'], en: 'My umbrella was broken by the wind.' },
-  { t: 'pick', from: '小猫把毛线弄乱了。', a: '毛线被小猫弄乱了。', no: ['小猫被毛线弄乱了。', '毛线小猫被弄乱了。'], en: 'The wool was tangled up by the kitten.' },
+  { t: 'pick', from: '小猫把毛线弄乱了。', a: '毛线被小猫弄乱了。', no: ['毛线被弄乱了小猫。', '毛线小猫被弄乱了。'], en: 'The wool was tangled up by the kitten.' },
   { t: 'build', tiles: ['苹果', '被', '弟弟', '吃光了'], ok: ['苹果被弟弟吃光了。'], en: 'The apples were all eaten by my little brother.' },
   { t: 'build', tiles: ['小鸟', '被', '我们的', '笑声', '吓跑了'], ok: ['小鸟被我们的笑声吓跑了。', '我们的小鸟被笑声吓跑了。'], en: 'The little birds were scared off by our laughter.' }
 ];
 /* level 4: our own letter to Grandpa about a puppet show at home, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的爷爷：" */
 var SENTENCES = [
-  { s: '星期天，我、弟弟和奶奶演了一出木偶戏，我演＿。', a: '大灰狼', no: ['被子', '道理'], en: 'On Sunday, my little brother, Granny and I put on a puppet show, and I played the big bad wolf.' },
+  { s: '星期天，我、弟弟和奶奶演了一出木偶戏，我演＿。', a: '大灰狼', no: ['被子', '道理'], en: 'On Sunday, my little brother, Grandma and I put on a puppet show, and I played the big bad wolf.' },
   { s: '弟弟演放羊的孩子，他＿地喊：“狼来了！”', a: '大声', no: ['被子', '树根'], en: 'My brother played the shepherd boy. He shouted loudly, "Wolf!"' },
-  { s: '奶奶演在田里＿的人。', a: '干活儿', no: ['笑声', '谎话'], en: 'Granny played a person working in the fields.' },
-  { s: '奶奶一听见喊声，＿放下锄头跑了过去。', a: '立刻', no: ['道理', '被子'], en: 'As soon as Granny heard, she put down her hoe at once and ran over.' },
+  { s: '奶奶演在田里＿的人。', a: '干活儿', no: ['笑声', '谎话'], en: 'Grandma played a person working in the fields.' },
+  { s: '奶奶一听见喊声，＿放下锄头跑了过去。', a: '立刻', no: ['道理', '被子'], en: 'As soon as Grandma heard, she put down her hoe at once and ran over.' },
   { s: '弟弟笑着说：“我在＿你们呢！”', a: '捉弄', no: ['大声', '树根'], en: 'My brother laughed and said, "I\'m playing a trick on you!"' },
   { s: '他说：“这里＿没有狼！”', a: '根本', no: ['笑声', '骗人'], en: 'He said, "There\'s no wolf here at all!"' },
   { s: '最后狼真的跑来了，可是大家都以为他又在＿。', a: '撒谎', no: ['被子', '立刻'], en: 'Later the wolf really came, but everyone thought he was lying again.' },
   { s: '大家都不理他了，因为他说过太多＿。', a: '谎话', no: ['大灰狼', '干活儿'], en: 'Nobody listened to him any more, because he had told too many lies.' },
-  { s: '爸爸说，＿别人是不对的。', a: '欺骗', no: ['树根', '被子'], en: 'Dad said it is wrong to deceive other people.' },
+  { s: '奶奶说，＿别人是不对的。', a: '欺骗', no: ['树根', '被子'], en: 'Grandma said it is wrong to deceive other people.' },
   { s: '我说：“爱＿的孩子，最后谁都不会相信他了。”', a: '骗人', no: ['笑声', '立刻'], en: 'I said, "In the end, nobody believes a child who likes to trick people."' },
-  { s: '爸爸说我讲得很有＿。', a: '道理', no: ['被子', '喊叫'], en: 'Dad said what I said made a lot of sense.' },
+  { s: '奶奶说我讲得很有＿。', a: '道理', no: ['被子', '喊叫'], en: 'Grandma said what I said made a lot of sense.' },
   { s: '演完了，我们的＿把小狗都吵醒了。', a: '笑声', no: ['根本', '欺骗'], en: 'When we finished, our laughter woke up the puppy.' },
   { s: '晚上，弟弟钻进＿里，还在小声说“狼来了”。', a: '被子', no: ['道理', '立刻'], en: 'At night, my brother snuggled under his quilt, still whispering "Wolf!"' },
   { s: '他做梦的时候还在＿：“狼来了！”', a: '喊叫', no: ['道理', '树根'], en: 'Even in his dreams he was shouting, "Wolf!"' },

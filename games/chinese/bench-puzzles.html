@@ -814,9 +814,9 @@ var WORDS = [
   { w: '相遇', k: 1, py: 'xiāngyù', en: 'meet', e: '🤝' }, { w: '遇见', k: 0, py: 'yùjiàn', en: 'run into, meet', e: '👋', no: ['相'] },
   { w: '心情', k: 1, py: 'xīnqíng', en: 'mood', e: '💗' }, { w: '以为', k: 1, py: 'yǐwéi', en: 'think (often wrongly)', e: '💭' },
   { w: '讨厌', k: 0, py: 'tǎoyàn', en: 'annoying; dislike', e: '😖' }, { w: '讨论', k: 1, py: 'tǎolùn', en: 'discuss', e: '💬', no: ['情'] },
-  { w: '度过', k: 0, py: 'dùguò', en: 'spend (time)', e: '⏳', no: ['为'] }, { w: '温度', k: 1, py: 'wēndù', en: 'temperature', e: '🌡️', no: ['情'] },
+  { w: '度过', k: 0, py: 'dùguò', en: 'spend (time)', e: '⏳', no: ['为', '单', '遇'] }, { w: '温度', k: 1, py: 'wēndù', en: 'temperature', e: '🌡️', no: ['情'] },
   { w: '愉快', k: 0, py: 'yúkuài', en: 'happy, pleasant', e: '😊' }, { w: '简单', k: 0, py: 'jiǎndān', en: 'simple, easy', e: '✅' },
-  { w: '名单', k: 1, py: 'míngdān', en: 'list of names', e: '📝', no: ['相'] }
+  { w: '名单', k: 1, py: 'míngdān', en: 'list of names', e: '📝', no: ['相', '为'] }
 ];
 /* "Write it": more words with each character (common words, or words from the lesson), shown under the writing boxes with the
    words of level 2 that have it. w = the word, py = its pinyin, en = what it means */
@@ -841,8 +841,8 @@ var PATTERN = [
   { t: 'pick', from: '铃声响了，同学们马上走进了教室。', a: '铃声一响，同学们就走进了教室。', no: ['铃声就响，同学们一走进了教室。', '一铃声响，同学们就走进了教室。'], en: 'As soon as the bell rang, the pupils went into the classroom.' },
   { t: 'build', tiles: ['妹妹', '一', '上车', '就', '睡着了'], ok: ['妹妹一上车就睡着了。'], en: 'My little sister fell asleep as soon as she got in the car.' },
   { t: 'pick', from: '春天来了，花马上开了。', a: '春天一来，花就开了。', no: ['春天就来，花一开了。', '春天一来，就花开了。'], en: 'As soon as spring came, the flowers opened.' },
-  { t: 'build', tiles: ['我', '一', '看', '这道题', '就', '知道答案了'], ok: ['我一看这道题就知道答案了。'], en: 'As soon as I looked at this question, I knew the answer.' },
-  { t: 'build', tiles: ['雨', '一', '停', '我们', '就', '出去玩'], ok: ['雨一停我们就出去玩。'], en: 'As soon as the rain stops, we\'ll go out to play.' }
+  { t: 'build', tiles: ['我', '一', '看', '这道题', '就', '知道答案了'], ok: ['我一看这道题就知道答案了。', '这道题我一看就知道答案了。'], en: 'As soon as I looked at this question, I knew the answer.' },
+  { t: 'build', tiles: ['雨', '一', '停', '我们', '就', '出去玩'], ok: ['雨一停我们就出去玩。', '我们雨一停就出去玩。'], en: 'As soon as the rain stops, we\'ll go out to play.' }
 ];
 /* level 4: our own letter to a cousin about puzzle mornings in the park, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的表姐：" */
 var SENTENCES = [
@@ -852,11 +852,10 @@ var SENTENCES = [
   { s: '我带了一本谜题书，里面的＿都很有意思。', a: '题目', no: ['温度', '椅子'], en: 'I took a puzzle book, and all the puzzles in it are really fun.' },
   { s: '在公园里，我＿了一个同学。', a: '遇见', no: ['温度', '简单'], en: 'In the park I ran into a classmate.' },
   { s: '同学说，我们在这儿＿，真是太巧了。', a: '相遇', no: ['讨厌', '名单'], en: 'My classmate said it was such a nice surprise to meet here.' },
-  { s: '我们一起＿怎么解这道题。', a: '讨论', no: ['相信', '度过'], en: 'We talked together about how to solve the puzzle.' },
   { s: '第一道题很＿，我们一下子就做出来了。', a: '简单', no: ['温度', '名单'], en: 'The first puzzle was easy; we got it right away.' },
-  { s: '有一道题很难，奶奶给我们讲了怎么＿。', a: '解答', no: ['温度', '清晨'], en: 'One puzzle was hard, and Grandma showed us how to work it out.' },
+  { s: '我们一起＿怎么解下一道题。', a: '讨论', no: ['相信', '度过'], en: 'We talked together about how to solve the next puzzle.' },
+  { s: '那道题很难，我和同学想了很久才＿出来。', a: '解答', no: ['温度', '清晨'], en: 'That puzzle was hard; my classmate and I thought for a long time before we worked it out.' },
   { s: '原来是这样！我以前＿数学很难。', a: '以为', no: ['椅子', '温度'], en: 'So that\'s how it works! I used to think maths was hard.' },
-  { s: '我们把想参加“谜题小组”的同学的名字写在一张＿上。', a: '名单', no: ['问题', '温度'], en: 'We wrote the names of the classmates who want to join our "puzzle club" on a list.' },
   { s: '如果你有不会的＿，也可以来问我们！', a: '问题', no: ['清晨', '椅子'], en: 'If there is a question you can\'t do, you can ask us too!' },
   { s: '我们在公园＿了一个愉快的上午。', a: '度过', no: ['相信', '名单'], en: 'We spent a happy morning in the park.' },
   { s: '和奶奶、同学一起解题，真是一件＿的事。', a: '愉快', no: ['名单', '椅子'], en: 'Solving puzzles with Grandma and my classmate is such a happy thing to do.' },

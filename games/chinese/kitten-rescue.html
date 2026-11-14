@@ -849,7 +849,7 @@ var PATTERN = [
 ];
 /* level 4: our own story for the class newsletter, one missing word per sentence (a = the word, no = two words that do not fit). It starts after the title "公园里的小英雄" */
 var SENTENCES = [
-  { s: '星期天，我们几个好朋友去公园玩＿。', a: '游戏', no: ['石块', '鱼缸'], en: 'On Sunday, a few of us friends went to the park to play games.' },
+  { s: '星期天，我们几个好朋友去公园玩＿。', a: '游戏', no: ['慌张', '吃惊'], en: 'On Sunday, a few of us friends went to the park to play games.' },
   { s: '出发前，我们把水壶＿了水。', a: '装满', no: ['吓哭', '砸开'], en: 'Before we set off, we filled our water bottles.' },
   { s: '公园门口的小店里卖小金鱼，还有漂亮的＿。', a: '鱼缸', no: ['惊慌', '有劲'], en: 'A little shop at the park gate sells goldfish, and pretty fish tanks too.' },
   { s: '我们坐在树下吃核桃。我找来一个＿，想把核桃砸开。', a: '石块', no: ['游戏', '救命'], en: 'We sat under a tree eating walnuts. I found a stone to crack them open.' },
@@ -859,10 +859,10 @@ var SENTENCES = [
   { s: '原来有一只小猫爬到树上，下不来了，它很＿。', a: '惊慌', no: ['有劲', '鱼缸'], en: 'A kitten had climbed up the tree and couldn\'t get down. It was very frightened.' },
   { s: '旁边的小妹妹怕小猫掉下来，都被＿了。', a: '吓哭', no: ['装满', '砸开'], en: 'A little girl nearby was afraid the kitten would fall, and she was so scared she cried.' },
   { s: '大家都很＿，你看看我，我看看你。', a: '慌张', no: ['鱼缸', '石块'], en: 'Everyone was flustered and just looked at each other.' },
-  { s: '我的好朋友说："别慌，我有一个好＿！"', a: '办法', no: ['鱼缸', '救命'], en: 'My good friend said, "Don\'t panic, I have a good idea!"' },
+  { s: '我的好朋友很＿，他说："我们自己不能爬树，快去找大人！"', a: '聪明', no: ['石块', '鱼缸'], en: 'My good friend is clever. He said, "We can\'t climb the tree ourselves. Let\'s find a grown-up!"' },
   { s: '他跑去找公园的叔叔，大声喊："＿！快救救小猫！"', a: '救命', no: ['游戏', '慌张'], en: 'He ran to find the park keeper and shouted, "Help! Quick, save the kitten!"' },
   { s: '叔叔很＿，一个人就扛来一把大梯子，爬上去把小猫抱了下来。', a: '有劲', no: ['鱼缸', '游戏'], en: 'The park keeper was strong. He carried a big ladder over all by himself, climbed up and brought the kitten down.' },
-  { s: '小猫没事了，小妹妹也笑了。我觉得我的好朋友很＿，他知道要找大人帮忙。', a: '聪明', no: ['石块', '鱼缸'], en: 'The kitten was fine and the little girl smiled. I think my friend is very clever: he knew to ask a grown-up for help.' }
+  { s: '小猫没事了，小妹妹也笑了。我们都觉得，找大人帮忙是最好的＿。', a: '办法', no: ['石块', '鱼缸'], en: 'The kitten was fine and the little girl smiled. We all think asking a grown-up for help is the best way.' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
    s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
@@ -872,7 +872,7 @@ var STORY = { title: '救小猫', en: 'Saving the kitten', lines: [
   { who: '🧒 我', s: '我带了核桃。我们坐下来，用石块把它们砸开吧！', py: 'Wǒ dàile hétao. Wǒmen zuò xiàlai, yòng shíkuài bǎ tāmen zákāi ba!', en: 'I brought some walnuts. Let\'s sit down and crack them open with a stone!' },
   { who: '👦 好朋友', s: '咦？树上有只小猫在叫，它好像吓坏了。', py: 'Yí? Shù shang yǒu zhī xiǎo māo zài jiào, tā hǎoxiàng xiàhuài le.', en: 'Huh? There\'s a kitten crying up in the tree. It looks really scared.' },
   { who: '🧒 我', s: '旁边的小妹妹都急哭了，大家都很惊慌。', py: 'Pángbiān de xiǎo mèimei dōu jí kū le, dàjiā dōu hěn jīnghuāng.', en: 'A little girl nearby is so worried she\'s crying, and everyone is in a panic.' },
-  { who: '👦 好朋友', s: '别慌，我有办法！我们去找公园的叔叔。', py: 'Bié huāng, wǒ yǒu bànfǎ! Wǒmen qù zhǎo gōngyuán de shūshu.', en: 'Don\'t panic, I have an idea! Let\'s go and find the park keeper.' },
+  { who: '👦 好朋友', s: '我们自己不能爬树。我有办法：去找公园的叔叔！', py: 'Wǒmen zìjǐ bù néng pá shù. Wǒ yǒu bànfǎ: qù zhǎo gōngyuán de shūshu!', en: 'We can\'t climb the tree ourselves. I have an idea: let\'s find the park keeper!' },
   { who: '🧒 我', s: '叔叔搬来梯子，使劲往上爬，把小猫救了下来！', py: 'Shūshu bānlái tīzi, shǐjìn wǎng shàng pá, bǎ xiǎo māo jiùle xiàlai!', en: 'The park keeper brought a ladder, climbed up hard, and rescued the kitten!' },
   { who: '👦 好朋友', s: '叔叔说，小猫是小店里养的，它最喜欢趴在鱼缸边看金鱼。', py: 'Shūshu shuō, xiǎo māo shì xiǎodiàn li yǎng de, tā zuì xǐhuan pā zài yúgāng biān kàn jīnyú.', en: 'The park keeper says the kitten lives at the little shop. Its favourite thing is lying by the fish tank, watching the goldfish.' },
   { who: '🧒 我', s: '你真聪明！我们小孩不能爬树，找叔叔帮忙最安全。', py: 'Nǐ zhēn cōngmíng! Wǒmen xiǎohái bù néng pá shù, zhǎo shūshu bāngmáng zuì ānquán.', en: 'You\'re so clever! We kids shouldn\'t climb trees. Getting the park keeper to help was the safest thing.' }

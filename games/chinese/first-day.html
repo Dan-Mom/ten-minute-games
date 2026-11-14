@@ -799,12 +799,12 @@ var GROUPS = [CHARS.slice(0, 5), CHARS.slice(5)];
 /* level 2: build a word. w = the word, k = which character is missing, no = characters that would also make a real word, so they are never offered */
 var WORDS = [
   { w: '学习', k: 0, py: 'xuéxí', en: 'study', e: '📖' }, { w: '学生', k: 1, py: 'xuéshēng', en: 'student', e: '🧒', no: ['校', '文'] },
-  { w: '我们', k: 0, py: 'wǒmen', en: 'we, us', e: '👫' }, { w: '是的', k: 0, py: 'shìde', en: 'yes', e: '✅', no: ['我', '生', '老'] },
+  { w: '我们', k: 0, py: 'wǒmen', en: 'we, us', e: '👫' }, { w: '是的', k: 0, py: 'shìde', en: 'yes', e: '✅', no: ['我', '生', '老', '学', '爱'] },
   { w: '爱心', k: 0, py: 'àixīn', en: 'a loving heart', e: '💗', no: ['同'] }, { w: '可爱', k: 1, py: 'kě’ài', en: 'cute', e: '🥰', no: ['是'] },
   { w: '老人', k: 0, py: 'lǎorén', en: 'old person', e: '👵', no: ['学', '生', '同', '文', '爱'] }, { w: '老师', k: 1, py: 'lǎoshī', en: 'teacher', e: '🧑‍🏫', no: ['生', '是', '校', '爱'] },
   { w: '厨师', k: 1, py: 'chúshī', en: 'cook, chef', e: '👩‍🍳' }, { w: '同学', k: 0, py: 'tóngxué', en: 'classmate', e: '🤝', no: ['文', '爱', '我'] },
   { w: '中文', k: 1, py: 'Zhōngwén', en: 'Chinese (language)', e: '🀄', no: ['学', '校', '师'] }, { w: '作文', k: 1, py: 'zuòwén', en: 'a piece of writing, an essay', e: '📝', no: ['爱'] },
-  { w: '学校', k: 1, py: 'xuéxiào', en: 'school', e: '🏫', no: ['生', '文'] }, { w: '校车', k: 0, py: 'xiàochē', en: 'school bus', e: '🚌', no: ['学', '同', '老'] },
+  { w: '学校', k: 1, py: 'xuéxiào', en: 'school', e: '🏫', no: ['生', '文'] }, { w: '校车', k: 0, py: 'xiàochē', en: 'school bus', e: '🚌', no: ['学', '同', '老', '爱'] },
   { w: '生日', k: 0, py: 'shēngrì', en: 'birthday', e: '🎂', no: ['同', '是', '我'] }
 ];
 /* "Write it": more words with each character (common words, or words from the lesson), shown under the writing boxes with the
@@ -828,7 +828,7 @@ var PATTERN = [
     what: '是 joins two words for the same person or thing: 他是我的同学 = he is my classmate. 是 is like "am, is, are", and it never changes: 我是, 你是, 他们是. To say "not", put 不 in front: 我不是老师. (Don’t use 是 before a describing word: say 我很高兴, not 我是高兴.)',
     ex: [{ s: '他是我的同学。', en: 'He is my classmate.' }, { s: '妈妈是医生。', en: 'Mom is a doctor.' }, { s: '这是我的中文书。', en: 'This is my Chinese book.' }] },
   { t: 'pick', from: '她是谁？（my teacher）', a: '她是我的老师。', no: ['她我的老师是。', '是她我的老师。'], en: 'She is my teacher.' },
-  { t: 'build', tiles: ['我的', '爸爸', '是', '医生'], ok: ['我的爸爸是医生。', '医生是我的爸爸。', '爸爸是我的医生。'], en: 'My dad is a doctor.' },
+  { t: 'build', tiles: ['我的', '爸爸', '是', '医生'], ok: ['我的爸爸是医生。', '医生是我的爸爸。', '爸爸是我的医生。', '我的医生是爸爸。'], en: 'My dad is a doctor.' },
   { t: 'pick', from: '你是医生吗？（No, I’m his classmate.）', a: '我不是医生，我是他的同学。', no: ['我是不医生，我是他的同学。', '我医生不是，我是他的同学。'], en: 'I’m not a doctor. I’m his classmate.' },
   { t: 'build', tiles: ['他', '是', '新', '同学'], ok: ['他是新同学。', '新同学是他。'], en: 'He is the new classmate.' },
   { t: 'build', tiles: ['我们', '都是', '好朋友'], ok: ['我们都是好朋友。'], en: 'We are all good friends.' }

@@ -811,13 +811,13 @@ var ANCIENT = {
 var GROUPS = [CHARS.slice(0, 5), CHARS.slice(5, 10), CHARS.slice(10, 15)];
 /* level 2: build a word. w = the word, k = which character is missing, no = characters that would also make a real word, so they are never offered */
 var WORDS = [
-  { w: '美景', k: 0, py: 'měijǐng', en: 'a beautiful view', e: '🌄' }, { w: '美丽', k: 1, py: 'měilì', en: 'beautiful', e: '🌺', no: ['景', '色'] },
+  { w: '美景', k: 0, py: 'měijǐng', en: 'a beautiful view', e: '🌄' }, { w: '美丽', k: 1, py: 'měilì', en: 'beautiful', e: '🌺', no: ['景', '色', '分', '啊'] },
   { w: '做完', k: 1, py: 'zuòwán', en: 'finish doing', e: '✅' }, { w: '完成', k: 0, py: 'wánchéng', en: 'complete', e: '🏆', no: ['分'] },
   { w: '登山', k: 0, py: 'dēngshān', en: 'climb a mountain', e: '🥾' }, { w: '风景', k: 1, py: 'fēngjǐng', en: 'scenery', e: '🏞️', no: ['色'] },
   { w: '颜色', k: 1, py: 'yánsè', en: 'color', e: '🌈' }, { w: '岸边', k: 0, py: 'ànbiān', en: 'by the shore', e: '🏖️', no: ['桥', '岛'] },
   { w: '小岛', k: 1, py: 'xiǎodǎo', en: 'small island', e: '🏝️', no: ['桥'] }, { w: '沿着', k: 0, py: 'yánzhe', en: 'along', e: '🚶' },
   { w: '一座', k: 1, py: 'yí zuò', en: 'one (bridge, hill)', e: '⛰️', no: ['分', '色', '景'] }, { w: '大桥', k: 1, py: 'dàqiáo', en: 'big bridge', e: '🌉', no: ['岛'] },
-  { w: '柱子', k: 0, py: 'zhùzi', en: 'pillar', e: '🏛️', no: ['狮', '分'] }, { w: '狮子', k: 0, py: 'shīzi', en: 'lion', e: '🦁', no: ['柱', '分'] },
+  { w: '柱子', k: 0, py: 'zhùzi', en: 'pillar', e: '🏛️', no: ['狮', '分', '色', '座'] }, { w: '狮子', k: 0, py: 'shīzi', en: 'lion', e: '🦁', no: ['柱', '分', '色', '座'] },
   { w: '十分', k: 1, py: 'shífēn', en: 'very', e: '💯', no: ['座'] }, { w: '好啊', k: 1, py: 'hǎo a', en: 'okay! great!', e: '👍', no: ['色', '景', '美'] }
 ];
 /* "Write it": more words with each character (common words, or words from the lesson), shown under the writing boxes with the
@@ -855,7 +855,7 @@ var PATTERN = [
 var SENTENCES = [
   { s: '今天天气真好，湖边的＿好看极了。', a: '风景', no: ['柱子', '完成'], en: 'The weather is lovely today, and the view by the lake is wonderful.' },
   { s: '湖水的＿很蓝，像一块大玻璃。', a: '颜色', no: ['登山', '十分'], en: 'The water is so blue, like a big sheet of glass.' },
-  { s: '我们划着小船，到了湖的＿。', a: '对岸', no: ['好啊', '做完'], en: 'We rowed a little boat to the far shore.' },
+  { s: '爸爸说，湖的＿有一个宝岛。', a: '对岸', no: ['好啊', '做完'], en: 'Dad said the island on the far side of the lake was called Treasure Island.' },
   { s: '＿湖边走了一会儿，我们看见了宝岛。', a: '沿着', no: ['美丽', '狮子'], en: 'After walking along the lake for a while, we saw Treasure Island.' },
   { s: '＿上有很多高高的树。', a: '小岛', no: ['十分', '沿着'], en: 'There are many tall trees on the little island.' },
   { s: '要去那儿，先要走过＿石桥。', a: '一座', no: ['好啊', '颜色'], en: 'To get there, you first cross a stone bridge.' },

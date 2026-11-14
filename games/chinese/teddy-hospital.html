@@ -811,12 +811,12 @@ var WORDS = [
   { w: '医院', k: 0, py: 'yīyuàn', en: 'hospital', e: '🏥', no: ['病'] }, { w: '医生', k: 0, py: 'yīshēng', en: 'doctor', e: '🩺' },
   { w: '学院', k: 1, py: 'xuéyuàn', en: 'college', e: '🎓', no: ['医', '士'] }, { w: '院子', k: 0, py: 'yuànzi', en: 'yard', e: '🏡', no: ['带', '士', '量'] },
   { w: '感冒', k: 1, py: 'gǎnmào', en: 'a cold', e: '🤧' }, { w: '感谢', k: 0, py: 'gǎnxiè', en: 'thank', e: '🙏' },
-  { w: '发烧', k: 1, py: 'fāshāo', en: 'have a fever', e: '🤒', no: ['病', '药', '带'] }, { w: '烧水', k: 0, py: 'shāo shuǐ', en: 'boil water', e: '🫖', no: ['药', '温', '冒', '带'] },
-  { w: '带书', k: 0, py: 'dài shū', en: 'bring a book', e: '📕', no: ['医', '烧', '温'] }, { w: '皮带', k: 1, py: 'pídài', en: 'belt', e: '👖' },
-  { w: '生病', k: 1, py: 'shēngbìng', en: 'get ill', e: '🤒', no: ['就'] }, { w: '病人', k: 0, py: 'bìngrén', en: 'patient', e: '🛌', no: ['感', '医', '带', '士'] },
+  { w: '发烧', k: 1, py: 'fāshāo', en: 'have a fever', e: '🤒', no: ['病', '药', '带', '量'] }, { w: '烧水', k: 0, py: 'shāo shuǐ', en: 'boil water', e: '🫖', no: ['药', '温', '冒', '带'] },
+  { w: '带书', k: 0, py: 'dài shū', en: 'bring a book', e: '📕', no: ['医', '烧', '温', '药'] }, { w: '皮带', k: 1, py: 'pídài', en: 'belt', e: '👖' },
+  { w: '生病', k: 1, py: 'shēngbìng', en: 'get ill', e: '🤒', no: ['就', '药'] }, { w: '病人', k: 0, py: 'bìngrén', en: 'patient', e: '🛌', no: ['感', '医', '带', '士'] },
   { w: '护士', k: 0, py: 'hùshi', en: 'nurse', e: '🧑‍⚕️', no: ['医', '院'] }, { w: '保护', k: 1, py: 'bǎohù', en: 'protect', e: '🛡️', no: ['温'] },
   { w: '女士', k: 1, py: 'nǚshì', en: 'lady', e: '👩', no: ['医'] }, { w: '量体温', k: 0, py: 'liáng tǐwēn', en: 'take a temperature', e: '🌡️' },
-  { w: '体温', k: 1, py: 'tǐwēn', en: 'body temperature', e: '🌡️', no: ['量', '感'] }, { w: '温水', k: 0, py: 'wēnshuǐ', en: 'warm water', e: '🚰', no: ['药', '烧', '冒', '带'] },
+  { w: '体温', k: 1, py: 'tǐwēn', en: 'body temperature', e: '🌡️', no: ['量', '感', '院'] }, { w: '温水', k: 0, py: 'wēnshuǐ', en: 'warm water', e: '🚰', no: ['药', '烧', '冒', '带'] },
   { w: '打针', k: 1, py: 'dǎzhēn', en: 'have an injection', e: '💉', no: ['药', '量'] }, { w: '吃药', k: 1, py: 'chī yào', en: 'take medicine', e: '💊' },
   { w: '药店', k: 0, py: 'yàodiàn', en: 'chemist\'s', e: '🏪' }, { w: '就是', k: 0, py: 'jiùshì', en: 'exactly; that is', e: '✅' }
 ];
@@ -863,7 +863,7 @@ var SENTENCES = [
   { s: '小熊睡醒了，我们带它去＿里晒太阳。', a: '院子', no: ['感谢', '打针'], en: 'When Teddy woke up, we took him out to the yard to sit in the sun.' },
   { s: '姐姐说："当医生＿要细心。"', a: '就是', no: ['皮带', '温水'], en: 'My sister said, "Being a doctor means being careful."' },
   { s: '明天我要＿去学校，书里有我画的小熊医院。', a: '带书', no: ['生病', '体温'], en: 'Tomorrow I\'ll bring a book to school. It has my drawing of the Teddy Hospital in it.' },
-  { s: '奶奶，天冷了，你也要多穿衣服，别＿哦！', a: '生病', no: ['就是', '院子'], en: 'Grandma, it\'s getting cold. Wear warm clothes too, and don\'t get ill!' },
+  { s: '奶奶，你也要照顾好自己，别＿哦！', a: '生病', no: ['就是', '院子'], en: 'Grandma, take good care of yourself too, and don\'t get sick!' },
   { s: '奶奶，小熊是你送我的礼物，我很＿你！', a: '感谢', no: ['女士', '打针'], en: 'Grandma, Teddy was your present to me. I\'m very grateful to you!' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,

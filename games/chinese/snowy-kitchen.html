@@ -809,12 +809,12 @@ var GROUPS = [CHARS.slice(0, 5), CHARS.slice(5, 10), CHARS.slice(10)];
 /* level 2: build a word. w = the word, k = which character is missing, no = characters that would also make a real word, so they are never offered */
 var WORDS = [
   { w: '满地', k: 0, py: 'mǎndì', en: 'all over the ground', e: '🍂' }, { w: '装满', k: 1, py: 'zhuāngmǎn', en: 'fill up', e: '🫙', no: ['糖', '盐', '过'] },
-  { w: '小猫', k: 1, py: 'xiǎomāo', en: 'kitten', e: '🐱', no: ['狗', '兔'] }, { w: '白糖', k: 1, py: 'báitáng', en: 'white sugar', e: '🍬', no: ['兔', '狗', '猫'] },
-  { w: '糖水', k: 0, py: 'tángshuǐ', en: 'sugar water', e: '🥤', no: ['盐', '凉', '甜', '咸', '过'] }, { w: '小狗', k: 1, py: 'xiǎogǒu', en: 'puppy', e: '🐶', no: ['猫', '兔'] },
-  { w: '放盐', k: 1, py: 'fàng yán', en: 'add salt', e: '🧂', no: ['糖', '过', '凉', '狗'] }, { w: '别争了', k: 1, py: 'bié zhēng le', en: 'stop arguing', e: '✋', no: ['尝'] },
+  { w: '小猫', k: 1, py: 'xiǎomāo', en: 'kitten', e: '🐱', no: ['狗', '兔', '满'] }, { w: '白糖', k: 1, py: 'báitáng', en: 'white sugar', e: '🍬', no: ['兔', '狗', '猫'] },
+  { w: '糖水', k: 0, py: 'tángshuǐ', en: 'sugar water', e: '🥤', no: ['盐', '凉', '甜', '咸', '过'] }, { w: '小狗', k: 1, py: 'xiǎogǒu', en: 'puppy', e: '🐶', no: ['猫', '兔', '满'] },
+  { w: '放盐', k: 1, py: 'fàng yán', en: 'add salt', e: '🧂', no: ['糖', '过', '凉', '狗', '满'] }, { w: '别争了', k: 1, py: 'bié zhēng le', en: 'stop arguing', e: '✋', no: ['尝'] },
   { w: '争着说', k: 0, py: 'zhēngzhe shuō', en: 'all try to talk first', e: '🗣️' }, { w: '自己', k: 1, py: 'zìjǐ', en: 'oneself', e: '🙋', no: ['满'] },
   { w: '自行车', k: 0, py: 'zìxíngchē', en: 'bike', e: '🚲' }, { w: '兔子', k: 0, py: 'tùzi', en: 'rabbit', e: '🐰', no: ['狗'] },
-  { w: '过年', k: 0, py: 'guònián', en: 'celebrate New Year', e: '🧧' }, { w: '路过', k: 1, py: 'lùguò', en: 'pass by', e: '🚶' },
+  { w: '过年', k: 0, py: 'guònián', en: 'celebrate New Year', e: '🧧', no: ['狗', '兔'] }, { w: '路过', k: 1, py: 'lùguò', en: 'pass by', e: '🚶' },
   { w: '尝一尝', k: 0, py: 'cháng yi cháng', en: 'have a taste', e: '😋' }, { w: '甜点', k: 0, py: 'tiándiǎn', en: 'dessert', e: '🍰', no: ['咸', '凉'] },
   { w: '很咸', k: 1, py: 'hěn xián', en: 'very salty', e: '🥨', no: ['甜', '凉', '满'] }, { w: '凉水', k: 0, py: 'liángshuǐ', en: 'cold water', e: '💧', no: ['糖', '盐', '甜', '咸', '过'] },
   { w: '凉快', k: 0, py: 'liángkuai', en: 'nice and cool', e: '🌬️', no: ['过'] }
@@ -850,19 +850,19 @@ var PATTERN = [
 ];
 /* level 4: our own letter to Grandma (Mum's mum) about making tangyuan on a snowy day, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的外婆：" */
 var SENTENCES = [
-  { s: '快＿了，奶奶带我们在厨房里做汤圆。', a: '过年', no: ['凉快', '白糖'], en: 'It was nearly New Year, so Granny made tangyuan with us in the kitchen.' },
+  { s: '快＿了，奶奶带我们在厨房里做汤圆。', a: '过年', no: ['凉快', '白糖'], en: 'It was nearly New Year, so Grandma made tangyuan with us in the kitchen.' },
   { s: '桌上有两个罐子，都装得＿的。', a: '满满', no: ['自己', '路过'], en: 'There were two jars on the table, both filled right up.' },
   { s: '弟弟说左边那个是＿，我说是盐。', a: '白糖', no: ['凉快', '路过'], en: 'My little brother said the left one was white sugar. I said it was salt.' },
   { s: '我们两个都＿，谁也不让谁。', a: '争着说', no: ['甜点', '兔子'], en: 'We both kept talking at once, and neither of us would give in.' },
-  { s: '奶奶说：“别争了，用小勺子＿，马上就知道了。”', a: '尝一尝', no: ['过年', '兔子'], en: 'Granny said, "Stop arguing. Have a taste with a little spoon, and you\'ll know straight away."' },
+  { s: '奶奶说：“别争了，用小勺子＿，马上就知道了。”', a: '尝一尝', no: ['过年', '兔子'], en: 'Grandma said, "Stop arguing. Have a taste with a little spoon, and you\'ll know straight away."' },
   { s: '弟弟尝了左边的，说：“＿！是盐！”', a: '很咸', no: ['路过', '自行车'], en: 'My brother tasted the left one and said, "Very salty! It\'s salt!"' },
-  { s: '奶奶说，做咸汤圆的时候才要＿。', a: '放盐', no: ['兔子', '凉快'], en: 'Granny said you only add salt when you make savoury tangyuan.' },
-  { s: '这次我要＿包汤圆，不要奶奶帮忙。', a: '自己', no: ['很咸', '凉水'], en: 'This time I wanted to make the tangyuan by myself, without Granny\'s help.' },
+  { s: '奶奶说，做咸汤圆的时候才要＿。', a: '放盐', no: ['兔子', '凉快'], en: 'Grandma said you only add salt when you make savoury tangyuan.' },
+  { s: '这次我要＿包汤圆，不要奶奶帮忙。', a: '自己', no: ['很咸', '甜点'], en: 'This time I wanted to make the tangyuan by myself, without Grandma\'s help.' },
   { s: '＿一直盯着罐子看，好像也想尝一尝。', a: '小猫', no: ['甜点', '过年'], en: 'The kitten kept staring at the jars, as if it wanted a taste too.' },
   { s: '家里的小狗和＿也都跑过来看热闹。', a: '兔子', no: ['白糖', '过年'], en: 'Our puppy and rabbit came running over to watch too.' },
-  { s: '奶奶说汤圆不能给＿吃，小动物吃了会不舒服。', a: '小狗', no: ['凉水', '甜点'], en: 'Granny said the puppy can\'t have tangyuan; pets feel unwell if they eat them.' },
-  { s: '邻居王奶奶＿我家门口，奶奶请她进来吃汤圆。', a: '路过', no: ['甜点', '很咸'], en: 'Granny Wang from next door was passing our door, so Granny asked her in for tangyuan.' },
-  { s: '王奶奶说，这是她吃过最好吃的＿。', a: '甜点', no: ['自行车', '凉水'], en: 'Granny Wang said it was the best dessert she had ever eaten.' },
+  { s: '奶奶说汤圆是给人吃的，不能给＿吃。', a: '小狗', no: ['凉水', '甜点'], en: 'Grandma said tangyuan are for people, so the puppy can\'t have any.' },
+  { s: '邻居王奶奶＿我家门口，奶奶请她进来吃汤圆。', a: '路过', no: ['甜点', '很咸'], en: 'Grandma Wang from next door was passing our door, so Grandma asked her in for tangyuan.' },
+  { s: '王奶奶说，这是她吃过最好吃的＿。', a: '甜点', no: ['自行车', '凉水'], en: 'Grandma Wang said it was the best dessert she had ever eaten.' },
   { s: '吃完汤圆，我跑到院子里，外面的风＿的。', a: '凉凉', no: ['路过', '白糖'], en: 'After the tangyuan, I ran out to the yard. The wind outside was cool.' },
   { s: '外婆，你喜欢吃＿的汤圆，还是咸咸的汤圆？', a: '甜甜', no: ['路过', '凉水'], en: 'Grandma, do you like sweet tangyuan or savoury ones?' }
 ];

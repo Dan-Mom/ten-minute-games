@@ -808,16 +808,16 @@ var ANCIENT = {
 var GROUPS = [CHARS.slice(0, 5), CHARS.slice(5, 10), CHARS.slice(10)];
 /* level 2: build a word. w = the word, k = which character is missing, no = characters that would also make a real word, so they are never offered */
 var WORDS = [
-  { w: '书店', k: 1, py: 'shūdiàn', en: 'bookshop', e: '📚', no: ['童', '报'] }, { w: '饭店', k: 0, py: 'fàndiàn', en: 'restaurant', e: '🍽️' },
-  { w: '花店', k: 1, py: 'huādiàn', en: 'flower shop', e: '💐', no: ['钱', '童'] }, { w: '儿童', k: 1, py: 'értóng', en: 'children', e: '🧒' },
-  { w: '童话', k: 0, py: 'tónghuà', en: 'fairy tale', e: '🧚', no: ['报'] }, { w: '说话', k: 1, py: 'shuōhuà', en: 'talk', e: '🗣️', no: ['课'] },
-  { w: '故事', k: 0, py: 'gùshi', en: 'story', e: '📖', no: ['话'] }, { w: '画报', k: 1, py: 'huàbào', en: 'picture magazine', e: '🖼️', no: ['店', '课'] },
+  { w: '书店', k: 1, py: 'shūdiàn', en: 'bookshop', e: '📚', no: ['童', '报', '呢'] }, { w: '饭店', k: 0, py: 'fàndiàn', en: 'restaurant', e: '🍽️' },
+  { w: '花店', k: 1, py: 'huādiàn', en: 'flower shop', e: '💐', no: ['钱', '童', '呢'] }, { w: '儿童', k: 1, py: 'értóng', en: 'children', e: '🧒' },
+  { w: '童话', k: 0, py: 'tónghuà', en: 'fairy tale', e: '🧚', no: ['报'] }, { w: '说话', k: 1, py: 'shuōhuà', en: 'talk', e: '🗣️', no: ['课', '呢'] },
+  { w: '故事', k: 0, py: 'gùshi', en: 'story', e: '📖', no: ['话'] }, { w: '画报', k: 1, py: 'huàbào', en: 'picture magazine', e: '🖼️', no: ['店', '课', '呢'] },
   { w: '报纸', k: 0, py: 'bàozhǐ', en: 'newspaper', e: '📰', no: ['拿'] }, { w: '上课', k: 1, py: 'shàngkè', en: 'have a class', e: '🏫', no: ['报', '等'] },
   { w: '课本', k: 0, py: 'kèběn', en: 'textbook', e: '📘', no: ['话'] }, { w: '拿来', k: 0, py: 'nálái', en: 'bring', e: '🫴', no: ['等', '报'] },
   { w: '拿走', k: 0, py: 'názǒu', en: 'take away', e: '👋' }, { w: '现在', k: 0, py: 'xiànzài', en: 'now', e: '⏰', no: ['等', '拿'] },
   { w: '发现', k: 1, py: 'fāxiàn', en: 'find, discover', e: '🔍', no: ['报', '钱', '话'] }, { w: '等车', k: 0, py: 'děng chē', en: 'wait for the bus', e: '🚌', no: ['现', '童'] },
-  { w: '吃饭', k: 0, py: 'chīfàn', en: 'have a meal', e: '🍚', no: ['等', '拿'] }, { w: '好吃', k: 1, py: 'hǎochī', en: 'tasty', e: '😋', no: ['话', '拿', '报', '饭'] },
-  { w: '早饭', k: 1, py: 'zǎofàn', en: 'breakfast', e: '🥣', no: ['课', '报'] }, { w: '午饭', k: 1, py: 'wǔfàn', en: 'lunch', e: '🍱', no: ['报', '课'] },
+  { w: '吃饭', k: 0, py: 'chīfàn', en: 'have a meal', e: '🍚', no: ['等', '拿'] }, { w: '好吃', k: 1, py: 'hǎochī', en: 'tasty', e: '😋', no: ['话', '拿', '报', '饭', '课', '等'] },
+  { w: '早饭', k: 1, py: 'zǎofàn', en: 'breakfast', e: '🥣', no: ['课', '报', '呢'] }, { w: '午饭', k: 1, py: 'wǔfàn', en: 'lunch', e: '🍱', no: ['报', '课'] },
   { w: '你呢', k: 1, py: 'nǐ ne', en: 'and you?', e: '🙋', no: ['吃', '拿', '等', '付', '报'] },
   { w: '付钱', k: 0, py: 'fùqián', en: 'pay', e: '💵', no: ['拿', '现', '饭', '等', '报', '店'] }, { w: '钱包', k: 0, py: 'qiánbāo', en: 'wallet', e: '👛', no: ['拿'] }
 ];

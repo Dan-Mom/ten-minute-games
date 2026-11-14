@@ -808,7 +808,7 @@ var GROUPS = [CHARS.slice(0, 5), CHARS.slice(5, 9), CHARS.slice(9)];
 var WORDS = [
   { w: '放学', k: 0, py: 'fàngxué', en: 'school is out', e: '🔔', no: ['问', '心'] }, { w: '放心', k: 1, py: 'fàngxīn', en: 'don’t worry; feel at ease', e: '😌' },
   { w: '今天', k: 0, py: 'jīntiān', en: 'today', e: '📅', no: ['问', '听', '告'] }, { w: '今年', k: 0, py: 'jīnnián', en: 'this year', e: '🎆', no: ['期', '午'] },
-  { w: '星星', k: 0, py: 'xīngxing', en: 'star', e: '⭐' }, { w: '星期', k: 1, py: 'xīngqī', en: 'week', e: '🗓️' },
+  { w: '星星', k: 0, py: 'xīngxing', en: 'star', e: '⭐' }, { w: '星期', k: 1, py: 'xīngqī', en: 'week', e: '🗓️', no: ['星'] },
   { w: '广告', k: 1, py: 'guǎnggào', en: 'advertisement', e: '📺' }, { w: '告诉', k: 1, py: 'gàosu', en: 'tell', e: '💬' },
   { w: '下午', k: 1, py: 'xiàwǔ', en: 'afternoon', e: '🌇', no: ['期', '放', '问', '心'] }, { w: '午饭', k: 0, py: 'wǔfàn', en: 'lunch', e: '🍱', no: ['放'] },
   { w: '朋友', k: 0, py: 'péngyou', en: 'friend', e: '🤝', no: ['听'] }, { w: '好友', k: 1, py: 'hǎoyǒu', en: 'good friend', e: '👫', no: ['心', '听', '问'] },
@@ -854,7 +854,7 @@ var SENTENCES = [
   { s: '弟弟先躲起来，他在门后面问：“今天是＿几？”', a: '星期', no: ['好友', '开心'], en: 'My brother hid first. From behind the door he asked, "What day of the week is it today?"' },
   { s: '轮到我了，我在门后面说：“＿，明天中午吃什么？”', a: '请问', no: ['今年', '星期'], en: 'Then it was my turn. From behind the door I said, "Excuse me, what’s for lunch tomorrow?"' },
   { s: '弟弟笑着说：“是姐姐！你的声音最＿了！”', a: '好听', no: ['小心', '广告'], en: 'My brother laughed and said, "It’s my sister! Your voice is the nicest!"' },
-  { s: '后来妈妈学小猫叫，学得太像了，弟弟还以为是真的小猫，猜不出那是＿声音。', a: '谁的', no: ['好友', '午饭'], en: 'Later Mom meowed like a kitten. It sounded so real that my brother thought it was a real kitten and couldn’t guess whose voice it was.' },
+  { s: '后来妈妈学小猫叫，学得太像了，弟弟还以为是真的小猫，猜不出那是＿声音。', a: '谁的', no: ['星期', '午饭'], en: 'Later Mom meowed like a kitten. It sounded so real that my brother thought it was a real kitten and couldn’t guess whose voice it was.' },
   { s: '我们玩得特别＿，一直笑个不停。', a: '开心', no: ['问题', '午饭'], en: 'We had so much fun and couldn’t stop laughing.' },
   { s: '晚上，我们坐在阳台上看＿。', a: '星星', no: ['请问', '听话'], en: 'In the evening we sat on the balcony and looked at the stars.' },
   { s: '弟弟问了妈妈很多＿，比如星星为什么会眨眼睛。', a: '问题', no: ['星期', '放心'], en: 'My brother asked Mom lots of questions, like why the stars twinkle.' },

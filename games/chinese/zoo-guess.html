@@ -808,12 +808,12 @@ var ANCIENT = {
 var GROUPS = [CHARS.slice(0, 5), CHARS.slice(5, 10), CHARS.slice(10)];
 /* level 2: build a word. w = the word, k = which character is missing, no = characters that would also make a real word, so they are never offered */
 var WORDS = [
-  { w: '猜谜语', k: 0, py: 'cāi míyǔ', en: 'guess riddles', e: '🤔' }, { w: '猜想', k: 0, py: 'cāixiǎng', en: 'guess, imagine', e: '💭', no: ['边'] },
-  { w: '鼻子', k: 0, py: 'bízi', en: 'nose', e: '👃' }, { w: '眼睛', k: 1, py: 'yǎnjing', en: 'eyes', e: '👀' },
+  { w: '猜谜语', k: 0, py: 'cāi míyǔ', en: 'guess riddles', e: '🤔' }, { w: '猜想', k: 0, py: 'cāixiǎng', en: 'guess, imagine', e: '💭', no: ['边', '只'] },
+  { w: '鼻子', k: 0, py: 'bízi', en: 'nose', e: '👃', no: ['粉'] }, { w: '眼睛', k: 1, py: 'yǎnjing', en: 'eyes', e: '👀', no: ['边'] },
   { w: '眼镜', k: 0, py: 'yǎnjìng', en: 'glasses', e: '👓' }, { w: '两只', k: 1, py: 'liǎng zhī', en: 'two (animals)', e: '🐤', no: ['朵', '边', '眼'] },
   { w: '耳朵', k: 1, py: 'ěrduo', en: 'ear', e: '👂', no: ['边'] }, { w: '花朵', k: 1, py: 'huāduǒ', en: 'flower', e: '🌸', no: ['粉', '蜜', '边', '眼'] },
   { w: '嘴巴', k: 0, py: 'zuǐba', en: 'mouth', e: '👄' }, { w: '旁边', k: 1, py: 'pángbiān', en: 'beside', e: '↔️' },
-  { w: '河边', k: 1, py: 'hébiān', en: 'riverside', e: '🏞️', no: ['粉'] }, { w: '传说', k: 0, py: 'chuánshuō', en: 'legend', e: '📜', no: ['边'] },
+  { w: '河边', k: 1, py: 'hébiān', en: 'riverside', e: '🏞️', no: ['粉'] }, { w: '传说', k: 0, py: 'chuánshuō', en: 'legend', e: '📜', no: ['边', '只'] },
   { w: '花粉', k: 1, py: 'huāfěn', en: 'pollen', e: '🌼', no: ['朵', '蜜', '边', '眼'] }, { w: '面粉', k: 1, py: 'miànfěn', en: 'flour', e: '🍞' },
   { w: '采花', k: 0, py: 'cǎi huā', en: 'pick flowers', e: '💐', no: ['传', '粉', '眼'] }, { w: '蜂蜜', k: 1, py: 'fēngmì', en: 'honey', e: '🍯' },
   { w: '甜蜜', k: 1, py: 'tiánmì', en: 'sweet, happy', e: '🥰' }, { w: '劳动', k: 0, py: 'láodòng', en: 'work', e: '🧹', no: ['传'] },
@@ -851,18 +851,18 @@ var PATTERN = [
 /* level 4: our own letter to Grandpa about a riddle game at the zoo, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的爷爷：" */
 var SENTENCES = [
   { s: '星期六，爸爸带我和妹妹去动物园看＿。', a: '动物', no: ['面粉', '甜蜜'], en: 'On Saturday, Dad took my little sister and me to the zoo to see the animals.' },
-  { s: '路上，爸爸出了一个谜语，让我们＿。', a: '猜一猜', no: ['面粉', '河边'], en: 'On the way, Dad gave us a riddle and let us guess.' },
+  { s: '一进门，爸爸出了一个谜语，让我们＿。', a: '猜一猜', no: ['面粉', '河边'], en: 'As soon as we went in, Dad gave us a riddle and let us guess.' },
   { s: '谜语说：它的＿长长的，能用来喝水。', a: '鼻子', no: ['花粉', '眼镜'], en: 'The riddle said: its nose is long, and it can drink with it.' },
   { s: '它的＿大大的，像两把扇子。', a: '耳朵', no: ['蜂蜜', '传说'], en: 'Its ears are big, like two fans.' },
   { s: '妹妹马上就猜出来了，是大象！它就站在我们＿。', a: '旁边', no: ['面粉', '劳动'], en: 'My sister guessed it at once: an elephant! And there it was, right next to us.' },
   { s: '我出的谜语是小白兔，它有一双红红的＿。', a: '眼睛', no: ['面粉', '运动'], en: 'My riddle was a little white rabbit. It has a pair of red eyes.' },
   { s: '小白兔的＿分成三瓣，吃萝卜的样子真可爱。', a: '嘴巴', no: ['眼镜', '河边'], en: 'The white rabbit\'s mouth is split in three, and it looks so sweet eating a carrot.' },
-  { s: '我们还看见＿小猴子在树上玩。', a: '两只', no: ['花朵', '面粉'], en: 'We also saw two little monkeys playing in a tree.' },
   { s: '花园里开着很多＿，小蜜蜂在中间忙个不停。', a: '花朵', no: ['眼镜', '鼻子'], en: 'Lots of flowers were out in the garden, and little bees were busy among them.' },
   { s: '妹妹想＿，爸爸说动物园里的花要留给大家看。', a: '采花', no: ['眼镜', '面粉'], en: 'My sister wanted to pick flowers, but Dad said the zoo\'s flowers are for everyone to enjoy.' },
   { s: '小蜜蜂身上沾满了＿，帮花儿传粉。', a: '花粉', no: ['嘴巴', '河边'], en: 'The little bees were covered in pollen, carrying it from flower to flower.' },
   { s: '它们把花蜜带回家，做成甜甜的＿。', a: '蜂蜜', no: ['耳朵', '传说'], en: 'They take the nectar home and make sweet honey.' },
   { s: '爸爸说，小蜜蜂每天都在＿，一点儿也不偷懒。', a: '劳动', no: ['眼镜', '鼻子'], en: 'Dad said the little bees work every day and are never lazy.' },
+  { s: '我们还看见＿小猴子在树上玩。', a: '两只', no: ['花朵', '面粉'], en: 'We also saw two little monkeys playing in a tree.' },
   { s: '回家的路上，我们在＿看到了几只鸭子。', a: '河边', no: ['蜂蜜', '面粉'], en: 'On the way home, we saw some ducks by the river.' },
   { s: '爷爷，你知道很多有趣的＿，下次讲给我听吧！', a: '传说', no: ['眼镜', '面粉'], en: 'Grandpa, you know lots of fun old tales. Tell me one next time!' }
 ];

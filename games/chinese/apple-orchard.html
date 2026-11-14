@@ -814,10 +814,10 @@ var WORDS = [
   { w: '口渴', k: 1, py: 'kǒukě', en: 'thirsty', e: '🥤' }, { w: '书架', k: 1, py: 'shūjià', en: 'bookshelf', e: '📚', no: ['摘'] },
   { w: '哈哈', k: 0, py: 'hāhā', en: 'haha', e: '😂' }, { w: '运气', k: 0, py: 'yùnqi', en: 'luck', e: '🍀', no: ['丧'] },
   { w: '做错', k: 1, py: 'zuòcuò', en: 'do something wrong', e: '❌', no: ['着'] }, { w: '准备', k: 0, py: 'zhǔnbèi', en: 'get ready', e: '🎒' },
-  { w: '摘苹果', k: 0, py: 'zhāi píngguǒ', en: 'pick apples', e: '🍎', no: ['运', '够'] }, { w: '足够', k: 1, py: 'zúgòu', en: 'enough', e: '✅' },
-  { w: '着急', k: 0, py: 'zháojí', en: 'worried, in a hurry', e: '😰' }, { w: '开始', k: 1, py: 'kāishǐ', en: 'begin', e: '🏁', no: ['着'] },
+  { w: '摘苹果', k: 0, py: 'zhāi píngguǒ', en: 'pick apples', e: '🍎', no: ['运', '够', '酸'] }, { w: '足够', k: 1, py: 'zúgòu', en: 'enough', e: '✅' },
+  { w: '着急', k: 0, py: 'zháojí', en: 'worried, in a hurry', e: '😰' }, { w: '开始', k: 1, py: 'kāishǐ', en: 'begin', e: '🏁', no: ['着', '错', '运'] },
   { w: '终于', k: 0, py: 'zhōngyú', en: 'at last', e: '🎉', no: ['始'] }, { w: '很累', k: 1, py: 'hěn lèi', en: 'very tired', e: '😩', no: ['渴', '酸', '准'] },
-  { w: '垂下', k: 0, py: 'chuíxià', en: 'hang down', e: '🌿', no: ['摘', '架'] }, { w: '垂头丧气', k: 2, py: 'chuítóu-sàngqì', en: 'down in the dumps', e: '😞' },
+  { w: '垂下', k: 0, py: 'chuíxià', en: 'hang down', e: '🌿', no: ['摘', '架', '够'] }, { w: '垂头丧气', k: 2, py: 'chuítóu-sàngqì', en: 'down in the dumps', e: '😞' },
   { w: '酸奶', k: 0, py: 'suānnǎi', en: 'yogurt', e: '🥛' }
 ];
 /* "Write it": more words with each character (common words, or words from the lesson), shown under the writing boxes with the
@@ -838,7 +838,7 @@ var PATTERN = [
     what: 'To say you try but cannot manage something, put 不到 right after the action: 摘不到 = can\'t reach to pick it; 找不到 = can\'t find it; 看不到 = can\'t see it.',
     ex: [{ s: '我的钥匙找不到了。', en: 'I can\'t find my key.' }, { s: '他太矮了，看不到前面。', en: 'He\'s too short to see the front.' }, { s: '声音太小，我听不到。', en: 'It\'s too quiet. I can\'t hear it.' }] },
   { t: 'pick', from: '我很想买，可是没有买到。', a: '我很想买，可是买不到。', no: ['我很想买，可是不到买。', '我很想买，可是买到不。'], en: 'I really want to buy one, but I can\'t get one.' },
-  { t: 'build', tiles: ['书架', '太高，', '我', '拿不到', '那本书'], ok: ['书架太高，我拿不到那本书。'], en: 'The bookshelf is too high. I can\'t reach that book.' },
+  { t: 'build', tiles: ['书架', '太高，', '我', '拿不到', '那本书'], ok: ['书架太高，我拿不到那本书。', '书架太高，那本书我拿不到。'], en: 'The bookshelf is too high. I can\'t reach that book.' },
   { t: 'pick', from: '天黑了，我没办法看见小路。', a: '天黑了，我看不到小路。', no: ['天黑了，我不到看小路。', '天黑了，我看小路不到。'], en: 'It\'s dark. I can\'t see the path.' },
   { t: 'build', tiles: ['妹妹', '太矮，', '够不到', '开关'], ok: ['妹妹太矮，够不到开关。'], en: 'My little sister is too short to reach the switch.' },
   { t: 'build', tiles: ['小猫', '躲在', '沙发下面，', '我', '找不到它'], ok: ['小猫躲在沙发下面，我找不到它。'], en: 'The kitten is hiding under the sofa. I can\'t find it.' }
@@ -848,7 +848,7 @@ var SENTENCES = [
   { s: '星期天天气很热，我们走了很远，都＿了。', a: '口渴', no: ['书架', '酸奶'], en: 'It was hot on Sunday, and after a long walk we were all thirsty.' },
   { s: '爸爸说：“先喝水，然后我们去果园＿。”', a: '摘苹果', no: ['着急', '终于'], en: 'Dad said, "Have a drink first, then we\'ll go and pick apples in the orchard."' },
   { s: '水壶里的水＿我们三个人喝。', a: '足够', no: ['垂下', '书架'], en: 'There was enough water in the bottle for the three of us.' },
-  { s: '树上的苹果又大又红，我们的＿真好！', a: '运气', no: ['酸奶', '垂下'], en: 'The apples on the trees were big and red. We were so lucky!' },
+  { s: '树上的苹果又大又红，我们的＿真好！', a: '运气', no: ['着急', '垂下'], en: 'The apples on the trees were big and red. We were so lucky!' },
   { s: '我＿了一个最大的苹果，跳起来去摘。', a: '看准', no: ['开始', '书架'], en: 'I aimed at the biggest apple and jumped up to grab it.' },
   { s: '弟弟个子小，怎么跳也摘不到，＿得都快哭了。', a: '着急', no: ['书架', '做错'], en: 'My little brother is small, and however hard he jumped he couldn\'t reach. He was so upset he nearly cried.' },
   { s: '我们跳啊跳，最后都＿了。', a: '很累', no: ['准备', '书架'], en: 'We jumped and jumped, and in the end we were all very tired.' },
@@ -856,8 +856,8 @@ var SENTENCES = [
   { s: '高高的树枝上挂满了苹果，枝头都＿来了。', a: '垂下', no: ['运气', '开始'], en: 'The high branches were so full of apples that their tips hung down.' },
   { s: '爸爸把我们抱起来，我们＿摘到了苹果！', a: '终于', no: ['书架', '口渴'], en: 'Dad lifted us up, and at last we picked some apples!' },
   { s: '我们还去了葡萄架下，＿摘葡萄。', a: '开始', no: ['酸奶', '做错'], en: 'We also went under the grape trellis and started picking grapes.' },
-  { s: '弟弟拿错了篮子，他说：“对不起，我＿了。”', a: '做错', no: ['开始', '运气'], en: 'My brother took the wrong basket. He said, "Sorry, my mistake."' },
-  { s: '晚上，妈妈给我们每人一杯＿。', a: '酸奶', no: ['书架', '垂下'], en: 'In the evening, Mum gave each of us a cup of yogurt.' },
+  { s: '弟弟拿错了篮子，他说：“对不起，我＿了。”', a: '做错', no: ['书架', '运气'], en: 'My brother took the wrong basket. He said, "Sorry, my mistake."' },
+  { s: '晚上，爸爸给我们每人一杯＿。', a: '酸奶', no: ['书架', '垂下'], en: 'In the evening, Dad gave each of us a cup of yogurt.' },
   { s: '回到家，我把苹果放在＿上。', a: '书架', no: ['着急', '终于'], en: 'Back home, I put the apples on the bookshelf.' },
   { s: '爷爷，下次我们一起去摘苹果，我已经＿好篮子了！', a: '准备', no: ['垂下', '哈哈'], en: 'Grandpa, next time let\'s go apple picking together. I\'ve already got the basket ready!' },
   { s: '爷爷，你听了是不是也会＿大笑？', a: '哈哈', no: ['书架', '足够'], en: 'Grandpa, are you going to laugh "haha" when you hear this?' }
