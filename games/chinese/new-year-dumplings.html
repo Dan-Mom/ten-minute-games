@@ -754,7 +754,7 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 1 lesson 12. One idea: the 12 new characters of the lesson (新到热闹穿衣戴帽祝身体习).
-   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the sentence pattern (什么＋真＋怎么样), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practices the sentence pattern (什么＋真＋怎么样), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own (not the textbook's 课文, 句子 or 对话); only the characters and common words come from the lesson. */
 :root{ --page:#fef2f2; --blue:#b91c1c; --blue-s:#fecaca; --blue-d:#7f1d1d; }   /* this lesson's colors */
 .opt::before{content:"🧧";position:absolute;right:8px;top:4px;font-size:16px}
@@ -771,7 +771,7 @@ var CHARS = [
   { c: '穿', py: 'chuān', en: 'wear (clothes, shoes); go through', e: '👕' }, { c: '衣', py: 'yī', en: 'clothes', e: '🧥' },
   { c: '戴', py: 'dài', en: 'wear (a hat, glasses)', e: '👓' }, { c: '帽', py: 'mào', en: 'hat', e: '🧢' },
   { c: '祝', py: 'zhù', en: 'wish (someone well)', e: '🙏' }, { c: '身', py: 'shēn', en: 'body', e: '🧍' },
-  { c: '体', py: 'tǐ', en: 'body (身体 = body, health)', e: '💪' }, { c: '习', py: 'xí', en: 'practise', e: '✏️' }
+  { c: '体', py: 'tǐ', en: 'body (身体 = body, health)', e: '💪' }, { c: '习', py: 'xí', en: 'practice', e: '✏️' }
 ];
 /* level 1: how each character is built. parts = the pieces (r = which piece is the radical; rest = a piece described in words),
    rad = the radical (部首) with its name, what it usually means, and other characters where you can see it; how = the meaning */
@@ -781,13 +781,13 @@ var PARTS = [
   { c: '热', parts: ['执', '灬'], r: 1, rad: '灬', name: '四点底', npy: 'sì diǎn dǐ', means: 'fire.', see: '点 照 熊 煮', how: 'Fire (灬) below. In old writing it was 熱. 热 means hot: 热水 = hot water; 热闹 = lively and busy.' },
   { c: '闹', parts: ['门', '市'], r: 0, rad: '门', name: '门字框', npy: 'mén zì kuàng', means: 'a door or a gate (in 闹, 门 took the place of 鬥).', see: '问 间 闪 闭', how: '市 (market) inside 门. In old writing it was 鬧: fighting (鬥) at a market (市). Very noisy! 热闹 = lively.' },
   { c: '穿', parts: ['穴', '牙'], r: 0, rad: '穴', name: '穴宝盖', npy: 'xué bǎo gài', means: 'a hole, a cave.', see: '空 窗 究 突', how: 'A hole (穴) and teeth (牙): teeth biting a hole right through. 穿 means go through, or put on: 穿衣服 = put on clothes.' },
-  { c: '衣', parts: ['衣'], r: 0, rad: '衣', name: '衣字', npy: 'yī zì', means: 'clothes. On the left it is written 衤.', see: '装 袋', how: 'Long ago 衣 was a jacket with a collar and two sleeves. 衣服 = clothes; 毛衣 = sweater.' },
+  { c: '衣', parts: ['衣'], r: 0, rad: '衣', name: '衣字', npy: 'yī zì', means: 'clothes. On the left it is written 衤.', see: '装 袋 衫 裙', how: 'Long ago 衣 was a jacket with a collar and two sleeves. 衣服 = clothes; 毛衣 = sweater.' },
   { c: '戴', parts: ['', '戈'], rest: 'the rest: 十 at the top, 田 and 共 inside', r: 1, rad: '戈', name: '戈字旁', npy: 'gē zì páng', means: 'an old weapon, a dagger-axe.', see: '成 战 或', how: '戴 means wear on your head or face: 戴帽子 = wear a hat; 戴眼镜 = wear glasses. For clothes, say 穿.' },
   { c: '帽', parts: ['巾', '冒'], r: 0, rad: '巾', name: '巾字旁', npy: 'jīn zì páng', means: 'a piece of cloth.', see: '帕 帐 师', how: 'Cloth (巾) and 冒, which long ago was a hat over the eyes and gives the sound (mào). 帽子 = hat.' },
   { c: '祝', parts: ['礻', '兄'], r: 0, rad: '礻', name: '示字旁', npy: 'shì zì páng', means: 'praying, gods and good luck.', see: '礼 福 神', how: 'Long ago 祝 showed a person kneeling to pray at an altar (礻). 祝 means wish someone well: 祝你新年快乐！= Happy New Year!' },
   { c: '身', parts: ['身'], r: 0, rad: '身', name: '身字旁', npy: 'shēn zì páng', means: 'the body.', see: '躲 躺', how: 'Long ago 身 was a person with a big round belly. 身体 = body; 身上 = on you.' },
-  { c: '体', parts: ['亻', '本'], r: 0, rad: '亻', name: '单人旁', npy: 'dān rén páng', means: 'a person. It is in characters about people.', see: '你 他 们 住', how: 'A person (亻) and 本 (root). In old writing it was 體. A trick: your body is your root. 身体 = body; 体育 = sport.' },
-  { c: '习', parts: ['习'], r: 0, rad: '乙', name: '乙字', npy: 'yǐ zì', means: 'a bent stroke; in 习 it is the first, bent stroke. As a radical it does not add a meaning.', see: '也 乞 买', how: 'In old writing it was 習, with wings (羽) on top: a young bird flapping again and again, practising flying. 学习 = study; 练习 = practise.' }
+  { c: '体', parts: ['亻', '本'], r: 0, rad: '亻', name: '单人旁', npy: 'dān rén páng', means: 'a person. It is in characters about people.', see: '你 他 们 住', how: 'A person (亻) and 本 (root). In old writing it was 體. A trick: your body is your root. 身体 = body; 体育 = sports.' },
+  { c: '习', parts: ['习'], r: 0, rad: '乙', name: '乙字', npy: 'yǐ zì', means: 'a bent stroke; in 习 it is the first, bent stroke. As a radical it does not add a meaning.', see: '也 乞 买', how: 'In old writing it was 習, with wings (羽) on top: a young bird flapping again and again, practicing flying. 学习 = study; 练习 = practice.' }
 ];
 /* level 1: each character long ago (public-domain drawings from Wikimedia Commons, Ancient Chinese characters project, in ancient/).
    kind = which old script; rad = when the character itself has no old form, its radical is shown instead (form = the old character drawn);
@@ -817,8 +817,8 @@ var WORDS = [
   { w: '戴上', k: 0, py: 'dàishang', en: 'put on (a hat, glasses)', e: '🧢', no: ['穿', '身'] }, { w: '帽子', k: 0, py: 'màozi', en: 'hat', e: '🎩', no: ['身'] },
   { w: '草帽', k: 1, py: 'cǎomào', en: 'straw hat', e: '👒', no: ['体', '衣'] }, { w: '祝福', k: 0, py: 'zhùfú', en: 'good wishes', e: '💌' },
   { w: '庆祝', k: 1, py: 'qìngzhù', en: 'celebrate', e: '🎆' }, { w: '身上', k: 0, py: 'shēnshang', en: 'on you, on your body', e: '🧍', no: ['穿', '戴'] },
-  { w: '身体', k: 1, py: 'shēntǐ', en: 'body; health', e: '💪', no: ['热', '穿'] }, { w: '体育', k: 0, py: 'tǐyù', en: 'sport, PE', e: '⚽' },
-  { w: '学习', k: 1, py: 'xuéxí', en: 'study, learn', e: '📚', no: ['到'] }, { w: '练习', k: 1, py: 'liànxí', en: 'practise', e: '✍️', no: ['身', '到'] }
+  { w: '身体', k: 1, py: 'shēntǐ', en: 'body; health', e: '💪', no: ['热', '穿'] }, { w: '体育', k: 0, py: 'tǐyù', en: 'sports, PE', e: '⚽' },
+  { w: '学习', k: 1, py: 'xuéxí', en: 'study, learn', e: '📚', no: ['到'] }, { w: '练习', k: 1, py: 'liànxí', en: 'practice', e: '✍️', no: ['身', '到'] }
 ];
 /* "Write it": more words with each character (common words, or words from the lesson), shown under the writing boxes with the
    words of level 2 that have it. w = the word, py = its pinyin, en = what it means */
@@ -842,7 +842,7 @@ var PATTERN = [
   { t: 'show', shape: '谁／什么 ＋ 真 ＋ 怎么样', keys: ['真'], end: '。', ask: 'Which one is right? Look at where 真 is.',
     what: 'To say how something is, with feeling: first the thing, then 真 (really, so), then a describing word. 烟花真美 = the fireworks are so beautiful! 真 goes right before the describing word. Do not put 是 in: say 烟花真美, not 烟花是美.',
     ex: [{ s: '烟花真美。', en: 'The fireworks are so beautiful.' }, { s: '舞狮真好玩。', en: 'The lion dance is so much fun.' }, { s: '这个红包真漂亮。', en: 'This red envelope is really pretty.' }] },
-  { t: 'pick', from: '汤圆怎么样？（so sweet）', a: '汤圆真甜。', no: ['汤圆甜真。', '真汤圆甜。'], en: 'The sweet rice balls are so sweet.' },
+  { t: 'pick', from: '汤圆怎么样？（so sweet）', a: '汤圆真甜。', no: ['汤圆甜真。', '真汤圆甜。'], en: 'The rice balls are so sweet.' },
   { t: 'build', tiles: ['奶奶家的', '红灯笼', '真', '亮'], ok: ['奶奶家的红灯笼真亮。'], en: 'The red lanterns at Grandma’s home are really bright.' },
   { t: 'pick', from: '今天天气怎么样？（really cold）', a: '今天真冷。', no: ['今天冷真。', '真今天冷。'], en: 'It is really cold today.' },
   { t: 'build', tiles: ['舞狮的', '鼓声', '真', '响'], ok: ['舞狮的鼓声真响。'], en: 'The lion dance drums are really loud.' },
@@ -852,13 +852,13 @@ var PATTERN = [
 var SENTENCES = [
   { s: '今年过＿，我们全家去了爷爷奶奶家。', a: '新年', no: ['闹钟', '体育'], en: 'This New Year, our whole family went to Grandpa and Grandma’s home.' },
   { s: '出门前，我急着＿，把左右脚穿反了！', a: '穿鞋', no: ['草帽', '新年'], en: 'Before we left I was in such a hurry putting on my shoes that I put them on the wrong feet!' },
-  { s: '我的新＿是红色的，上面有一只小兔子。', a: '衣服', no: ['热水', '祝福'], en: 'My new clothes are red, with a little rabbit on them.' },
-  { s: '天很冷，我还＿了奶奶织的帽子和手套。', a: '戴上', no: ['庆祝', '新鲜'], en: 'It was very cold, so I also put on the hat and gloves Grandma knitted.' },
   { s: '客厅里很＿，大人们都在聊天。', a: '热闹', no: ['毛衣', '草帽'], en: 'The living room was lively, and all the grown-ups were chatting.' },
   { s: '我给爷爷奶奶送上新年的＿，祝他们身体健康。', a: '祝福', no: ['身上', '体育'], en: 'I gave Grandpa and Grandma my New Year wishes and wished them good health.' },
   { s: '爷爷说，他每天早上都去公园锻炼＿。', a: '身体', no: ['帽子', '毛衣'], en: 'Grandpa says he goes to the park every morning to exercise.' },
   { s: '中午，大家一起包饺子，饺子馅里的菜都很＿。', a: '新鲜', no: ['草帽', '体育'], en: 'At noon we all made dumplings together, and the vegetables in the filling were very fresh.' },
   { s: '假期里我每天都＿写春联，爷爷说我写得越来越好了。', a: '练习', no: ['新鲜', '热水'], en: 'During the holiday I practiced writing New Year couplets every day, and Grandpa says I write better and better.' },
+  { s: '晚上去看舞狮前，妈妈让我换上新＿，红红的，上面有一只小兔子。', a: '衣服', no: ['热水', '祝福'], en: 'Before we went to see the lion dance in the evening, Mom had me change into my new clothes. They are red, with a little rabbit on them.' },
+  { s: '天很冷，我还＿了奶奶织的帽子和手套。', a: '戴上', no: ['庆祝', '新鲜'], en: 'It was very cold, so I also put on the hat and gloves Grandma knitted.' },
   { s: '去看舞狮的路上风很大，我的＿差点儿被吹走了。', a: '帽子', no: ['学习', '新年'], en: 'On the way to the lion dance it was very windy, and my hat nearly blew away.' },
   { s: '晚上，大人们在院子里放鞭炮＿新年，我们小孩子站得远远的。', a: '庆祝', no: ['毛衣', '热水'], en: 'In the evening the grown-ups set off firecrackers in the yard to celebrate the New Year, and we children stood far away.' },
   { s: '我们站在门口，＿了天上漂亮的烟花。', a: '看到', no: ['体育', '闹钟'], en: 'We stood by the door and saw beautiful fireworks in the sky.' },
@@ -869,14 +869,14 @@ var SENTENCES = [
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
    s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '新年饺子', en: 'New Year dumplings', lines: [
-  { who: '👩 妈妈', s: '今天是大年初一！你的新衣服穿好了吗？', py: 'Jīntiān shì dànián chūyī! Nǐ de xīn yīfu chuānhǎo le ma?', en: 'It’s the first day of the New Year! Have you put on your new clothes?' },
-  { who: '👧 我', s: '穿好了！我还戴上了奶奶织的红帽子。', py: 'Chuānhǎo le! Wǒ hái dàishang le nǎinai zhī de hóng màozi.', en: 'Yes! I’m also wearing the red hat Grandma knitted.' },
-  { who: '👵 奶奶', s: '快进来！家里人都到了，好热闹啊！', py: 'Kuài jìnlai! Jiālirén dōu dào le, hǎo rènao a!', en: 'Come in, quick! The whole family is here. It’s so lively!' },
+  { who: '👵 奶奶', s: '你们来啦！快进来，家里人都到了，好热闹啊！', py: 'Nǐmen lái la! Kuài jìnlai, jiālirén dōu dào le, hǎo rènao a!', en: 'You’re here! Come in, quick. The whole family is here. It’s so lively!' },
   { who: '👧 我', s: '爷爷奶奶，祝你们身体健康，万事如意！', py: 'Yéye nǎinai, zhù nǐmen shēntǐ jiànkāng, wànshì rúyì!', en: 'Grandpa, Grandma, I wish you good health and that everything goes well!' },
   { who: '👴 爷爷', s: '谢谢！这是给你的红包。新年快乐！', py: 'Xièxie! Zhè shì gěi nǐ de hóngbāo. Xīnnián kuàilè!', en: 'Thank you! Here is a red envelope for you. Happy New Year!' },
   { who: '👧 我', s: '谢谢爷爷！我们一起包的饺子真香啊！', py: 'Xièxie yéye! Wǒmen yìqǐ bāo de jiǎozi zhēn xiāng a!', en: 'Thank you, Grandpa! The dumplings we made together smell so good!', pat: true },
-  { who: '👵 奶奶', s: '多吃几个！吃完饺子，你跟爷爷一起练习写春联吧。', py: 'Duō chī jǐ ge! Chīwán jiǎozi, nǐ gēn yéye yìqǐ liànxí xiě chūnlián ba.', en: 'Have a few more! After the dumplings, you can practise writing New Year couplets with Grandpa.' },
-  { who: '👩 妈妈', s: '晚上爸爸放鞭炮，你们要站得远远的哦！', py: 'Wǎnshang bàba fàng biānpào, nǐmen yào zhàn de yuǎnyuǎn de o!', en: 'Tonight Dad will set off firecrackers. You must stand far away!' }
+  { who: '👵 奶奶', s: '多吃几个！吃完饺子，你跟爷爷一起练习写春联吧。', py: 'Duō chī jǐ ge! Chīwán jiǎozi, nǐ gēn yéye yìqǐ liànxí xiě chūnlián ba.', en: 'Have a few more! After the dumplings, you can practice writing New Year couplets with Grandpa.' },
+  { who: '👩 妈妈', s: '晚上去看舞狮，外面冷，快把新棉衣穿上！', py: 'Wǎnshang qù kàn wǔshī, wàimiàn lěng, kuài bǎ xīn miányī chuānshang!', en: 'Tonight we’re going to see the lion dance. It’s cold out, so put on your new padded coat, quick!' },
+  { who: '👧 我', s: '好！我还要戴上奶奶织的红帽子和手套。', py: 'Hǎo! Wǒ hái yào dàishang nǎinai zhī de hóng màozi hé shǒutào.', en: 'OK! I’ll also wear the red hat and gloves Grandma knitted.' },
+  { who: '👩 妈妈', s: '看完舞狮，爸爸放鞭炮，你们要站得远远的哦！', py: 'Kànwán wǔshī, bàba fàng biānpào, nǐmen yào zhàn de yuǎnyuǎn de o!', en: 'After the lion dance, Dad will set off firecrackers. You must stand far away!' }
 ] };
 
 /* ---------- this lesson's settings: the shared engine (../_engine/chinese-engine.js) reads them ---------- */

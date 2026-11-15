@@ -754,7 +754,7 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 1 lesson 8. One idea: the 12 new characters of the lesson (going places and greetings: 开了真高兴车见说早你们好).
-   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern (谁＋去＋哪儿), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practices the lesson's sentence pattern (谁＋去＋哪儿), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own (not the textbook's 课文, 句子 or 对话); only the characters and common words come from the lesson. */
 :root{ --page:#fdf2f8; --blue:#be185d; --blue-s:#fbcfe8; --blue-d:#9d174d; }   /* this lesson's colors */
 .opt::before{content:"🌸";position:absolute;right:8px;top:4px;font-size:16px}
@@ -777,17 +777,17 @@ var CHARS = [
    rad = the radical (部首) with its name, what it usually means, and other characters where you can see it; how = the meaning */
 var PARTS = [
   { c: '开', parts: ['开'], r: 0, rad: '一', name: '横', npy: 'héng', means: 'one line across.', see: '三 七 下 不', how: 'The old 開 showed two hands lifting the bar of a gate (門) to open it. 开门 = open the door; 开车 = drive.' },
-  { c: '了', parts: ['了'], r: 0, rad: '乙', name: '乙字', npy: 'yǐ zì', means: 'a bent stroke.', see: '也 习 书 予', how: '了 is a little helper word: it shows something has happened. 下雨了 = it’s started raining. 好了 = done!' },
+  { c: '了', parts: ['了'], r: 0, rad: '乙', name: '乙字', npy: 'yǐ zì', means: 'a bent stroke.', see: '也 习 书 予', how: '了 is a little helper word: it shows something has happened. 下雨了 = it’s started raining. 好了 = done! Also read liǎo: 了不起 = amazing.' },
   { c: '真', parts: ['十', '', '八'], rest: 'middle: 目 (an eye) with a line under it', r: 0, rad: '十', name: '十字', npy: 'shí zì', means: 'ten.', see: '南 卖 古 博', how: '真 means real, really. A trick: there is an eye (目) in the middle: what you see with your own eyes is real. 真好 = really good.' },
-  { c: '高', parts: ['高'], r: 0, rad: '亠', name: '点横头', npy: 'diǎn héng tóu', means: 'a dot and a line on top.', see: '六 交 京 亮', how: 'Long ago 高 was a tall tower with a roof on top. 高山 = a high mountain; 高兴 = happy.' },
-  { c: '兴', parts: ['兴'], r: 0, rad: '八', name: '八字底', npy: 'bā zì dǐ', means: 'the number eight; splitting apart.', see: '共 兵 具 典', how: 'The old 興 showed four hands lifting something together: rising up, full of joy. 高兴 = happy.' },
+  { c: '高', parts: ['高'], r: 0, rad: '高', name: '高字', npy: 'gāo zì', means: 'tall, high. Very few characters use it.', see: '敲', how: 'Long ago 高 was a tall tower with a roof on top. 高山 = a high mountain; 高兴 = happy.' },
+  { c: '兴', parts: ['兴'], r: 0, rad: '八', name: '八字底', npy: 'bā zì dǐ', means: 'the number eight; splitting apart.', see: '共 兵 具 典', how: 'The old 興 showed four hands lifting something together: rising up, full of joy. 高兴 = happy. Also read xīng: 兴奋 = excited.' },
   { c: '车', parts: ['车'], r: 0, rad: '车', name: '车字旁', npy: 'chē zì páng', means: 'vehicles.', see: '轮 软 转 辆', how: 'Long ago 车 was a cart seen from above: two wheels and the long middle. 火车 = train; 校车 = school bus.' },
   { c: '见', parts: ['见'], r: 0, rad: '见', name: '见字旁', npy: 'jiàn zì páng', means: 'seeing.', see: '览 觉 规', how: 'The old 見 was a big eye (目) on top of a person (儿): someone looking. 看见 = see; 再见 = goodbye.' },
   { c: '说', parts: ['讠', '兑'], r: 0, rad: '讠', name: '言字旁', npy: 'yán zì páng', means: 'speaking, words.', see: '话 语 请 谢', how: 'Words (讠) on the left, 兑 on the right. 说话 = talk.' },
   { c: '早', parts: ['日', '十'], r: 0, rad: '日', name: '日字头', npy: 'rì zì tóu', means: 'the sun; time.', see: '星 是 昌', how: 'The sun (日) above 十. A trick: the sun just coming up over the grass: early morning. 早上 = morning.' },
   { c: '你', parts: ['亻', '尔'], r: 0, rad: '亻', name: '单人旁', npy: 'dān rén páng', means: 'a person.', see: '他 住 体 休', how: 'A person (亻) and 尔, an old word for "you". 你好 = hello.' },
   { c: '们', parts: ['亻', '门'], r: 0, rad: '亻', name: '单人旁', npy: 'dān rén páng', means: 'a person.', see: '你 他 住 休', how: 'A person (亻); 门 (mén) gives the sound. Put after a word for people to mean more than one: 我们 = we; 你们 = you all.' },
-  { c: '好', parts: ['女', '子'], r: 0, rad: '女', name: '女字旁', npy: 'nǚ zì páng', means: 'a woman or girl.', see: '妈 姐 妹 她', how: 'A woman (女) and a child (子). Some say: a mother with her child, which is good! 你好 = hello.' }
+  { c: '好', parts: ['女', '子'], r: 0, rad: '女', name: '女字旁', npy: 'nǚ zì páng', means: 'a woman or girl.', see: '妈 姐 妹 她', how: 'A woman (女) and a child (子). Some say: a mother with her child, which is good! 你好 = hello. Also read hào: 爱好 = hobby.' }
 ];
 /* level 1: each character long ago (public-domain drawings from Wikimedia Commons, Ancient Chinese characters project, in ancient/).
    kind = which old script; rad = when the character itself has no old form, its radical is shown instead (form = the old character drawn);
@@ -849,7 +849,7 @@ var PATTERN = [
 var SENTENCES = [
   { s: '今天我们班去春游，我真＿！', a: '开心', no: ['火车', '早上'], en: 'Today our class went on a spring outing. I was so happy!' },
   { s: '＿七点，我们就在学校门口等车了。', a: '早上', no: ['好人', '说话'], en: 'At seven in the morning we were already waiting for the bus at the school gate.' },
-  { s: '老师笑着对大家说：“＿早！”', a: '你们', no: ['开车', '高山'], en: 'The teacher smiled and said, "Good morning, everyone!"' },
+  { s: '老师问：“＿都到了吗？我们出发吧！”', a: '你们', no: ['开车', '高山'], en: 'The teacher asked, "Are you all here? Let’s set off!"' },
   { s: '司机叔叔＿很小心，车开得很稳。', a: '开车', no: ['再见', '你好'], en: 'The bus driver drove very carefully, and the bus ran smoothly.' },
   { s: '路上我们看见了一座＿，山顶上还有白雪。', a: '高山', no: ['你们', '说话'], en: 'On the way we saw a high mountain with white snow on top.' },
   { s: '远处有一列＿，跑得比我们的车还快。', a: '火车', no: ['好人', '认真'], en: 'Far away there was a train, going even faster than our bus.' },
@@ -867,9 +867,9 @@ var STORY = { title: '我们去春游', en: 'Off on a spring outing', lines: [
   { who: '👩‍🏫 老师', s: '同学们，早上好！今天我们去春游。', py: 'Tóngxuémen, zǎoshang hǎo! Jīntiān wǒmen qù chūnyóu.', en: 'Good morning, everyone! Today we’re going on a spring outing.' },
   { who: '👧 我', s: '太好了！我今天真高兴！', py: 'Tài hǎo le! Wǒ jīntiān zhēn gāoxìng!', en: 'Hooray! I’m so happy today!' },
   { who: '🚌 司机', s: '大家好！请上车，车要开了。', py: 'Dàjiā hǎo! Qǐng shàng chē, chē yào kāi le.', en: 'Hello, everyone! Please get on. The bus is about to leave.' },
-  { who: '👦 同学', s: '你和我坐在一起吧，我们一起看窗外。', py: 'Nǐ hé wǒ zuò zài yìqǐ ba, wǒmen yìqǐ kàn chuāng wài.', en: 'Let’s sit together and look out of the window.' },
+  { who: '👦 同学', s: '你和我坐在一起吧，我们一起看窗外。', py: 'Nǐ hé wǒ zuò zài yìqǐ ba, wǒmen yìqǐ kàn chuāng wài.', en: 'Let’s sit together and look out the window.' },
   { who: '👧 我', s: '看！我看见小河和大山了！', py: 'Kàn! Wǒ kànjiàn xiǎo hé hé dà shān le!', en: 'Look! I can see a little river and big mountains!' },
-  { who: '👩‍🏫 老师', s: '我们先去动物园，再去公园吃午饭。', py: 'Wǒmen xiān qù dòngwùyuán, zài qù gōngyuán chī wǔfàn.', en: 'First we’ll go to the zoo, then to the park for lunch.', pat: true },
+  { who: '👩‍🏫 老师', s: '我们先去动物园，中午在公园吃午饭。', py: 'Wǒmen xiān qù dòngwùyuán, zhōngwǔ zài gōngyuán chī wǔfàn.', en: 'First we’ll go to the zoo, then have lunch in the park at noon.', pat: true },
   { who: '👦 同学', s: '我听说动物园里有大熊猫！', py: 'Wǒ tīngshuō dòngwùyuán li yǒu dà xióngmāo!', en: 'I heard there are giant pandas at the zoo!' },
   { who: '🚌 司机', s: '动物园到了！大家慢慢下车。', py: 'Dòngwùyuán dào le! Dàjiā mànmàn xià chē.', en: 'Here’s the zoo! Take your time getting off, everyone.' }
 ] };

@@ -754,7 +754,7 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 1 lesson 3. One idea: the 10 new characters of the lesson (pictures of nature: 日月山石田水火土木禾).
-   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises saying dates (month first, then day), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practices saying dates (month first, then day), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    The lesson has no sentence box; its reading practice is months and dates, so the pattern (数字＋月＋数字＋日) is our own choice from that. All sentences and the story here are our own; only the characters and common words come from the lesson. */
 :root{ --page:#f7fee7; --blue:#4d7c0f; --blue-s:#d9f99d; --blue-d:#3f6212; }   /* this lesson's colors */
 .opt::before{content:"🌾";position:absolute;right:8px;top:4px;font-size:16px}
@@ -780,10 +780,10 @@ var PARTS = [
   { c: '山', parts: ['山'], r: 0, rad: '山', name: '山字旁', npy: 'shān zì páng', means: 'mountains.', see: '岁 岛 峰 岩', how: 'Long ago 山 was three mountain peaks side by side. 爬山 = climb a mountain.' },
   { c: '石', parts: ['石'], r: 0, rad: '石', name: '石字旁', npy: 'shí zì páng', means: 'stone.', see: '破 砖 码 碗', how: 'Long ago 石 was a rock (口) at the foot of a cliff. 石头 = stone.' },
   { c: '田', parts: ['田'], r: 0, rad: '田', name: '田字旁', npy: 'tián zì páng', means: 'a field.', see: '男 界 留 略', how: 'Long ago 田 was a field cut into parts by little paths. 田野 = fields.' },
-  { c: '水', parts: ['水'], r: 0, rad: '水', name: '水字', npy: 'shuǐ zì', means: 'water. On the left of a character it is written 氵.', see: '泉 浆 河 海 洗', how: 'Long ago 水 was a stream of water, with drops on both sides. 水果 = fruit.' },
+  { c: '水', parts: ['水'], r: 0, rad: '水', name: '水字', npy: 'shuǐ zì', means: 'water. On the left of a character it is written 氵.', see: '河 海 洗 江 游', how: 'Long ago 水 was a stream of water, with drops on both sides. 水果 = fruit.' },
   { c: '火', parts: ['火'], r: 0, rad: '火', name: '火字旁', npy: 'huǒ zì páng', means: 'fire. At the bottom of a character it can be written 灬.', see: '灯 炒 烧 烤', how: 'Long ago 火 was flames rising up. 火车 = train.' },
   { c: '土', parts: ['土'], r: 0, rad: '土', name: '土字旁', npy: 'tǔ zì páng', means: 'earth, soil.', see: '地 场 城 坐', how: 'Long ago 土 was a lump of earth on the ground. 土豆 = potato.' },
-  { c: '木', parts: ['木'], r: 0, rad: '木', name: '木字旁', npy: 'mù zì páng', means: 'trees and wood.', see: '林 树 桌 椅', how: 'Long ago 木 was a tree: branches on top, roots below. 木头 = wood.' },
+  { c: '木', parts: ['木'], r: 0, rad: '木', name: '木字旁', npy: 'mù zì páng', means: 'trees and wood.', see: '林 树 椅 村', how: 'Long ago 木 was a tree: branches on top, roots below. 木头 = wood.' },
   { c: '禾', parts: ['禾'], r: 0, rad: '禾', name: '禾木旁', npy: 'hé mù páng', means: 'grain plants.', see: '秋 种 和 稻', how: 'Long ago 禾 was a grain plant with its heavy head of seeds bending down. 禾苗 = young crops.' }
 ];
 /* level 1: each character long ago (public-domain drawings from Wikimedia Commons, Ancient Chinese characters project, in ancient/).
@@ -831,7 +831,7 @@ var MORE_WORDS = {
 var PATTERN = [
   { t: 'show', shape: '数字＋月 ＋ 数字＋日', keys: ['月', '日'], end: '。', ask: 'Which one is right? Look at 月 and 日.',
     what: 'In Chinese, say the month first, then the day: 三月十二日 = March 12th. 月 is the month and 日 is the day. Chinese goes from big to small: month, then day. When talking, people often say 号 instead of 日: 七月十号.',
-    ex: [{ s: '三月十二日是植树节。', en: 'March 12th is Tree-Planting Day.' }, { s: '我们五月十日去公园。', en: 'We are going to the park on May 10th.' }, { s: '十二月二十五日是圣诞节。', en: 'December 25th is Christmas Day.' }] },
+    ex: [{ s: '三月十二日是植树节。', en: 'March 12th is Tree-Planting Day.' }, { s: '我们五月十日去公园。', en: 'We are going to the park on May 10th.' }, { s: '九月十日是教师节。', en: 'September 10th is Teachers’ Day in China.' }] },
   { t: 'pick', from: '新年是哪一天？', a: '新年是一月一日。', no: ['新年是一日一月。', '新年是月一日一。'], en: 'New Year’s Day is January 1st.' },
   { t: 'build', tiles: ['我们', '十月', '一日', '去', '爬山'], ok: ['我们十月一日去爬山。', '十月一日我们去爬山。'], en: 'We are going hiking on October 1st.' },
   { t: 'pick', from: '今天是几月几日？（July 4th）', a: '今天是七月四日。', no: ['今天是四日七月。', '今天是七日四月。'], en: 'Today is July 4th.' },

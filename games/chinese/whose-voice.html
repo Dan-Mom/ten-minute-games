@@ -754,7 +754,7 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 2 lesson 3. One idea: the 13 new characters of the lesson (放今星期告诉午朋友问谁听心).
-   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the sentence pattern (questions with 谁), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practices the sentence pattern (questions with 谁), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own (not the textbook's 课文, 句子 or 对话); only the characters and common words come from the lesson. */
 :root{ --page:#fff7ed; --blue:#c2410c; --blue-s:#fed7aa; --blue-d:#7c2d12; }   /* this lesson's colors */
 .opt::before{content:"👂";position:absolute;right:8px;top:4px;font-size:16px}
@@ -777,7 +777,7 @@ var CHARS = [
 /* level 1: how each character is built. parts = the pieces (r = which piece is the radical; rest = a piece described in words),
    rad = the radical (部首) with its name, what it usually means, and other characters where you can see it; how = the meaning */
 var PARTS = [
-  { c: '放', parts: ['方', '攵'], r: 1, rad: '攵', name: '反文旁', npy: 'fǎn wén páng', means: 'a hand holding a stick; doing something.', see: '收 改 教 数', how: 'A hand with a stick (攵); 方 gives the sound (fāng, fàng). 放学 = school is out; 放心 = don’t worry.' },
+  { c: '放', parts: ['方', '攵'], r: 0, rad: '方', name: '方字旁', npy: 'fāng zì páng', means: 'a square; a direction.', see: '旅 族 旗 施', how: '方 gives the sound (fāng, fàng); 攵 is a hand with a stick: doing something. 放学 = school is out; 放心 = don’t worry.' },
   { c: '今', parts: ['人', ''], rest: 'below: a short line and a hook', r: 0, rad: '人', name: '人字头', npy: 'rén zì tóu', means: 'a person.', see: '会 个 介 全', how: '今 means now: 今天 = today; 今年 = this year.' },
   { c: '星', parts: ['日', '生'], r: 0, rad: '日', name: '日字头', npy: 'rì zì tóu', means: 'the sun; light and time.', see: '早 是 景 晨', how: '日 on top; 生 below gives the sound (shēng, xīng). Long ago 星 was drawn as little stars. 星星 = star.' },
   { c: '期', parts: ['其', '月'], r: 1, rad: '月', name: '月字旁', npy: 'yuè zì páng', means: 'the moon; time.', see: '朝 朗 服 有', how: '其 gives the sound (qí, qī), and 月 (the moon) shows it is about time. 星期 = week; 星期一 = Monday.' },

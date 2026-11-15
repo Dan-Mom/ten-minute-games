@@ -754,7 +754,7 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 5 lesson 1. One idea: the 15 new characters of the lesson.
-   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practices the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own; only the characters and common words come from the lesson. */
 :root{ --page:#eff6ff; --blue:#1d4ed8; --blue-s:#bfdbfe; --blue-d:#1e40af; }   /* this lesson's colors */
 .opt::before{content:"✏";position:absolute;right:9px;top:3px;font-size:20px;color:#f59e0b}
@@ -768,7 +768,7 @@ button{-webkit-appearance:none;appearance:none}
 var CHARS = [
   { c: '超', py: 'chāo', en: 'go past; super', e: '🦸' }, { c: '市', py: 'shì', en: 'market; city', e: '🏙️' },
   { c: '各', py: 'gè', en: 'each, every', e: '🌈' }, { c: '颜', py: 'yán', en: 'face (颜色 = color)', e: '🎨' },
-  { c: '练', py: 'liàn', en: 'practise', e: '✏️' }, { c: '许', py: 'xǔ', en: 'allow (许多 = many)', e: '🔢' },
+  { c: '练', py: 'liàn', en: 'practice', e: '✏️' }, { c: '许', py: 'xǔ', en: 'allow (许多 = many)', e: '🔢' },
   { c: '漂', py: 'piào', en: '(漂亮 = pretty)', e: '✨', hear: '漂亮' }, { c: '尺', py: 'chǐ', en: 'ruler; a measure of length', e: '📏' },
   { c: '刀', py: 'dāo', en: 'knife', e: '🗡️' }, { c: '支', py: 'zhī', en: '(counts pens: 一支笔)', e: '🖊️' },
   { c: '行', py: 'háng', en: 'row, line', e: '📝', hear: '一行字' }, { c: '商', py: 'shāng', en: 'trade, business', e: '🏪' },
@@ -782,7 +782,7 @@ var PARTS = [
   { c: '市', parts: ['市'], r: 0, rad: '亠', name: '点横头', npy: 'diǎn héng tóu', means: 'a dot over a line. As a radical it does not add a meaning.', see: '京 亮 交 亡', how: '市 is one whole shape. Long ago it was a market place. 超市 = supermarket; 城市 = city.' },
   { c: '各', parts: ['夂', '口'], r: 0, rad: '夂', name: '冬字头', npy: 'dōng zì tóu', means: 'a foot walking.', see: '冬 条 处 夏', how: 'A foot (夂) coming toward a place (口): long ago it meant "to arrive". Now it means "each, every". 各种 = all kinds.' },
   { c: '颜', parts: ['彦', '页'], r: 1, rad: '页', name: '页字旁', npy: 'yè zì páng', means: 'the head.', see: '顶 顺 须 题', how: '彦 (yàn), which helps with the sound, and 页 (the head): the face. 颜色 = color.' },
-  { c: '练', parts: ['纟', ''], rest: 'right: a part that long ago gave the sound', r: 0, rad: '纟', name: '绞丝旁', npy: 'jiǎo sī páng', means: 'silk and thread.', see: '红 绿 线 纸 结', how: 'Silk (纟) and a part that long ago gave the sound. Long ago it meant boiling silk again and again to make it soft and white; doing something again and again became "practise". 练习 = practise.' },
+  { c: '练', parts: ['纟', ''], rest: 'right: a part that long ago gave the sound', r: 0, rad: '纟', name: '绞丝旁', npy: 'jiǎo sī páng', means: 'silk and thread.', see: '红 绿 线 纸 结', how: 'Silk (纟) and a part that long ago gave the sound. Long ago it meant boiling silk again and again to make it soft and white; doing something again and again became "practice". 练习 = practice.' },
   { c: '许', parts: ['讠', '午'], r: 0, rad: '讠', name: '言字旁', npy: 'yán zì páng', means: 'words and speaking.', see: '说 语 读 请 认', how: 'Words (讠) and 午, which helps with the sound: to say yes, to allow. 许多 = many; 也许 = maybe.' },
   { c: '漂', parts: ['氵', '票'], r: 0, rad: '氵', name: '三点水', npy: 'sān diǎn shuǐ', means: 'water. It is in characters about water and liquids.', see: '河 海 洗 游 汤', how: 'Water (氵) and 票 (piào), which gives the sound: to float on water (said piāo). Said piào in 漂亮 = pretty.' },
   { c: '尺', parts: ['尺'], r: 0, rad: '尸', name: '尸字头', npy: 'shī zì tóu', means: 'a body lying down, or a roof.', see: '屋 尾 居 层', how: '尺 is one whole shape. People say long ago a 尺 was measured with the hand, from thumb to finger. 尺子 = ruler.' },
@@ -819,7 +819,7 @@ var GROUPS = [CHARS.slice(0, 5), CHARS.slice(5, 10), CHARS.slice(10)];
 var WORDS = [
   { w: '超市', k: 0, py: 'chāoshì', en: 'supermarket', e: '🛒', no: ['各', '行'] }, { w: '超人', k: 0, py: 'chāorén', en: 'superhero', e: '🦸', no: ['商', '行', '各'] },
   { w: '城市', k: 1, py: 'chéngshì', en: 'city', e: '🏙️' }, { w: '各种', k: 0, py: 'gè zhǒng', en: 'all kinds of', e: '🌈', no: ['品'] },
-  { w: '颜色', k: 0, py: 'yánsè', en: 'color', e: '🎨', no: ['各', '行'] }, { w: '练习', k: 0, py: 'liànxí', en: 'practise', e: '✏️' },
+  { w: '颜色', k: 0, py: 'yánsè', en: 'color', e: '🎨', no: ['各', '行'] }, { w: '练习', k: 0, py: 'liànxí', en: 'practice', e: '✏️' },
   { w: '许多', k: 0, py: 'xǔduō', en: 'many', e: '🔢', no: ['超'] }, { w: '漂亮', k: 0, py: 'piàoliang', en: 'pretty', e: '✨', no: ['超'] },
   { w: '尺子', k: 0, py: 'chǐzi', en: 'ruler', e: '📏', no: ['刀', '鞋'] }, { w: '卷笔刀', k: 2, py: 'juǎnbǐdāo', en: 'pencil sharpener', e: '✏️' },
   { w: '剪刀', k: 1, py: 'jiǎndāo', en: 'scissors', e: '✂️' }, { w: '一支', k: 1, py: 'yì zhī', en: 'one (pen)', e: '🖊️', no: ['行', '刀', '尺', '品'] },
@@ -833,7 +833,7 @@ var MORE_WORDS = {
   '超': [{ w: '超过', py: 'chāoguò', en: 'go past; more than' }],
   '市': [{ w: '市场', py: 'shìchǎng', en: 'market' }],
   '各': [{ w: '各位', py: 'gèwèi', en: 'everyone (polite)' }],
-  '练': [{ w: '练字', py: 'liàn zì', en: 'practise writing' }],
+  '练': [{ w: '练字', py: 'liàn zì', en: 'practice writing' }],
   '许': [{ w: '也许', py: 'yěxǔ', en: 'maybe' }],
   '支': [{ w: '支持', py: 'zhīchí', en: 'support' }],
   '行': [{ w: '银行', py: 'yínháng', en: 'bank' }],
@@ -859,7 +859,7 @@ var SENTENCES = [
   { s: '新学期快到了，妈妈带我到＿挑文具。', a: '超市', no: ['尺子', '用品'], en: 'The new school year is coming, so Mom took me to the supermarket to choose stationery.' },
   { s: '那里有＿笔，红的、蓝的、绿的都有。', a: '各种', no: ['鞋子', '剪刀'], en: 'There were all kinds of pens there: red, blue and green.' },
   { s: '这些本子的＿真好看。', a: '颜色', no: ['超人', '制造'], en: 'The colors of these notebooks are really nice.' },
-  { s: '我要多＿写字，把字写得更好看。', a: '练习', no: ['鞋子', '尺子'], en: 'I want to practise writing more, so my handwriting looks even better.' },
+  { s: '我要多＿写字，把字写得更好看。', a: '练习', no: ['鞋子', '尺子'], en: 'I want to practice writing more, so my handwriting looks even better.' },
   { s: '超市里有＿好玩的东西。', a: '许多', no: ['剪刀', '城市'], en: 'There were lots of fun things in the supermarket.' },
   { s: '我看中了一个＿的铅笔盒。', a: '漂亮', no: ['练习', '用品'], en: 'I had my eye on a pretty pencil case.' },
   { s: '我还买了一把新＿，量东西用。', a: '尺子', no: ['超人', '颜色'], en: 'I also bought a new ruler for measuring things.' },

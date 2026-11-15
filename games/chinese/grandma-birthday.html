@@ -754,7 +754,7 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 1 lesson 9. One idea: the 15 new characters of the lesson: the 9 of the text (family: 的家这有爷奶爸妈和) and the 6 of its reading 放学歌 (放回到给完把), added because the engine needs at least 10 (the owner, 2026-11-13).
-   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern (这是＋谁的＋东西), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practices the lesson's sentence pattern (这是＋谁的＋东西), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own (not the textbook's 课文, 句子 or 对话); only the characters and common words come from the lesson. */
 :root{ --page:#fefce8; --blue:#a16207; --blue-s:#fef08a; --blue-d:#854d0e; }   /* this lesson's colors */
 .opt::before{content:"🎂";position:absolute;right:8px;top:4px;font-size:16px}
@@ -778,16 +778,16 @@ var CHARS = [
 /* level 1: how each character is built. parts = the pieces (r = which piece is the radical; rest = a piece described in words),
    rad = the radical (部首) with its name, what it usually means, and other characters where you can see it; how = the meaning */
 var PARTS = [
-  { c: '的', parts: ['白', '勺'], r: 0, rad: '白', name: '白字旁', npy: 'bái zì páng', means: 'white; clear.', see: '皂 皇', how: 'White (白) and 勺. Long ago 的 meant bright and clear. Today it is a helper word that shows whose: 我的 = my, mine.' },
-  { c: '家', parts: ['宀', '豕'], r: 0, rad: '宀', name: '宝盖头', npy: 'bǎo gài tóu', means: 'a roof, a house.', see: '安 字 室 宝', how: 'A roof (宀) over a pig (豕). Many people think long ago families kept pigs at home. 家人 = family; 回家 = go home.' },
+  { c: '的', parts: ['白', '勺'], r: 0, rad: '白', name: '白字旁', npy: 'bái zì páng', means: 'white; clear.', see: '皂 皇 泉', how: 'White (白) and 勺. Long ago 的 meant bright and clear. Today it is a helper word that shows whose: 我的 = my, mine.' },
+  { c: '家', parts: ['宀', '豕'], r: 0, rad: '宀', name: '宝盖头', npy: 'bǎo gài tóu', means: 'a roof, a house.', see: '安 字 室 宝', how: 'A roof (宀) over a pig (豕). Some say long ago families kept pigs at home. 家人 = family; 回家 = go home.' },
   { c: '这', parts: ['辶', '文'], r: 0, rad: '辶', name: '走之底', npy: 'zǒu zhī dǐ', means: 'walking, going.', see: '过 还 近 远', how: 'Walking (辶) and 文. 这 means this. 这里 = here.' },
-  { c: '有', parts: ['', '月'], rest: 'top: a hand', r: 1, rad: '月', name: '月字旁', npy: 'yuè zì páng', means: 'the moon; in some characters, meat.', see: '朋 服 脸 脚', how: 'A hand (the top) holding a piece of meat (月): to have. 没有 = not have.' },
-  { c: '爷', parts: ['父', '卩'], r: 0, rad: '父', name: '父字头', npy: 'fù zì tóu', means: 'father.', see: '爸 爹', how: 'Father (父) on top: 爷爷 is your dad’s father. 爷爷 = grandpa.' },
+  { c: '有', parts: ['', '月'], rest: 'top: a hand', r: 1, rad: '月', name: '月字底', npy: 'yuè zì dǐ', means: 'the moon; in some characters, meat.', see: '朋 服 脸 脚', how: 'A hand (the top) holding a piece of meat (月): to have. 没有 = not have.' },
+  { c: '爷', parts: ['父', '卩'], r: 0, rad: '父', name: '父字头', npy: 'fù zì tóu', means: 'father.', see: '爸 爹 斧', how: 'Father (父) on top: 爷爷 is your dad’s father. 爷爷 = grandpa.' },
   { c: '奶', parts: ['女', '乃'], r: 0, rad: '女', name: '女字旁', npy: 'nǚ zì páng', means: 'a woman or girl.', see: '妈 姐 妹 好', how: 'A woman (女); 乃 gives the sound (nǎi). 奶奶 = grandma; 牛奶 = milk.' },
-  { c: '爸', parts: ['父', '巴'], r: 0, rad: '父', name: '父字头', npy: 'fù zì tóu', means: 'father.', see: '爷 爹', how: 'Father (父) on top; 巴 below gives the sound (bā, bà). 爸爸 = dad.' },
+  { c: '爸', parts: ['父', '巴'], r: 0, rad: '父', name: '父字头', npy: 'fù zì tóu', means: 'father.', see: '爷 爹 斧', how: 'Father (父) on top; 巴 below gives the sound (bā, bà). 爸爸 = dad.' },
   { c: '妈', parts: ['女', '马'], r: 0, rad: '女', name: '女字旁', npy: 'nǚ zì páng', means: 'a woman or girl.', see: '奶 姐 妹 好', how: 'A woman (女); 马 gives the sound (mǎ, mā). 妈妈 = mom.' },
-  { c: '和', parts: ['禾', '口'], r: 0, rad: '禾', name: '禾木旁', npy: 'hé mù páng', means: 'grain plants.', see: '秋 种 稻 秒', how: 'Grain (禾) gives the sound (hé), and a mouth (口). 和 = and: 爸爸和妈妈 = Dad and Mom.' },
-  { c: '放', parts: ['方', '攵'], r: 1, rad: '攵', name: '反文旁', npy: 'fǎn wén páng', means: 'a hand holding a stick; doing something.', see: '收 改 教 数', how: 'A hand with a stick (攵); 方 gives the sound (fāng, fàng). 放学 = school is out.' },
+  { c: '和', parts: ['禾', '口'], r: 0, rad: '禾', name: '禾木旁', npy: 'hé mù páng', means: 'grain plants.', see: '秋 种 稻 秒', how: 'Grain (禾) gives the sound (hé), and a mouth (口). 和 = and: 爸爸和妈妈 = Dad and Mom. In 暖和 (warm) it is said huo.' },
+  { c: '放', parts: ['方', '攵'], r: 0, rad: '方', name: '方字旁', npy: 'fāng zì páng', means: 'a square; a direction.', see: '旅 族 旗 施', how: '方 gives the sound (fāng, fàng); 攵 is a hand with a stick: doing something. 放学 = school is out.' },
   { c: '回', parts: ['回'], r: 0, rad: '囗', name: '国字框', npy: 'guó zì kuàng', means: 'an enclosure, a fence all around.', see: '国 园 图 四', how: 'Long ago 回 was a swirl going round and round: coming back. 回家 = go home.' },
   { c: '到', parts: ['至', '刂'], r: 1, rad: '刂', name: '立刀旁', npy: 'lì dāo páng', means: 'a knife.', see: '刚 别 刻 判', how: '至 (arrive) on the left; 刂 (dāo) on the right gives the sound. 到了 = we’re here!' },
   { c: '给', parts: ['纟', '合'], r: 0, rad: '纟', name: '绞丝旁', npy: 'jiǎo sī páng', means: 'silk, thread.', see: '红 绿 线 纸', how: 'Silk thread (纟) and 合. Some say it first meant having enough thread. Today 给 means give. 送给 = give as a present.' },
@@ -853,7 +853,7 @@ var MORE_WORDS = {
 var PATTERN = [
   { t: 'show', shape: '这 ＋ 是 ＋ 谁的 ＋ 东西', keys: ['这', '是', '的'], end: '。', ask: 'Which one is right? Look at 这是 and 的.',
     what: 'To show something and say whose it is: 这是, then the person and 的, then the thing. 这是妈妈的手机 = this is Mom’s phone. 的 works like ’s in English: 爸爸的 = Dad’s, 我的 = my. To ask, say 这是谁的？ = whose is this?',
-    ex: [{ s: '这是妈妈的手机。', en: 'This is Mom’s phone.' }, { s: '这是爷爷的眼镜。', en: 'These are Grandpa’s glasses.' }, { s: '这是我的小狗。', en: 'This is my puppy.' }] },
+    ex: [{ s: '这是妈妈的手机。', en: 'This is Mom’s phone.' }, { s: '这是爷爷的眼镜。', en: 'These are Grandpa’s glasses.' }, { s: '这是哥哥的足球。', en: 'This is my big brother’s soccer ball.' }] },
   { t: 'pick', from: '这是谁的书包？（my little brother’s）', a: '这是弟弟的书包。', no: ['这是书包的弟弟。', '这弟弟是的书包。'], en: 'This is my little brother’s schoolbag.' },
   { t: 'build', tiles: ['这', '是', '奶奶的', '帽子'], ok: ['这是奶奶的帽子。', '这帽子是奶奶的。'], en: 'This is Grandma’s hat.' },
   { t: 'pick', from: '这是谁的伞？（Mom’s）', a: '这是妈妈的伞。', no: ['这是伞的妈妈。', '这妈妈的是伞。'], en: 'This is Mom’s umbrella.' },

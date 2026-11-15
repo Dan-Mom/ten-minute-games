@@ -754,7 +754,7 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 1 lesson 5. One idea: the 11 new characters of the lesson (weather and the four seasons: 风雨雪云电天地春夏秋冬).
-   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises talking about rain and snow (下雨 / 下雪), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practices talking about rain and snow (下雨 / 下雪), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    The lesson has no sentence box; its reading practice has 下雨 and 下雪, so the pattern (时间／地方＋下＋雨／雪) is our own choice from that. All sentences and the story here are our own; only the characters and common words come from the lesson. */
 :root{ --page:#f0f9ff; --blue:#0369a1; --blue-s:#bae6fd; --blue-d:#075985; }   /* this lesson's colors */
 .opt::before{content:"☁️";position:absolute;right:8px;top:4px;font-size:16px}
@@ -779,11 +779,11 @@ var PARTS = [
   { c: '风', parts: ['风'], r: 0, rad: '风', name: '风字旁', npy: 'fēng zì páng', means: 'wind.', see: '飘 飓', how: 'In the oldest writing, "wind" was written with the picture of a phoenix (凤), a big bird. Some say its wings were thought to make the wind. 大风 = strong wind.' },
   { c: '雨', parts: ['雨'], r: 0, rad: '雨', name: '雨字头', npy: 'yǔ zì tóu', means: 'weather: rain, snow, clouds.', see: '雪 雷 零 雾 霜', how: 'Long ago 雨 was raindrops falling from the sky (the line at the top). 下雨 = it rains.' },
   { c: '雪', parts: ['雨', ''], rest: 'bottom: a broom (in old writing)', r: 0, rad: '雨', name: '雨字头', npy: 'yǔ zì tóu', means: 'weather: rain, snow, clouds.', see: '雷 零 雾 霜', how: '雨 on top: it comes from the sky. Long ago the bottom was a broom (彗). A trick: snow is the weather you sweep away. 下雪 = it snows.' },
-  { c: '云', parts: ['二', '厶'], r: 0, rad: '二', name: '二字头', npy: 'èr zì tóu', means: 'the number two.', see: '井 五 亚', how: 'Long ago 云 was curling clouds. Later 雨 was put on top (雲); today it is written 云 again. 白云 = white clouds.' },
+  { c: '云', parts: ['二', '厶'], r: 0, rad: '二', name: '二字头', npy: 'èr zì tóu', means: 'the number two.', see: '元 些', how: 'Long ago 云 was curling clouds. Later 雨 was put on top (雲); today it is written 云 again. 白云 = white clouds.' },
   { c: '电', parts: ['电'], r: 0, rad: '田', name: '田字', npy: 'tián zì', means: 'a field.', see: '男 界 留', how: 'Long ago lightning was written 申, a zigzag flash. Later 雨 was put on top (電); today it is 电 again. 闪电 = lightning; 电视 = TV.' },
   { c: '天', parts: ['一', '大'], r: 0, rad: '一', name: '横', npy: 'héng', means: 'one line across.', see: '三 七 上 下', how: 'Long ago 天 was a person (大) with a big head: first it meant the top of the head, then the sky above. 天上 = in the sky; 今天 = today.' },
-  { c: '地', parts: ['土', '也'], r: 0, rad: '土', name: '提土旁', npy: 'tí tǔ páng', means: 'earth, soil.', see: '场 城 块 坏', how: 'Earth (土) on the left; 也 on the right was once a sound hint. 地上 = on the ground.' },
-  { c: '春', parts: ['', '日'], rest: 'top: plants growing (in old writing)', r: 1, rad: '日', name: '日字底', npy: 'rì zì dǐ', means: 'the sun; time.', see: '旦 昔 普 智', how: 'Long ago 春 was young plants pushing up in the sun (日): the season when things grow. 春天 = spring.' },
+  { c: '地', parts: ['土', '也'], r: 0, rad: '土', name: '提土旁', npy: 'tí tǔ páng', means: 'earth, soil.', see: '场 城 块 坏', how: 'Earth (土) on the left; 也 on the right was once a sound hint. 地上 = on the ground. Also read de: 慢慢地 = slowly.' },
+  { c: '春', parts: ['', '日'], rest: 'top: plants growing (in old writing)', r: 1, rad: '日', name: '日字底', npy: 'rì zì dǐ', means: 'the sun; time.', see: '晋 昔 普 智', how: 'Long ago 春 was young plants pushing up in the sun (日): the season when things grow. 春天 = spring.' },
   { c: '夏', parts: ['', '夂'], rest: 'top: a head and body (in old writing)', r: 1, rad: '夂', name: '折文', npy: 'zhé wén', means: 'once a foot walking.', see: '冬 处 备', how: 'Some say long ago 夏 was a big, grand person with a head, arms and feet. Later it came to mean summer. 夏天 = summer.' },
   { c: '秋', parts: ['禾', '火'], r: 0, rad: '禾', name: '禾木旁', npy: 'hé mù páng', means: 'grain plants.', see: '种 和 稻 秒', how: 'The oldest 秋 was a cricket, the insect that sings in the fall. Today it is grain (禾) and fire (火). A trick: the ripe fields are gold and red, like fire. 秋天 = fall.' },
   { c: '冬', parts: ['夂', '冫'], r: 0, rad: '夂', name: '折文', npy: 'zhé wén', means: 'once a foot walking.', see: '处 备 夏', how: 'Long ago 冬 was a rope with a knot at each end: the end of the year. Later ice (冫, the two dots) was added. 冬天 = winter.' }

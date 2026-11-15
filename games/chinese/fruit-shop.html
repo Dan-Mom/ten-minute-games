@@ -754,7 +754,7 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 1 lesson 1. One idea: the 17 new characters of the lesson (the numbers 一 to 十 and 百, and 又两水中不见).
-   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises counting with a number + 个, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practices counting with a number + 个, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    The lesson has no sentence box, so the pattern (number + 个, and 两个 rather than 二个) is our own choice. All sentences and the story here are our own; only the characters and common words come from the lesson. */
 :root{ --page:#fff7ed; --blue:#c2410c; --blue-s:#fed7aa; --blue-d:#9a3412; }   /* this lesson's colors */
 .opt::before{content:"🍎";position:absolute;right:8px;top:4px;font-size:16px}
@@ -783,19 +783,19 @@ var PARTS = [
   { c: '二', parts: ['二'], r: 0, rad: '一', name: '横', npy: 'héng', means: 'one line across.', see: '三 七 上 下', how: 'Two lines mean two. Use 二 when you count (一、二、三) and in numbers like 十二. Before 个, say 两: 两个.' },
   { c: '三', parts: ['三'], r: 0, rad: '一', name: '横', npy: 'héng', means: 'one line across.', see: '七 上 下 不', how: 'Three lines mean three. Long ago 一, 二 and 三 were drawn just like this.' },
   { c: '四', parts: ['囗', ''], rest: 'inside: two short legs, like 儿', r: 0, rad: '囗', name: '国字框', npy: 'guó zì kuāng', means: 'a frame around something.', see: '回 因 国 园', how: 'Long ago 四 was four lines, like 三 with one more. Later people wrote it as this box shape.' },
-  { c: '五', parts: ['五'], r: 0, rad: '一', name: '横', npy: 'héng', means: 'one line across.', see: '三 七 上 下', how: 'Long ago 五 was a cross (✕) between two lines. Trick: one hand has 五 fingers.' },
+  { c: '五', parts: ['五'], r: 0, rad: '一', name: '横', npy: 'héng', means: 'one line across.', see: '三 七 上 下', how: 'Long ago 五 was a cross (✕) between two lines. A trick: one hand has 五 fingers.' },
   { c: '六', parts: ['亠', '八'], r: 0, rad: '亠', name: '文字头', npy: 'wén zì tóu', means: 'a dot and a line on top.', see: '交 京 市 亮', how: 'Some say the oldest 六 was a little hut. People used that shape to write six.' },
   { c: '七', parts: ['七'], r: 0, rad: '一', name: '横', npy: 'héng', means: 'one line across.', see: '三 上 下 不', how: 'Long ago 七 was a cross, +, a lot like today\'s 十! Later its tail was bent, so the two were not mixed up.' },
   { c: '八', parts: ['八'], r: 0, rad: '八', name: '八字头', npy: 'bā zì tóu', means: 'two strokes going apart.', see: '分 公 共 兰', how: 'Two strokes going apart. Long ago 八 meant "to split"; people borrowed it to write eight.' },
-  { c: '九', parts: ['九'], r: 0, rad: '丿', name: '撇', npy: 'piě', means: 'a stroke falling to the left.', see: '久 么 乐 千', how: 'Some say the oldest 九 was a bent arm. People borrowed it to write nine.' },
+  { c: '九', parts: ['九'], r: 0, rad: '丿', name: '撇', npy: 'piě', means: 'a stroke falling to the left.', see: '久 么 乐 乎', how: 'Some say the oldest 九 was a bent arm. People borrowed it to write nine.' },
   { c: '十', parts: ['十'], r: 0, rad: '十', name: '十字旁', npy: 'shí zì páng', means: 'ten.', see: '南 博 协 卖', how: 'Long ago 十 was one line down. Later a dot in the middle grew into a line across: 十 = ten.' },
   { c: '百', parts: ['一', '白'], r: 0, rad: '一', name: '横', npy: 'héng', means: 'one line across.', see: '三 七 上 下', how: '一 on top of 白 (bái), which helps with the sound. 一百 = 100.' },
-  { c: '又', parts: ['又'], r: 0, rad: '又', name: '又字旁', npy: 'yòu zì páng', means: 'a hand.', see: '友 对 双 发', how: 'Long ago 又 was a right hand. Now it means "again" or "and also": 又大又圆 = big and round.' },
+  { c: '又', parts: ['又'], r: 0, rad: '又', name: '又字旁', npy: 'yòu zì páng', means: 'a hand.', see: '友 双 叔 叉', how: 'Long ago 又 was a right hand. Now it means "again" or "and also": 又大又圆 = big and round.' },
   { c: '两', parts: ['一', ''], rest: 'below: a frame (冂) with two small 人 inside', r: 0, rad: '一', name: '横', npy: 'héng', means: 'one line across.', see: '三 七 上 下', how: '两 means two of something: 两个苹果 = two apples. Say 两个, not 二个.' },
-  { c: '水', parts: ['水'], r: 0, rad: '水', name: '水字', npy: 'shuǐ zì', means: 'water. On the left of a character it is written 氵.', see: '泉 浆 河 海 洗', how: 'Long ago 水 was a stream of water, with drops on both sides. 喝水 = drink water.' },
-  { c: '中', parts: ['口', '丨'], r: 1, rad: '丨', name: '竖', npy: 'shù', means: 'one line down.', see: '串 临 旧', how: 'Some say the oldest 中 was a flagpole in the middle of a camp, with flags on it. 中 = middle; 中文 = Chinese.' },
+  { c: '水', parts: ['水'], r: 0, rad: '水', name: '水字', npy: 'shuǐ zì', means: 'water. On the left of a character it is written 氵.', see: '河 海 洗 江 游', how: 'Long ago 水 was a stream of water, with drops on both sides. 喝水 = drink water.' },
+  { c: '中', parts: ['口', '丨'], r: 1, rad: '丨', name: '竖', npy: 'shù', means: 'one line down.', see: '串 临 旧', how: 'Some say the oldest 中 was a flagpole in the middle of a camp, with flags on it. 中文 = Chinese. Also zhòng: 打中 = hit the target.' },
   { c: '不', parts: ['不'], r: 0, rad: '一', name: '横', npy: 'héng', means: 'one line across.', see: '三 七 上 下', how: 'Some say the oldest 不 was the bottom of a flower. People borrowed it to mean "not". 不要 = don\'t.' },
-  { c: '见', parts: ['见'], r: 0, rad: '见', name: '见字旁', npy: 'jiàn zì páng', means: 'seeing.', see: '觉 览 观 规', how: 'Long ago 見 was a big eye on a person: seeing. 再见 = goodbye ("see you again").' }
+  { c: '见', parts: ['见'], r: 0, rad: '见', name: '见字旁', npy: 'jiàn zì páng', means: 'seeing.', see: '觉 览 规', how: 'Long ago 見 was a big eye on a person: seeing. 再见 = goodbye ("see you again").' }
 ];
 /* level 1: each character long ago (public-domain drawings from Wikimedia Commons, Ancient Chinese characters project, in ancient/).
    kind = which old script; rad = when the character itself has no old form, its radical is shown instead (form = the old character drawn);
@@ -866,7 +866,7 @@ var PATTERN = [
   { t: 'build', tiles: ['我们班', '有', '二十', '个', '小朋友'], ok: ['我们班有二十个小朋友。'], en: 'There are twenty children in our class.' },
   { t: 'build', tiles: ['奶奶', '给了我', '两', '个', '红包'], ok: ['奶奶给了我两个红包。'], en: 'Grandma gave me two red envelopes.' }
 ];
-/* level 4: our own letter to Grandma about a family trip to the fruit shop, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的爷爷：" */
+/* level 4: our own letter to Grandma about a family trip to the fruit shop, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的奶奶：" */
 var SENTENCES = [
   { s: '今天是＿，爷爷、爸爸、妈妈和我去了水果店。', a: '星期三', no: ['八爪鱼', '喝水'], en: 'Today was Wednesday. Grandpa, Dad, Mom and I went to the fruit shop.' },
   { s: '店里的水果＿的，真好看。', a: '五颜六色', no: ['再见', '两个'], en: 'The fruit in the shop came in all colors. So pretty!' },

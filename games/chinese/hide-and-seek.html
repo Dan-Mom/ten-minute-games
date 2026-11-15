@@ -754,7 +754,7 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 1 lesson 4. One idea: the 12 new characters of the lesson (where and how we move: 上中下左右来去出入坐立走).
-   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises saying where something is (在……上 / 在……下), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practices saying where something is (在……上 / 在……下), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    The lesson has no sentence box; its reading practice is 山上, 山下, 上头, 下头, so the pattern (……在＋地方＋上 / 下) is our own choice from that. All sentences and the story here are our own; only the characters and common words come from the lesson. */
 :root{ --page:#f0fdfa; --blue:#0f766e; --blue-s:#99f6e4; --blue-d:#115e59; }   /* this lesson's colors */
 .opt::before{content:"🌳";position:absolute;right:8px;top:4px;font-size:16px}
@@ -777,15 +777,15 @@ var CHARS = [
    rad = the radical (部首) with its name, what it usually means, and other characters where you can see it; how = the meaning */
 var PARTS = [
   { c: '上', parts: ['上'], r: 0, rad: '一', name: '横', npy: 'héng', means: 'one line across.', see: '三 七 下 不', how: 'Long ago 上 was a short line above a long line: something on top. 上面 = on top; 山上 = on the mountain.' },
-  { c: '中', parts: ['口', '丨'], r: 1, rad: '丨', name: '竖', npy: 'shù', means: 'one line down.', see: '串 临 旧', how: 'Some say the oldest 中 was a flagpole in the middle of a camp, with flags on it. 中间 = in the middle.' },
+  { c: '中', parts: ['口', '丨'], r: 1, rad: '丨', name: '竖', npy: 'shù', means: 'one line down.', see: '串 临 旧', how: 'Some say the oldest 中 was a flagpole in the middle of a camp, with flags on it. 中间 = in the middle. Also zhòng: 打中 = hit the target.' },
   { c: '下', parts: ['下'], r: 0, rad: '一', name: '横', npy: 'héng', means: 'one line across.', see: '三 七 上 不', how: 'Long ago 下 was a short line below a long line: something underneath. 下面 = below; 山下 = at the foot of the mountain.' },
-  { c: '左', parts: ['', '工'], rest: 'top: a hand', r: 1, rad: '工', name: '工字旁', npy: 'gōng zì páng', means: 'a tool; work.', see: '巧 差 巨 巫', how: 'Long ago 左 was just a left hand. Later 工 (a tool) was added. 左边 = the left side.' },
-  { c: '右', parts: ['', '口'], rest: 'top: a hand', r: 1, rad: '口', name: '口字旁', npy: 'kǒu zì páng', means: 'the mouth.', see: '吃 喝 叫 唱', how: 'A hand (the top) and a mouth (口). Long ago 右 meant to help; now it means right. 右手 = right hand.' },
+  { c: '左', parts: ['', '工'], rest: 'top: a hand', r: 1, rad: '工', name: '工字底', npy: 'gōng zì dǐ', means: 'a tool; work.', see: '巧 巫 功 项', how: 'Long ago 左 was just a left hand. Later 工 (a tool) was added. 左边 = the left side.' },
+  { c: '右', parts: ['', '口'], rest: 'top: a hand', r: 1, rad: '口', name: '口字底', npy: 'kǒu zì dǐ', means: 'the mouth.', see: '吃 喝 叫 唱', how: 'A hand (the top) and a mouth (口). Long ago 右 meant to help; now it means right. 右手 = right hand.' },
   { c: '来', parts: ['来'], r: 0, rad: '一', name: '横', npy: 'héng', means: 'one line across.', see: '三 七 上 下', how: 'Long ago 來 was a wheat plant. People borrowed it to mean "come". 回来 = come back.' },
-  { c: '去', parts: ['土', '厶'], r: 1, rad: '厶', name: '私字儿', npy: 'sī zìr', means: 'once "one’s own"; now mostly just a shape.', see: '参 县', how: 'Some say long ago 去 was a person (top) leaving a doorway (bottom): go away. 出去 = go out.' },
-  { c: '出', parts: ['', '凵'], rest: 'top: a foot (in old writing)', r: 1, rad: '凵', name: '凶字框', npy: 'xiōng zì kuàng', means: 'an open box or pit.', see: '凶 画 函', how: 'Long ago 出 was a foot stepping out of a pit: go out. 出口 = exit.' },
+  { c: '去', parts: ['土', '厶'], r: 0, rad: '土', name: '土字头', npy: 'tǔ zì tóu', means: 'earth, soil.', see: '地 场 城 块', how: 'Some say long ago 去 was a person (top, later written 土) leaving a doorway (bottom): go away. 出去 = go out.' },
+  { c: '出', parts: ['', '凵'], rest: 'top: a foot (in old writing)', r: 1, rad: '凵', name: '凶字框', npy: 'xiōng zì kuàng', means: 'an open box or pit.', see: '凶 函', how: 'Long ago 出 was a foot stepping out of a pit: go out. 出口 = exit.' },
   { c: '入', parts: ['入'], r: 0, rad: '入', name: '入字头', npy: 'rù zì tóu', means: 'going in.', see: '全', how: 'Some say long ago 入 was a sharp point going into something. 入口 = entrance.' },
-  { c: '坐', parts: ['人', '人', '土'], r: 2, rad: '土', name: '土字底', npy: 'tǔ zì dǐ', means: 'earth, soil.', see: '堂 基 型 坚', how: 'Two people (人 人) sitting on the ground (土). 坐下 = sit down.' },
+  { c: '坐', parts: ['人', '人', '土'], r: 2, rad: '土', name: '土字底', npy: 'tǔ zì dǐ', means: 'earth, soil.', see: '基 型 坚 垫', how: 'Two people (人 人) sitting on the ground (土). 坐下 = sit down.' },
   { c: '立', parts: ['立'], r: 0, rad: '立', name: '立字旁', npy: 'lì zì páng', means: 'standing.', see: '站 童 端 竖', how: 'Long ago 立 was a person standing on the ground (the line at the bottom). 立刻 = at once.' },
   { c: '走', parts: ['走'], r: 0, rad: '走', name: '走字旁', npy: 'zǒu zì páng', means: 'walking and running.', see: '赶 起 超 越', how: 'Long ago 走 was a person running, arms swinging; later a foot was added below. It meant "run"; now it means walk. 走路 = walk.' }
 ];
@@ -842,7 +842,7 @@ var PATTERN = [
   { t: 'pick', from: '帽子在哪儿？（on the table）', a: '帽子在桌子上。', no: ['帽子在上桌子。', '帽子桌子上在。'], en: 'The hat is on the table.' },
   { t: 'build', tiles: ['小狗', '在', '沙发', '下'], ok: ['小狗在沙发下。'], en: 'The puppy is under the sofa.' },
   { t: 'pick', from: '苹果在哪儿？（on the tree）', a: '苹果在树上。', no: ['苹果在上树。', '苹果树上在。'], en: 'The apples are on the tree.' },
-  { t: 'build', tiles: ['我的', '鞋', '在', '床', '下'], ok: ['我的鞋在床下。'], en: 'My shoes are under the bed.' },
+  { t: 'build', tiles: ['两只', '小鸭子', '在', '桥', '下', '游泳'], ok: ['两只小鸭子在桥下游泳。'], en: 'Two little ducks are swimming under the bridge.' },
   { t: 'build', tiles: ['妈妈的', '手机', '在', '桌子', '上'], ok: ['妈妈的手机在桌子上。'], en: 'Mom’s phone is on the table.' }
 ];
 /* level 4: our own note to Dad about a day of hide-and-seek in the park, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的爸爸：" */

@@ -754,7 +754,7 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 1 lesson 7. One idea: the 10 new characters of the lesson (school: 学生我是爱老师同文校).
-   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern (谁＋是＋谁／什么), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practices the lesson's sentence pattern (谁＋是＋谁／什么), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own (not the textbook's 课文, 句子 or 对话); only the characters and common words come from the lesson. */
 :root{ --page:#fff7ed; --blue:#c2410c; --blue-s:#fed7aa; --blue-d:#9a3412; }   /* this lesson's colors */
 .opt::before{content:"✏️";position:absolute;right:8px;top:4px;font-size:16px}
@@ -775,16 +775,16 @@ var CHARS = [
 /* level 1: how each character is built. parts = the pieces (r = which piece is the radical; rest = a piece described in words),
    rad = the radical (部首) with its name, what it usually means, and other characters where you can see it; how = the meaning */
 var PARTS = [
-  { c: '学', parts: ['', '子'], rest: 'top: hands and a roof (in old writing)', r: 1, rad: '子', name: '子字底', npy: 'zǐ zì dǐ', means: 'a child.', see: '孩 孙 孟', how: 'Long ago 學 showed hands and a roof: a school house. Later a child (子) was put below: a child learning. 学习 = study.' },
+  { c: '学', parts: ['', '子'], rest: 'top: hands and a roof (in old writing)', r: 1, rad: '子', name: '子字底', npy: 'zǐ zì dǐ', means: 'a child.', see: '孝 孩 孙 孟', how: 'Long ago 學 showed two hands and a roof (some say a school house). Later a child (子) was put below: a child learning. 学习 = study.' },
   { c: '生', parts: ['生'], r: 0, rad: '生', name: '生字旁', npy: 'shēng zì páng', means: 'growing; being born. Very few characters use it.', see: '甥', how: 'Long ago 生 was a young plant growing out of the ground: to grow, to be born. 学生 = student; 生日 = birthday.' },
   { c: '我', parts: ['', '戈'], rest: 'left: a hand-like part', r: 1, rad: '戈', name: '戈字旁', npy: 'gē zì páng', means: 'an old weapon.', see: '成 或 战 戴', how: 'Long ago 我 was a weapon with a jagged blade. People borrowed it to mean "I, me". 我们 = we.' },
-  { c: '是', parts: ['日', ''], rest: 'bottom: a foot (in old writing)', r: 0, rad: '日', name: '日字头', npy: 'rì zì tóu', means: 'the sun; time.', see: '早 星 昌', how: 'The sun (日) on top. Some say it first meant "straight, right"; today 是 means am, is, are. 是的 = yes.' },
+  { c: '是', parts: ['日', ''], rest: 'bottom: a foot (in old writing)', r: 0, rad: '日', name: '日字头', npy: 'rì zì tóu', means: 'the sun; time.', see: '早 星 昌 景', how: 'The sun (日) on top. Some say it first meant "straight, right"; today 是 means am, is, are. 是的 = yes.' },
   { c: '爱', parts: ['爫', '冖', '友'], r: 0, rad: '爫', name: '爪字头', npy: 'zhǎo zì tóu', means: 'a hand reaching down.', see: '采 受 舀', how: 'A hand (爫) on top, a cover (冖), and 友 (friend) below. The old 愛 has a heart (心) in the middle. A trick: love is a friend you keep in your heart. 爱心 = a loving heart.' },
   { c: '老', parts: ['耂', '匕'], r: 0, rad: '耂', name: '老字头', npy: 'lǎo zì tóu', means: 'old.', see: '考 者', how: 'Long ago 老 was an old person with long hair, bent over a walking stick. 老人 = old person.' },
   { c: '师', parts: ['', '巾'], rest: 'left: two short strokes', r: 1, rad: '巾', name: '巾字旁', npy: 'jīn zì páng', means: 'a cloth.', see: '帽 布 帆 带', how: 'The old 師 meant a group of soldiers, then a teacher (some say: someone people follow). 老师 = teacher.' },
-  { c: '同', parts: ['冂', '一', '口'], r: 0, rad: '冂', name: '同字框', npy: 'tóng zì kuàng', means: 'a frame open at the bottom.', see: '内 冈 冉', how: 'A frame (冂) around one (一) and a mouth (口). Some say: many mouths speaking as one, so "the same, together". 同学 = classmate.' },
+  { c: '同', parts: ['冂', '一', '口'], r: 0, rad: '冂', name: '同字框', npy: 'tóng zì kuàng', means: 'a frame open at the bottom.', see: '内 冈 冉 周', how: 'A frame (冂) around one (一) and a mouth (口). Some say: many mouths speaking as one, so "the same, together". 同学 = classmate. In 胡同 (lane) it is tòng.' },
   { c: '文', parts: ['文'], r: 0, rad: '文', name: '文字旁', npy: 'wén zì páng', means: 'writing, patterns.', see: '斌 斋 吝', how: 'Long ago 文 was a person with a pattern drawn on the chest. Later it meant writing. 中文 = Chinese.' },
-  { c: '校', parts: ['木', '交'], r: 0, rad: '木', name: '木字旁', npy: 'mù zì páng', means: 'trees and wood.', see: '林 树 桌 椅', how: 'Wood (木) on the left; 交 on the right gives the sound (jiāo, xiào). 学校 = school.' }
+  { c: '校', parts: ['木', '交'], r: 0, rad: '木', name: '木字旁', npy: 'mù zì páng', means: 'trees and wood.', see: '林 树 椅 板', how: 'Wood (木) on the left; 交 on the right gives the sound (jiāo, xiào). 学校 = school. Also read jiào: 校对 = check a text.' }
 ];
 /* level 1: each character long ago (public-domain drawings from Wikimedia Commons, Ancient Chinese characters project, in ancient/).
    kind = which old script; rad = when the character itself has no old form, its radical is shown instead (form = the old character drawn);
@@ -861,11 +861,11 @@ var SENTENCES = [
    s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '新同学', en: 'The new classmate', lines: [
   { who: '👩‍🏫 老师', s: '同学们好！今天我们班来了一位新同学。', py: 'Tóngxuémen hǎo! Jīntiān wǒmen bān lái le yí wèi xīn tóngxué.', en: 'Hello, everyone! Today a new classmate has joined our class.' },
-  { who: '👦 新同学', s: '大家好！我是新来的学生，我爱学中文。', py: 'Dàjiā hǎo! Wǒ shì xīn lái de xuéshēng, wǒ ài xué Zhōngwén.', en: 'Hello, everyone! I’m the new student, and I love learning Chinese.', pat: true },
+  { who: '👦 新同学', s: '大家好！我刚从北京搬来，很想交新朋友。', py: 'Dàjiā hǎo! Wǒ gāng cóng Běijīng bānlái, hěn xiǎng jiāo xīn péngyou.', en: 'Hello, everyone! I just moved here from Beijing, and I really want to make new friends.' },
   { who: '👧 我', s: '欢迎你！你坐我旁边吧。', py: 'Huānyíng nǐ! Nǐ zuò wǒ pángbiān ba.', en: 'Welcome! Come and sit next to me.' },
-  { who: '👦 新同学', s: '谢谢！你是我的第一个朋友。', py: 'Xièxie! Nǐ shì wǒ de dì-yī ge péngyou.', en: 'Thanks! You’re my first friend.' },
-  { who: '👧 我', s: '我们的老师很爱笑，大家都喜欢她。', py: 'Wǒmen de lǎoshī hěn ài xiào, dàjiā dōu xǐhuan tā.', en: 'Our teacher loves to smile, and everyone likes her.' },
-  { who: '👦 新同学', s: '这个学校真大，我还不认识路。', py: 'Zhège xuéxiào zhēn dà, wǒ hái bú rènshi lù.', en: 'This school is so big. I don’t know my way around yet.' },
+  { who: '👦 新同学', s: '谢谢！你是我的第一个朋友。', py: 'Xièxie! Nǐ shì wǒ de dì-yī ge péngyou.', en: 'Thanks! You’re my first friend.', pat: true },
+  { who: '👧 我', s: '我们的中文老师很爱笑，大家都喜欢她。', py: 'Wǒmen de Zhōngwén lǎoshī hěn ài xiào, dàjiā dōu xǐhuan tā.', en: 'Our Chinese teacher loves to smile, and everyone likes her.' },
+  { who: '👦 新同学', s: '这个学校真大，学生也真多，我还不认识路。', py: 'Zhège xuéxiào zhēn dà, xuéshēng yě zhēn duō, wǒ hái bú rènshi lù.', en: 'This school is so big, and there are so many students. I don’t know my way around yet.' },
   { who: '👩‍🏫 老师', s: '下课了，你们一起去看看学校吧！', py: 'Xià kè le, nǐmen yìqǐ qù kànkan xuéxiào ba!', en: 'Class is over. Go and look around the school together!' }
 ] };
 

@@ -754,7 +754,7 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 1 lesson 10. One idea: the 12 new characters of the lesson (花园门前个他后外年季儿看).
-   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the sentence pattern (地方＋有＋东西), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practices the sentence pattern (地方＋有＋东西), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own (not the textbook's 课文, 句子 or 对话); only the characters and common words come from the lesson. */
 :root{ --page:#f0fdf4; --blue:#15803d; --blue-s:#bbf7d0; --blue-d:#166534; }   /* this lesson's colors */
 .opt::before{content:"🌱";position:absolute;right:8px;top:4px;font-size:16px}
@@ -851,8 +851,8 @@ var PATTERN = [
 ];
 /* level 4: our own letter to Auntie about the new garden, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的姑姑：" */
 var SENTENCES = [
-  { s: '春天到了，爷爷说要在我家＿种花。', a: '前面', no: ['女儿', '看见'], en: 'Spring is here, and Grandpa said we would plant flowers in front of our home.' },
-  { s: '爷爷告诉我们，春天是种花的好＿。', a: '季节', no: ['大门', '他们'], en: 'Grandpa told us that spring is a good season for planting flowers.' },
+  { s: '春天到了，爷爷告诉我们，现在是种花的好＿。', a: '季节', no: ['大门', '他们'], en: 'Spring is here. Grandpa told us that now is a good season for planting flowers.' },
+  { s: '我们决定在我家＿种花。', a: '前面', no: ['女儿', '看见'], en: 'We decided to plant flowers in front of our home.' },
   { s: '我和弟弟先在＿挖了一个个小坑。', a: '门口', no: ['好看', '个子'], en: 'First my little brother and I dug lots of little holes by the door.' },
   { s: '弟弟问：“这些种子什么时候能＿？”', a: '开花', no: ['后门', '女儿'], en: 'My brother asked, "When will these seeds bloom?"' },
   { s: '弟弟在屋子后面种了向日葵，每天都要到＿去看一看。', a: '外面', no: ['好看', '个子'], en: 'My brother planted sunflowers behind the house, and he goes outside to look at them every day.' },
@@ -871,9 +871,9 @@ var SENTENCES = [
    s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '小园丁', en: 'Little gardeners', lines: [
   { who: '👴 爷爷', s: '春天来了，咱们去外面种花吧！', py: 'Chūntiān lái le, zánmen qù wàimiàn zhòng huā ba!', en: 'Spring is here. Let’s go outside and plant flowers!' },
-  { who: '👧 我', s: '好！门前有一块空地，正好做花园。', py: 'Hǎo! Mén qián yǒu yí kuài kòngdì, zhènghǎo zuò huāyuán.', en: 'OK! There is an empty patch in front of the door. It’s just right for a garden.', pat: true },
-  { who: '👦 弟弟', s: '屋子后面也有一块地，我想在那儿种向日葵。', py: 'Wūzi hòumiàn yě yǒu yí kuài dì, wǒ xiǎng zài nàr zhòng xiàngrìkuí.', en: 'There is a patch of ground behind the house too. I want to plant sunflowers there.' },
-  { who: '👴 爷爷', s: '好主意！我们按季节种不同的花，明年春天会更好看。', py: 'Hǎo zhǔyi! Wǒmen àn jìjié zhòng bù tóng de huā, míngnián chūntiān huì gèng hǎokàn.', en: 'Good idea! We’ll plant different flowers for different seasons. Next spring it will look even better.' },
+  { who: '👧 我', s: '爷爷，我们按季节种不同的花吧，明年春天会更好看！', py: 'Yéye, wǒmen àn jìjié zhòng bù tóng de huā ba, míngnián chūntiān huì gèng hǎokàn!', en: 'Grandpa, let’s plant different flowers for different seasons. Next spring it will look even better!' },
+  { who: '👴 爷爷', s: '好主意！门前有一块空地，正好做花园。', py: 'Hǎo zhǔyi! Mén qián yǒu yí kuài kòngdì, zhènghǎo zuò huāyuán.', en: 'Good idea! There is an empty patch in front of the door. It’s just right for a garden.', pat: true },
+  { who: '👦 弟弟', s: '我想在屋子后面种向日葵，那儿太阳大！', py: 'Wǒ xiǎng zài wūzi hòumiàn zhòng xiàngrìkuí, nàr tàiyáng dà!', en: 'I want to plant sunflowers behind the house. It’s sunny there!' },
   { who: '👧 我', s: '爷爷，您看！弟弟成了一个小泥人。', py: 'Yéye, nín kàn! Dìdi chéng le yí ge xiǎo nírén.', en: 'Grandpa, look! My little brother has turned into a little mud man.' },
   { who: '👴 爷爷', s: '哈哈，他像一只小泥猴！', py: 'Hāhā, tā xiàng yì zhī xiǎo níhóu!', en: 'Ha ha, he looks like a little mud monkey!' },
   { who: '👦 弟弟', s: '我不怕脏！等花开了，我要请好朋友来看。', py: 'Wǒ bú pà zāng! Děng huā kāi le, wǒ yào qǐng hǎo péngyou lái kàn.', en: 'I don’t mind getting dirty! When the flowers bloom, I’ll invite my good friends to come and see.' },
