@@ -778,18 +778,18 @@ var CHARS = [
    rad = the radical (部首) with its name, what it usually means, and other characters where you can see it; how = the meaning */
 var PARTS = [
   { c: '壶', parts: ['士', '冖', '业'], r: 0, rad: '士', name: '士字头', npy: 'shì zì tóu', means: 'a grown man with a job to do. In 壶 it just marks the shape.', see: '声 壳 喜', how: 'The old form 壺 was a drawing of a round pot with a lid on top. 水壶 = kettle; 茶壶 = teapot.' },
-  { c: '盖', parts: ['', '皿'], rest: 'top: 䒑 over 土 (like 羊 without its long tail)', r: 1, rad: '皿', name: '皿字底', npy: 'mǐn zì dǐ', means: 'a bowl or a dish.', see: '盘 盆 盒 盐', how: 'A dish (皿) with something on top of it: a cover. 壶盖 = kettle lid; 盖子 = lid; 盖房子 = build a house.' },
+  { c: '盖', parts: ['', '皿'], rest: 'top: 䒑 over 土 (like 羊 without its long tail)', r: 1, rad: '皿', name: '皿字底', npy: 'mǐn zì dǐ', means: 'a bowl or a dish.', see: '盆 盒 盛 盐', how: 'A dish (皿) with something on top of it: a cover. 壶盖 = kettle lid; 盖子 = lid; 盖房子 = build a house.' },
   { c: '英', parts: ['艹', '央'], r: 0, rad: '艹', name: '草字头', npy: 'cǎo zì tóu', means: 'grass and plants.', see: '花 草 茶 菜 苹', how: 'Plants (艹) and 央 (yāng), which helps with the sound. Long ago 英 meant a flower. Now it is in 英国 (Britain) and 英语 (English).' },
   { c: '科', parts: ['禾', '斗'], r: 0, rad: '禾', name: '禾木旁', npy: 'hé mù páng', means: 'grain plants.', see: '秋 种 秒 租', how: 'Grain (禾) and 斗 (a measuring cup): long ago, measuring and sorting grain. Now 科 is in 科学 (science).' },
-  { c: '奇', parts: ['大', '可'], r: 0, rad: '大', name: '大字头', npy: 'dà zì tóu', means: 'big; a person standing tall.', see: '夸 夺 奋 套', how: '大 (big) over 可 (kě), which may help with the sound: unusual, strange. 奇怪 = strange; 好奇 = curious.' },
+  { c: '奇', parts: ['大', '可'], r: 0, rad: '大', name: '大字头', npy: 'dà zì tóu', means: 'big; a person standing tall.', see: '夸 夺 奋 套', how: '大 (big) over 可 (kě), which may help with the sound: unusual, strange. 奇怪 = strange; 好奇 = curious. Said jī, it means odd: 奇数 = odd number.' },
   { c: '怪', parts: ['忄', '圣'], r: 0, rad: '忄', name: '竖心旁', npy: 'shù xīn páng', means: 'the heart (心). It is in characters about feelings and thinking.', see: '快 怕 情 慢 懂', how: 'The heart (忄) and a part that long ago gave the sound: something so strange you feel puzzled. 奇怪 = strange; 怪兽 = monster.' },
-  { c: '气', parts: ['气'], r: 0, rad: '气', name: '气字头', npy: 'qì zì tóu', means: 'air, gas.', see: '氧', how: '气 is one whole shape. Long ago it was three lines like floating clouds: air. 空气 = air; 生气 = angry; 天气 = weather.' },
-  { c: '冲', parts: ['冫', '中'], r: 0, rad: '冫', name: '两点水', npy: 'liǎng diǎn shuǐ', means: 'ice. It is in characters about cold.', see: '冰 冷 凉', how: 'The old form 沖 had water (氵) and 中 (zhōng), which gives the sound: water rushing along. Today it is written with 冫. ("Rush" came from another old character, 衝.) 冲出来 = rush out.' },
+  { c: '气', parts: ['气'], r: 0, rad: '气', name: '气字头', npy: 'qì zì tóu', means: 'air, gas.', see: '氧 氢 氛', how: '气 is one whole shape. Long ago it was three lines like floating clouds: air. 空气 = air; 生气 = angry; 天气 = weather.' },
+  { c: '冲', parts: ['冫', '中'], r: 0, rad: '冫', name: '两点水', npy: 'liǎng diǎn shuǐ', means: 'ice. It is in characters about cold.', see: '冰 冷 凉 决', how: 'The old form 沖 had water (氵) and 中 (zhōng), which gives the sound: water rushing along. Today it is written with 冫. ("Rush" came from another old character, 衝.) 冲出来 = rush out. Also said chòng: 冲着 = facing.' },
   { c: '让', parts: ['讠', '上'], r: 0, rad: '讠', name: '言字旁', npy: 'yán zì páng', means: 'words and speaking.', see: '说 语 读 请 认', how: 'Words (讠) and 上. The old form 讓 was much harder to write. 让 means "let", "make", or "give way". 让开 = make way; 让我看看 = let me see.' },
-  { c: '常', parts: ['', '巾'], rest: 'top: 尚 (shàng), a little squeezed, which helps with the sound', r: 1, rad: '巾', name: '巾字底', npy: 'jīn zì dǐ', means: 'a piece of cloth.', see: '布 帽 帮 希', how: 'A cloth (巾) under 尚 (shàng), which helps with the sound. 常常 = often; 常用 = often used.' },
+  { c: '常', parts: ['', '巾'], rest: 'top: 尚 (shàng), a little squeezed, which helps with the sound', r: 1, rad: '巾', name: '巾字底', npy: 'jīn zì dǐ', means: 'a piece of cloth.', see: '布 帮 希 币', how: 'A cloth (巾) under 尚 (shàng), which helps with the sound. 常常 = often; 常用 = often used.' },
   { c: '试', parts: ['讠', '式'], r: 0, rad: '讠', name: '言字旁', npy: 'yán zì páng', means: 'words and speaking.', see: '说 语 读 请 认', how: 'Words (讠) and 式 (shì, a way of doing), which gives the sound: to test, to try. 试一试 = have a try; 考试 = exam.' },
   { c: '验', parts: ['马', '佥'], r: 0, rad: '马', name: '马字旁', npy: 'mǎ zì páng', means: 'a horse.', see: '骑 驾 驶 驴', how: 'A horse (马) and 佥 (qiān). Long ago 驗 was the name of a kind of horse; now it means "test, check". 试验 = experiment.' },
-  { c: '机', parts: ['木', '几'], r: 0, rad: '木', name: '木字旁', npy: 'mù zì páng', means: 'a tree or wood. It is in characters about trees and things made of wood.', see: '树 林 桌 椅 桥', how: 'Wood (木) and 几 (jī), which gives the sound. A way to remember: long ago machines were made of wood. 飞机 = plane; 手机 = cell phone.' },
+  { c: '机', parts: ['木', '几'], r: 0, rad: '木', name: '木字旁', npy: 'mù zì páng', means: 'a tree or wood. It is in characters about trees and things made of wood.', see: '树 林 桌 椅 桥', how: 'Wood (木) and 几 (jī), which gives the sound. A trick: long ago machines were made of wood. 飞机 = plane; 手机 = cell phone.' },
   { c: '位', parts: ['亻', '立'], r: 0, rad: '亻', name: '单人旁', npy: 'dān rén páng', means: 'a person. It is in characters about people.', see: '你 他 们 住 休', how: 'A person (亻) standing (立) in their place: a position. 座位 = seat; 一位老师 = a teacher (said politely).' }
 ];
 /* level 1: each character long ago (public-domain drawings from Wikimedia Commons, Ancient Chinese characters project, in ancient/).
@@ -846,25 +846,25 @@ var MORE_WORDS = {
    pick = the right sentence (a = right, no = wrong ones), build = tap the words in order (ok = every right order) */
 var PATTERN = [
   { t: 'show', shape: '……能＋动词', keys: ['能'], end: '。', ask: 'Where does 能 go? Pick the right sentence.',
-    what: '能 means "can" or "be able to". Put it right before the action: 小鸟能飞 = birds can fly. With 让 (make): 大风能让风车转起来 = strong wind can make the windmill turn. Add 了 at the end for something you can do now that you could not do before.',
-    ex: [{ s: '小鸟能飞得很高。', en: 'Little birds can fly very high.' }, { s: '大风能让风车转起来。', en: 'Strong wind can make the windmill turn.' }, { s: '弟弟能自己走路了。', en: 'My little brother can walk by himself now.' }] },
-  { t: 'pick', from: '妹妹现在可以自己系鞋带了。', a: '妹妹能自己系鞋带了。', no: ['妹妹自己系鞋带能了。', '能妹妹自己系鞋带了。'], en: 'My little sister can tie her own shoelaces now.' },
-  { t: 'build', tiles: ['太阳', '能', '让', '冰', '变成水'], ok: ['太阳能让冰变成水。'], en: 'The sun can turn ice into water.' },
+    what: '能 means "can" or "be able to". Put it right before the action: 小鸟能飞 = birds can fly. For "can\'t", put 不 in front: 不能摸 = can\'t touch, mustn\'t touch.',
+    ex: [{ s: '小鸟能飞得很高。', en: 'Little birds can fly very high.' }, { s: '这个水壶能装很多水。', en: 'This kettle can hold lots of water.' }, { s: '水开了，不能用手摸壶盖。', en: 'The water is boiling, so you mustn\'t touch the lid.' }] },
+  { t: 'pick', from: '小猫可以跳到桌子上。', a: '小猫能跳到桌子上。', no: ['小猫跳到能桌子上。', '能小猫跳到桌子上。'], en: 'The kitten can jump onto the table.' },
+  { t: 'build', tiles: ['这架', '飞机', '能', '坐', '两百人'], ok: ['这架飞机能坐两百人。'], en: 'This plane can carry two hundred people.' },
   { t: 'pick', from: '这个机器人可以唱歌，也可以跳舞。', a: '这个机器人能唱歌，也能跳舞。', no: ['这个机器人唱歌能，也跳舞能。', '能这个机器人唱歌，也能跳舞。'], en: 'This robot can sing and dance too.' },
   { t: 'build', tiles: ['我', '能', '用英语', '说', '你好'], ok: ['我能用英语说你好。', '我用英语能说你好。', '你好我能用英语说。'], en: 'I can say hello in English.' },
-  { t: 'build', tiles: ['一阵风', '能', '让', '风筝', '飞起来'], ok: ['一阵风能让风筝飞起来。'], en: 'A gust of wind can make the kite fly up.' }
+  { t: 'build', tiles: ['哥哥', '一分钟', '能', '跳', '一百下'], ok: ['哥哥一分钟能跳一百下。', '一分钟哥哥能跳一百下。', '哥哥能一分钟跳一百下。'], en: 'My big brother can jump a hundred times in one minute.' }
 ];
 /* level 4: our own letter to Uncle (Mom's brother) about a day at the science museum, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的舅舅：" */
 var SENTENCES = [
   { s: '星期天，爸爸带我和妹妹去＿馆玩。', a: '科学', no: ['生气', '座位'], en: 'On Sunday, Dad took my little sister and me to the science museum.' },
+  { s: '一位讲解员阿姨要给我们做一个小＿。', a: '试验', no: ['生气', '英国'], en: 'A museum guide was going to do a little experiment for us.' },
+  { s: '阿姨把气球吹满了＿，然后一放手——', a: '空气', no: ['手机', '英语'], en: 'She blew the balloon full of air, then let go —' },
+  { s: '气球里的气一下子＿，气球就飞走了。', a: '冲出来', no: ['让开', '常常'], en: 'The air rushed out of the balloon all at once, and the balloon flew away.' },
   { s: '馆里有一个大＿，里面的水开了。', a: '水壶', no: ['英语', '手机'], en: 'In the museum there was a big kettle, and the water in it was boiling.' },
   { s: '＿一跳一跳的，真好玩。', a: '壶盖', no: ['英国', '座位'], en: 'The lid kept jumping up and down. It was so much fun.' },
   { s: '妹妹觉得很＿：壶盖怎么会自己跳起来呢？', a: '奇怪', no: ['让开', '飞机'], en: 'My sister thought it was strange. Why did the lid move by itself?' },
   { s: '爸爸说，热热的＿往上冲，把壶盖顶起来了。', a: '热气', no: ['座位', '英语'], en: 'Dad said the hot steam rushes upward and pushes the lid up.' },
-  { s: '一位讲解员阿姨要给我们做一个小＿。', a: '试验', no: ['生气', '英国'], en: 'A museum guide was going to do a little experiment for us.' },
-  { s: '阿姨把气球吹满了＿，然后一放手——', a: '空气', no: ['手机', '英语'], en: 'She blew the balloon full of air, then let go —' },
-  { s: '气球里的气一下子＿，气球就飞走了。', a: '冲出来', no: ['让开', '常常'], en: 'The air rushed out of the balloon all at once, and the balloon flew away.' },
-  { s: '后面的小朋友想看，我就＿了，让他们站到前面。', a: '让开', no: ['飞机', '常常'], en: 'The children behind wanted to see, so I moved aside and let them stand at the front.' },
+  { s: '爸爸说水壶很烫，我们就＿一点儿，站远些看。', a: '让开', no: ['飞机', '常常'], en: 'Dad said the kettle was very hot, so we moved back a little and watched from farther away.' },
   { s: '爸爸说，很久以前英国有＿科学家，做出了更好用的蒸汽机。', a: '一位', no: ['手机', '座位'], en: 'Dad said that long ago there was a scientist in Britain who made a much better steam engine.' },
   { s: '妹妹说她要先学好＿，以后去英国看看。', a: '英语', no: ['水壶', '座位'], en: 'My sister said she will learn English well first, and visit Britain one day.' },
   { s: '我也要＿观察身边的东西，多问为什么。', a: '常常', no: ['飞机', '英国'], en: 'I want to look closely at things around me often, and keep asking why.' },
@@ -876,12 +876,13 @@ var SENTENCES = [
    s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '去科学馆', en: 'At the science museum', lines: [
   { who: '👨 爸爸', s: '今天我们去科学馆，看看科学家的发明。', py: 'Jīntiān wǒmen qù kēxuéguǎn, kànkan kēxuéjiā de fāmíng.', en: 'Today we\'re going to the science museum to see what scientists have invented.' },
-  { who: '🧒 我', s: '快看！这个玻璃水壶里的水开了，壶盖一跳一跳的，好奇怪！', py: 'Kuài kàn! Zhè ge bōli shuǐhú li de shuǐ kāi le, húgài yí tiào yí tiào de, hǎo qíguài!', en: 'Look! The water in this glass kettle is boiling, and the lid keeps jumping. How strange!' },
-  { who: '👨 爸爸', s: '水开了，热热的气往上冲，把壶盖顶起来了。我们站远一点儿看。', py: 'Shuǐ kāi le, rèrè de qì wǎng shàng chōng, bǎ húgài dǐng qǐlai le. Wǒmen zhàn yuǎn yìdiǎnr kàn.', en: 'The water is boiling, and the hot steam rushes up and pushes the lid up. Let\'s stand back a little to watch.' },
-  { who: '👧 妹妹', s: '这里还有一位讲解员阿姨，她说要给我们做一个试验。', py: 'Zhèlǐ hái yǒu yí wèi jiǎngjiěyuán āyí, tā shuō yào gěi wǒmen zuò yí ge shìyàn.', en: 'There\'s a museum guide here too. She says she\'ll do an experiment for us.' },
+  { who: '👧 妹妹', s: '这里有一位讲解员阿姨，她说要给我们做一个试验。', py: 'Zhèlǐ yǒu yí wèi jiǎngjiěyuán āyí, tā shuō yào gěi wǒmen zuò yí ge shìyàn.', en: 'There\'s a museum guide here. She says she\'ll do an experiment for us.' },
   { who: '👩 阿姨', s: '我们来给气球吹满气，再放开手——你们看！', py: 'Wǒmen lái gěi qìqiú chuī mǎn qì, zài fàngkāi shǒu — nǐmen kàn!', en: 'Let\'s blow this balloon full of air, then let go — watch!' },
-  { who: '🧒 我', s: '气球飞起来了！原来气能让气球往前冲！', py: 'Qìqiú fēi qǐlai le! Yuánlái qì néng ràng qìqiú wǎng qián chōng!', en: 'The balloon is flying! So air can make a balloon rush forward!', pat: true },
-  { who: '👨 爸爸', s: '很久以前，英国有一位科学家。人们说，他小时候常常看着水壶想问题，后来做出了更好用的蒸汽机。', py: 'Hěn jiǔ yǐqián, Yīngguó yǒu yí wèi kēxuéjiā. Rénmen shuō, tā xiǎoshíhou chángcháng kànzhe shuǐhú xiǎng wèntí, hòulái zuòchūle gèng hǎoyòng de zhēngqìjī.', en: 'Long ago there was a scientist in Britain. People say that as a boy he often watched kettles and wondered. Later he made a much better steam engine.' },
+  { who: '🧒 我', s: '气球飞起来了！原来空气也能推着气球往前冲！', py: 'Qìqiú fēi qǐlai le! Yuánlái kōngqì yě néng tuīzhe qìqiú wǎng qián chōng!', en: 'The balloon is flying! So air can push a balloon forward too!', pat: true },
+  { who: '👧 妹妹', s: '快看！这个玻璃水壶里的水开了，壶盖一跳一跳的，好奇怪！', py: 'Kuài kàn! Zhè ge bōli shuǐhú li de shuǐ kāi le, húgài yí tiào yí tiào de, hǎo qíguài!', en: 'Look! The water in this glass kettle is boiling, and the lid keeps jumping. How strange!' },
+  { who: '👨 爸爸', s: '那是热气在往上冲，把壶盖顶起来了。我们让开一点儿，站远些看。', py: 'Nà shì rèqì zài wǎng shàng chōng, bǎ húgài dǐng qǐlai le. Wǒmen ràngkāi yìdiǎnr, zhàn yuǎn xiē kàn.', en: 'That\'s hot steam rushing up and pushing the lid up. Let\'s move back a little and watch from farther away.' },
+  { who: '🧒 我', s: '热气的力气这么大呀？', py: 'Rèqì de lìqi zhème dà ya?', en: 'Is hot steam really that strong?' },
+  { who: '👨 爸爸', s: '是啊！很久以前，英国有一位科学家常常研究热气，后来做出了更好用的蒸汽机。', py: 'Shì a! Hěn jiǔ yǐqián, Yīngguó yǒu yí wèi kēxuéjiā chángcháng yánjiū rèqì, hòulái zuòchūle gèng hǎoyòng de zhēngqìjī.', en: 'Yes! Long ago, a scientist in Britain often studied steam, and later he made a much better steam engine.' },
   { who: '👧 妹妹', s: '我长大了也要当科学家，做一个会飞的机器人！', py: 'Wǒ zhǎngdà le yě yào dāng kēxuéjiā, zuò yí ge huì fēi de jīqìrén!', en: 'When I grow up I\'ll be a scientist too, and make a flying robot!' }
 ] };
 
@@ -893,7 +894,7 @@ var LESSON = {
   levels: [
     { title: 'Meet the characters', zh: '认生字', text: 'Meet 14 new characters, then find each one among the gear cards.' },
     { title: 'Build the words', zh: '组词', text: 'Each word is missing one character. Pick the right gear card.' },
-    { title: 'Sentence pattern', zh: '句型 能＋动词', text: 'Learn to say what someone or something can do with 能, as in 大风能让风车转起来 (strong wind can make the windmill turn). Pick the right sentence, then build your own from word tiles.' },
+    { title: 'Sentence pattern', zh: '句型 能＋动词', text: 'Learn to say what someone or something can do with 能, as in 小鸟能飞 (birds can fly). Pick the right sentence, then build your own from word tiles.' },
     { title: 'Write the letter', zh: '写信', text: 'Finish our letter to Uncle about the science museum: pick the missing word in each sentence, then send it.' },
     { title: 'Science Bingo', zh: '科学 Bingo', text: 'Listen, then mark what you hear on your card. Make a line, then two lines, then fill the card.' }
   ],

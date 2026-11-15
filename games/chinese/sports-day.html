@@ -777,19 +777,19 @@ var CHARS = [
 /* level 1: how each character is built. parts = the pieces (r = which piece is the radical; rest = a piece described in words),
    rad = the radical (部首) with its name, what it usually means, and other characters where you can see it; how = the meaning */
 var PARTS = [
-  { c: '龟', parts: ['龟'], r: 0, rad: '⺈', name: '刀字头', npy: 'dāo zì tóu', means: 'a knife on its side. As a radical it often just marks the shape.', see: '危 免 兔', how: '龟 is one whole shape. Long ago it was a drawing of a tortoise: head, shell and feet. 乌龟 = tortoise; 海龟 = sea turtle.' },
+  { c: '龟', parts: ['龟'], r: 0, rad: '龟', name: '龟字', npy: 'guī zì', means: 'a tortoise. It is a radical of its own (old form 龜).', see: '龜', how: '龟 is one whole shape. Long ago it was a drawing of a tortoise: head, shell and feet. 乌龟 = tortoise; 海龟 = sea turtle.' },
   { c: '赛', parts: ['', '贝'], rest: 'top: part of 塞 (sài), which gives the sound', r: 1, rad: '贝', name: '贝字底', npy: 'bèi zì dǐ', means: 'a shell. Long ago shells were money, so it is in characters about money and value.', see: '货 资 贵 费', how: 'A shell (贝, long ago money) under part of 塞 (sài), which gives the sound. Long ago it meant giving thanks to the gods with gifts; now it means "race, contest". 赛跑 = running race; 比赛 = match.' },
   { c: '乌', parts: ['乌'], r: 0, rad: '丿', name: '撇', npy: 'piě', means: 'a falling stroke. As a radical it does not add a meaning.', see: '九 久 么 乐', how: '乌 is one whole shape: 鸟 (bird) without the dot for its eye. A well-known saying: the crow is so black you cannot see its eye. 乌龟 = tortoise; 乌云 = dark cloud.' },
   { c: '步', parts: ['止', ''], rest: 'below: a second foot, turned the other way', r: 0, rad: '止', name: '止字旁', npy: 'zhǐ zì páng', means: 'a foot; to stop.', see: '正 此 武 歪', how: 'Long ago 步 was two footprints, one in front of the other: a step. 跑步 = run; 一步一步 = step by step.' },
   { c: '爬', parts: ['爪', '巴'], r: 0, rad: '爪', name: '爪字旁', npy: 'zhǎo zì páng', means: 'a claw or a hand (on top it is written 爫).', see: '爪 采 爱 妥', how: 'A claw (爪) and 巴 (bā), which helps with the sound: to crawl or climb. 爬山 = climb a mountain; 爬树 = climb a tree.' },
   { c: '回', parts: ['回'], r: 0, rad: '囗', name: '国字框', npy: 'guó zì kuàng', means: 'an enclosure, something all the way round.', see: '国 园 图 四 团', how: '回 is one whole shape: a small square inside a big one. Long ago it was water swirling round and round: to turn back. 回家 = go home; 回头 = turn your head.' },
   { c: '得', parts: ['彳', ''], rest: 'right: a hand holding a shell (long ago, money)', r: 0, rad: '彳', name: '双人旁', npy: 'shuāng rén páng', means: 'walking, roads.', see: '往 很 待 律', how: 'Walking (彳) and a hand holding a shell, which long ago was money: going out and getting something. 得到 = get; 得意 = pleased with yourself. (In 跑得快 it is said de.)' },
-  { c: '意', parts: ['音', '心'], r: 1, rad: '心', name: '心字底', npy: 'xīn zì dǐ', means: 'the heart. It is in characters about feelings and thinking.', see: '想 思 念 感', how: 'A sound (音) over the heart (心): what is in your heart that you want to say. 意思 = meaning; 得意 = pleased with yourself.' },
+  { c: '意', parts: ['音', '心'], r: 0, rad: '音', name: '音字头', npy: 'yīn zì tóu', means: 'a sound.', see: '章 竟 韵', how: 'A sound (音) over the heart (心): what is in your heart that you want to say. 意思 = meaning; 得意 = pleased with yourself.' },
   { c: '慢', parts: ['忄', '曼'], r: 0, rad: '忄', name: '竖心旁', npy: 'shù xīn páng', means: 'the heart (心). It is in characters about feelings and thinking.', see: '快 怕 情 怪 懂', how: 'The heart (忄) and 曼 (màn), which gives the sound. Long ago it meant "lazy"; now it means "slow". 很慢 = very slow; 慢慢 = slowly.' },
   { c: '追', parts: ['辶', ''], rest: 'inside: a part that long ago gave the sound', r: 0, rad: '辶', name: '走之底', npy: 'zǒu zhī dǐ', means: 'walking or going somewhere.', see: '这 过 还 远 送', how: 'Walking (辶) and a part that long ago gave the sound: going after someone. 追上 = catch up; 追赶 = chase.' },
   { c: '仍', parts: ['亻', '乃'], r: 0, rad: '亻', name: '单人旁', npy: 'dān rén páng', means: 'a person. It is in characters about people.', see: '你 他 们 住 休', how: 'A person (亻) and 乃 (nǎi), which helps with the sound. 仍然 = still, as before.' },
   { c: '然', parts: ['⺼', '犬', '灬'], r: 2, rad: '灬', name: '四点底', npy: 'sì diǎn dǐ', means: 'fire.', see: '点 热 照 熊 煮', how: 'Meat (⺼) and a dog (犬) over fire (灬): long ago 然 meant "to burn" (now written 燃). Today it is in 仍然 (still) and 然后 (then).' },
-  { c: '第', parts: ['⺮', ''], rest: 'below: a part like 弟 (dì), which gives the sound', r: 0, rad: '⺮', name: '竹字头', npy: 'zhú zì tóu', means: 'bamboo. It is in characters about things made of bamboo.', see: '笔 答 笑 篮', how: 'Bamboo (⺮) over a part like 弟 (dì), which gives the sound. People say that long ago it was the order of bamboo strips; now it marks order: 第一 = first; 第十课 = lesson ten.' }
+  { c: '第', parts: ['⺮', ''], rest: 'below: a part like 弟 (dì), which gives the sound', r: 0, rad: '⺮', name: '竹字头', npy: 'zhú zì tóu', means: 'bamboo. It is in characters about things made of bamboo.', see: '笔 答 笑 篮', how: 'Bamboo (⺮) over a part like 弟 (dì), which gives the sound. Some say long ago it was the order of bamboo strips; now it marks order: 第一 = first; 第十课 = lesson ten.' }
 ];
 /* level 1: each character long ago (public-domain drawings from Wikimedia Commons, Ancient Chinese characters project, in ancient/).
    kind = which old script; rad = when the character itself has no old form, its radical is shown instead (form = the old character drawn);
@@ -837,47 +837,46 @@ var MORE_WORDS = {
   '然': [{ w: '突然', py: 'tūrán', en: 'suddenly' }],
   '第': [{ w: '第十课', py: 'dì shí kè', en: 'lesson ten' }]
 };
-/* level 3: the lesson's sentence pattern ……地＋动词 ("how something is done"). All sentences are our own. show = the explanation card,
+/* level 3: the lesson's sentence pattern 动词＋得＋很/真＋形容词 ("how well something is done"). All sentences are our own. show = the explanation card,
    pick = the right sentence (a = right, no = wrong ones), build = tap the words in order (ok = every right order) */
 var PATTERN = [
-  { t: 'show', shape: '……地＋动词', keys: ['地'], end: '。', ask: 'Where does 地 go? Pick the right sentence.',
-    what: 'To say how someone does something, put a describing word, then 地 (said de), then the action: 慢慢地走 = walk slowly; 认真地听 = listen carefully.',
-    ex: [{ s: '小猫轻轻地走过来。', en: 'The kitten walks over softly.' }, { s: '同学们认真地听老师讲故事。', en: 'The students listen carefully to the teacher\'s story.' }, { s: '风呼呼地吹。', en: 'The wind blows with a whoosh.' }] },
-  { t: 'pick', from: '妹妹笑了，很开心。', a: '妹妹开心地笑了。', no: ['妹妹笑了开心地。', '妹妹地开心笑了。'], en: 'My little sister laughed happily.' },
-  { t: 'build', tiles: ['小狗', '开心地', '摇着', '尾巴'], ok: ['小狗开心地摇着尾巴。'], en: 'The puppy wags its tail happily.' },
-  { t: 'pick', from: '弟弟喝牛奶，一大口一大口的。', a: '弟弟大口大口地喝牛奶。', no: ['弟弟喝地大口大口牛奶。', '大口大口弟弟地喝牛奶。'], en: 'My little brother drinks his milk in big gulps.' },
-  { t: 'build', tiles: ['小弟弟', '一步一步地', '爬', '上了', '楼梯'], ok: ['小弟弟一步一步地爬上了楼梯。'], en: 'My little brother climbed the stairs one step at a time.' },
-  { t: 'build', tiles: ['我们', '安静地', '坐在', '教室里'], ok: ['我们安静地坐在教室里。'], en: 'We sit quietly in the classroom.' }
+  { t: 'show', shape: '动词＋得＋很/真＋形容词', keys: ['得'], end: '。', ask: 'Where does 得 go? Pick the right sentence.',
+    what: 'To say how well someone does something, put the action first, then 得 (said de), then 很 or 真 and a describing word: 跑得很快 = runs very fast. When the action has a thing after it, say the action again: 唱歌唱得真好听.',
+    ex: [{ s: '姐姐游得很快。', en: 'My big sister swims very fast.' }, { s: '妹妹画得真好。', en: 'My little sister draws really well.' }, { s: '今天的雨下得很大。', en: 'It is raining very hard today.' }] },
+  { t: 'pick', from: '小狗跑起来很快。', a: '小狗跑得很快。', no: ['小狗很快得跑。', '小狗跑很快得。'], en: 'The puppy runs very fast.' },
+  { t: 'build', tiles: ['外婆', '包饺子', '包得', '很快'], ok: ['外婆包饺子包得很快。', '包饺子外婆包得很快。'], en: 'Grandma makes dumplings very fast.' },
+  { t: 'pick', from: '同学们跳起舞来真好看。', a: '同学们跳得真好看。', no: ['同学们真好看得跳。', '同学们跳真好看得。'], en: 'The students dance really beautifully.' },
+  { t: 'build', tiles: ['我们的', '风筝', '飞得', '真高'], ok: ['我们的风筝飞得真高。'], en: 'Our kite flies really high.' },
+  { t: 'pick', from: '老师讲故事，很有意思。', a: '老师讲故事讲得很有意思。', no: ['老师讲故事很有意思得。', '老师很有意思得讲故事。'], en: 'The teacher tells stories in a really fun way.' }
 ];
 /* level 4: our own letter to Grandpa (Mom's dad) about sports day, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的外公：" */
 var SENTENCES = [
   { s: '今天学校开运动会，我参加了＿。', a: '赛跑', no: ['乌云', '意思'], en: 'Today was sports day at school, and I ran in a race.' },
-  { s: '早上天上有一片＿，我还怕下雨呢。', a: '乌云', no: ['得到', '追上'], en: 'In the morning there was a dark cloud in the sky, and I was afraid it would rain.' },
-  { s: '我跑得＿，一开始就落在了后面。', a: '很慢', no: ['回家', '乌龟'], en: 'I run slowly, so I fell behind right at the start.' },
-  { s: '跑在最前面的同学很＿，还回头向他爸爸挥手。', a: '得意', no: ['爬山', '然后'], en: 'The kid in front was very pleased with himself and even turned to wave at his dad.' },
-  { s: '我没有停，一直往前跑，最后＿了他。', a: '追上', no: ['意思', '乌云'], en: 'I didn\'t stop. I kept running forward, and in the end I caught up with him.' },
-  { s: '我得了＿名！大家都为我鼓掌。', a: '第一', no: ['回头', '爬山'], en: 'I came first! Everyone clapped for me.' },
-  { s: '同桌说，我就像龟兔赛跑里的那只＿。', a: '乌龟', no: ['得到', '然后'], en: 'My desk-mate said I was like the tortoise in "The Tortoise and the Hare".' },
-  { s: '老师说，跑得慢没关系，只要不停地往前跑，＿可以赢。', a: '仍然', no: ['乌云', '爬山'], en: 'The teacher said it doesn\'t matter if you run slowly; if you keep going, you can still win.' },
-  { s: '比赛以后，我们班＿了一面小红旗。', a: '得到', no: ['回头', '很慢'], en: 'After the races, our class got a little red flag.' },
-  { s: '放学了，我高高兴兴地跑＿。', a: '回家', no: ['乌龟', '得意'], en: 'After school, I ran home happily.' },
-  { s: '爸爸问我：“龟兔赛跑这个故事是什么＿？”', a: '意思', no: ['乌云', '追上'], en: 'Dad asked me, "What does the story of the tortoise and the hare mean?"' },
-  { s: '我说，做事情不能停下来，要一步一步来。＿，爸爸给我鼓了鼓掌。', a: '然后', no: ['很慢', '得到'], en: 'I said you mustn\'t stop halfway; you go step by step. Then Dad gave me a clap.' },
-  { s: '下个星期天，爸爸要带我们去＿。', a: '爬山', no: ['第一', '意思'], en: 'Next Sunday, Dad is taking us to climb a mountain.' },
-  { s: '我每天早上都要＿，下次要跑得更快！', a: '跑步', no: ['乌云', '第一'], en: 'I\'m going to go running every morning, so next time I can run even faster!' },
-  { s: '外公，你小时候参加过＿吗？', a: '比赛', no: ['回头', '乌龟'], en: 'Grandpa, did you take part in races when you were little?' }
+  { s: '我＿的时候，爸爸看见我脖子上挂着一块奖牌。', a: '回家', no: ['乌龟', '第一'], en: 'When I got home, Dad saw a medal around my neck.' },
+  { s: '我告诉他，我在六十米赛跑里得了＿名！', a: '第一', no: ['回头', '爬山'], en: 'I told him I came first in the 60-meter race!' },
+  { s: '爸爸不太相信，因为我平时跑得＿。', a: '很慢', no: ['回家', '乌龟'], en: 'Dad could hardly believe it, because I usually run very slowly.' },
+  { s: '跑在最前面的同学一开始很＿，可是后来累了，越跑越慢。', a: '得意', no: ['爬山', '然后'], en: 'The kid in front was very pleased with himself at first, but then he got tired and ran slower and slower.' },
+  { s: '我虽然在后面，可是我＿往前跑，一步也没停。', a: '仍然', no: ['乌云', '爬山'], en: 'I was behind, but I still kept running forward without stopping once.' },
+  { s: '最后，我＿了他，第一个跑到了终点。', a: '追上', no: ['意思', '乌云'], en: 'In the end I caught up with him and was the first to reach the finish line.' },
+  { s: '爸爸说，我就像龟兔赛跑里的那只＿。', a: '乌龟', no: ['得到', '然后'], en: 'Dad said I was like the tortoise in "The Tortoise and the Hare".' },
+  { s: '他说，这个故事的＿是：慢一点儿没关系，不要停下来。', a: '意思', no: ['乌云', '追上'], en: 'He said the story means it is OK to be a bit slow, as long as you don\'t stop.' },
+  { s: '运动会上，最小的小朋友们还在垫子上＿爬，大家都爬得真开心。', a: '比赛', no: ['乌云', '意思'], en: 'At sports day, the youngest children also had a crawling race on the mats, and they all had so much fun.' },
+  { s: '吃晚饭的时候，爸爸说下个星期天要带我们去＿。', a: '爬山', no: ['第一', '意思'], en: 'At dinner, Dad said he would take us to climb a mountain next Sunday.' },
+  { s: '我说，我每天早上都要＿，下次要跑得更快！', a: '跑步', no: ['乌云', '第一'], en: 'I said I would go running every morning, so next time I can run even faster!' },
+  { s: '我洗了澡，＿就来给你写信了。', a: '然后', no: ['很慢', '得到'], en: 'I took a bath, and then I came to write to you.' },
+  { s: '外公，你小时候在比赛里＿过奖牌吗？', a: '得到', no: ['回头', '乌云'], en: 'Grandpa, did you ever win a medal in a race when you were little?' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
    s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '运动会赛跑', en: 'The sports day race', lines: [
-  { who: '👩‍🏫 老师', s: '运动会开始了！下面是六十米赛跑。', py: 'Yùndònghuì kāishǐ le! Xiàmian shì liùshí mǐ sàipǎo.', en: 'Sports day has begun! Next is the 60-meter race.' },
-  { who: '🧒 我', s: '我跑得慢，前面的同学都比我快。', py: 'Wǒ pǎo de màn, qiánmian de tóngxué dōu bǐ wǒ kuài.', en: 'I run slowly. The others in front are all faster than me.' },
-  { who: '👧 同桌', s: '别着急，一步一步往前跑，不要停！', py: 'Bié zháojí, yí bù yí bù wǎng qián pǎo, bú yào tíng!', en: 'Don\'t worry! Run forward step by step, and don\'t stop!' },
-  { who: '🧒 我', s: '跑在第一的同学很得意，回头向他爸爸挥手，还停了下来！', py: 'Pǎo zài dì yī de tóngxué hěn déyì, huítóu xiàng tā bàba huī shǒu, hái tíngle xiàlai!', en: 'The boy in first place is very pleased with himself. He turns to wave at his dad, and he even stops!' },
-  { who: '🧒 我', s: '我仍然使劲地往前跑，最后追上了他！', py: 'Wǒ réngrán shǐjìn de wǎng qián pǎo, zuìhòu zhuīshàngle tā!', en: 'I keep running forward as hard as I can, and in the end I catch up with him!', pat: true },
-  { who: '👧 同桌', s: '你得了第一名！就像龟兔赛跑里的乌龟一样！', py: 'Nǐ déle dì yī míng! Jiù xiàng Guī Tù Sàipǎo li de wūguī yíyàng!', en: 'You came first! Just like the tortoise in "The Tortoise and the Hare"!' },
-  { who: '🧒 我', s: '那个同学说，下次他一定不回头，一口气跑到终点。', py: 'Nà ge tóngxué shuō, xià cì tā yídìng bù huítóu, yìkǒuqì pǎo dào zhōngdiǎn.', en: 'That boy said next time he won\'t look back. He\'ll run all the way to the finish without stopping.' },
-  { who: '👩‍🏫 老师', s: '下面是最小的小朋友在垫子上比赛爬，大家加油！', py: 'Xiàmian shì zuì xiǎo de xiǎopéngyǒu zài diànzi shang bǐsài pá, dàjiā jiāyóu!', en: 'Next, the youngest children will have a crawling race on the mats. Cheer them on!' }
+  { who: '👨 爸爸', s: '你回来了！脖子上怎么挂着一块奖牌？', py: 'Nǐ huílai le! Bózi shang zěnme guàzhe yí kuài jiǎngpái?', en: 'You\'re back! Why is there a medal around your neck?' },
+  { who: '🧒 我', s: '今天运动会，我在六十米赛跑里得了第一名！', py: 'Jīntiān yùndònghuì, wǒ zài liùshí mǐ sàipǎo li déle dì yī míng!', en: 'It was sports day today, and I came first in the 60-meter race!' },
+  { who: '👨 爸爸', s: '真的吗？你不是说自己跑得很慢吗？', py: 'Zhēn de ma? Nǐ bú shì shuō zìjǐ pǎo de hěn màn ma?', en: 'Really? Didn\'t you say you run very slowly?', pat: true },
+  { who: '🧒 我', s: '一开始我在最后面。跑在最前面的同学很得意，可是后来他累了，越跑越慢。', py: 'Yì kāishǐ wǒ zài zuì hòumian. Pǎo zài zuì qiánmian de tóngxué hěn déyì, kěshì hòulái tā lèi le, yuè pǎo yuè màn.', en: 'At first I was at the very back. The kid in front was very pleased with himself, but then he got tired and ran slower and slower.' },
+  { who: '🧒 我', s: '我仍然一步一步往前跑，最后追上了他！', py: 'Wǒ réngrán yí bù yí bù wǎng qián pǎo, zuìhòu zhuīshàngle tā!', en: 'I still kept running forward step by step, and in the end I caught up with him!' },
+  { who: '👨 爸爸', s: '你就像龟兔赛跑里的那只乌龟！', py: 'Nǐ jiù xiàng Guī Tù Sàipǎo li de nà zhī wūguī!', en: 'You\'re just like the tortoise in "The Tortoise and the Hare"!' },
+  { who: '👨 爸爸', s: '这个故事的意思就是：慢一点儿没关系，不要停下来。', py: 'Zhège gùshi de yìsi jiù shì: màn yìdiǎnr méi guānxi, bú yào tíng xiàlai.', en: 'That story means it\'s OK to be a bit slow, as long as you don\'t stop.' },
+  { who: '🧒 我', s: '最小的小朋友们还在垫子上比赛爬，大家都爬得真开心！', py: 'Zuì xiǎo de xiǎopéngyoumen hái zài diànzi shang bǐsài pá, dàjiā dōu pá de zhēn kāixīn!', en: 'The youngest children had a crawling race on the mats, and they all had so much fun!' }
 ] };
 
 /* ---------- this lesson's settings: the shared engine (../_engine/chinese-engine.js) reads them ---------- */
@@ -888,12 +887,12 @@ var LESSON = {
   levels: [
     { title: 'Meet the characters', zh: '认生字', text: 'Meet 13 new characters, then find each one among the race cards.' },
     { title: 'Build the words', zh: '组词', text: 'Each word is missing one character. Pick the right race card.' },
-    { title: 'Sentence pattern', zh: '句型 ……地＋动词', text: 'Learn to say how someone does something with 地, as in 慢慢地走 (walk slowly). Pick the right sentence, then build your own from word tiles.' },
+    { title: 'Sentence pattern', zh: '句型 动词＋得＋很/真＋形容词', text: 'Learn to say how well someone does something with 得, as in 跑得很快 (runs very fast). Pick the right sentence, then build your own from word tiles.' },
     { title: 'Write the letter', zh: '写信', text: 'Finish our letter to Grandpa about sports day: pick the missing word in each sentence, then send it.' },
     { title: 'Race Bingo', zh: '赛跑 Bingo', text: 'Listen, then mark what you hear on your card. Make a line, then two lines, then fill the card.' }
   ],
   pick: 'Which race card says…',                       // level 1: find the character
-  wrong: { pick: 'Not this one. Try another race card.', pattern: 'Not this one. Look at where 地 goes, and try another.' },
+  wrong: { pick: 'Not this one. Try another race card.', pattern: 'Not this one. Look at where 得 goes, and try another.' },
   letter: { ready: 'Your letter to Grandpa is ready. Tap Send!', stamp: '🐢', greeting: '亲爱的外公：', signRight: false },   // level 4: the finished letter
   bingoFree: '🐢',             // the free middle square
   write: true                  // the "Write it 写一写" page (needs hanzi-writer.min.js below and the strokes/ folder)

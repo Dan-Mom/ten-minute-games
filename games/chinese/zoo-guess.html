@@ -777,19 +777,19 @@ var CHARS = [
 /* level 1: how each character is built. parts = the pieces (r = which piece is the radical; rest = a piece described in words),
    rad = the radical (部首) with its name, what it usually means, and other characters where you can see it; how = the meaning */
 var PARTS = [
-  { c: '猜', parts: ['犭', '青'], r: 0, rad: '犭', name: '反犬旁', npy: 'fǎn quǎn páng', means: 'a dog or another animal.', see: '狗 猫 狮 猪 猴', how: 'An animal (犭) and 青 (qīng), which helps with the sound. Memory trick: a clever dog guesses where its bone is hidden. 猜一猜 = have a guess; 猜谜语 = guess riddles.' },
-  { c: '鼻', parts: ['自', '畀'], r: 0, rad: '自', name: '自字头', npy: 'zì zì tóu', means: 'long ago 自 was a drawing of a nose. Now 自 means "self": people point at their nose when they mean "me".', see: '自 臭', how: 'A nose (自) over 畀 (bì), which helps with the sound. 鼻子 = nose.' },
-  { c: '眼', parts: ['目', '艮'], r: 0, rad: '目', name: '目字旁', npy: 'mù zì páng', means: 'the eye. It is in characters about eyes and seeing.', see: '看 睡 眉 盯 瞧', how: 'An eye (目) and 艮 (gèn), which helps with the sound. 眼睛 = eyes; 眼镜 = glasses.' },
-  { c: '睛', parts: ['目', '青'], r: 0, rad: '目', name: '目字旁', npy: 'mù zì páng', means: 'the eye. It is in characters about eyes and seeing.', see: '看 睡 眉 盯 瞧', how: 'An eye (目) and 青 (qīng), which gives the sound: the round part of the eye. 眼睛 = eyes.' },
-  { c: '只', parts: ['口', '八'], r: 0, rad: '口', name: '口字旁', npy: 'kǒu zì páng', means: 'a mouth. It is in characters about the mouth, eating and sounds.', see: '喝 叫 唱 吗 听', how: 'The old form 隻 was a hand holding one bird. So 只 counts animals, and one of a pair: 一只小鸟, 一只手. (Said zhǐ, 只 means "only".)' },
-  { c: '朵', parts: ['几', '木'], r: 1, rad: '木', name: '木字底', npy: 'mù zì dǐ', means: 'a tree or wood.', see: '果 杂 架 桌', how: 'A tree (木) with flowers hanging from a branch. 朵 counts flowers and clouds: 一朵花, 一朵云. 耳朵 = ear.' },
+  { c: '猜', parts: ['犭', '青'], r: 0, rad: '犭', name: '反犬旁', npy: 'fǎn quǎn páng', means: 'a dog or another animal.', see: '狗 猫 狮 猪 猴', how: 'An animal (犭) and 青 (qīng), which helps with the sound. A trick: a clever dog guesses where its bone is hidden. 猜一猜 = have a guess; 猜谜语 = guess riddles.' },
+  { c: '鼻', parts: ['自', '畀'], rest: 'none', r: 2, rad: '鼻', name: '鼻字', npy: 'bí zì', means: 'the nose. 鼻 is a radical by itself; very few characters have it.', see: '鼾', how: '自, which long ago was a drawing of a nose, over 畀 (bì), which helps with the sound. 鼻子 = nose.' },   // 鼻 is its own radical (GF 0011), so no piece is marked
+  { c: '眼', parts: ['目', '艮'], r: 0, rad: '目', name: '目字旁', npy: 'mù zì páng', means: 'the eye. It is in characters about eyes and seeing.', see: '睡 眉 盯 瞧 眨', how: 'An eye (目) and 艮 (gèn), which helps with the sound. 眼睛 = eyes; 眼镜 = glasses.' },
+  { c: '睛', parts: ['目', '青'], r: 0, rad: '目', name: '目字旁', npy: 'mù zì páng', means: 'the eye. It is in characters about eyes and seeing.', see: '睡 眉 盯 瞧 眨', how: 'An eye (目) and 青 (qīng), which gives the sound: the round part of the eye. 眼睛 = eyes.' },
+  { c: '只', parts: ['口', '八'], r: 0, rad: '口', name: '口字头', npy: 'kǒu zì tóu', means: 'a mouth. It is in characters about the mouth, eating and sounds.', see: '号 另 员 兄 品', how: '只 stands for the old 隻, a hand holding one bird. So 只 counts animals, and one of a pair: 一只小鸟, 一只手. (Said zhǐ, 只 means "only".)' },
+  { c: '朵', parts: ['几', '木'], r: 1, rad: '木', name: '木字底', npy: 'mù zì dǐ', means: 'a tree or wood.', see: '果 杂 架', how: 'A tree (木) with flowers hanging from a branch. 朵 counts flowers and clouds: 一朵花, 一朵云. 耳朵 = ear.' },
   { c: '嘴', parts: ['口', '觜'], r: 0, rad: '口', name: '口字旁', npy: 'kǒu zì páng', means: 'a mouth. It is in characters about the mouth, eating and sounds.', see: '喝 叫 唱 吗 听', how: 'A mouth (口) and 觜 (zuǐ), which gives the sound. 嘴巴 = mouth; 一张嘴 = a mouth.' },
   { c: '边', parts: ['辶', '力'], r: 0, rad: '辶', name: '走之底', npy: 'zǒu zhī dǐ', means: 'walking or going somewhere.', see: '这 过 还 远 送', how: 'Walking (辶) and 力. The old form 邊 was much harder to write; it meant walking along the edge of something. 旁边 = beside; 一边…一边… = while.' },
-  { c: '传', parts: ['亻', '专'], r: 0, rad: '亻', name: '单人旁', npy: 'dān rén páng', means: 'a person. It is in characters about people.', see: '你 他 们 住 休', how: 'A person (亻) and 专 (zhuān), which helps with the sound: passing something from person to person. 传球 = pass the ball; 传说 = legend.' },
-  { c: '粉', parts: ['米', '分'], r: 0, rad: '米', name: '米字旁', npy: 'mǐ zì páng', means: 'rice. It is in characters about rice and grain.', see: '糖 粮 粥 糕', how: 'Rice (米) and 分 (fēn, divide), which gives the sound: rice ground into tiny bits, powder. 面粉 = flour; 花粉 = pollen; 粉红 = pink.' },
-  { c: '采', parts: ['爫', '木'], r: 0, rad: '爫', name: '爪字头', npy: 'zhǎo zì tóu', means: 'a hand reaching down.', see: '爱', how: 'A hand (爫) over a tree (木): picking fruit or leaves from a tree. 采花 = pick flowers; 采蜜 = gather nectar.' },
+  { c: '传', parts: ['亻', '专'], r: 0, rad: '亻', name: '单人旁', npy: 'dān rén páng', means: 'a person. It is in characters about people.', see: '你 他 们 住 休', how: 'A person (亻) and 专 (zhuān), which helps with the sound: passing something from person to person. 传球 = pass the ball; 传说 = legend. Also zhuàn: 传记 = a life story.' },
+  { c: '粉', parts: ['米', '分'], r: 0, rad: '米', name: '米字旁', npy: 'mǐ zì páng', means: 'rice. It is in characters about rice and grain.', see: '糖 粮 糕 粒 精', how: 'Rice (米) and 分 (fēn, divide), which gives the sound: rice ground into tiny bits, powder. 面粉 = flour; 花粉 = pollen; 粉红 = pink.' },
+  { c: '采', parts: ['爫', '木'], r: 0, rad: '爫', name: '爪字头', npy: 'zhǎo zì tóu', means: 'a hand reaching down.', see: '爱 受', how: 'A hand (爫) over a tree (木): picking fruit or leaves from a tree. 采花 = pick flowers; 采蜜 = gather nectar.' },
   { c: '蜜', parts: ['宓', '虫'], r: 1, rad: '虫', name: '虫字底', npy: 'chóng zì dǐ', means: 'insects and other small creatures.', see: '蜂 蚁 蛇 虾', how: 'An insect (虫) under 宓 (mì), which gives the sound: what bees make. 蜂蜜 = honey; 蜜蜂 = bee.' },
-  { c: '劳', parts: ['艹', '冖', '力'], r: 2, rad: '力', name: '力字底', npy: 'lì zì dǐ', means: 'strength.', see: '努 加 助 功', how: 'The old form 勞 had two fires (火火) over a roof, and strength (力). Memory trick: working hard, even by firelight. 劳动 = work.' },
+  { c: '劳', parts: ['艹', '冖', '力'], r: 2, rad: '力', name: '力字底', npy: 'lì zì dǐ', means: 'strength.', see: '努 加 助 功', how: 'The old form 勞 had two fires (火火) over a roof, and strength (力). A trick: working hard, even by firelight. 劳动 = work.' },
   { c: '动', parts: ['云', '力'], r: 1, rad: '力', name: '力字旁', npy: 'lì zì páng', means: 'strength.', see: '努 加 助 功', how: 'Strength (力) and 云. In the old form 動 the left part was 重 (zhòng), which gave the sound: moving takes strength. 动物 = animal; 运动 = sport.' }
 ];
 /* level 1: each character long ago (public-domain drawings from Wikimedia Commons, Ancient Chinese characters project, in ancient/).
@@ -797,7 +797,7 @@ var PARTS = [
    pic = what the old drawing shows, only where that is well known */
 var ANCIENT = {
   '猜': { f: 'ancient/731c-seal.svg', kind: 'seal', rad: "", form: '猜', pic: "" },
-  '鼻': { f: 'ancient/81ea-oracle.svg', kind: 'oracle', rad: "自", form: '自', pic: "a nose" },
+  '鼻': { f: 'ancient/81ea-oracle.svg', kind: 'oracle', rad: "", form: '自', pic: "a nose" },
   '眼': { f: 'ancient/76ee-oracle.svg', kind: 'oracle', rad: "目", form: '目', pic: "an eye" },
   '睛': { f: 'ancient/76ee-oracle.svg', kind: 'oracle', rad: "目", form: '目', pic: "an eye" },
   '只': { f: 'ancient/53ea-seal.svg', kind: 'seal', rad: "", form: '只', pic: "" },
@@ -839,7 +839,7 @@ var MORE_WORDS = {
   '粉': [{ w: '粉红', py: 'fěnhóng', en: 'pink' }, { w: '粉笔', py: 'fěnbǐ', en: 'chalk' }],
   '采': [{ w: '采茶', py: 'cǎichá', en: 'pick tea leaves' }],
   '蜜': [{ w: '蜜蜂', py: 'mìfēng', en: 'bee' }],
-  '劳': [{ w: '劳动节', py: 'Láodòng Jié', en: 'Labour Day' }],
+  '劳': [{ w: '劳动节', py: 'Láodòng Jié', en: 'Labor Day' }],
   '动': [{ w: '动作', py: 'dòngzuò', en: 'movement' }, { w: '动脑', py: 'dòngnǎo', en: 'use your head' }]
 };
 /* level 3: the lesson's sentence pattern 一边……一边…… ("doing two things at the same time"). All sentences are our own. show = the explanation card,
@@ -865,9 +865,9 @@ var SENTENCES = [
   { s: '小白兔的＿分成三瓣，吃萝卜的样子真可爱。', a: '嘴巴', no: ['眼镜', '河边'], en: 'The white rabbit\'s mouth is split in three, and it looks so sweet eating a carrot.' },
   { s: '花园里开着很多＿，小蜜蜂在中间忙个不停。', a: '花朵', no: ['眼镜', '鼻子'], en: 'Lots of flowers were out in the garden, and little bees were busy among them.' },
   { s: '妹妹想＿，爸爸说动物园里的花要留给大家看。', a: '采花', no: ['眼镜', '面粉'], en: 'My sister wanted to pick flowers, but Dad said the zoo\'s flowers are for everyone to enjoy.' },
-  { s: '小蜜蜂身上沾满了＿，帮花儿传粉。', a: '花粉', no: ['嘴巴', '河边'], en: 'The little bees were covered in pollen, carrying it from flower to flower.' },
-  { s: '它们把花蜜带回家，做成甜甜的＿。', a: '蜂蜜', no: ['耳朵', '传说'], en: 'They take the nectar home and make sweet honey.' },
   { s: '爸爸说，小蜜蜂每天都在＿，一点儿也不偷懒。', a: '劳动', no: ['眼镜', '鼻子'], en: 'Dad said the little bees work every day and are never lazy.' },
+  { s: '它们把花蜜带回家，做成甜甜的＿。', a: '蜂蜜', no: ['耳朵', '传说'], en: 'They take the nectar home and make sweet honey.' },
+  { s: '小蜜蜂身上沾满了＿，帮花儿传粉。', a: '花粉', no: ['嘴巴', '河边'], en: 'The little bees were covered in pollen, carrying it from flower to flower.' },
   { s: '我们还看见＿小猴子在树上玩。', a: '两只', no: ['花朵', '面粉'], en: 'We also saw two little monkeys playing in a tree.' },
   { s: '回家的路上，我们在＿看到了几只鸭子。', a: '河边', no: ['蜂蜜', '面粉'], en: 'On the way home, we saw some ducks by the river.' },
   { s: '爷爷，你知道很多有趣的＿，下次讲给我听吧！', a: '传说', no: ['眼镜', '面粉'], en: 'Grandpa, you know lots of fun old tales. Tell me one next time!' }
@@ -880,8 +880,9 @@ var STORY = { title: '动物园里猜谜语', en: 'Riddles at the zoo', lines: [
   { who: '👧 妹妹', s: '我猜到了，是大象！你们看，那边就有一只！', py: 'Wǒ cāi dào le, shì dàxiàng! Nǐmen kàn, nàbiān jiù yǒu yì zhī!', en: 'I\'ve got it: an elephant! Look, there\'s one over there!' },
   { who: '🧒 我', s: '该我出了：它穿着白衣服，有一双红眼睛、一张三瓣嘴，最爱吃萝卜。', py: 'Gāi wǒ chū le: tā chuānzhe bái yīfu, yǒu yì shuāng hóng yǎnjing, yì zhāng sān bàn zuǐ, zuì ài chī luóbo.', en: 'My turn: it wears a white coat, has red eyes and a mouth split in three, and loves carrots best.' },
   { who: '👧 妹妹', s: '是小白兔！爸爸，你再出一个难一点儿的。', py: 'Shì xiǎo báitù! Bàba, nǐ zài chū yí ge nán yìdiǎnr de.', en: 'A little white rabbit! Dad, give us a harder one.' },
-  { who: '👨 爸爸', s: '它在花朵中间忙来忙去，帮花儿传花粉，还会采蜜。', py: 'Tā zài huāduǒ zhōngjiān máng lái máng qù, bāng huār chuán huāfěn, hái huì cǎi mì.', en: 'It is busy among the flowers, carries pollen for them, and gathers nectar too.' },
-  { who: '🧒 我', s: '是小蜜蜂！小蜜蜂每天都在劳动，真了不起。', py: 'Shì xiǎo mìfēng! Xiǎo mìfēng měi tiān dōu zài láodòng, zhēn liǎobuqǐ.', en: 'A little bee! Little bees work every day. That\'s amazing.' },
+  { who: '👨 爸爸', s: '最后一个：它穿着黄黑条纹的小衣服，个子小小的，会飞，还能做出很甜的好东西。', py: 'Zuìhòu yí ge: tā chuānzhe huáng hēi tiáowén de xiǎo yīfu, gèzi xiǎoxiǎo de, huì fēi, hái néng zuòchū hěn tián de hǎo dōngxi.', en: 'Last one: it wears a little yellow-and-black striped coat. It is tiny, it can fly, and it can make something very sweet.' },
+  { who: '🧒 我', s: '是小蜜蜂！小蜜蜂天天劳动，最会采蜜，做成蜂蜜。', py: 'Shì xiǎo mìfēng! Xiǎo mìfēng tiāntiān láodòng, zuì huì cǎi mì, zuòchéng fēngmì.', en: 'A little bee! Little bees work every day. They are great at gathering nectar and making it into honey.' },
+  { who: '👧 妹妹', s: '它从这朵花飞到那朵花，还帮花儿把花粉传过去呢！', py: 'Tā cóng zhè duǒ huā fēidào nà duǒ huā, hái bāng huār bǎ huāfěn chuán guòqu ne!', en: 'It flies from one flower to the next, and it helps the flowers by carrying their pollen across too!' },
   { who: '👨 爸爸', s: '你们都猜对了！我们去那边看看小猴子吧。', py: 'Nǐmen dōu cāiduì le! Wǒmen qù nàbiān kànkan xiǎo hóuzi ba.', en: 'You both guessed right! Let\'s go over there and see the little monkeys.' }
 ] };
 

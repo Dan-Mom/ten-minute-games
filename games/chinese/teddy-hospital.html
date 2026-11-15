@@ -777,18 +777,18 @@ var CHARS = [
 /* level 1: how each character is built. parts = the pieces (r = which piece is the radical; rest = a piece described in words),
    rad = the radical (部首) with its name, what it usually means, and other characters where you can see it; how = the meaning */
 var PARTS = [
-  { c: '医', parts: ['匚', '矢'], r: 0, rad: '匚', name: '区字框', npy: 'qū zì kuàng', means: 'a box open on one side.', see: '区 匹 匠', how: 'An arrow (矢) in a box (匚): long ago 医 was a box for arrows. The old full form 醫 added wine used as medicine, so it came to mean healing. 医生 = doctor; 医院 = hospital.' },
+  { c: '医', parts: ['匚', '矢'], r: 0, rad: '匚', name: '区字框', npy: 'qū zì kuàng', means: 'a box open on one side.', see: '区 匹 匠 匣', how: 'An arrow (矢) in a box (匚): long ago 医 was a box for arrows. The old full form 醫 added wine used as medicine, so it came to mean healing. 医生 = doctor; 医院 = hospital.' },
   { c: '院', parts: ['阝', '完'], r: 0, rad: '阝', name: '左耳旁', npy: 'zuǒ ěr páng', means: 'a hill or a mound of earth (on the left side).', see: '阳 阴 队 陆 除', how: 'A mound or wall (阝) and 完 (wán), which helps with the sound: a yard with walls around it. 院子 = yard; 医院 = hospital.' },
-  { c: '感', parts: ['咸', '心'], r: 1, rad: '心', name: '心字底', npy: 'xīn zì dǐ', means: 'the heart. It is in characters about feelings and thinking.', see: '想 思 念 意 怎', how: '咸 (xián), which helps with the sound, over the heart (心): something you feel. 感谢 = thank; 感冒 = a cold.' },
-  { c: '冒', parts: ['冂', '二', '目'], r: 0, rad: '冂', name: '同字框', npy: 'tóng zì kuàng', means: 'a frame. As a radical it does not add a meaning.', see: '内 网 同 周', how: 'Long ago 冒 was a hat (the top, 冃) above an eye (目): something covering your head. Now it means "give off" or "rush out". 感冒 = a cold; 冒烟 = give off smoke.' },
+  { c: '感', parts: ['咸', '心'], r: 1, rad: '心', name: '心字底', npy: 'xīn zì dǐ', means: 'the heart. It is in characters about feelings and thinking.', see: '想 念 怎', how: '咸 (xián), which helps with the sound, over the heart (心): something you feel. 感谢 = thank; 感冒 = a cold.' },
+  { c: '冒', parts: ['冂', '二', '目'], r: 0, rad: '冂', name: '同字框', npy: 'tóng zì kuàng', means: 'a frame. As a radical it does not add a meaning.', see: '内 同 周 冈', how: 'Long ago 冒 was a hat (the top, 冃) above an eye (目): something covering your head. Now it means "give off" or "rush out". 感冒 = a cold; 冒烟 = give off smoke.' },
   { c: '烧', parts: ['火', '尧'], r: 0, rad: '火', name: '火字旁', npy: 'huǒ zì páng', means: 'fire. It is in characters about fire, heat and light.', see: '炒 灯 烤 炉 灿', how: 'Fire (火) and 尧 (yáo), which helps with the sound: to burn. 发烧 = have a fever; 烧水 = boil water.' },
-  { c: '带', parts: ['', '巾'], rest: 'top: a belt with things hanging from it', r: 1, rad: '巾', name: '巾字底', npy: 'jīn zì dǐ', means: 'a piece of cloth.', see: '布 帽 帮 常 希', how: 'Long ago 带 was a belt with cloth (巾) hanging from it. Things are carried on a belt, so it also means "take along". 皮带 = belt; 带书 = bring a book.' },
+  { c: '带', parts: ['', '巾'], rest: 'top: a belt with things hanging from it', r: 1, rad: '巾', name: '巾字底', npy: 'jīn zì dǐ', means: 'a piece of cloth.', see: '布 帮 希 币', how: 'Long ago 带 was a belt with cloth (巾) hanging from it. Things are carried on a belt, so it also means "take along". 皮带 = belt; 带书 = bring a book.' },
   { c: '病', parts: ['疒', '丙'], r: 0, rad: '疒', name: '病字旁', npy: 'bìng zì páng', means: 'illness. Long ago it was a sick person lying on a bed.', see: '疼 痛 瘦 疤', how: 'Illness (疒) and 丙 (bǐng), which helps with the sound. 生病 = get ill; 病人 = patient.' },
   { c: '护', parts: ['扌', '户'], r: 0, rad: '扌', name: '提手旁', npy: 'tí shǒu páng', means: 'a hand. It is in characters about things you do with your hands.', see: '打 找 拍 把 抱', how: 'A hand (扌) and 户 (hù, a door), which gives the sound: to guard and look after. 护士 = nurse; 保护 = protect.' },
-  { c: '士', parts: ['士'], r: 0, rad: '士', name: '士字旁', npy: 'shì zì páng', means: 'a grown man with a job to do. In characters like 声 and 喜 it just marks the shape.', see: '声 壳 壶 喜', how: '士 is one whole shape. Long ago it meant a grown man with a job to do; now it is in words for people, often with a skill. 护士 = nurse; 女士 = lady.' },
-  { c: '量', parts: ['旦', '里'], r: 1, rad: '里', name: '里字旁', npy: 'lǐ zì páng', means: 'a village, or a Chinese mile (a measure of distance).', see: '野 重', how: 'Memory trick: the sun (日) shines over a long road (里), and you measure how far it is. 量体温 = take your temperature.' },
+  { c: '士', parts: ['士'], r: 0, rad: '士', name: '士字', npy: 'shì zì', means: 'a grown man with a job to do. In characters like 声 and 喜 it just marks the shape.', see: '声 壳 壶 喜', how: '士 is one whole shape. Long ago it meant a grown man with a job to do; now it is in words for people, often with a skill. 护士 = nurse; 女士 = lady.' },
+  { c: '量', parts: ['旦', '里'], r: 1, rad: '里', name: '里字底', npy: 'lǐ zì dǐ', means: 'a village, or a Chinese mile (a measure of distance).', see: '野 重', how: 'A trick: the sun (日) shines over a long road (里), and you measure how far it is. 量体温 = take your temperature. Also liàng: 数量 = amount.' },
   { c: '温', parts: ['氵', '昷'], r: 0, rad: '氵', name: '三点水', npy: 'sān diǎn shuǐ', means: 'water. It is in characters about water and liquids.', see: '河 海 洗 游 汤', how: 'Water (氵) and 昷 (wēn), which gives the sound: warm water. 温水 = warm water; 体温 = body temperature.' },
-  { c: '针', parts: ['钅', '十'], r: 0, rad: '钅', name: '金字旁', npy: 'jīn zì páng', means: 'metal. It is in characters about metals and things made of metal.', see: '钱 钟 铁 银 铅', how: 'Metal (钅) and 十. Memory trick: 十 looks like a needle going through cloth. 打针 = have an injection; 针线 = needle and thread.' },
+  { c: '针', parts: ['钅', '十'], r: 0, rad: '钅', name: '金字旁', npy: 'jīn zì páng', means: 'metal. It is in characters about metals and things made of metal.', see: '钱 钟 铁 银 铅', how: 'Metal (钅) and 十. A trick: 十 looks like a needle going through cloth. 打针 = have an injection; 针线 = needle and thread.' },
   { c: '药', parts: ['艹', '约'], r: 0, rad: '艹', name: '草字头', npy: 'cǎo zì tóu', means: 'grass and plants.', see: '花 草 茶 菜 苹', how: 'Plants (艹) and 约 (yuē), which helps with the sound: long ago most medicines were made from plants. 吃药 = take medicine; 药店 = drugstore.' },
   { c: '就', parts: ['亠', '口', '小', '尤'], r: 0, rad: '亠', name: '点横头', npy: 'diǎn héng tóu', means: 'a dot over a line. As a radical it does not add a meaning.', see: '京 亮 交 亡 市', how: '京 (jīng, a tall building on a hill: 亠 口 小) and 尤. Long ago 就 meant "go up to a high place"; now it means "go to", "then" or "right away". 就是 = exactly; 马上就来 = coming right away.' }
 ];
@@ -848,22 +848,22 @@ var MORE_WORDS = {
 var PATTERN = [
   { t: 'show', shape: '去＋地方＋做什么', keys: ['去'], end: '。', ask: 'Where do the place and the action go? Pick the right sentence.',
     what: 'To say where someone goes and what they do there, say 去, then the place, then the action: 去医院看病 = go to the hospital to see a doctor. The place comes before the action. With 带 (take along): 妈妈带我去公园玩 = Mom takes me to the park to play.',
-    ex: [{ s: '奶奶去超市买菜。', en: 'Grandma goes to the supermarket to buy vegetables.' }, { s: '下午我们去图书馆看书。', en: 'In the afternoon we go to the library to read.' }, { s: '爸爸带弟弟去公园放风筝。', en: 'Dad takes my little brother to the park to fly a kite.' }] },
+    ex: [{ s: '奶奶去超市买菜。', en: 'Grandma goes to the supermarket to buy vegetables.' }, { s: '下午我们去图书馆看书。', en: 'In the afternoon we go to the library to read.' }, { s: '姐姐去花店买花。', en: 'My big sister goes to the flower shop to buy flowers.' }] },
   { t: 'pick', from: '我去公园。我在公园踢球。', a: '我去公园踢球。', no: ['我踢球去公园。', '我去踢球公园。'], en: 'I go to the park to play soccer.' },
   { t: 'build', tiles: ['护士', '去', '药房', '拿药'], ok: ['护士去药房拿药。'], en: 'The nurse goes to the pharmacy to get medicine.' },
-  { t: 'pick', from: '爷爷带小狗出门了，他们在河边散步。', a: '爷爷带小狗去河边散步。', no: ['爷爷带河边去小狗散步。', '爷爷去带小狗河边散步。'], en: 'Grandpa takes the puppy to the riverside for a walk.' },
+  { t: 'pick', from: '小狗跑到草地上，它在找骨头。', a: '小狗去草地上找骨头。', no: ['小狗找骨头去草地上。', '小狗去找骨头草地上。'], en: 'The puppy goes to the grass to look for a bone.' },
   { t: 'build', tiles: ['医生', '带小熊', '去', '病房', '休息'], ok: ['医生带小熊去病房休息。'], en: 'The doctor takes Teddy to the ward to rest.' },
   { t: 'build', tiles: ['我们', '下课后', '去', '操场', '跑步'], ok: ['我们下课后去操场跑步。', '下课后我们去操场跑步。'], en: 'After class we go to the playground to run.' }
 ];
 /* level 4: our own letter to Grandma about playing "Teddy Hospital", one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的奶奶：" */
 var SENTENCES = [
   { s: '星期天下雨了，我和姐姐在家开了一家小熊＿。', a: '医院', no: ['皮带', '女士'], en: 'On Sunday it rained, so my big sister and I opened a Teddy Hospital at home.' },
-  { s: '姐姐穿上白衣服，当小熊医院的＿。', a: '护士', no: ['体温', '吃药'], en: 'My sister put on white clothes and was the Teddy Hospital\'s nurse.' },
-  { s: '我当＿，脖子上挂着一个听诊器。', a: '医生', no: ['温水', '药店'], en: 'I was the doctor, with a stethoscope around my neck.' },
+  { s: '我穿上白衣服，当小熊医院的＿。', a: '护士', no: ['体温', '吃药'], en: 'I put on white clothes and was the Teddy Hospital\'s nurse.' },
+  { s: '姐姐当＿，脖子上挂着一个听诊器。', a: '医生', no: ['温水', '药店'], en: 'My big sister was the doctor, with a stethoscope around her neck.' },
   { s: '小熊打了好几个喷嚏，原来它＿了。', a: '感冒', no: ['保护', '皮带'], en: 'Teddy sneezed again and again. It turned out he had a cold.' },
-  { s: '姐姐给小熊＿，说它有点儿热。', a: '量体温', no: ['就是', '女士'], en: 'My sister took Teddy\'s temperature and said he was a bit hot.' },
+  { s: '我给小熊＿，发现它有点儿热。', a: '量体温', no: ['就是', '女士'], en: 'I took Teddy\'s temperature and found he was a bit hot.' },
   { s: '我摸了摸小熊的头，它好像在＿。', a: '发烧', no: ['女士', '皮带'], en: 'I felt Teddy\'s head. He seemed to have a fever.' },
-  { s: '小熊怕疼，我说："今天不用＿。"', a: '打针', no: ['女士', '院子'], en: 'Teddy is scared of it hurting, so I said, "No injection today."' },
+  { s: '小熊怕疼，姐姐说："今天不用＿。"', a: '打针', no: ['女士', '院子'], en: 'Teddy was scared it would hurt, so my sister said, "No injection today."' },
   { s: '我们给小熊倒了一杯＿，盖好小被子。', a: '温水', no: ['生病', '保护'], en: 'We poured Teddy a cup of warm water and tucked his little blanket in.' },
   { s: '妈妈说：“小朋友不能自己＿，一定要大人给才行。”', a: '吃药', no: ['女士', '皮带'], en: 'Mom said, "Children must not take medicine by themselves. A grown-up must give it."' },
   { s: '小熊睡醒了，我们带它去＿里晒太阳。', a: '院子', no: ['感谢', '打针'], en: 'When Teddy woke up, we took him out to the yard to sit in the sun.' },
@@ -875,11 +875,11 @@ var SENTENCES = [
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
    s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '小熊医院', en: 'Teddy Hospital', lines: [
-  { who: '🧒 我', s: '下雨天不能出去玩，我和姐姐在家开了一家“小熊医院”！', py: 'Xià yǔ tiān bù néng chūqu wán, wǒ hé jiějie zài jiā kāile yì jiā "Xiǎoxióng Yīyuàn"!', en: 'It\'s raining and we can\'t play outside, so my big sister and I opened a "Teddy Hospital" at home!' },
-  { who: '👧 姐姐', s: '我当护士，你当医生。看，小熊生病了，它感冒了。', py: 'Wǒ dāng hùshi, nǐ dāng yīshēng. Kàn, xiǎoxióng shēngbìng le, tā gǎnmào le.', en: 'I\'ll be the nurse and you be the doctor. Look, Teddy is ill. He has a cold.' },
-  { who: '🧒 我', s: '护士，请给小熊量一量体温。', py: 'Hùshi, qǐng gěi xiǎoxióng liáng yi liáng tǐwēn.', en: 'Nurse, please take Teddy\'s temperature.' },
-  { who: '👧 姐姐', s: '医生，小熊的头热热的，好像发烧了！要打针吗？', py: 'Yīshēng, xiǎoxióng de tóu rèrè de, hǎoxiàng fāshāo le! Yào dǎzhēn ma?', en: 'Doctor, Teddy\'s head is hot. I think he has a fever! Does he need an injection?' },
-  { who: '🧒 我', s: '不用打针，也不用吃药。先给它盖好被子，让它好好睡一觉。', py: 'Bú yòng dǎzhēn, yě bú yòng chī yào. Xiān gěi tā gàihǎo bèizi, ràng tā hǎohǎo shuì yí jiào.', en: 'No injection, and no medicine. First tuck his blanket in and let him have a good sleep.' },
+  { who: '👧 姐姐', s: '下雨天不能出去玩，我们在家开一家“小熊医院”吧！', py: 'Xià yǔ tiān bù néng chūqu wán, wǒmen zài jiā kāi yì jiā "Xiǎoxióng Yīyuàn" ba!', en: 'It\'s raining and we can\'t play outside. Let\'s open a "Teddy Hospital" at home!' },
+  { who: '🧒 我', s: '我当护士，你当医生。看，小熊生病了，它感冒了。', py: 'Wǒ dāng hùshi, nǐ dāng yīshēng. Kàn, xiǎoxióng shēngbìng le, tā gǎnmào le.', en: 'I\'ll be the nurse and you be the doctor. Look, Teddy is ill. He has a cold.' },
+  { who: '👧 姐姐', s: '护士，请给小熊量一量体温。', py: 'Hùshi, qǐng gěi xiǎoxióng liáng yi liáng tǐwēn.', en: 'Nurse, please take Teddy\'s temperature.' },
+  { who: '🧒 我', s: '医生，小熊的头热热的，好像发烧了！要打针吗？', py: 'Yīshēng, xiǎoxióng de tóu rèrè de, hǎoxiàng fāshāo le! Yào dǎzhēn ma?', en: 'Doctor, Teddy\'s head is hot. I think he has a fever! Does he need an injection?' },
+  { who: '👧 姐姐', s: '不用打针，也不用吃药。先给它盖好被子，让它好好睡一觉。', py: 'Bú yòng dǎzhēn, yě bú yòng chī yào. Xiān gěi tā gàihǎo bèizi, ràng tā hǎohǎo shuì yí jiào.', en: 'No injection, and no medicine. First tuck his blanket in and let him have a good sleep.' },
   { who: '👩 妈妈', s: '你们的小医院真不错！不过要记住：真的药，一定要大人给才能吃。', py: 'Nǐmen de xiǎo yīyuàn zhēn búcuò! Búguò yào jìzhu: zhēn de yào, yídìng yào dàren gěi cái néng chī.', en: 'Your little hospital is great! But remember: you may only take real medicine when a grown-up gives it to you.' },
   { who: '👧 姐姐', s: '知道了，妈妈！看，小熊睡醒了，它说它舒服多了。', py: 'Zhīdao le, māma! Kàn, xiǎoxióng shuìxǐng le, tā shuō tā shūfu duō le.', en: 'OK, Mom! Look, Teddy has woken up. He says he feels much better.' },
   { who: '🧒 我', s: '雨停了！我们带小熊去院子里晒太阳，它马上就笑了！', py: 'Yǔ tíng le! Wǒmen dài xiǎoxióng qù yuànzi li shài tàiyang, tā mǎshàng jiù xiào le!', en: 'The rain has stopped! We take Teddy out to the yard to sit in the sun, and he smiles right away!', pat: true }
