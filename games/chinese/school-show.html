@@ -754,9 +754,9 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 2 lesson 1. One idea: the 11 new characters of the lesson (在教汉语写字读歌画喜欢).
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the sentence pattern (谁＋在＋地方＋做什么), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the sentence pattern (谁＋在＋地方＋做什么), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own (not the textbook's 课文, 句子 or 对话); only the characters and common words come from the lesson. */
-:root{ --page:#faf5ff; --blue:#7e22ce; --blue-s:#e9d5ff; --blue-d:#581c87; }   /* this lesson's colours */
+:root{ --page:#faf5ff; --blue:#7e22ce; --blue-s:#e9d5ff; --blue-d:#581c87; }   /* this lesson's colors */
 .opt::before{content:"🎤";position:absolute;right:8px;top:4px;font-size:16px}
 </style>
 </head>
@@ -845,7 +845,7 @@ var PATTERN = [
 ];
 /* level 4: our own letter to Grandma about the school show, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的奶奶：" */
 var SENTENCES = [
-  { s: '上星期六，我们中文学校开表演会，我们的＿里也挂满了彩色的气球。', a: '教室', no: ['名字', '朗读'], en: 'Last Saturday our Chinese school had a show, and our classroom was full of colourful balloons too.' },
+  { s: '上星期六，我们中文学校开表演会，我们的＿里也挂满了彩色的气球。', a: '教室', no: ['名字', '朗读'], en: 'Last Saturday our Chinese school had a show, and our classroom was full of colorful balloons too.' },
   { s: '老师教我们唱了一首新歌，我当了小＿。', a: '歌手', no: ['英语', '欢迎'], en: 'The teacher taught us a new song, and I was a little singer.' },
   { s: '我们在台上一起＿，台下的爸爸妈妈都拍手了。', a: '唱歌', no: ['画家', '汉字'], en: 'We sang together on the stage, and all the moms and dads in the audience clapped.' },
   { s: '我还用毛笔写了四个大＿：“我爱中文”。', a: '汉字', no: ['欢迎', '现在'], en: 'I also wrote four big Chinese characters with a brush: "I love Chinese".' },
@@ -861,12 +861,12 @@ var SENTENCES = [
   { s: '奶奶，下次表演会，＿您也来看我们！', a: '欢迎', no: ['名字', '听写'], en: 'Grandma, please come and watch us at the next show!' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '学校表演会', en: 'The school show', lines: [
   { who: '👩‍🏫 老师', s: '今天是表演会，爸爸妈妈们都来了！', py: 'Jīntiān shì biǎoyǎnhuì, bàba māmamen dōu lái le!', en: 'Today is our show, and all the moms and dads are here!' },
   { who: '👧 我', s: '爸爸，等一下我们在礼堂里唱中文歌！', py: 'Bàba, děng yíxià wǒmen zài lǐtáng li chàng Zhōngwén gē!', en: 'Dad, in a moment we’ll sing a Chinese song in the hall!', pat: true },
   { who: '👨 爸爸', s: '太好了！这首歌是谁教你们的？', py: 'Tài hǎo le! Zhè shǒu gē shì shéi jiāo nǐmen de?', en: 'Great! Who taught you this song?' },
-  { who: '👦 同学', s: '是老师教的，我们练了很多次！', py: 'Shì lǎoshī jiāo de, wǒmen liànle hěn duō cì!', en: 'Our teacher did. We practised lots of times!' },
+  { who: '👦 同学', s: '是老师教的，我们练了很多次！', py: 'Shì lǎoshī jiāo de, wǒmen liànle hěn duō cì!', en: 'Our teacher did. We practiced lots of times!' },
   { who: '👩‍🏫 老师', s: '下面，请大家看看孩子们写的汉字和画的画。', py: 'Xiàmiàn, qǐng dàjiā kànkan háizimen xiě de Hànzì hé huà de huà.', en: 'Next, please look at the characters and pictures the children made.' },
   { who: '👨 爸爸', s: '这张画真漂亮！我很喜欢上面的大熊猫。', py: 'Zhè zhāng huà zhēn piàoliang! Wǒ hěn xǐhuan shàngmian de dà xióngmāo.', en: 'This picture is lovely! I really like the big panda on it.' },
   { who: '👧 我', s: '最后，我们还要用汉语读一首小诗！', py: 'Zuìhòu, wǒmen hái yào yòng Hànyǔ dú yì shǒu xiǎo shī!', en: 'At the end, we will also read a short poem in Chinese!' }
@@ -1363,7 +1363,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1560,7 +1560,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

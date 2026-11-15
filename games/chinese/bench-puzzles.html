@@ -439,7 +439,7 @@
 </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Morning Puzzles · 普林斯顿的老人</title>
+<title>Morning Puzzles · 早晨的谜题</title>
 <meta name="theme-color" content="#92400e">
 <link rel="stylesheet" href="../../fonts/fonts.css">
 <style>
@@ -754,14 +754,14 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 5 lesson 11. One idea: the 14 new characters of the lesson.
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own; only the characters and common words come from the lesson. */
-:root{ --page:#fffbeb; --blue:#92400e; --blue-s:#fde68a; --blue-d:#78350f; }   /* this lesson's colours */
+:root{ --page:#fffbeb; --blue:#92400e; --blue-s:#fde68a; --blue-d:#78350f; }   /* this lesson's colors */
 .opt::before{content:"🧩";position:absolute;right:8px;top:4px;font-size:16px}
 </style>
 </head>
 <body>
-<header class="top"><h1>🧩 Morning Puzzles <span class="han">普林斯顿的老人</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
+<header class="top"><h1>🧩 Morning Puzzles <span class="han">早晨的谜题</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
 <div class="wrap" id="app"></div>
 <script>
 /* ---------- content (characters and words from the lesson; all sentences are our own) ---------- */
@@ -844,7 +844,7 @@ var PATTERN = [
   { t: 'show', shape: '一……就……', keys: ['一', '就'], end: '。', ask: 'Where do 一 and 就 go? Pick the right sentence.',
     what: '一……就…… means "as soon as …, …". Put 一 before the first thing that happens, and 就 before what happens right after it: 我一到家就洗手 = as soon as I get home, I wash my hands.',
     ex: [{ s: '我一到家就洗手。', en: 'As soon as I get home, I wash my hands.' }, { s: '天一黑，路灯就亮了。', en: 'As soon as it got dark, the street lights came on.' }, { s: '小猫一看见鱼就跑过来。', en: 'As soon as the kitten sees fish, it runs over.' }] },
-  { t: 'pick', from: '铃声响了，同学们马上走进了教室。', a: '铃声一响，同学们就走进了教室。', no: ['铃声就响，同学们一走进了教室。', '一铃声响，同学们就走进了教室。'], en: 'As soon as the bell rang, the pupils went into the classroom.' },
+  { t: 'pick', from: '铃声响了，同学们马上走进了教室。', a: '铃声一响，同学们就走进了教室。', no: ['铃声就响，同学们一走进了教室。', '一铃声响，同学们就走进了教室。'], en: 'As soon as the bell rang, the students went into the classroom.' },
   { t: 'build', tiles: ['妹妹', '一', '上车', '就', '睡着了'], ok: ['妹妹一上车就睡着了。'], en: 'My little sister fell asleep as soon as she got in the car.' },
   { t: 'pick', from: '春天来了，花马上开了。', a: '春天一来，花就开了。', no: ['春天就来，花一开了。', '春天一来，就花开了。'], en: 'As soon as spring came, the flowers opened.' },
   { t: 'build', tiles: ['我', '一', '看', '这道题', '就', '知道答案了'], ok: ['我一看这道题就知道答案了。', '这道题我一看就知道答案了。'], en: 'As soon as I looked at this question, I knew the answer.' },
@@ -861,14 +861,14 @@ var SENTENCES = [
   { s: '第一道题很＿，我们一下子就做出来了。', a: '简单', no: ['温度', '名单'], en: 'The first puzzle was easy; we got it right away.' },
   { s: '我们一起＿怎么解下一道题。', a: '讨论', no: ['相信', '度过'], en: 'We talked together about how to solve the next puzzle.' },
   { s: '那道题很难，我和同学想了很久才＿出来。', a: '解答', no: ['温度', '清晨'], en: 'That puzzle was hard; my classmate and I thought for a long time before we worked it out.' },
-  { s: '原来是这样！我以前＿数学很难。', a: '以为', no: ['椅子', '温度'], en: 'So that\'s how it works! I used to think maths was hard.' },
+  { s: '原来是这样！我以前＿数学很难。', a: '以为', no: ['椅子', '温度'], en: 'So that\'s how it works! I used to think math was hard.' },
   { s: '如果你有不会的＿，也可以来问我们！', a: '问题', no: ['清晨', '椅子'], en: 'If there is a question you can\'t do, you can ask us too!' },
   { s: '我们在公园＿了一个愉快的上午。', a: '度过', no: ['相信', '名单'], en: 'We spent a happy morning in the park.' },
   { s: '和奶奶、同学一起解题，真是一件＿的事。', a: '愉快', no: ['名单', '椅子'], en: 'Solving puzzles with Grandma and my classmate is such a happy thing to do.' },
   { s: '今天我的＿特别好。表姐，你什么时候来和我们一起玩？', a: '心情', no: ['相信', '度过'], en: 'I\'m in a really good mood today. When will you come and play with us?' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '公园里的谜题', en: 'Puzzles in the park', lines: [
   { who: '👵 奶奶', s: '早晨的公园真安静，温度也正好。我们坐这把长椅吧！', py: 'Zǎochén de gōngyuán zhēn ānjìng, wēndù yě zhènghǎo. Wǒmen zuò zhè bǎ chángyǐ ba!', en: 'The park is so quiet in the morning, and it\'s just the right temperature. Let\'s sit on this bench!' },
   { who: '🧒 我', s: '奶奶，我带了一本谜题书，我们来解题吧！', py: 'Nǎinai, wǒ dàile yì běn mítí shū, wǒmen lái jiětí ba!', en: 'Grandma, I brought a puzzle book. Let\'s solve some puzzles!' },
@@ -876,7 +876,7 @@ var STORY = { title: '公园里的谜题', en: 'Puzzles in the park', lines: [
   { who: '🧒 我', s: '第一道题很简单：一只鸡有两条腿，三只鸡有几条腿？', py: 'Dì yī dào tí hěn jiǎndān: yì zhī jī yǒu liǎng tiáo tuǐ, sān zhī jī yǒu jǐ tiáo tuǐ?', en: 'The first puzzle is easy: one chicken has two legs, so how many legs do three chickens have?' },
   { who: '👧 同学', s: '六条！我们来讨论一道难一点儿的吧。', py: 'Liù tiáo! Wǒmen lái tǎolùn yí dào nán yìdiǎnr de ba.', en: 'Six! Let\'s talk about a harder one.' },
   { who: '👵 奶奶', s: '你们俩一讨论问题就停不下来！', py: 'Nǐmen liǎ yì tǎolùn wèntí jiù tíng bu xiàlái!', en: 'As soon as you two start talking about a problem, you can\'t stop!', pat: true },
-  { who: '🧒 我', s: '我以前以为数学很难，现在觉得太有意思了。', py: 'Wǒ yǐqián yǐwéi shùxué hěn nán, xiànzài juéde tài yǒu yìsi le.', en: 'I used to think maths was hard. Now I think it\'s so much fun.' },
+  { who: '🧒 我', s: '我以前以为数学很难，现在觉得太有意思了。', py: 'Wǒ yǐqián yǐwéi shùxué hěn nán, xiànzài juéde tài yǒu yìsi le.', en: 'I used to think math was hard. Now I think it\'s so much fun.' },
   { who: '🧒 我', s: '今天早晨过得真愉快，我的心情特别好！', py: 'Jīntiān zǎochén guò de zhēn yúkuài, wǒ de xīnqíng tèbié hǎo!', en: 'This morning has been so much fun. I\'m in a really good mood!' }
 ] };
 
@@ -1365,7 +1365,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1562,7 +1562,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

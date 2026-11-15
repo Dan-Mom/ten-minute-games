@@ -754,9 +754,9 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 1 lesson 10. One idea: the 12 new characters of the lesson (花园门前个他后外年季儿看).
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the sentence pattern (地方＋有＋东西), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the sentence pattern (地方＋有＋东西), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own (not the textbook's 课文, 句子 or 对话); only the characters and common words come from the lesson. */
-:root{ --page:#f0fdf4; --blue:#15803d; --blue-s:#bbf7d0; --blue-d:#166534; }   /* this lesson's colours */
+:root{ --page:#f0fdf4; --blue:#15803d; --blue-s:#bbf7d0; --blue-d:#166534; }   /* this lesson's colors */
 .opt::before{content:"🌱";position:absolute;right:8px;top:4px;font-size:16px}
 </style>
 </head>
@@ -777,7 +777,7 @@ var CHARS = [
    rad = the radical (部首) with its name, what it usually means, and other characters where you can see it; how = the meaning */
 var PARTS = [
   { c: '花', parts: ['艹', '化'], r: 0, rad: '艹', name: '草字头', npy: 'cǎo zì tóu', means: 'grass and plants.', see: '草 茶 菜 苹', how: 'Plants (艹) on top; 化 below gives the sound (huà, huā). Long ago 花 was written 華. 开花 = to bloom.' },
-  { c: '园', parts: ['囗', '元'], r: 0, rad: '囗', name: '国字框', npy: 'guó zì kuàng', means: 'a frame all around, like a fence.', see: '国 图 四 团', how: 'A fence all round (囗); 元 inside gives the sound (yuán). 花园 = garden; 公园 = park.' },
+  { c: '园', parts: ['囗', '元'], r: 0, rad: '囗', name: '国字框', npy: 'guó zì kuàng', means: 'a frame all around, like a fence.', see: '国 图 四 团', how: 'A fence all around (囗); 元 inside gives the sound (yuán). 花园 = garden; 公园 = park.' },
   { c: '门', parts: ['门'], r: 0, rad: '门', name: '门字框', npy: 'mén zì kuàng', means: 'a door or a gate.', see: '问 间 闪 闭', how: 'Long ago 门 (門) was a picture of a gate with two doors. 大门 = front gate.' },
   { c: '前', parts: ['丷', ''], rest: 'below: 一, 月 and 刂', r: 0, rad: '丷', name: '倒八', npy: 'dào bā', means: 'two dots, like an upside-down 八.', see: '半 关 并 兰', how: '前 means in front, or before. 门前 = in front of the door; 以前 = before.' },
   { c: '个', parts: ['人', ''], rest: 'below: one line down', r: 0, rad: '人', name: '人字头', npy: 'rén zì tóu', means: 'a person.', see: '会 今 介 全', how: '个 counts things: 一个苹果 = one apple. 个子 = how tall you are.' },
@@ -868,7 +868,7 @@ var SENTENCES = [
   { s: '欢迎您＿的时候来我家玩，看看我们的小花园！', a: '新年', no: ['个子', '门口'], en: 'Please come and visit us at New Year, and see our little garden!' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '小园丁', en: 'Little gardeners', lines: [
   { who: '👴 爷爷', s: '春天来了，咱们去外面种花吧！', py: 'Chūntiān lái le, zánmen qù wàimiàn zhòng huā ba!', en: 'Spring is here. Let’s go outside and plant flowers!' },
   { who: '👧 我', s: '好！门前有一块空地，正好做花园。', py: 'Hǎo! Mén qián yǒu yí kuài kòngdì, zhènghǎo zuò huāyuán.', en: 'OK! There is an empty patch in front of the door. It’s just right for a garden.', pat: true },
@@ -1370,7 +1370,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1567,7 +1567,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

@@ -755,9 +755,9 @@ button{-webkit-appearance:none;appearance:none}
 <style>
 /* Chinese game, book 2 lesson 10. One idea: the 14 new characters of the lesson: the 8 of the text (种吧要发芽苗树瓜; 种 is listed twice in the box, as zhǒng and zhòng)
    and the 6 of its reading 种子 (伸泥怕吹打结), added because the text has fewer than 10 (the owner, 2026-11-13).
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the sentence pattern (谁＋要＋做什么), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the sentence pattern (谁＋要＋做什么), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own (not the textbook's 课文, 句子 or 对话); only the characters and common words come from the lesson. */
-:root{ --page:#ecfdf5; --blue:#047857; --blue-s:#a7f3d0; --blue-d:#064e3b; }   /* this lesson's colours */
+:root{ --page:#ecfdf5; --blue:#047857; --blue-s:#a7f3d0; --blue-d:#064e3b; }   /* this lesson's colors */
 .opt::before{content:"🫘";position:absolute;right:8px;top:4px;font-size:16px}
 </style>
 </head>
@@ -878,7 +878,7 @@ var SENTENCES = [
   { s: '弟弟以前很＿打雷，现在他说他不怕了，因为他和小豆苗一样勇敢！', a: '害怕', no: ['西瓜', '树叶'], en: 'My brother used to be scared of thunder, but now he says he isn’t, because he is as brave as the little bean plant!' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '豆芽日记', en: 'The bean sprout diary', lines: [
   { who: '👧 我', s: '妈妈，老师让我们在家种豆子，每天写观察日记。', py: 'Māma, lǎoshī ràng wǒmen zài jiā zhòng dòuzi, měi tiān xiě guānchá rìjì.', en: 'Mom, our teacher wants us to grow beans at home and write an observation diary every day.' },
   { who: '👩 妈妈', s: '好啊！你想种在泥土里，还是放在湿棉花上？', py: 'Hǎo a! Nǐ xiǎng zhòng zài nítǔ li, háishi fàng zài shī miánhua shang?', en: 'Great! Do you want to plant them in soil, or put them on wet cotton balls?' },
@@ -1380,7 +1380,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1577,7 +1577,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

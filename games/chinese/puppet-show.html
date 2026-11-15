@@ -439,7 +439,7 @@
 </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Puppet Show · 狼来了</title>
+<title>Puppet Show · 木偶戏</title>
 <meta name="theme-color" content="#475569">
 <link rel="stylesheet" href="../../fonts/fonts.css">
 <style>
@@ -754,14 +754,14 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 3 lesson 12. One idea: the 13 new characters of the lesson.
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own; only the characters and common words come from the lesson. */
-:root{ --page:#f8fafc; --blue:#475569; --blue-s:#cbd5e1; --blue-d:#334155; }   /* this lesson's colours */
+:root{ --page:#f8fafc; --blue:#475569; --blue-s:#cbd5e1; --blue-d:#334155; }   /* this lesson's colors */
 .opt::before{content:"🐑";position:absolute;right:8px;top:4px;font-size:16px}
 </style>
 </head>
 <body>
-<header class="top"><h1>🐺 Puppet Show <span class="han">狼来了</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
+<header class="top"><h1>🐺 Puppet Show <span class="han">木偶戏</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
 <div class="wrap" id="app"></div>
 <script>
 /* ---------- content (characters and words from the lesson; all sentences are our own) ---------- */
@@ -864,7 +864,7 @@ var SENTENCES = [
   { s: '第二天，我们在院子里的大树下，看见＿露出了地面。', a: '树根', no: ['谎话', '捉弄'], en: 'The next day, under the big tree in the yard, we saw roots poking out of the ground.' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '木偶戏《狼来了》', en: 'A puppet show: "Wolf!"', lines: [
   { who: '🧒 我', s: '我们来演木偶戏《狼来了》吧！我做狼，弟弟做放羊的孩子。', py: 'Wǒmen lái yǎn mù\'ǒuxì "Láng Lái le" ba! Wǒ zuò láng, dìdi zuò fàng yáng de háizi.', en: 'Let\'s do a puppet show of "The Boy Who Cried Wolf"! I\'ll be the wolf, and my little brother can be the shepherd boy.' },
   { who: '👦 弟弟', s: '好！我先大声喊：“狼来了！狼来了！”', py: 'Hǎo! Wǒ xiān dàshēng hǎn: "Láng lái le! Láng lái le!"', en: 'OK! First I shout loudly: "Wolf! Wolf!"' },
@@ -1361,7 +1361,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1558,7 +1558,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

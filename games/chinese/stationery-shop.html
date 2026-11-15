@@ -439,7 +439,7 @@
 </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Stationery Shop · 买文具</title>
+<title>Stationery Shop · 文具店</title>
 <meta name="theme-color" content="#1d4ed8">
 <link rel="stylesheet" href="../../fonts/fonts.css">
 <style>
@@ -754,20 +754,20 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 5 lesson 1. One idea: the 15 new characters of the lesson.
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own; only the characters and common words come from the lesson. */
-:root{ --page:#eff6ff; --blue:#1d4ed8; --blue-s:#bfdbfe; --blue-d:#1e40af; }   /* this lesson's colours */
+:root{ --page:#eff6ff; --blue:#1d4ed8; --blue-s:#bfdbfe; --blue-d:#1e40af; }   /* this lesson's colors */
 .opt::before{content:"✏";position:absolute;right:9px;top:3px;font-size:20px;color:#f59e0b}
 </style>
 </head>
 <body>
-<header class="top"><h1>✏️ Stationery Shop <span class="han">买文具</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
+<header class="top"><h1>✏️ Stationery Shop <span class="han">文具店</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
 <div class="wrap" id="app"></div>
 <script>
 /* ---------- content (characters and words from the lesson; all sentences are our own) ---------- */
 var CHARS = [
   { c: '超', py: 'chāo', en: 'go past; super', e: '🦸' }, { c: '市', py: 'shì', en: 'market; city', e: '🏙️' },
-  { c: '各', py: 'gè', en: 'each, every', e: '🌈' }, { c: '颜', py: 'yán', en: 'face (颜色 = colour)', e: '🎨' },
+  { c: '各', py: 'gè', en: 'each, every', e: '🌈' }, { c: '颜', py: 'yán', en: 'face (颜色 = color)', e: '🎨' },
   { c: '练', py: 'liàn', en: 'practise', e: '✏️' }, { c: '许', py: 'xǔ', en: 'allow (许多 = many)', e: '🔢' },
   { c: '漂', py: 'piào', en: '(漂亮 = pretty)', e: '✨', hear: '漂亮' }, { c: '尺', py: 'chǐ', en: 'ruler; a measure of length', e: '📏' },
   { c: '刀', py: 'dāo', en: 'knife', e: '🗡️' }, { c: '支', py: 'zhī', en: '(counts pens: 一支笔)', e: '🖊️' },
@@ -781,7 +781,7 @@ var PARTS = [
   { c: '超', parts: ['走', '召'], r: 0, rad: '走', name: '走字旁', npy: 'zǒu zì páng', means: 'walking, running.', see: '赶 起 趣 越', how: 'Walking (走) and 召 (zhào), which helps with the sound: to jump over, to go past. 超市 = supermarket; 超过 = go past.' },
   { c: '市', parts: ['市'], r: 0, rad: '亠', name: '点横头', npy: 'diǎn héng tóu', means: 'a dot over a line. As a radical it does not add a meaning.', see: '京 亮 交 亡', how: '市 is one whole shape. Long ago it was a market place. 超市 = supermarket; 城市 = city.' },
   { c: '各', parts: ['夂', '口'], r: 0, rad: '夂', name: '冬字头', npy: 'dōng zì tóu', means: 'a foot walking.', see: '冬 条 处 夏', how: 'A foot (夂) coming toward a place (口): long ago it meant "to arrive". Now it means "each, every". 各种 = all kinds.' },
-  { c: '颜', parts: ['彦', '页'], r: 1, rad: '页', name: '页字旁', npy: 'yè zì páng', means: 'the head.', see: '顶 顺 须 题', how: '彦 (yàn), which helps with the sound, and 页 (the head): the face. 颜色 = colour.' },
+  { c: '颜', parts: ['彦', '页'], r: 1, rad: '页', name: '页字旁', npy: 'yè zì páng', means: 'the head.', see: '顶 顺 须 题', how: '彦 (yàn), which helps with the sound, and 页 (the head): the face. 颜色 = color.' },
   { c: '练', parts: ['纟', ''], rest: 'right: a part that long ago gave the sound', r: 0, rad: '纟', name: '绞丝旁', npy: 'jiǎo sī páng', means: 'silk and thread.', see: '红 绿 线 纸 结', how: 'Silk (纟) and a part that long ago gave the sound. Long ago it meant boiling silk again and again to make it soft and white; doing something again and again became "practise". 练习 = practise.' },
   { c: '许', parts: ['讠', '午'], r: 0, rad: '讠', name: '言字旁', npy: 'yán zì páng', means: 'words and speaking.', see: '说 语 读 请 认', how: 'Words (讠) and 午, which helps with the sound: to say yes, to allow. 许多 = many; 也许 = maybe.' },
   { c: '漂', parts: ['氵', '票'], r: 0, rad: '氵', name: '三点水', npy: 'sān diǎn shuǐ', means: 'water. It is in characters about water and liquids.', see: '河 海 洗 游 汤', how: 'Water (氵) and 票 (piào), which gives the sound: to float on water (said piāo). Said piào in 漂亮 = pretty.' },
@@ -819,7 +819,7 @@ var GROUPS = [CHARS.slice(0, 5), CHARS.slice(5, 10), CHARS.slice(10)];
 var WORDS = [
   { w: '超市', k: 0, py: 'chāoshì', en: 'supermarket', e: '🛒', no: ['各', '行'] }, { w: '超人', k: 0, py: 'chāorén', en: 'superhero', e: '🦸', no: ['商', '行', '各'] },
   { w: '城市', k: 1, py: 'chéngshì', en: 'city', e: '🏙️' }, { w: '各种', k: 0, py: 'gè zhǒng', en: 'all kinds of', e: '🌈', no: ['品'] },
-  { w: '颜色', k: 0, py: 'yánsè', en: 'colour', e: '🎨', no: ['各', '行'] }, { w: '练习', k: 0, py: 'liànxí', en: 'practise', e: '✏️' },
+  { w: '颜色', k: 0, py: 'yánsè', en: 'color', e: '🎨', no: ['各', '行'] }, { w: '练习', k: 0, py: 'liànxí', en: 'practise', e: '✏️' },
   { w: '许多', k: 0, py: 'xǔduō', en: 'many', e: '🔢', no: ['超'] }, { w: '漂亮', k: 0, py: 'piàoliang', en: 'pretty', e: '✨', no: ['超'] },
   { w: '尺子', k: 0, py: 'chǐzi', en: 'ruler', e: '📏', no: ['刀', '鞋'] }, { w: '卷笔刀', k: 2, py: 'juǎnbǐdāo', en: 'pencil sharpener', e: '✏️' },
   { w: '剪刀', k: 1, py: 'jiǎndāo', en: 'scissors', e: '✂️' }, { w: '一支', k: 1, py: 'yì zhī', en: 'one (pen)', e: '🖊️', no: ['行', '刀', '尺', '品'] },
@@ -838,7 +838,7 @@ var MORE_WORDS = {
   '支': [{ w: '支持', py: 'zhīchí', en: 'support' }],
   '行': [{ w: '银行', py: 'yínháng', en: 'bank' }],
   '商': [{ w: '商量', py: 'shāngliang', en: 'talk it over' }],
-  '鞋': [{ w: '皮鞋', py: 'píxié', en: 'leather shoes' }, { w: '运动鞋', py: 'yùndòngxié', en: 'trainers' }],
+  '鞋': [{ w: '皮鞋', py: 'píxié', en: 'leather shoes' }, { w: '运动鞋', py: 'yùndòngxié', en: 'sneakers' }],
   '品': [{ w: '礼品', py: 'lǐpǐn', en: 'gift' }],
   '制': [{ w: '制作', py: 'zhìzuò', en: 'make' }]
 };
@@ -849,33 +849,33 @@ var PATTERN = [
     what: '要是 means "if". Say what might happen after 要是, then 就 and what will happen then: 要是明天天晴，我们就去公园 = if it is sunny tomorrow, we will go to the park. 就 goes right before the action, after the person.',
     ex: [{ s: '要是明天天晴，我们就去公园。', en: 'If it\'s sunny tomorrow, we\'ll go to the park.' }, { s: '要是你累了，就坐下来休息。', en: 'If you\'re tired, sit down and rest.' }, { s: '要是小狗饿了，它就会叫。', en: 'If the puppy is hungry, it barks.' }] },
   { t: 'pick', from: '如果你冷，你可以穿我的外套。', a: '要是你冷，就穿我的外套吧。', no: ['就你冷，要是穿我的外套吧。', '你冷要是，就穿我的外套吧。'], en: 'If you\'re cold, wear my coat.' },
-  { t: 'build', tiles: ['要是', '作业做完了，', '我们', '就', '去踢球'], ok: ['要是作业做完了，我们就去踢球。', '我们要是作业做完了，就去踢球。'], en: 'If our homework is done, we\'ll go and play football.' },
+  { t: 'build', tiles: ['要是', '作业做完了，', '我们', '就', '去踢球'], ok: ['要是作业做完了，我们就去踢球。', '我们要是作业做完了，就去踢球。'], en: 'If our homework is done, we\'ll go and play soccer.' },
   { t: 'pick', from: '天黑了。我们回家吧。', a: '要是天黑了，我们就回家。', no: ['要是天黑了，我们回家就。', '天黑了要是，我们就回家。'], en: 'If it gets dark, we\'ll go home.' },
   { t: 'build', tiles: ['要是', '你想看，', '我', '就', '借给你'], ok: ['要是你想看，我就借给你。'], en: 'If you want to read it, I\'ll lend it to you.' },
   { t: 'build', tiles: ['要是', '下雪了，', '我们', '就', '堆雪人'], ok: ['要是下雪了，我们就堆雪人。'], en: 'If it snows, we\'ll build a snowman.' }
 ];
 /* level 4: our own letter to an older cousin about buying stationery, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的表哥：" */
 var SENTENCES = [
-  { s: '新学期快到了，妈妈带我到＿挑文具。', a: '超市', no: ['尺子', '用品'], en: 'The new term is coming, so Mum took me to the supermarket to choose stationery.' },
+  { s: '新学期快到了，妈妈带我到＿挑文具。', a: '超市', no: ['尺子', '用品'], en: 'The new school year is coming, so Mom took me to the supermarket to choose stationery.' },
   { s: '那里有＿笔，红的、蓝的、绿的都有。', a: '各种', no: ['鞋子', '剪刀'], en: 'There were all kinds of pens there: red, blue and green.' },
-  { s: '这些本子的＿真好看。', a: '颜色', no: ['超人', '制造'], en: 'The colours of these notebooks are really nice.' },
+  { s: '这些本子的＿真好看。', a: '颜色', no: ['超人', '制造'], en: 'The colors of these notebooks are really nice.' },
   { s: '我要多＿写字，把字写得更好看。', a: '练习', no: ['鞋子', '尺子'], en: 'I want to practise writing more, so my handwriting looks even better.' },
   { s: '超市里有＿好玩的东西。', a: '许多', no: ['剪刀', '城市'], en: 'There were lots of fun things in the supermarket.' },
   { s: '我看中了一个＿的铅笔盒。', a: '漂亮', no: ['练习', '用品'], en: 'I had my eye on a pretty pencil case.' },
   { s: '我还买了一把新＿，量东西用。', a: '尺子', no: ['超人', '颜色'], en: 'I also bought a new ruler for measuring things.' },
-  { s: '妈妈说，削铅笔要用＿，不能用小刀。', a: '卷笔刀', no: ['商店', '颜色'], en: 'Mum said to sharpen pencils with a pencil sharpener, not a knife.' },
-  { s: '妈妈又给我买了＿圆珠笔。', a: '一支', no: ['城市', '制造'], en: 'Mum also bought me a ballpoint pen.' },
+  { s: '妈妈说，削铅笔要用＿，不能用小刀。', a: '卷笔刀', no: ['商店', '颜色'], en: 'Mom said to sharpen pencils with a pencil sharpener, not a knife.' },
+  { s: '妈妈又给我买了＿圆珠笔。', a: '一支', no: ['城市', '制造'], en: 'Mom also bought me a ballpoint pen.' },
   { s: '我在本子的第一页写了＿：好好学习。', a: '一行字', no: ['剪刀', '超人'], en: 'On the first page of my notebook I wrote a line: study hard.' },
-  { s: '旁边的＿里有很多运动鞋。', a: '商店', no: ['颜色', '练习'], en: 'The shop next door had lots of trainers.' },
-  { s: '我的旧＿太小了，妈妈说下次再买新的。', a: '鞋子', no: ['城市', '颜色'], en: 'My old shoes are too small. Mum said we\'ll buy new ones next time.' },
+  { s: '旁边的＿里有很多运动鞋。', a: '商店', no: ['颜色', '练习'], en: 'The shop next door had lots of sneakers.' },
+  { s: '我的旧＿太小了，妈妈说下次再买新的。', a: '鞋子', no: ['城市', '颜色'], en: 'My old shoes are too small. Mom said we\'ll buy new ones next time.' },
   { s: '回家后，我和弟弟开了一个小商店，只卖学习＿。', a: '用品', no: ['超人', '剪刀'], en: 'Back home, my little brother and I opened a little shop that sells only things for school.' },
   { s: '这些文具都是在中国＿的。', a: '制造', no: ['尺子', '鞋子'], en: 'All this stationery was made in China.' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '文具小商店', en: 'Our little stationery shop', lines: [
-  { who: '🧒 我', s: '我们在家开一个文具小商店吧！我当店员，爷爷来买东西。', py: 'Wǒmen zài jiā kāi yí ge wénjù xiǎo shāngdiàn ba! Wǒ dāng diànyuán, yéye lái mǎi dōngxi.', en: 'Let\'s open a little stationery shop at home! I\'ll be the shop assistant, and Grandpa can come and buy things.' },
-  { who: '👦 弟弟', s: '桌子上有许多练习本，本本都很漂亮，还有各种颜色的笔。', py: 'Zhuōzi shang yǒu xǔduō liànxíběn, běnběn dōu hěn piàoliang, hái yǒu gè zhǒng yánsè de bǐ.', en: 'There are lots of exercise books on the table, every one of them pretty, and pens of every colour.' },
+  { who: '🧒 我', s: '我们在家开一个文具小商店吧！我当店员，爷爷来买东西。', py: 'Wǒmen zài jiā kāi yí ge wénjù xiǎo shāngdiàn ba! Wǒ dāng diànyuán, yéye lái mǎi dōngxi.', en: 'Let\'s open a little stationery shop at home! I\'ll be the salesclerk, and Grandpa can come and buy things.' },
+  { who: '👦 弟弟', s: '桌子上有许多练习本，本本都很漂亮，还有各种颜色的笔。', py: 'Zhuōzi shang yǒu xǔduō liànxíběn, běnběn dōu hěn piàoliang, hái yǒu gè zhǒng yánsè de bǐ.', en: 'There are lots of notebooks on the table, every one of them pretty, and pens of every color.' },
   { who: '👴 爷爷', s: '我要买一支红笔和一把尺子，要多少钱？', py: 'Wǒ yào mǎi yì zhī hóng bǐ hé yì bǎ chǐzi, yào duōshao qián?', en: 'I\'d like a red pen and a ruler. How much is that?' },
   { who: '🧒 我', s: '一共五块钱。要是您再买两个本子，就送您一个卷笔刀！', py: 'Yígòng wǔ kuài qián. Yàoshi nín zài mǎi liǎng ge běnzi, jiù sòng nín yí ge juǎnbǐdāo!', en: 'Five yuan altogether. If you buy two notebooks as well, you get a pencil sharpener free!', pat: true },
   { who: '👴 爷爷', s: '好啊！这个本子上还有一行小字，写的是什么？', py: 'Hǎo a! Zhè ge běnzi shang hái yǒu yì háng xiǎo zì, xiě de shì shénme?', en: 'All right! There\'s a line of small writing on this notebook. What does it say?' },
@@ -1369,7 +1369,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1566,7 +1566,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

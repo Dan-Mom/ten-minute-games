@@ -754,9 +754,9 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 1 lesson 2. One idea: the 17 new characters of the lesson (the body: 人头目口耳手足, 大小多少, and 我有左来右个).
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises counting body parts with 只, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises counting body parts with 只, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    The lesson has no sentence box, so the pattern (number + 只 for hands, ears, eyes and feet) is our own choice. All sentences and the story here are our own; only the characters and common words come from the lesson. */
-:root{ --page:#f0f9ff; --blue:#0369a1; --blue-s:#bae6fd; --blue-d:#075985; }   /* this lesson's colours */
+:root{ --page:#f0f9ff; --blue:#0369a1; --blue-s:#bae6fd; --blue-d:#075985; }   /* this lesson's colors */
 .opt::before{content:"⚙️";position:absolute;right:8px;top:4px;font-size:16px}
 </style>
 </head>
@@ -785,7 +785,7 @@ var PARTS = [
   { c: '口', parts: ['口'], r: 0, rad: '口', name: '口字旁', npy: 'kǒu zì páng', means: 'the mouth.', see: '吃 喝 叫 唱', how: 'Long ago 口 was an open mouth. 门口 = doorway.' },
   { c: '耳', parts: ['耳'], r: 0, rad: '耳', name: '耳字旁', npy: 'ěr zì páng', means: 'the ear.', see: '聪 职 聊 联', how: 'Long ago 耳 was drawn as an ear. 耳朵 = ear.' },
   { c: '手', parts: ['手'], r: 0, rad: '手', name: '手字旁', npy: 'shǒu zì páng', means: 'a hand. On the left of a character it is written 扌.', see: '拿 拳 掌 打 拍', how: 'Long ago 手 was a hand with five fingers. 手指 = finger.' },
-  { c: '足', parts: ['足'], r: 0, rad: '足', name: '足字旁', npy: 'zú zì páng', means: 'the foot.', see: '跑 跳 踢 路', how: 'Long ago 足 was a leg (the top) and a foot (below). 足球 = football.' },
+  { c: '足', parts: ['足'], r: 0, rad: '足', name: '足字旁', npy: 'zú zì páng', means: 'the foot.', see: '跑 跳 踢 路', how: 'Long ago 足 was a leg (the top) and a foot (below). 足球 = soccer.' },
   { c: '大', parts: ['大'], r: 0, rad: '大', name: '大字头', npy: 'dà zì tóu', means: 'big; a person standing.', see: '太 奇 奔 套', how: 'Long ago 大 was a grown-up standing with arms and legs spread wide: big.' },
   { c: '小', parts: ['小'], r: 0, rad: '小', name: '小字头', npy: 'xiǎo zì tóu', means: 'small.', see: '少 尖 尘 尚', how: 'Long ago 小 was three little dots. Some say they were grains of sand: small.' },
   { c: '多', parts: ['夕', '夕'], r: 0, rad: '夕', name: '夕字旁', npy: 'xī zì páng', means: 'evening.', see: '夕 外 够 梦', how: 'Two 夕 on top of each other. Some say they were two pieces of meat: a lot. 多少 = how many.' },
@@ -825,7 +825,7 @@ var WORDS = [
   { w: '大人', k: 1, py: 'dàren', en: 'grown-up', e: '🧑', no: ['头', '口', '手', '小', '多', '有', '个'] }, { w: '头发', k: 0, py: 'tóufa', en: 'hair', e: '💇' },
   { w: '节目', k: 1, py: 'jiémù', en: 'a show (on TV)', e: '📺' }, { w: '门口', k: 1, py: 'ménkǒu', en: 'doorway', e: '🚪', no: ['头'] },
   { w: '耳朵', k: 0, py: 'ěrduo', en: 'ear', e: '👂' }, { w: '手指', k: 0, py: 'shǒuzhǐ', en: 'finger', e: '☝️', no: ['小', '大'] },
-  { w: '足球', k: 0, py: 'zúqiú', en: 'football (soccer)', e: '⚽', no: ['手', '大', '小', '头'] }, { w: '大象', k: 0, py: 'dàxiàng', en: 'elephant', e: '🐘', no: ['小'] },
+  { w: '足球', k: 0, py: 'zúqiú', en: 'soccer', e: '⚽', no: ['手', '大', '小', '头'] }, { w: '大象', k: 0, py: 'dàxiàng', en: 'elephant', e: '🐘', no: ['小'] },
   { w: '小狗', k: 0, py: 'xiǎogǒu', en: 'puppy', e: '🐶', no: ['大'] }, { w: '多少', k: 0, py: 'duōshao', en: 'how many', e: '❓', no: ['人'] },
   { w: '很少', k: 1, py: 'hěn shǎo', en: 'very few', e: '🤏', no: ['大', '小', '多'] }, { w: '我们', k: 0, py: 'wǒmen', en: 'we, us', e: '👨‍👩‍👧', no: ['人'] },
   { w: '没有', k: 1, py: 'méiyǒu', en: 'not have; there is not', e: '🚫', no: ['来', '人'] }, { w: '左边', k: 0, py: 'zuǒbian', en: 'the left side', e: '⬅️', no: ['右', '手', '耳'] },
@@ -879,13 +879,13 @@ var SENTENCES = [
   { s: '我们一回家，它就说：“欢迎＿！”', a: '回来', no: ['头发', '大象'], en: 'When we come home, it says, "Welcome back!"' },
   { s: '我们给它拍了一张照片：它的＿是弟弟，右边是我。', a: '左边', no: ['足球', '节目'], en: 'We took a photo of it: my brother is on its left, and I am on its right.' },
   { s: '我问它：“你有＿个手指？”', a: '多少', no: ['门口', '我们'], en: 'I asked it, "How many fingers do you have?"' },
-  { s: '下午，我们和机器人在公园踢＿。', a: '足球', no: ['头发', '节目'], en: 'In the afternoon we played football with the robot in the park.' },
-  { s: '公园里人很多，可是会踢球的机器人＿。', a: '很少', no: ['门口', '耳朵'], en: 'There were lots of people in the park, but robots that play football are very rare.' },
+  { s: '下午，我们和机器人在公园踢＿。', a: '足球', no: ['头发', '节目'], en: 'In the afternoon we played soccer with the robot in the park.' },
+  { s: '公园里人很多，可是会踢球的机器人＿。', a: '很少', no: ['门口', '耳朵'], en: 'There were lots of people in the park, but robots that play soccer are very rare.' },
   { s: '一只＿跑过来看我们踢球。', a: '小狗', no: ['节目', '个子'], en: 'A puppy ran over to watch us play.' },
   { s: '公园里的＿都说，我们的机器人真好玩。', a: '大人', no: ['门口', '足球'], en: 'The grown-ups in the park all said our robot was great fun.' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '做机器人', en: 'Making a robot', lines: [
   { who: '👨 爸爸', s: '今天我们一起用纸盒做一个机器人，好吗？', py: 'Jīntiān wǒmen yìqǐ yòng zhǐhé zuò yí ge jīqìrén, hǎo ma?', en: 'Shall we make a robot out of boxes today?' },
   { who: '👧 我', s: '好！我来做头，头要大大的。', py: 'Hǎo! Wǒ lái zuò tóu, tóu yào dàdà de.', en: 'Yes! I’ll make the head. It should be really big.' },
@@ -896,7 +896,7 @@ var STORY = { title: '做机器人', en: 'Making a robot', lines: [
   { who: '👦 弟弟', s: '哇，它会说话！', py: 'Wā, tā huì shuōhuà!', en: 'Wow, it can talk!' },
   { who: '👨 爸爸', s: '家里多了一个机器人，少了三个纸盒。', py: 'Jiā li duōle yí ge jīqìrén, shǎole sān ge zhǐhé.', en: 'Now we have one more robot and three fewer boxes!' },
   { who: '👩 妈妈', s: '我们把它放在门口吧。', py: 'Wǒmen bǎ tā fàng zài ménkǒu ba.', en: 'Let’s put it by the front door.' },
-  { who: '👦 弟弟', s: '机器人，我们一起去踢足球吧！', py: 'Jīqìrén, wǒmen yìqǐ qù tī zúqiú ba!', en: 'Robot, let’s go and play football!' }
+  { who: '👦 弟弟', s: '机器人，我们一起去踢足球吧！', py: 'Jīqìrén, wǒmen yìqǐ qù tī zúqiú ba!', en: 'Robot, let’s go and play soccer!' }
 ] };
 
 /* ---------- this lesson's settings: the shared engine (../_engine/chinese-engine.js) reads them ---------- */
@@ -1391,7 +1391,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1588,7 +1588,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

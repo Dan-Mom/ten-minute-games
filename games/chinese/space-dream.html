@@ -754,9 +754,9 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game 12. One idea: the 14 new characters of the lesson.
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own; only the characters and common words come from the lesson. */
-:root{ --page:#f3effa; --blue:#4b2e83; --blue-s:#e0d7f2; --blue-d:#321e58; }   /* this lesson's colours */
+:root{ --page:#f3effa; --blue:#4b2e83; --blue-s:#e0d7f2; --blue-d:#321e58; }   /* this lesson's colors */
 .opt::before{content:"";position:absolute;right:7px;top:10px;width:20px;height:9px;border-radius:50%;border:2px solid #f0a33a;box-shadow:inset 0 0 0 3px #fff, inset 0 0 0 9px #7f6bd1}
 </style>
 </head>
@@ -779,7 +779,7 @@ var CHARS = [
 var PARTS = [
   { c: '宇', parts: ['宀', '于'], r: 0, rad: '宀', name: '宝盖头', npy: 'bǎo gài tóu', means: 'a roof, a house. It is in characters about homes and rooms.', see: '家 字 室 安 完', how: 'A roof (宀) and 于 (yú), which gives the sound. Long ago 宇 meant the edge of a roof; now it means all of space. 宇宙 = the universe; 宇航员 = astronaut.' },
   { c: '航', parts: ['舟', '亢'], r: 0, rad: '舟', name: '舟字旁', npy: 'zhōu zì páng', means: 'a boat. It is in characters about boats.', see: '船 般 舰 艇', how: 'A boat (舟) and 亢 (kàng), which helps with the sound: to sail. Now it is used for flying too. 航天 = spaceflight; 航空 = flying.' },
-  { c: '员', parts: ['口', '贝'], r: 0, rad: '口', name: '口字头', npy: 'kǒu zì tóu', means: 'a mouth. It is in characters about eating, drinking and speaking.', see: '只 号 另 吕', how: 'Long ago 员 was a circle over a cooking pot and meant round (it is in 圆). Now it means a person with a job: 店员 = shop assistant; 宇航员 = astronaut.' },
+  { c: '员', parts: ['口', '贝'], r: 0, rad: '口', name: '口字头', npy: 'kǒu zì tóu', means: 'a mouth. It is in characters about eating, drinking and speaking.', see: '只 号 另 吕', how: 'Long ago 员 was a circle over a cooking pot and meant round (it is in 圆). Now it means a person with a job: 店员 = salesclerk; 宇航员 = astronaut.' },
   { c: '次', parts: ['冫', '欠'], r: 1, rad: '欠', name: '欠字旁', npy: 'qiàn zì páng', means: 'a person with the mouth wide open.', see: '歌 欲 款 歇 欺', how: '冫 and 欠 (a person with an open mouth). 次 = a time: 第一次 = the first time; 一次 = once.' },
   { c: '球', parts: ['王', '求'], r: 0, rad: '王', name: '王字旁', npy: 'wáng zì páng', means: 'a king; on the left side it stands for jade (玉).', see: '玩 现 理 班 珠', how: 'Jade (王, here 玉) and 求 (qiú), which gives the sound: long ago 球 was a kind of fine jade. 球 = a ball; 地球 = the Earth.' },
   { c: '实', parts: ['宀', '头'], r: 0, rad: '宀', name: '宝盖头', npy: 'bǎo gài tóu', means: 'a roof, a house. It is in characters about homes and rooms.', see: '家 字 室 安 完', how: 'The old form 實 was a house full of money and goods: something real and solid. 实现 = come true; 其实 = actually.' },
@@ -815,7 +815,7 @@ var GROUPS = [CHARS.slice(0, 5), CHARS.slice(5, 10), CHARS.slice(10)];
 /* level 2: build a word. w = the word, k = which character is missing, no = characters that would also make a real word, so they are never offered */
 var WORDS = [
   { w: '宇航员', k: 0, py: 'yǔhángyuán', en: 'astronaut', e: '🧑‍🚀' }, { w: '航天', k: 0, py: 'hángtiān', en: 'spaceflight', e: '🚀' },
-  { w: '店员', k: 1, py: 'diànyuán', en: 'shop assistant', e: '🛒' }, { w: '第一次', k: 2, py: 'dì yī cì', en: 'the first time', e: '1️⃣', no: ['号', '类', '球'] },
+  { w: '店员', k: 1, py: 'diànyuán', en: 'salesclerk', e: '🛒' }, { w: '第一次', k: 2, py: 'dì yī cì', en: 'the first time', e: '1️⃣', no: ['号', '类', '球'] },
   { w: '地球', k: 1, py: 'dìqiú', en: 'the Earth', e: '🌍', no: ['界'] }, { w: '月球', k: 1, py: 'yuèqiú', en: 'the Moon', e: '🌕' },
   { w: '实现', k: 0, py: 'shíxiàn', en: 'come true', e: '🌟' }, { w: '人类', k: 1, py: 'rénlèi', en: 'humans', e: '🧑‍🤝‍🧑', no: ['次', '世', '员', '界'] },
   { w: '梦想', k: 0, py: 'mèngxiǎng', en: 'a dream, a wish', e: '💭' }, { w: '号码', k: 0, py: 'hàomǎ', en: 'a number', e: '🔢', no: ['球'] },
@@ -830,7 +830,7 @@ var MORE_WORDS = {
   '航': [{ w: '航空', py: 'hángkōng', en: 'flying, aviation' }, { w: '航海', py: 'hánghǎi', en: 'sail the seas' }],
   '员': [{ w: '队员', py: 'duìyuán', en: 'team member' }, { w: '服务员', py: 'fúwùyuán', en: 'waiter' }],
   '次': [{ w: '这次', py: 'zhè cì', en: 'this time' }, { w: '下次', py: 'xià cì', en: 'next time' }],
-  '球': [{ w: '足球', py: 'zúqiú', en: 'football' }, { w: '气球', py: 'qìqiú', en: 'balloon' }],
+  '球': [{ w: '足球', py: 'zúqiú', en: 'soccer' }, { w: '气球', py: 'qìqiú', en: 'balloon' }],
   '实': [{ w: '实在', py: 'shízài', en: 'really' }, { w: '果实', py: 'guǒshí', en: 'fruit (of a plant)' }],
   '类': [{ w: '鸟类', py: 'niǎolèi', en: 'birds' }, { w: '分类', py: 'fēnlèi', en: 'sort into groups' }],
   '梦': [{ w: '做梦', py: 'zuòmèng', en: 'have a dream' }, { w: '美梦', py: 'měimèng', en: 'sweet dream' }],
@@ -871,12 +871,12 @@ var SENTENCES = [
   { s: '十年后的你，是不是已经＿了这个梦想？', a: '实现', no: ['泥土', '号码'], en: 'Future me, have you made this dream come true yet?' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '我的太空梦', en: 'My space dream', lines: [
   { who: '🧒 我', s: '妈妈，我长大了想当宇航员，飞到月球上去！', py: 'Māma, wǒ zhǎngdà le xiǎng dāng yǔhángyuán, fēi dào yuèqiú shang qù!', en: 'Mom, when I grow up I want to be an astronaut and fly to the Moon!' },
   { who: '👩 妈妈', s: '这个梦想非常好！', py: 'Zhège mèngxiǎng fēicháng hǎo!', en: 'That\'s a wonderful dream!' },
   { who: '🧒 我', s: '我要把今天记下来：二〇二六年十一月六日，我有了自己的太空梦！', py: 'Wǒ yào bǎ jīntiān jì xiàlai: èr líng èr liù nián shíyī yuè liù rì, wǒ yǒule zìjǐ de tàikōng mèng!', en: 'I\'ll write today down: on 6 November 2026, I found my very own space dream!', pat: true },
-  { who: '👩 妈妈', s: '月球表面的泥土是灰色的，细得像面粉一样。', py: 'Yuèqiú biǎomiàn de nítǔ shì huīsè de, xì de xiàng miànfěn yíyàng.', en: 'The soil on the Moon\'s surface is grey, and as fine as flour.' },
+  { who: '👩 妈妈', s: '月球表面的泥土是灰色的，细得像面粉一样。', py: 'Yuèqiú biǎomiàn de nítǔ shì huīsè de, xì de xiàng miànfěn yíyàng.', en: 'The soil on the Moon\'s surface is gray, and as fine as flour.' },
   { who: '🧒 我', s: '要是我第一次飞上太空，一定先给你打电话！', py: 'Yàoshi wǒ dì yī cì fēi shàng tàikōng, yídìng xiān gěi nǐ dǎ diànhuà!', en: 'The first time I fly into space, I\'ll call you first!' },
   { who: '👩 妈妈', s: '好啊！现在世界上很多国家都在造飞船，以后人类还想到达火星呢！', py: 'Hǎo a! Xiànzài shìjiè shang hěn duō guójiā dōu zài zào fēichuán, yǐhòu rénlèi hái xiǎng dàodá Huǒxīng ne!', en: 'Deal! Lots of countries around the world are building spaceships now. One day people even want to reach Mars!' },
   { who: '🧒 我', s: '我要给我的火箭模型起名叫“梦想一号”！', py: 'Wǒ yào gěi wǒ de huǒjiàn móxíng qǐ míng jiào “Mèngxiǎng Yī Hào”!', en: 'I\'m going to call my model rocket "Dream No. 1"!' },
@@ -1368,7 +1368,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1565,7 +1565,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

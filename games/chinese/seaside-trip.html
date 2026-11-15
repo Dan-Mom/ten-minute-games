@@ -754,9 +754,9 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 2 lesson 12. One idea: the 14 new characters of the lesson (假以旅物海洋公泳帮点务活快乐).
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the sentence pattern (谁＋想＋做什么), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the sentence pattern (谁＋想＋做什么), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own (not the textbook's 课文, 句子 or 对话); only the characters and common words come from the lesson. */
-:root{ --page:#ecfeff; --blue:#0e7490; --blue-s:#a5f3fc; --blue-d:#164e63; }   /* this lesson's colours */
+:root{ --page:#ecfeff; --blue:#0e7490; --blue-s:#a5f3fc; --blue-d:#164e63; }   /* this lesson's colors */
 .opt::before{content:"🐚";position:absolute;right:8px;top:4px;font-size:16px}
 </style>
 </head>
@@ -766,7 +766,7 @@ button{-webkit-appearance:none;appearance:none}
 <script>
 /* ---------- content (characters and words from the lesson; all sentences are our own) ---------- */
 var CHARS = [
-  { c: '假', py: 'jià', en: 'holiday; (said jiǎ) fake', e: '🏖️', hear: '放假' }, { c: '以', py: 'yǐ', en: 'use; (以后 = after)', e: '⏩' },
+  { c: '假', py: 'jià', en: 'vacation; (said jiǎ) fake', e: '🏖️', hear: '放假' }, { c: '以', py: 'yǐ', en: 'use; (以后 = after)', e: '⏩' },
   { c: '旅', py: 'lǚ', en: 'travel', e: '🧳' }, { c: '物', py: 'wù', en: 'thing', e: '🎁' },
   { c: '海', py: 'hǎi', en: 'sea', e: '🌊' }, { c: '洋', py: 'yáng', en: 'ocean', e: '🐋' },
   { c: '公', py: 'gōng', en: 'public; (外公 = Grandpa)', e: '🏞️' }, { c: '泳', py: 'yǒng', en: 'swim', e: '🏊' },
@@ -777,7 +777,7 @@ var CHARS = [
 /* level 1: how each character is built. parts = the pieces (r = which piece is the radical; rest = a piece described in words),
    rad = the radical (部首) with its name, what it usually means, and other characters where you can see it; how = the meaning */
 var PARTS = [
-  { c: '假', parts: ['亻', '叚'], r: 0, rad: '亻', name: '单人旁', npy: 'dān rén páng', means: 'a person. It is in characters about people.', see: '你 他 们 住', how: 'A person (亻); 叚 gives the sound (jiǎ). Said jià it means a holiday: 放假 = school is out; 假期 = vacation. Said jiǎ it means fake: 假花 = a fake flower.' },
+  { c: '假', parts: ['亻', '叚'], r: 0, rad: '亻', name: '单人旁', npy: 'dān rén páng', means: 'a person. It is in characters about people.', see: '你 他 们 住', how: 'A person (亻); 叚 gives the sound (jiǎ). Said jià it means a vacation: 放假 = school is out; 假期 = vacation. Said jiǎ it means fake: 假花 = a fake flower.' },
   { c: '以', parts: ['以'], r: 0, rad: '人', name: '人字', npy: 'rén zì', means: 'a person.', see: '个 今 会 从', how: 'Its right part was once a person (人). 以 = use; with. It is in many time words: 以后 = after, later; 以前 = before. 可以 = can, may.' },
   { c: '旅', parts: ['方', ''], rest: 'right: a flag and people under it', r: 0, rad: '方', name: '方字旁', npy: 'fāng zì páng', means: 'a flag, a direction.', see: '放 旗 族 施', how: 'Long ago 旅 showed people walking together under a flag: a group on the move. 旅行 = travel, a trip; 旅游 = sightseeing.' },
   { c: '物', parts: ['牜', '勿'], r: 0, rad: '牜', name: '牛字旁', npy: 'niú zì páng', means: 'an ox, cattle.', see: '牧 特 牲', how: 'An ox (牛); 勿 gives the sound (wù). 物 = thing: 动物 = animal; 礼物 = gift.' },
@@ -875,7 +875,7 @@ var SENTENCES = [
   { s: '我们＿给您带一些漂亮的贝壳吗？', a: '可以', no: ['公园', '海洋'], en: 'May we bring you some pretty shells?' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '去海边', en: 'Off to the seaside', lines: [
   { who: '👩 妈妈', s: '学校放假了！明天我们去海边旅行，今天先收拾东西吧。', py: 'Xuéxiào fàngjià le! Míngtiān wǒmen qù hǎibiān lǚxíng, jīntiān xiān shōushi dōngxi ba.', en: 'School’s out! Tomorrow we’re going on a trip to the seaside. Let’s pack today.' },
   { who: '👦 弟弟', s: '我想在沙滩上堆一座大城堡！', py: 'Wǒ xiǎng zài shātān shang duī yí zuò dà chéngbǎo!', en: 'I want to build a big castle on the beach!', pat: true },
@@ -1377,7 +1377,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1574,7 +1574,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

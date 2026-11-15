@@ -754,9 +754,9 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 3 lesson 1. One idea: the 12 new characters of the lesson.
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own; only the characters and common words come from the lesson. */
-:root{ --page:#ecfbef; --blue:#15803d; --blue-s:#c9f2d4; --blue-d:#0e5a2b; }   /* this lesson's colours */
+:root{ --page:#ecfbef; --blue:#15803d; --blue-s:#c9f2d4; --blue-d:#0e5a2b; }   /* this lesson's colors */
 .opt::before{content:"";position:absolute;right:9px;top:7px;width:10px;height:26px;border-radius:5px;background:radial-gradient(circle at 50% 18%,#ef4444 3px,transparent 3.5px),radial-gradient(circle at 50% 50%,#facc15 3px,transparent 3.5px),radial-gradient(circle at 50% 82%,#22c55e 3px,transparent 3.5px),#1f2937}
 </style>
 </head>
@@ -784,7 +784,7 @@ var PARTS = [
   { c: '通', parts: ['辶', '甬'], r: 0, rad: '辶', name: '走之底', npy: 'zǒu zhī dǐ', means: 'walking or going somewhere.', see: '这 过 还 远 送', how: 'Walking (辶) and 甬 (yǒng), which helps with the sound: a way you can go all the way through. 交通 = traffic; 通知 = let people know.' },
   { c: '忙', parts: ['忄', '亡'], r: 0, rad: '忄', name: '竖心旁', npy: 'shù xīn páng', means: 'the heart (心). It is in characters about feelings and thinking.', see: '快 怕 情 慢 懂', how: 'The heart (忄) and 亡 (wáng), which gives the sound. Memory trick: so busy that you have no heart left for anything else. 帮忙 = help; 很忙 = very busy.' },
   { c: '往', parts: ['彳', '主'], r: 0, rad: '彳', name: '双人旁', npy: 'shuāng rén páng', means: 'walking, roads. It is the left half of 行 (walk), which long ago was a crossroads.', see: '行 街 很 得 待', how: 'Walking (彳) and 主. Long ago the right side was a foot over 王 (wáng), which gave the sound: going toward a place. 往前走 = walk forward; 来往 = come and go.' },
-  { c: '弟', parts: ['弟'], r: 0, rad: '丷', name: '倒八', npy: 'dào bā', means: 'two dots like an upside-down 八. As a radical it does not add a meaning.', see: '半 关 并 前 兰', how: '弟 is one whole shape. Long ago it was a cord wound round a stick, one turn after another, in order. The one who comes next in order is the younger brother. 弟弟 = younger brother.' },
+  { c: '弟', parts: ['弟'], r: 0, rad: '丷', name: '倒八', npy: 'dào bā', means: 'two dots like an upside-down 八. As a radical it does not add a meaning.', see: '半 关 并 前 兰', how: '弟 is one whole shape. Long ago it was a cord wound around a stick, one turn after another, in order. The one who comes next in order is the younger brother. 弟弟 = younger brother.' },
   { c: '妹', parts: ['女', '未'], r: 0, rad: '女', name: '女字旁', npy: 'nǚ zì páng', means: 'a woman or girl. It is in characters about women and family.', see: '妈 姐 奶 她 好', how: 'A girl (女) and 未 (wèi), which helps with the sound: a younger sister. 妹妹 = younger sister; 姐妹 = sisters.' },
   { c: '拉', parts: ['扌', '立'], r: 0, rad: '扌', name: '提手旁', npy: 'tí shǒu páng', means: 'a hand. It is in characters about things you do with your hands.', see: '打 找 拍 把 抱', how: 'A hand (扌) and 立 (lì), which long ago gave the sound. Memory trick: stand firm and pull with your hand. 拉手 = hold hands; 拉开 = pull open.' },
   { c: '停', parts: ['亻', '亭'], r: 0, rad: '亻', name: '单人旁', npy: 'dān rén páng', means: 'a person. It is in characters about people.', see: '你 他 们 住 休', how: 'A person (亻) and 亭 (tíng, a little roadside shelter), which gives the sound. Memory trick: a person stops to rest in the shelter. 停车 = park a car; 停下 = stop.' }
@@ -855,7 +855,7 @@ var SENTENCES = [
   { s: '星期六，爸爸带我、＿和妹妹去图书馆。', a: '弟弟', no: ['路灯', '普通'], en: 'On Saturday, Dad took me, my little brother and my little sister to the library.' },
   { s: '我拉着＿的手，弟弟拉着我的手。', a: '妹妹', no: ['路灯', '普通'], en: 'I held my little sister\'s hand, and my little brother held mine.' },
   { s: '我家门口的＿又宽又长，两边有很多小店。', a: '街道', no: ['帮忙', '来往'], en: 'The street outside our home is wide and long, with lots of little shops on both sides.' },
-  { s: '周末路上的车很多，＿有点儿堵。', a: '交通', no: ['姐妹', '知道'], en: 'There were lots of cars at the weekend, and the traffic was a bit jammed.' },
+  { s: '周末路上的车很多，＿有点儿堵。', a: '交通', no: ['姐妹', '知道'], en: 'There were lots of cars on the weekend, and the traffic was a bit jammed.' },
   { s: '走到路口，弟弟说是＿，我们就站在那里等。', a: '红灯', no: ['普通', '来往'], en: 'At the corner my little brother said the light was red, so we stood there and waited.' },
   { s: '爸爸说："红灯要＿！"', a: '停下', no: ['宽大', '知道'], en: 'Dad said, "At a red light you stop!"' },
   { s: '绿灯亮了，我们手拉着手＿走。', a: '往前', no: ['路灯', '姐妹'], en: 'The light turned green, and we walked forward holding hands.' },
@@ -867,7 +867,7 @@ var SENTENCES = [
   { s: '回到家，我＿窗帘，看见外面的路灯都亮了。', a: '拉开', no: ['往前', '知道'], en: 'Back home, I pulled open the curtains and saw that the street lamps were all on.' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '走路去图书馆', en: 'Walking to the library', lines: [
   { who: '👨 爸爸', s: '今天我们走路去图书馆。弟弟、妹妹，出门要手拉手，别松开！', py: 'Jīntiān wǒmen zǒulù qù túshūguǎn. Dìdi, mèimei, chūmén yào shǒu lā shǒu, bié sōngkāi!', en: 'Today we are walking to the library. Little brother, little sister, hold hands when we go out, and don\'t let go!' },
   { who: '🧒 我', s: '这条街道好宽啊！路上的车真多，大家都好忙。', py: 'Zhè tiáo jiēdào hǎo kuān a! Lù shang de chē zhēn duō, dàjiā dōu hǎo máng.', en: 'This street is so wide! There are so many cars, and everyone is so busy.' },
@@ -1364,7 +1364,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1561,7 +1561,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

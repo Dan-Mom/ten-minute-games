@@ -754,9 +754,9 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 2 lesson 3. One idea: the 13 new characters of the lesson (放今星期告诉午朋友问谁听心).
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the sentence pattern (questions with 谁), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the sentence pattern (questions with 谁), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own (not the textbook's 课文, 句子 or 对话); only the characters and common words come from the lesson. */
-:root{ --page:#fff7ed; --blue:#c2410c; --blue-s:#fed7aa; --blue-d:#7c2d12; }   /* this lesson's colours */
+:root{ --page:#fff7ed; --blue:#c2410c; --blue-s:#fed7aa; --blue-d:#7c2d12; }   /* this lesson's colors */
 .opt::before{content:"👂";position:absolute;right:8px;top:4px;font-size:16px}
 </style>
 </head>
@@ -826,10 +826,10 @@ var WORDS = [
 /* "Write it": more words with each character (common words, or words from the lesson), shown under the writing boxes with the
    words of level 2 that have it. w = the word, py = its pinyin, en = what it means */
 var MORE_WORDS = {
-  '放': [{ w: '放假', py: 'fàngjià', en: 'have a holiday' }],
+  '放': [{ w: '放假', py: 'fàngjià', en: 'be on vacation' }],
   '今': [{ w: '今晚', py: 'jīnwǎn', en: 'tonight' }],
   '星': [{ w: '火星', py: 'Huǒxīng', en: 'Mars' }],
-  '期': [{ w: '假期', py: 'jiàqī', en: 'holiday' }],
+  '期': [{ w: '假期', py: 'jiàqī', en: 'vacation' }],
   '告': [{ w: '报告', py: 'bàogào', en: 'report' }],
   '诉': [{ w: '告诉我', py: 'gàosu wǒ', en: 'tell me' }],
   '午': [{ w: '中午', py: 'zhōngwǔ', en: 'noon' }],
@@ -872,7 +872,7 @@ var SENTENCES = [
   { s: '下星期＿以后，我给您打电话，跟您玩“猜猜是谁”！', a: '放学', no: ['好友', '问题'], en: 'Next week after school I’ll call you and play "guess who it is" with you!' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '谁的声音', en: 'Whose voice?', lines: [
   { who: '👩 妈妈', s: '大家先放下手里的东西，我们来玩“听声音，猜猜是谁”！', py: 'Dàjiā xiān fàngxià shǒu li de dōngxi, wǒmen lái wán “tīng shēngyīn, cāicai shì shuí”!', en: 'Everyone, put down what you’re holding. Let’s play "listen to the voice and guess who"!' },
   { who: '👧 我', s: '怎么玩？快告诉我！', py: 'Zěnme wán? Kuài gàosu wǒ!', en: 'How do we play? Tell me, quick!' },
@@ -1375,7 +1375,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1572,7 +1572,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

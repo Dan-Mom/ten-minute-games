@@ -439,7 +439,7 @@
 </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Messy Painting · 狼和小羊</title>
+<title>Messy Painting · 弄脏的画</title>
 <meta name="theme-color" content="#be185d">
 <link rel="stylesheet" href="../../fonts/fonts.css">
 <style>
@@ -754,14 +754,14 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 5 lesson 4. One idea: the 14 new characters of the lesson.
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own; only the characters and common words come from the lesson. */
-:root{ --page:#fdf2f8; --blue:#be185d; --blue-s:#fbcfe8; --blue-d:#9d174d; }   /* this lesson's colours */
+:root{ --page:#fdf2f8; --blue:#be185d; --blue-s:#fbcfe8; --blue-d:#9d174d; }   /* this lesson's colors */
 .opt::before{content:"🎨";position:absolute;right:8px;top:4px;font-size:16px}
 </style>
 </head>
 <body>
-<header class="top"><h1>🎨 Messy Painting <span class="han">狼和小羊</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
+<header class="top"><h1>🎨 Messy Painting <span class="han">弄脏的画</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
 <div class="wrap" id="app"></div>
 <script>
 /* ---------- content (characters and words from the lesson; all sentences are our own) ---------- */
@@ -846,35 +846,35 @@ var PATTERN = [
   { t: 'show', shape: '……把……＋动词＋结果', keys: ['把'], end: '。', ask: 'Where does 把 go? Pick the right sentence.',
     what: 'Use 把 to say what you do to something and how it ends up. Say who does it, then 把 and the thing, then the action and what happens to it: 我把房间打扫干净了 = I cleaned my room (and now it is clean).',
     ex: [{ s: '我把房间打扫干净了。', en: 'I cleaned my room.' }, { s: '弟弟把玩具收好了。', en: 'My little brother tidied away his toys.' }, { s: '风把门吹开了。', en: 'The wind blew the door open.' }] },
-  { t: 'pick', from: '妹妹吃完了饼干。', a: '妹妹把饼干吃完了。', no: ['妹妹饼干把吃完了。', '把妹妹饼干吃完了。'], en: 'My little sister finished the biscuits.' },
+  { t: 'pick', from: '妹妹吃完了饼干。', a: '妹妹把饼干吃完了。', no: ['妹妹饼干把吃完了。', '把妹妹饼干吃完了。'], en: 'My little sister finished the cookies.' },
   { t: 'build', tiles: ['我', '把', '书', '放', '在桌子上'], ok: ['我把书放在桌子上。'], en: 'I put the book on the table.' },
   { t: 'pick', from: '小狗咬坏了我的鞋子。', a: '小狗把我的鞋子咬坏了。', no: ['小狗我的鞋子把咬坏了。', '把小狗我的鞋子咬坏了。'], en: 'The puppy chewed up my shoes.' },
   { t: 'build', tiles: ['请', '把', '门', '关上'], ok: ['请把门关上。'], en: 'Please shut the door.' },
   { t: 'build', tiles: ['爸爸', '把', '车', '洗得', '干干净净'], ok: ['爸爸把车洗得干干净净。'], en: 'Dad washed the car spotless.' }
 ];
-/* level 4: our own letter to Grandma (Mum's mum) about a painting and a naughty kitten, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的姥姥：" */
+/* level 4: our own letter to Grandma (Mom's mom) about a painting and a naughty kitten, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的姥姥：" */
 var SENTENCES = [
-  { s: '我的彩笔＿找不到，昨天想画画，又不见了。', a: '总是', no: ['年轻', '相反'], en: 'I can never find my felt-tips. Yesterday I wanted to paint, and they were gone again.' },
+  { s: '我的彩笔＿找不到，昨天想画画，又不见了。', a: '总是', no: ['年轻', '相反'], en: 'I can never find my markers. Yesterday I wanted to paint, and they were gone again.' },
   { s: '我找妹妹借，她说：“可以！可是用完了你＿还给我。”', a: '总得', no: ['害怕', '附近'], en: 'I asked my sister to lend me hers. She said, "OK! But you have to give them back when you\'re done."' },
   { s: '我在纸上画了一个过马路的＿。', a: '行人', no: ['反正', '计算'], en: 'I drew a person crossing the road.' },
   { s: '我画得正高兴，小猫突然向桌子＿。', a: '扑过去', no: ['您好', '总是'], en: 'I was happily painting when the kitten suddenly pounced at the table.' },
-  { s: '水洒了一地，妈妈说我的＿要拿去洗一洗。', a: '脏衣服', no: ['附近', '年轻'], en: 'Water went everywhere, and Mum said my dirty clothes had to go in the wash.' },
+  { s: '水洒了一地，妈妈说我的＿要拿去洗一洗。', a: '脏衣服', no: ['附近', '年轻'], en: 'Water went everywhere, and Mom said my dirty clothes had to go in the wash.' },
   { s: '小猫自己也吓了一跳，看起来很＿。', a: '害怕', no: ['反正', '行人'], en: 'The kitten got a fright too and looked very scared.' },
-  { s: '还好，妹妹的彩笔一支也没有被＿。', a: '弄坏', no: ['年轻', '附近'], en: 'Luckily, not one of my sister\'s felt-tips was broken.' },
+  { s: '还好，妹妹的彩笔一支也没有被＿。', a: '弄坏', no: ['年轻', '附近'], en: 'Luckily, not one of my sister\'s markers was broken.' },
   { s: '我说：“＿我还有纸，再画一张吧！”', a: '反正', no: ['您好', '行人'], en: 'I said, "I\'ve got more paper anyway. Let\'s do another one!"' },
-  { s: '奶奶看起来很＿，走路比我还快！', a: '年轻', no: ['总是', '行人'], en: 'Granny (Dad\'s mum) looks so young. She walks even faster than me!' },
+  { s: '奶奶看起来很＿，走路比我还快！', a: '年轻', no: ['总是', '行人'], en: 'Granny (Dad\'s mom) looks so young. She walks even faster than me!' },
   { s: '我家＿有一个小公园，我们常去那里画画。', a: '附近', no: ['计算', '害怕'], en: 'There\'s a little park near our home, and we often go there to paint.' },
-  { s: '妹妹会＿了，她说一加二等于三。', a: '计算', no: ['脏衣服', '附近'], en: 'My sister can do sums now. She says one plus two is three.' },
+  { s: '妹妹会＿了，她说一加二等于三。', a: '计算', no: ['脏衣服', '附近'], en: 'My sister can do addition now. She says one plus two is three.' },
   { s: '见到邻居王爷爷，我们都说“＿！”', a: '您好', no: ['害怕', '反正'], en: 'When we see Grandpa Wang next door, we all say "Hello!"' },
-  { s: '我们画的两张画，颜色正好＿，一张黑一张白。', a: '相反', no: ['您好', '行人'], en: 'The two pictures we painted had opposite colours: one black, one white.' },
+  { s: '我们画的两张画，颜色正好＿，一张黑一张白。', a: '相反', no: ['您好', '行人'], en: 'The two pictures we painted had opposite colors: one black, one white.' },
   { s: '妹妹还要去图书馆＿。', a: '借书', no: ['害怕', '年轻'], en: 'My sister also wants to go to the library to borrow books.' },
-  { s: '姥姥，我终于＿了我的彩笔，原来在沙发下面！', a: '找到', no: ['年轻', '您好'], en: 'Grandma, I finally found my felt-tips. They were under the sofa!' }
+  { s: '姥姥，我终于＿了我的彩笔，原来在沙发下面！', a: '找到', no: ['年轻', '您好'], en: 'Grandma, I finally found my markers. They were under the sofa!' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '弄脏的画', en: 'The messy painting', lines: [
-  { who: '🧒 我', s: '我想画一张画，可是我的彩笔不见了，总得找一找吧。', py: 'Wǒ xiǎng huà yì zhāng huà, kěshì wǒ de cǎibǐ bú jiàn le, zǒng děi zhǎo yi zhǎo ba.', en: 'I want to paint a picture, but my felt-tips have disappeared. I\'ll have to look for them.' },
-  { who: '🧒 我', s: '奶奶，您看见我的彩笔了吗？', py: 'Nǎinai, nín kànjiàn wǒ de cǎibǐ le ma?', en: 'Granny, have you seen my felt-tips?' },
+  { who: '🧒 我', s: '我想画一张画，可是我的彩笔不见了，总得找一找吧。', py: 'Wǒ xiǎng huà yì zhāng huà, kěshì wǒ de cǎibǐ bú jiàn le, zǒng děi zhǎo yi zhǎo ba.', en: 'I want to paint a picture, but my markers have disappeared. I\'ll have to look for them.' },
+  { who: '🧒 我', s: '奶奶，您看见我的彩笔了吗？', py: 'Nǎinai, nín kànjiàn wǒ de cǎibǐ le ma?', en: 'Granny, have you seen my markers?' },
   { who: '👵 奶奶', s: '没看见。你去跟妹妹借几支吧，行不行？', py: 'Méi kànjiàn. Nǐ qù gēn mèimei jiè jǐ zhī ba, xíng bu xíng?', en: 'No, I haven\'t. Why not borrow a few from your little sister?' },
   { who: '👧 妹妹', s: '行！借给你，画完要还我哦。', py: 'Xíng! Jiè gěi nǐ, huà wán yào huán wǒ o.', en: 'OK! You can borrow them, but give them back when you\'re done.' },
   { who: '🧒 我', s: '我画得正高兴，小猫一下子扑到桌子上，打翻了水杯！', py: 'Wǒ huà de zhèng gāoxìng, xiǎomāo yíxiàzi pū dào zhuōzi shang, dǎfānle shuǐbēi!', en: 'I\'m happily painting when the kitten suddenly pounces onto the table and knocks over the water cup!' },
@@ -1368,7 +1368,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1565,7 +1565,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

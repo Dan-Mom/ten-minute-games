@@ -754,9 +754,9 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game 5. One idea: the 12 new characters of the lesson.
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own; only the characters and common words come from the lesson. */
-:root{ --page:#eef7f0; --blue:#2f7a4b; --blue-s:#d6eedd; --blue-d:#1f5434; }   /* this lesson's colours */
+:root{ --page:#eef7f0; --blue:#2f7a4b; --blue-s:#d6eedd; --blue-d:#1f5434; }   /* this lesson's colors */
 .opt::before{content:"";position:absolute;left:0;right:0;bottom:0;height:10px;background:linear-gradient(90deg,#7cc6e8,#bfe6f5,#7cc6e8);opacity:.8}
 </style>
 </head>
@@ -823,8 +823,8 @@ var WORDS = [
 var MORE_WORDS = {
   '喝': [{ w: '好喝', py: 'hǎohē', en: 'tasty (to drink)' }, { w: '喝茶', py: 'hē chá', en: 'drink tea' }],
   '伯': [{ w: '大伯', py: 'dàbó', en: 'Dad\'s eldest brother' }, { w: '伯母', py: 'bómǔ', en: 'aunt (Dad\'s older brother\'s wife)' }],
-  '深': [{ w: '深夜', py: 'shēnyè', en: 'late at night' }, { w: '深色', py: 'shēnsè', en: 'dark colour' }],
-  '浅': [{ w: '浅色', py: 'qiǎnsè', en: 'light colour' }, { w: '浅水', py: 'qiǎnshuǐ', en: 'shallow water' }],
+  '深': [{ w: '深夜', py: 'shēnyè', en: 'late at night' }, { w: '深色', py: 'shēnsè', en: 'dark color' }],
+  '浅': [{ w: '浅色', py: 'qiǎnsè', en: 'light color' }, { w: '浅水', py: 'qiǎnshuǐ', en: 'shallow water' }],
   '正': [{ w: '正确', py: 'zhèngquè', en: 'correct' }, { w: '正方形', py: 'zhèngfāngxíng', en: 'square' }],
   '突': [{ w: '突出', py: 'tūchū', en: 'stick out' }],
   '该': [{ w: '不该', py: 'bù gāi', en: 'should not' }],
@@ -841,7 +841,7 @@ var PATTERN = [
     ex: [{ s: '这碗汤既不太烫，也不太凉。', en: 'This bowl of soup is neither too hot nor too cold.' }, { s: '今天既不刮风，也不下雨。', en: 'Today it is neither windy nor rainy.' }, { s: '这只小狗既不像它爸爸那样黑，也不像它妈妈那样白。', en: 'This puppy is not as black as its dad, and not as white as its mom.' }] },
   { t: 'pick', from: '帐篷里不冷，也不热。', a: '帐篷里既不冷，也不热。', no: ['帐篷里不既冷，也不热。', '既帐篷里不冷，也不热。'], en: 'It is neither cold nor hot in the tent.' },
   { t: 'build', tiles: ['这个西瓜', '既不', '太大，', '也不', '太小'], ok: ['这个西瓜既不太大，也不太小。'], en: 'This watermelon is neither too big nor too small.' },
-  { t: 'pick', from: '我不喜欢吃糖，也不喜欢喝可乐。', a: '我既不喜欢吃糖，也不喜欢喝可乐。', no: ['我不既喜欢吃糖，也不喜欢喝可乐。', '我既不喜欢吃糖，不也喜欢喝可乐。'], en: 'I like neither sweets nor cola.' },
+  { t: 'pick', from: '我不喜欢吃糖，也不喜欢喝可乐。', a: '我既不喜欢吃糖，也不喜欢喝可乐。', no: ['我不既喜欢吃糖，也不喜欢喝可乐。', '我既不喜欢吃糖，不也喜欢喝可乐。'], en: 'I like neither candy nor cola.' },
   { t: 'build', tiles: ['小猫', '既不', '吃饭，', '也不', '喝水'], ok: ['小猫既不吃饭，也不喝水。'], en: 'The kitten won\'t eat, and it won\'t drink either.' },
   { t: 'build', tiles: ['这座山', '既不像', '哥哥说的那样高，', '也不像', '妹妹说的那样矮'], ok: ['这座山既不像哥哥说的那样高，也不像妹妹说的那样矮。'], en: 'This hill is not as high as my brother said, and not as low as my sister said.' }
 ];
@@ -862,7 +862,7 @@ var SENTENCES = [
   { s: '吃饭的时候，我说我长大了要去＿看鲸鱼。', a: '深海', no: ['正在', '既然'], en: 'At dinner, I said that when I grow up I want to see whales in the deep sea.' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '河边露营', en: 'Camping by the river', lines: [
   { who: '🧒 我', s: '伯伯，我们今天就在这条河边露营吗？', py: 'Bóbo, wǒmen jīntiān jiù zài zhè tiáo hébiān lùyíng ma?', en: 'Uncle, are we camping by this river today?' },
   { who: '👨 伯伯', s: '对！这里既不吵，也不挤，正好露营。', py: 'Duì! Zhèlǐ jì bù chǎo, yě bù jǐ, zhènghǎo lùyíng.', en: 'Yes! It\'s neither noisy nor crowded here. It\'s just right for camping.', pat: true },
@@ -1359,7 +1359,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1556,7 +1556,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

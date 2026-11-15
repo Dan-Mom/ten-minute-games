@@ -754,9 +754,9 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 1 lesson 5. One idea: the 11 new characters of the lesson (weather and the four seasons: 风雨雪云电天地春夏秋冬).
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises talking about rain and snow (下雨 / 下雪), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises talking about rain and snow (下雨 / 下雪), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    The lesson has no sentence box; its reading practice has 下雨 and 下雪, so the pattern (时间／地方＋下＋雨／雪) is our own choice from that. All sentences and the story here are our own; only the characters and common words come from the lesson. */
-:root{ --page:#f0f9ff; --blue:#0369a1; --blue-s:#bae6fd; --blue-d:#075985; }   /* this lesson's colours */
+:root{ --page:#f0f9ff; --blue:#0369a1; --blue-s:#bae6fd; --blue-d:#075985; }   /* this lesson's colors */
 .opt::before{content:"☁️";position:absolute;right:8px;top:4px;font-size:16px}
 </style>
 </head>
@@ -785,7 +785,7 @@ var PARTS = [
   { c: '地', parts: ['土', '也'], r: 0, rad: '土', name: '提土旁', npy: 'tí tǔ páng', means: 'earth, soil.', see: '场 城 块 坏', how: 'Earth (土) on the left; 也 on the right was once a sound hint. 地上 = on the ground.' },
   { c: '春', parts: ['', '日'], rest: 'top: plants growing (in old writing)', r: 1, rad: '日', name: '日字底', npy: 'rì zì dǐ', means: 'the sun; time.', see: '旦 昔 普 智', how: 'Long ago 春 was young plants pushing up in the sun (日): the season when things grow. 春天 = spring.' },
   { c: '夏', parts: ['', '夂'], rest: 'top: a head and body (in old writing)', r: 1, rad: '夂', name: '折文', npy: 'zhé wén', means: 'once a foot walking.', see: '冬 处 备', how: 'Some say long ago 夏 was a big, grand person with a head, arms and feet. Later it came to mean summer. 夏天 = summer.' },
-  { c: '秋', parts: ['禾', '火'], r: 0, rad: '禾', name: '禾木旁', npy: 'hé mù páng', means: 'grain plants.', see: '种 和 稻 秒', how: 'The oldest 秋 was a cricket, the insect that sings in autumn. Today it is grain (禾) and fire (火). A trick: the ripe fields are gold and red, like fire. 秋天 = autumn.' },
+  { c: '秋', parts: ['禾', '火'], r: 0, rad: '禾', name: '禾木旁', npy: 'hé mù páng', means: 'grain plants.', see: '种 和 稻 秒', how: 'The oldest 秋 was a cricket, the insect that sings in the fall. Today it is grain (禾) and fire (火). A trick: the ripe fields are gold and red, like fire. 秋天 = fall.' },
   { c: '冬', parts: ['夂', '冫'], r: 0, rad: '夂', name: '折文', npy: 'zhé wén', means: 'once a foot walking.', see: '处 备 夏', how: 'Long ago 冬 was a rope with a knot at each end: the end of the year. Later ice (冫, the two dots) was added. 冬天 = winter.' }
 ];
 /* level 1: each character long ago (public-domain drawings from Wikimedia Commons, Ancient Chinese characters project, in ancient/).
@@ -850,8 +850,8 @@ var SENTENCES = [
   { s: '我说，春天来了，＿暖暖的，花都开了。', a: '春风', no: ['雪人', '地图'], en: 'I said: spring is here, the spring breeze is warm, and the flowers are out.' },
   { s: '＿很热，我们常常和爸爸妈妈去海边玩水。', a: '夏天', no: ['雪人', '地图'], en: 'Summer is hot, and we often go to the beach with Mom and Dad to play in the water.' },
   { s: '我们这里夏天常常下大雨，出门要带＿。', a: '雨伞', no: ['雪花', '电视'], en: 'Here it often rains hard in summer, so take an umbrella when you go out.' },
-  { s: '弟弟说，秋天有＿，那天我们会一起吃月饼。', a: '中秋节', no: ['电灯', '雨伞'], en: 'My brother said autumn has the Mid-Autumn Festival, when we eat mooncakes together.' },
-  { s: '秋天的时候，＿都是黄黄的树叶。', a: '地上', no: ['天气', '白云'], en: 'In autumn the ground is covered in yellow leaves.' },
+  { s: '弟弟说，秋天有＿，那天我们会一起吃月饼。', a: '中秋节', no: ['电灯', '雨伞'], en: 'My brother said fall has the Mid-Autumn Festival, when we eat mooncakes together.' },
+  { s: '秋天的时候，＿都是黄黄的树叶。', a: '地上', no: ['天气', '白云'], en: 'In the fall the ground is covered in yellow leaves.' },
   { s: '＿到了，天很冷，有时候会下雪。', a: '冬天', no: ['雨伞', '电视'], en: 'When winter comes, it is cold, and sometimes it snows.' },
   { s: '我最喜欢看＿一片一片地飘下来。', a: '雪花', no: ['电灯', '地图'], en: 'I love watching the snowflakes float down one by one.' },
   { s: '一下雪，我和弟弟就到外面堆＿。', a: '雪人', no: ['雨伞', '电视'], en: 'When it snows, my brother and I build a snowman outside.' },
@@ -862,13 +862,13 @@ var SENTENCES = [
   { s: '天黑了，我打开＿，给你写这封信。', a: '电灯', no: ['白云', '雪人'], en: 'It got dark, so I turned on the light to write you this letter.' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '我们的天气预报', en: 'Our weather report', lines: [
   { who: '👨 爸爸', s: '今天我们一起来做天气预报，好不好？', py: 'Jīntiān wǒmen yìqǐ lái zuò tiānqì yùbào, hǎo bu hǎo?', en: 'Let’s make a weather report together today, OK?' },
   { who: '👧 我', s: '好！我来说春天和夏天。春天的风暖暖的。', py: 'Hǎo! Wǒ lái shuō chūntiān hé xiàtiān. Chūntiān de fēng nuǎnnuǎn de.', en: 'Yes! I’ll talk about spring and summer. In spring the wind is warm.' },
   { who: '👧 我', s: '夏天常常下大雨，天上还有闪电。', py: 'Xiàtiān chángcháng xià dà yǔ, tiān shang hái yǒu shǎndiàn.', en: 'In summer it often rains hard, and there is lightning in the sky.', pat: true },
-  { who: '👦 弟弟', s: '我来说秋天和冬天！', py: 'Wǒ lái shuō qiūtiān hé dōngtiān!', en: 'I’ll talk about autumn and winter!' },
-  { who: '👦 弟弟', s: '秋天的风凉凉的。冬天会下雪，地上白白的。', py: 'Qiūtiān de fēng liángliáng de. Dōngtiān huì xià xuě, dì shang báibái de.', en: 'In autumn the wind is cool. In winter it snows, and the ground is all white.' },
+  { who: '👦 弟弟', s: '我来说秋天和冬天！', py: 'Wǒ lái shuō qiūtiān hé dōngtiān!', en: 'I’ll talk about fall and winter!' },
+  { who: '👦 弟弟', s: '秋天的风凉凉的。冬天会下雪，地上白白的。', py: 'Qiūtiān de fēng liángliáng de. Dōngtiān huì xià xuě, dì shang báibái de.', en: 'In the fall the wind is cool. In winter it snows, and the ground is all white.' },
   { who: '👨 爸爸', s: '那今天的天气呢？天上有云吗？', py: 'Nà jīntiān de tiānqì ne? Tiān shang yǒu yún ma?', en: 'And what about today’s weather? Are there clouds in the sky?' },
   { who: '👧 我', s: '天上有很多白云，今天应该不会下雨。', py: 'Tiān shang yǒu hěn duō báiyún, jīntiān yīnggāi bú huì xià yǔ.', en: 'There are lots of white clouds in the sky. It probably won’t rain today.' },
   { who: '👨 爸爸', s: '说得真好！你们是小小天气预报员！', py: 'Shuō de zhēn hǎo! Nǐmen shì xiǎoxiǎo tiānqì yùbàoyuán!', en: 'Well said! You are little weather reporters!' }
@@ -1364,7 +1364,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1561,7 +1561,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

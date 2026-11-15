@@ -754,9 +754,9 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game 4. One idea: the 10 new characters of the lesson.
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own; only the characters and common words come from the lesson. */
-:root{ --page:#fff7e0; --blue:#c2410c; --blue-s:#ffe2c2; --blue-d:#8a2d0a; }   /* this lesson's colours */
+:root{ --page:#fff7e0; --blue:#c2410c; --blue-s:#ffe2c2; --blue-d:#8a2d0a; }   /* this lesson's colors */
 .opt::before{content:"";position:absolute;right:9px;top:9px;width:16px;height:16px;border-radius:50%;background:#ffc93c;box-shadow:0 0 0 4px rgba(255,201,60,.35)}
 </style>
 </head>
@@ -781,7 +781,7 @@ var PARTS = [
   { c: '寻', parts: ['彐', '寸'], r: 0, rad: '彐', name: '横山', npy: 'héng shān', means: 'a hand (an old shape of 又). In many characters it is now just a shape.', see: '当 归 录 雪', how: '彐 and 寸 were both hands. The old form 尋 showed arms stretched wide to measure something. Later it came to mean look for. 寻找 = look for; 寻宝 = a treasure hunt.' },
   { c: '熟', parts: ['孰', '灬'], r: 1, rad: '灬', name: '四点底', npy: 'sì diǎn dǐ', means: 'fire. The four dots are 火 written at the bottom of a character.', see: '点 热 照 煮 然', how: '孰 (shú) gives the sound, and 灬 is fire: food cooked over a fire is 熟. Fruit that is ready to eat is 熟 too. 成熟 = ripe; 熟人 = someone you know well.' },
   { c: '服', parts: ['月', ''], rest: 'right side: a hand (又) over a kneeling person (卩)', r: 0, rad: '月', name: '月字旁', npy: 'yuè zì páng', means: 'the moon, or the body (肉). In 服 it was once a boat (舟).', see: '朋 肚 脸 腿 胖', how: 'Long ago the left was a boat (舟) and the right a hand over a kneeling person: to serve, to obey. Later 服 also came to mean clothes. 衣服 = clothes; 校服 = a school uniform.' },
-  { c: '暖', parts: ['日', '爰'], r: 0, rad: '日', name: '日字旁', npy: 'rì zì páng', means: 'the sun. It is in characters about light, days and time.', see: '明 晚 晴 昨 映', how: 'The sun (日) and 爰 (yuán), which helps with the sound: the sun makes things warm. 暖和 = warm; 暖洋洋 = warm and cosy.' },
+  { c: '暖', parts: ['日', '爰'], r: 0, rad: '日', name: '日字旁', npy: 'rì zì páng', means: 'the sun. It is in characters about light, days and time.', see: '明 晚 晴 昨 映', how: 'The sun (日) and 爰 (yuán), which helps with the sound: the sun makes things warm. 暖和 = warm; 暖洋洋 = warm and cozy.' },
   { c: '才', parts: ['才'], r: 0, rad: '一', name: '横', npy: 'héng', means: 'one stroke across. As a radical it does not add a meaning.', see: '三 下 不 七', how: '才 is one whole shape. Long ago it was a young plant pushing up from the ground, just starting. Now it often means "just" or "only then": 刚才 = just now; 天才 = a genius.' },
   { c: '健', parts: ['亻', '建'], r: 0, rad: '亻', name: '单人旁', npy: 'dān rén páng', means: 'a person. It is in characters about people.', see: '你 他 们 住 休', how: 'A person (亻) and 建 (jiàn, build), which gives the sound. Memory trick: a well-built person is strong. 健康 = healthy; 健身 = keep fit.' },
   { c: '康', parts: ['广', ''], rest: 'the rest: 彐 over a shape like 水', r: 0, rad: '广', name: '广字旁', npy: 'guǎng zì páng', means: 'a building with one open side. It is in characters about rooms and houses.', see: '店 床 座 府 底', how: 'Long ago 康 probably showed grain husks (the dots) falling from a tool. That word is now 糠 (kāng, husks). Here 广 is just a shape, not a house. Now 康 means well: 健康 = healthy.' }
@@ -810,7 +810,7 @@ var WORDS = [
   { w: '寻找', k: 0, py: 'xúnzhǎo', en: 'look for', e: '🔍' }, { w: '寻宝', k: 0, py: 'xúnbǎo', en: 'treasure hunt', e: '🗺️', no: ['暖'] },
   { w: '成熟', k: 1, py: 'chéngshú', en: 'ripe', e: '🍎', no: ['才'] }, { w: '熟人', k: 0, py: 'shúrén', en: 'someone you know well', e: '🤝', no: ['才', '服', '寻', '暖', '晒'] },
   { w: '衣服', k: 1, py: 'yīfu', en: 'clothes', e: '👕' }, { w: '校服', k: 1, py: 'xiàofú', en: 'school uniform', e: '🎒' },
-  { w: '暖和', k: 0, py: 'nuǎnhuo', en: 'warm', e: '🧣' }, { w: '暖洋洋', k: 0, py: 'nuǎnyángyáng', en: 'warm and cosy', e: '☀️' },
+  { w: '暖和', k: 0, py: 'nuǎnhuo', en: 'warm', e: '🧣' }, { w: '暖洋洋', k: 0, py: 'nuǎnyángyáng', en: 'warm and cozy', e: '☀️' },
   { w: '刚才', k: 1, py: 'gāngcái', en: 'just now', e: '⏱️', no: ['健'] }, { w: '天才', k: 1, py: 'tiāncái', en: 'a genius', e: '🧠', no: ['暖'] },
   { w: '健康', k: 0, py: 'jiànkāng', en: 'healthy', e: '💪' }, { w: '健身', k: 0, py: 'jiànshēn', en: 'keep fit, exercise', e: '🏃', no: ['暖', '处'] },
   { w: '康复', k: 0, py: 'kāngfù', en: 'get better after being ill', e: '🩹' }
@@ -847,7 +847,7 @@ var SENTENCES = [
   { s: '今天早上阳光真好，＿都亮亮的。', a: '到处', no: ['康复', '寻宝'], en: 'This morning the sunshine was lovely, and everything was bright.' },
   { s: '我帮奶奶在院子里晒＿和被子。', a: '衣服', no: ['好处', '刚才'], en: 'I helped Grandma dry the clothes and quilts in the sun in the yard.' },
   { s: '小猫也躺在窗台上＿，一动也不动。', a: '晒太阳', no: ['寻宝', '校服'], en: 'The kitten lay on the windowsill in the sun too, not moving at all.' },
-  { s: '到了下午，被子晒得＿的。', a: '暖洋洋', no: ['天才', '健身'], en: 'By the afternoon, the sun had made the quilts warm and cosy.' },
+  { s: '到了下午，被子晒得＿的。', a: '暖洋洋', no: ['天才', '健身'], en: 'By the afternoon, the sun had made the quilts warm and cozy.' },
   { s: '奶奶说，常常晒被子有很多＿。', a: '好处', no: ['照相', '校服'], en: 'Grandma says sunning the quilts often is good for lots of things.' },
   { s: '果园里的苹果都＿了，又红又大。', a: '成熟', no: ['健身', '寻找'], en: 'The apples in the orchard are all ripe, big and red.' },
   { s: '我在鸡窝里＿鸡蛋，找到了五个！', a: '寻找', no: ['衣服', '成熟'], en: 'I looked for eggs in the henhouse and found five!' },
@@ -859,7 +859,7 @@ var SENTENCES = [
   { s: '我在这里吃得好，睡得好，身体很＿。', a: '健康', no: ['寻找', '照片'], en: 'I eat well and sleep well here, and I feel very healthy.' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '奶奶家的周末', en: 'A weekend at Grandma\'s', lines: [
   { who: '🧒 我', s: '奶奶，太阳才出来，就把屋里照得好暖和！', py: 'Nǎinai, tàiyáng cái chūlai, jiù bǎ wū li zhào de hǎo nuǎnhuo!', en: 'Grandma, the sun has only just come up, and it is already shining warm into the room!' },
   { who: '👵 奶奶', s: '那我们去院子里晒衣服吧！晒干的衣服，有太阳的味道。', py: 'Nà wǒmen qù yuànzi li shài yīfu ba! Shàigān de yīfu, yǒu tàiyáng de wèidao.', en: 'Then let\'s go and dry the clothes in the yard! Clothes dried in the sun smell like sunshine.' },
@@ -1356,7 +1356,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1553,7 +1553,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

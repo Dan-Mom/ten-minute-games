@@ -439,7 +439,7 @@
 </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Chinatown New Year · 唐人街</title>
+<title>Chinatown New Year · 唐人街过新年</title>
 <meta name="theme-color" content="#991b1b">
 <link rel="stylesheet" href="../../fonts/fonts.css">
 <style>
@@ -754,14 +754,14 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 5 lesson 8. One idea: the 13 new characters of the lesson.
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own; only the characters and common words come from the lesson. */
-:root{ --page:#fef2f2; --blue:#991b1b; --blue-s:#fecaca; --blue-d:#7f1d1d; }   /* this lesson's colours */
+:root{ --page:#fef2f2; --blue:#991b1b; --blue-s:#fecaca; --blue-d:#7f1d1d; }   /* this lesson's colors */
 .opt::before{content:"🏮";position:absolute;right:8px;top:4px;font-size:16px}
 </style>
 </head>
 <body>
-<header class="top"><h1>🏮 Chinatown New Year <span class="han">唐人街</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
+<header class="top"><h1>🏮 Chinatown New Year <span class="han">唐人街过新年</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
 <div class="wrap" id="app"></div>
 <script>
 /* ---------- content (characters and words from the lesson; all sentences are our own) ---------- */
@@ -813,7 +813,7 @@ var GROUPS = [CHARS.slice(0, 5), CHARS.slice(5, 9), CHARS.slice(9)];
 /* level 2: build a word. w = the word, k = which character is missing, no = characters that would also make a real word, so they are never offered */
 var WORDS = [
   { w: '历史', k: 0, py: 'lìshǐ', en: 'history', e: '📜' }, { w: '史书', k: 0, py: 'shǐshū', en: 'history book', e: '📚', no: ['卖', '历'] },
-  { w: '繁荣', k: 0, py: 'fánróng', en: 'prosperous', e: '🏙️' }, { w: '光荣', k: 1, py: 'guāngróng', en: 'glory, honour', e: '🏅' },
+  { w: '繁荣', k: 0, py: 'fánróng', en: 'prosperous', e: '🏙️' }, { w: '光荣', k: 1, py: 'guāngróng', en: 'glory, honor', e: '🏅' },
   { w: '强大', k: 0, py: 'qiángdà', en: 'strong, powerful', e: '💪', no: ['越'] }, { w: '华侨', k: 1, py: 'huáqiáo', en: 'Chinese people living abroad', e: '🌏' },
   { w: '集中', k: 0, py: 'jízhōng', en: 'gather together', e: '🧲' }, { w: '集市', k: 0, py: 'jíshì', en: 'market', e: '🛒' },
   { w: '功课', k: 0, py: 'gōngkè', en: 'homework', e: '📝', no: ['史', '舞', '节'] }, { w: '成功', k: 1, py: 'chénggōng', en: 'success; succeed', e: '🏆', no: ['集'] },
@@ -830,7 +830,7 @@ var MORE_WORDS = {
   '集': [{ w: '收集', py: 'shōují', en: 'collect' }],
   '卖': [{ w: '卖完', py: 'màiwán', en: 'sold out' }],
   '越': [{ w: '越来越', py: 'yuè lái yuè', en: 'more and more' }],
-  '节': [{ w: '节目', py: 'jiémù', en: 'show, programme' }],
+  '节': [{ w: '节目', py: 'jiémù', en: 'show, program' }],
   '贴': [{ w: '贴纸', py: 'tiēzhǐ', en: 'sticker' }],
   '舞': [{ w: '舞台', py: 'wǔtái', en: 'stage' }]
 };
@@ -866,7 +866,7 @@ var SENTENCES = [
   { s: '奶奶，我第一次自己贴对联，一下子就＿了！下次你也来看吧！', a: '成功', no: ['历史', '华侨'], en: 'Grandma, I put up the couplets by myself for the first time, and got it right straight away! Come and see next time!' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '唐人街过春节', en: 'New Year in Chinatown', lines: [
   { who: '👨 爸爸', s: '春节快到了，我们去唐人街看看吧！', py: 'Chūnjié kuài dào le, wǒmen qù Tángrénjiē kànkan ba!', en: 'Spring Festival is nearly here. Let\'s go and have a look at Chinatown!' },
   { who: '🧒 我', s: '街上人越来越多，到处都挂着红灯笼。', py: 'Jiē shang rén yuè lái yuè duō, dàochù dōu guàzhe hóng dēnglong.', en: 'There are more and more people on the street, and red lanterns hang everywhere.', pat: true },
@@ -1363,7 +1363,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1560,7 +1560,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

@@ -754,9 +754,9 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 2 lesson 8. One idea: the 13 new characters of the lesson (亮跟也为什么很远哪都觉地明).
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the sentence pattern (哪儿／什么／谁＋都), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the sentence pattern (哪儿／什么／谁＋都), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own (not the textbook's 课文, 句子 or 对话); only the characters and common words come from the lesson. */
-:root{ --page:#eef2ff; --blue:#4338ca; --blue-s:#c7d2fe; --blue-d:#312e81; }   /* this lesson's colours */
+:root{ --page:#eef2ff; --blue:#4338ca; --blue-s:#c7d2fe; --blue-d:#312e81; }   /* this lesson's colors */
 .opt::before{content:"🔦";position:absolute;right:8px;top:4px;font-size:16px}
 </style>
 </head>
@@ -871,7 +871,7 @@ var SENTENCES = [
   { s: '爷爷，您住的＿晚上也有路灯吗？您和奶奶也来玩一玩吧！', a: '地方', no: ['永远', '怎么'], en: 'Grandpa, are there street lamps where you live too? You and Grandma should play it too!' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '影子游戏', en: 'The shadow game', lines: [
   { who: '👨 爸爸', s: '今天晚上小区里的路灯很亮，我们来玩踩影子的游戏吧！', py: 'Jīntiān wǎnshang xiǎoqū li de lùdēng hěn liàng, wǒmen lái wán cǎi yǐngzi de yóuxì ba!', en: 'The street lamps in our neighborhood are very bright tonight. Let’s play step-on-the-shadow!' },
   { who: '👦 弟弟', s: '我先来！姐姐，你的影子跑到哪里去了？', py: 'Wǒ xiān lái! Jiějie, nǐ de yǐngzi pǎodào nǎli qù le?', en: 'Me first! Big sister, where has your shadow run off to?' },
@@ -1372,7 +1372,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1569,7 +1569,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

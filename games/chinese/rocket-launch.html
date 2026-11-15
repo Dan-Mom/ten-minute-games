@@ -439,7 +439,7 @@
 </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Rocket Launch · “神舟”飞天</title>
+<title>Rocket Launch · 火箭发射</title>
 <meta name="theme-color" content="#1e3a8a">
 <link rel="stylesheet" href="../../fonts/fonts.css">
 <style>
@@ -754,14 +754,14 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 5 lesson 9. One idea: the 15 new characters of the lesson.
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own; only the characters and common words come from the lesson. */
-:root{ --page:#eff6ff; --blue:#1e3a8a; --blue-s:#bfdbfe; --blue-d:#1e40af; }   /* this lesson's colours */
+:root{ --page:#eff6ff; --blue:#1e3a8a; --blue-s:#bfdbfe; --blue-d:#1e40af; }   /* this lesson's colors */
 .opt::before{content:"🚀";position:absolute;right:8px;top:4px;font-size:16px}
 </style>
 </head>
 <body>
-<header class="top"><h1>🚀 Rocket Launch <span class="han">“神舟”飞天</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
+<header class="top"><h1>🚀 Rocket Launch <span class="han">火箭发射</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
 <div class="wrap" id="app"></div>
 <script>
 /* ---------- content (characters and words from the lesson; all sentences are our own) ---------- */
@@ -847,7 +847,7 @@ var PATTERN = [
   { t: 'show', shape: '终于……了', keys: ['终于'], end: '。', ask: 'Where does 终于 go? Pick the right sentence.',
     what: '终于 means "at last, finally", after waiting or trying for a long time. Put it right before the action, often with 了 at the end: 雨终于停了 = the rain finally stopped.',
     ex: [{ s: '雨终于停了。', en: 'The rain finally stopped.' }, { s: '我终于学会游泳了。', en: 'I\'ve finally learned to swim.' }, { s: '等了半天，公共汽车终于来了。', en: 'After a long wait, the bus finally came.' }] },
-  { t: 'pick', from: '我们等了很久，后来妈妈回来了。', a: '妈妈终于回来了。', no: ['妈妈回来终于了。', '终于了妈妈回来。'], en: 'Mum finally came home.' },
+  { t: 'pick', from: '我们等了很久，后来妈妈回来了。', a: '妈妈终于回来了。', no: ['妈妈回来终于了。', '终于了妈妈回来。'], en: 'Mom finally came home.' },
   { t: 'build', tiles: ['弟弟', '终于', '学会', '骑自行车', '了'], ok: ['弟弟终于学会骑自行车了。', '终于弟弟学会骑自行车了。'], en: 'My little brother finally learned to ride a bike.' },
   { t: 'pick', from: '我找了很久，才找到钥匙。', a: '我终于找到钥匙了。', no: ['我找到钥匙终于了。', '我找到终于钥匙了。'], en: 'I finally found my key.' },
   { t: 'build', tiles: ['花', '终于', '开', '了'], ok: ['花终于开了。', '终于花开了。'], en: 'The flowers have finally opened.' },
@@ -871,7 +871,7 @@ var SENTENCES = [
   { s: '爷爷，您刚走，我就开始＿您了！', a: '想念', no: ['卫星', '工程'], en: 'Grandpa, you have only just left and I already miss you!' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '看火箭发射', en: 'Watching a rocket launch', lines: [
   { who: '👨 爸爸', s: '快来看电视，火箭要发射了！', py: 'Kuài lái kàn diànshì, huǒjiàn yào fāshè le!', en: 'Come and watch TV, quick! The rocket is about to launch!' },
   { who: '🧒 我', s: '五、四、三、二、一——升空了！声音像打雷一样响！', py: 'Wǔ, sì, sān, èr, yī — shēngkōng le! Shēngyīn xiàng dǎléi yíyàng xiǎng!', en: 'Five, four, three, two, one — lift-off! It\'s as loud as thunder!' },
@@ -1368,7 +1368,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1565,7 +1565,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

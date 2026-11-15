@@ -439,7 +439,7 @@
 </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Sports Day · 龟兔赛跑</title>
+<title>Sports Day · 运动会</title>
 <meta name="theme-color" content="#0f766e">
 <link rel="stylesheet" href="../../fonts/fonts.css">
 <style>
@@ -754,14 +754,14 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 3 lesson 10. One idea: the 13 new characters of the lesson.
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own; only the characters and common words come from the lesson. */
-:root{ --page:#f0fdfa; --blue:#0f766e; --blue-s:#99f6e4; --blue-d:#115e59; }   /* this lesson's colours */
+:root{ --page:#f0fdfa; --blue:#0f766e; --blue-s:#99f6e4; --blue-d:#115e59; }   /* this lesson's colors */
 .opt::before{content:"⚑";position:absolute;right:9px;top:3px;font-size:20px;color:#14b8a6}
 </style>
 </head>
 <body>
-<header class="top"><h1>🐢 Sports Day <span class="han">龟兔赛跑</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
+<header class="top"><h1>🐢 Sports Day <span class="han">运动会</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
 <div class="wrap" id="app"></div>
 <script>
 /* ---------- content (characters and words from the lesson; all sentences are our own) ---------- */
@@ -842,19 +842,19 @@ var MORE_WORDS = {
 var PATTERN = [
   { t: 'show', shape: '……地＋动词', keys: ['地'], end: '。', ask: 'Where does 地 go? Pick the right sentence.',
     what: 'To say how someone does something, put a describing word, then 地 (said de), then the action: 慢慢地走 = walk slowly; 认真地听 = listen carefully.',
-    ex: [{ s: '小猫轻轻地走过来。', en: 'The kitten walks over softly.' }, { s: '同学们认真地听老师讲故事。', en: 'The pupils listen carefully to the teacher\'s story.' }, { s: '风呼呼地吹。', en: 'The wind blows with a whoosh.' }] },
+    ex: [{ s: '小猫轻轻地走过来。', en: 'The kitten walks over softly.' }, { s: '同学们认真地听老师讲故事。', en: 'The students listen carefully to the teacher\'s story.' }, { s: '风呼呼地吹。', en: 'The wind blows with a whoosh.' }] },
   { t: 'pick', from: '妹妹笑了，很开心。', a: '妹妹开心地笑了。', no: ['妹妹笑了开心地。', '妹妹地开心笑了。'], en: 'My little sister laughed happily.' },
   { t: 'build', tiles: ['小狗', '开心地', '摇着', '尾巴'], ok: ['小狗开心地摇着尾巴。'], en: 'The puppy wags its tail happily.' },
   { t: 'pick', from: '弟弟喝牛奶，一大口一大口的。', a: '弟弟大口大口地喝牛奶。', no: ['弟弟喝地大口大口牛奶。', '大口大口弟弟地喝牛奶。'], en: 'My little brother drinks his milk in big gulps.' },
   { t: 'build', tiles: ['小弟弟', '一步一步地', '爬', '上了', '楼梯'], ok: ['小弟弟一步一步地爬上了楼梯。'], en: 'My little brother climbed the stairs one step at a time.' },
   { t: 'build', tiles: ['我们', '安静地', '坐在', '教室里'], ok: ['我们安静地坐在教室里。'], en: 'We sit quietly in the classroom.' }
 ];
-/* level 4: our own letter to Grandpa (Mum's dad) about sports day, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的外公：" */
+/* level 4: our own letter to Grandpa (Mom's dad) about sports day, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的外公：" */
 var SENTENCES = [
   { s: '今天学校开运动会，我参加了＿。', a: '赛跑', no: ['乌云', '意思'], en: 'Today was sports day at school, and I ran in a race.' },
   { s: '早上天上有一片＿，我还怕下雨呢。', a: '乌云', no: ['得到', '追上'], en: 'In the morning there was a dark cloud in the sky, and I was afraid it would rain.' },
   { s: '我跑得＿，一开始就落在了后面。', a: '很慢', no: ['回家', '乌龟'], en: 'I run slowly, so I fell behind right at the start.' },
-  { s: '跑在最前面的同学很＿，还回头向他爸爸挥手。', a: '得意', no: ['爬山', '然后'], en: 'The pupil in front was very pleased with himself and even turned to wave at his dad.' },
+  { s: '跑在最前面的同学很＿，还回头向他爸爸挥手。', a: '得意', no: ['爬山', '然后'], en: 'The kid in front was very pleased with himself and even turned to wave at his dad.' },
   { s: '我没有停，一直往前跑，最后＿了他。', a: '追上', no: ['意思', '乌云'], en: 'I didn\'t stop. I kept running forward, and in the end I caught up with him.' },
   { s: '我得了＿名！大家都为我鼓掌。', a: '第一', no: ['回头', '爬山'], en: 'I came first! Everyone clapped for me.' },
   { s: '同桌说，我就像龟兔赛跑里的那只＿。', a: '乌龟', no: ['得到', '然后'], en: 'My desk-mate said I was like the tortoise in "The Tortoise and the Hare".' },
@@ -868,9 +868,9 @@ var SENTENCES = [
   { s: '外公，你小时候参加过＿吗？', a: '比赛', no: ['回头', '乌龟'], en: 'Grandpa, did you take part in races when you were little?' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '运动会赛跑', en: 'The sports day race', lines: [
-  { who: '👩‍🏫 老师', s: '运动会开始了！下面是六十米赛跑。', py: 'Yùndònghuì kāishǐ le! Xiàmian shì liùshí mǐ sàipǎo.', en: 'Sports day has begun! Next is the 60-metre race.' },
+  { who: '👩‍🏫 老师', s: '运动会开始了！下面是六十米赛跑。', py: 'Yùndònghuì kāishǐ le! Xiàmian shì liùshí mǐ sàipǎo.', en: 'Sports day has begun! Next is the 60-meter race.' },
   { who: '🧒 我', s: '我跑得慢，前面的同学都比我快。', py: 'Wǒ pǎo de màn, qiánmian de tóngxué dōu bǐ wǒ kuài.', en: 'I run slowly. The others in front are all faster than me.' },
   { who: '👧 同桌', s: '别着急，一步一步往前跑，不要停！', py: 'Bié zháojí, yí bù yí bù wǎng qián pǎo, bú yào tíng!', en: 'Don\'t worry! Run forward step by step, and don\'t stop!' },
   { who: '🧒 我', s: '跑在第一的同学很得意，回头向他爸爸挥手，还停了下来！', py: 'Pǎo zài dì yī de tóngxué hěn déyì, huítóu xiàng tā bàba huī shǒu, hái tíngle xiàlai!', en: 'The boy in first place is very pleased with himself. He turns to wave at his dad, and he even stops!' },
@@ -1365,7 +1365,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1562,7 +1562,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

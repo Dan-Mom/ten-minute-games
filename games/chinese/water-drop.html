@@ -439,7 +439,7 @@
 </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Water Drop · 我是谁</title>
+<title>Water Drop · 小水滴</title>
 <meta name="theme-color" content="#0369a1">
 <link rel="stylesheet" href="../../fonts/fonts.css">
 <style>
@@ -754,14 +754,14 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 3 lesson 5. One idea: the 13 new characters of the lesson.
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own; only the characters and common words come from the lesson. */
-:root{ --page:#f0f9ff; --blue:#0369a1; --blue-s:#bae6fd; --blue-d:#075985; }   /* this lesson's colours */
+:root{ --page:#f0f9ff; --blue:#0369a1; --blue-s:#bae6fd; --blue-d:#075985; }   /* this lesson's colors */
 .opt::before{content:"";position:absolute;right:11px;top:10px;width:13px;height:13px;background:#38bdf8;border-radius:0 50% 50% 50%;transform:rotate(45deg)}
 </style>
 </head>
 <body>
-<header class="top"><h1>💧 Water Drop <span class="han">我是谁</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
+<header class="top"><h1>💧 Water Drop <span class="han">小水滴</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
 <div class="wrap" id="app"></div>
 <script>
 /* ---------- content (characters and words from the lesson; all sentences are our own) ---------- */
@@ -780,7 +780,7 @@ var PARTS = [
   { c: '知', parts: ['矢', '口'], r: 0, rad: '矢', name: '矢字旁', npy: 'shǐ zì páng', means: 'an arrow.', see: '短 矮', how: 'An arrow (矢) and a mouth (口). Memory trick: someone who knows can answer as fast as an arrow flies. 知道 = know.' },
   { c: '变', parts: ['亦', '又'], r: 1, rad: '又', name: '又字底', npy: 'yòu zì dǐ', means: 'a right hand.', see: '友 双 发', how: 'The old form 變 had 攴, a hand holding a stick: making something different. 变成 = turn into; 变大 = get bigger.' },
   { c: '成', parts: ['成'], r: 0, rad: '戈', name: '戈字旁', npy: 'gē zì páng', means: 'an old weapon, a dagger-axe.', see: '我 战 或', how: '成 is one whole shape with 戈 (an old weapon) in it. Long ago it meant to finish a job, so now it means "become" or "succeed". 变成 = turn into; 成功 = success.' },
-  { c: '汽', parts: ['氵', '气'], r: 0, rad: '氵', name: '三点水', npy: 'sān diǎn shuǐ', means: 'water. It is in characters about water and liquids.', see: '河 海 洗 游 汤', how: 'Water (氵) and 气 (qì, air), which gives the sound: water that has turned into a kind of air, steam. 汽水 = fizzy drink; 汽车 = car.' },
+  { c: '汽', parts: ['氵', '气'], r: 0, rad: '氵', name: '三点水', npy: 'sān diǎn shuǐ', means: 'water. It is in characters about water and liquids.', see: '河 海 洗 游 汤', how: 'Water (氵) and 气 (qì, air), which gives the sound: water that has turned into a kind of air, steam. 汽水 = soda; 汽车 = car.' },
   { c: '飘', parts: ['票', '风'], r: 1, rad: '风', name: '风字旁', npy: 'fēng zì páng', means: 'wind.', see: '飕 飓', how: 'Wind (风) and 票 (piào), which helps with the sound: carried along by the wind. 飘走 = float away; 飘来飘去 = float here and there.' },
   { c: '冷', parts: ['冫', '令'], r: 0, rad: '冫', name: '两点水', npy: 'liǎng diǎn shuǐ', means: 'ice. It is in characters about cold.', see: '冰 冻 凉', how: 'Ice (冫) and 令 (lìng), which helps with the sound: cold. 冷天 = a cold day; 太冷了 = too cold.' },
   { c: '珠', parts: ['王', '朱'], r: 0, rad: '王', name: '王字旁', npy: 'wáng zì páng', means: 'jade (here 王 is a form of 玉). It is in characters about jade and precious stones.', see: '玩 球 理 班', how: 'Jade (王) and 朱 (zhū), which gives the sound: a small round gem, a pearl. 水珠 = a drop of water; 珍珠 = pearl.' },
@@ -813,7 +813,7 @@ var GROUPS = [CHARS.slice(0, 5), CHARS.slice(5, 9), CHARS.slice(9)];
 /* level 2: build a word. w = the word, k = which character is missing, no = characters that would also make a real word, so they are never offered */
 var WORDS = [
   { w: '知道', k: 0, py: 'zhīdao', en: 'know', e: '💡', no: ['变', '跑'] }, { w: '变大', k: 0, py: 'biàn dà', en: 'get bigger', e: '⬆️' },
-  { w: '成功', k: 0, py: 'chénggōng', en: 'success; succeed', e: '🏆' }, { w: '汽水', k: 0, py: 'qìshuǐ', en: 'fizzy drink', e: '🥤', no: ['冷', '掉', '跳', '跑'] },
+  { w: '成功', k: 0, py: 'chénggōng', en: 'success; succeed', e: '🏆' }, { w: '汽水', k: 0, py: 'qìshuǐ', en: 'soda', e: '🥤', no: ['冷', '掉', '跳', '跑'] },
   { w: '汽车', k: 0, py: 'qìchē', en: 'car', e: '🚗', no: ['跑', '冷', '候', '跳'] }, { w: '飘走', k: 0, py: 'piāozǒu', en: 'float away', e: '🎈', no: ['跑', '跳'] },
   { w: '冷天', k: 0, py: 'lěngtiān', en: 'a cold day', e: '🥶', no: ['变', '成'] }, { w: '太冷', k: 1, py: 'tài lěng', en: 'too cold', e: '🧣', no: ['飘'] },
   { w: '水珠', k: 1, py: 'shuǐzhū', en: 'drop of water', e: '💧', no: ['汽'] }, { w: '珍珠', k: 1, py: 'zhēnzhū', en: 'pearl', e: '🦪' },
@@ -848,7 +848,7 @@ var PATTERN = [
   { t: 'pick', from: '谁会来？你知道吗？', a: '你知道谁会来吗？', no: ['你知道吗谁会来？', '知道你谁会来吗？'], en: 'Do you know who is coming?' },
   { t: 'build', tiles: ['你', '知道', '小猫', '在哪儿', '吗'], ok: ['你知道小猫在哪儿吗？', '小猫知道你在哪儿吗？', '小猫在哪儿你知道吗？'], en: 'Do you know where the kitten is?' },
   { t: 'pick', from: '今天星期几？爷爷知道吗？', a: '爷爷知道今天星期几吗？', no: ['爷爷知道吗今天星期几？', '今天爷爷星期几知道吗？'], en: 'Does Grandpa know what day it is today?' },
-  { t: 'build', tiles: ['你们', '知道', '雪', '是什么颜色的', '吗'], ok: ['你们知道雪是什么颜色的吗？', '雪是什么颜色的你们知道吗？'], en: 'Do you know what colour snow is?' },
+  { t: 'build', tiles: ['你们', '知道', '雪', '是什么颜色的', '吗'], ok: ['你们知道雪是什么颜色的吗？', '雪是什么颜色的你们知道吗？'], en: 'Do you know what color snow is?' },
   { t: 'build', tiles: ['妹妹', '知道', '雪花', '是从哪儿来的', '吗'], ok: ['妹妹知道雪花是从哪儿来的吗？', '雪花是从哪儿来的妹妹知道吗？'], en: 'Does my little sister know where snowflakes come from?' }
 ];
 /* level 4: our own letter to Dad (away on a trip) about a cold, snowy day with Grandpa, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的爸爸：" */
@@ -867,10 +867,10 @@ var SENTENCES = [
   { s: '玩了一会儿，我们都觉得＿了，就回家了。', a: '太冷', no: ['珍珠', '跳舞'], en: 'After a while we felt too cold, so we went home.' },
   { s: '晚上，我们玩累了，很早就去＿了。', a: '睡觉', no: ['汽车', '珍珠'], en: 'In the evening we were tired from playing, and went to bed early.' },
   { s: '＿我觉得，水就像一个会变魔术的小朋友。', a: '有时候', no: ['汽水', '跳舞'], en: 'Sometimes I think water is like a child who can do magic.' },
-  { s: '爸爸，等你回来，我们一起喝＿，我给你讲水的故事！', a: '汽水', no: ['睡觉', '跳高'], en: 'Dad, when you come back, let\'s have a fizzy drink together and I\'ll tell you the story of water!' }
+  { s: '爸爸，等你回来，我们一起喝＿，我给你讲水的故事！', a: '汽水', no: ['睡觉', '跳高'], en: 'Dad, when you come back, let\'s have a soda together and I\'ll tell you the story of water!' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '窗户上的小水珠', en: 'The little drops on the window', lines: [
   { who: '👴 爷爷', s: '外面好冷啊！你知道窗户上的小水珠是从哪儿来的吗？', py: 'Wàimian hǎo lěng a! Nǐ zhīdao chuānghu shang de xiǎo shuǐzhū shì cóng nǎr lái de ma?', en: 'It\'s so cold outside! Do you know where the little drops of water on the window come from?', pat: true },
   { who: '🧒 我', s: '是不是外面的雨掉在窗户上了？', py: 'Shì bu shì wàimian de yǔ diào zài chuānghu shang le?', en: 'Is it the rain outside falling on the window?' },
@@ -1367,7 +1367,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1564,7 +1564,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

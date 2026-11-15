@@ -753,10 +753,10 @@ button{-webkit-appearance:none;appearance:none}
 @media (max-width:500px){.actor{min-width:52px}.actor .face{font-size:34px}}
 </style>
 <style>
-/* Chinese game, book 1 lesson 6. One idea: the 13 new characters of the lesson (animals and colours: 马牛羊鱼虫鸟草黄白黑绿红蓝).
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises saying what colour something is (……是＋颜色＋的), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
-   The lesson has no sentence box; its reading practice joins colours and animals (黄牛, 白马), so the pattern is our own choice from that. All sentences and the story here are our own; only the characters and common words come from the lesson. */
-:root{ --page:#fdf4ff; --blue:#a21caf; --blue-s:#f5d0fe; --blue-d:#86198f; }   /* this lesson's colours */
+/* Chinese game, book 1 lesson 6. One idea: the 13 new characters of the lesson (animals and colors: 马牛羊鱼虫鸟草黄白黑绿红蓝).
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises saying what color something is (……是＋颜色＋的), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   The lesson has no sentence box; its reading practice joins colors and animals (黄牛, 白马), so the pattern is our own choice from that. All sentences and the story here are our own; only the characters and common words come from the lesson. */
+:root{ --page:#fdf4ff; --blue:#a21caf; --blue-s:#f5d0fe; --blue-d:#86198f; }   /* this lesson's colors */
 .opt::before{content:"🖍️";position:absolute;right:8px;top:4px;font-size:16px}
 </style>
 </head>
@@ -787,7 +787,7 @@ var PARTS = [
   { c: '黄', parts: ['黄'], r: 0, rad: '黄', name: '黄字', npy: 'huáng zì', means: 'yellow.', see: '黉', how: 'Some say long ago 黄 was a person wearing a round jade piece at the waist. It was borrowed to mean yellow. Very few characters use it as a radical. 黄色 = yellow.' },
   { c: '白', parts: ['白'], r: 0, rad: '白', name: '白字旁', npy: 'bái zì páng', means: 'white; clear.', see: '的 皂 皇', how: 'Some say long ago 白 was a grain of rice; others say a flame. Today it means white. 白云 = white clouds.' },
   { c: '黑', parts: ['黑'], r: 0, rad: '黑', name: '黑字旁', npy: 'hēi zì páng', means: 'black, dark.', see: '默 黛', how: 'Some say that in later writing 黑 was a smoky chimney over a fire (the four dots are fire, 灬): soot is black. 黑板 = blackboard.' },
-  { c: '绿', parts: ['纟', '录'], r: 0, rad: '纟', name: '绞丝旁', npy: 'jiǎo sī páng', means: 'silk, thread.', see: '红 线 纸 给', how: 'Silk thread (纟) on the left: long ago silk was dyed in colours. 录 gives the sound (lù, lǜ). 绿叶 = green leaves.' },
+  { c: '绿', parts: ['纟', '录'], r: 0, rad: '纟', name: '绞丝旁', npy: 'jiǎo sī páng', means: 'silk, thread.', see: '红 线 纸 给', how: 'Silk thread (纟) on the left: long ago silk was dyed in colors. 录 gives the sound (lù, lǜ). 绿叶 = green leaves.' },
   { c: '红', parts: ['纟', '工'], r: 0, rad: '纟', name: '绞丝旁', npy: 'jiǎo sī páng', means: 'silk, thread.', see: '绿 线 纸 给', how: 'Silk thread (纟) dyed red; 工 once gave the sound. 红花 = red flowers.' },
   { c: '蓝', parts: ['艹', '监'], r: 0, rad: '艹', name: '草字头', npy: 'cǎo zì tóu', means: 'plants.', see: '花 草 苹 茶', how: 'Long ago 蓝 was a plant (艹) used to dye cloth blue; 监 gives the sound. 蓝天 = blue sky.' }
 ];
@@ -837,11 +837,11 @@ var MORE_WORDS = {
   '红': [{ w: '红色', py: 'hóngsè', en: 'red' }],
   '蓝': [{ w: '蓝色', py: 'lánsè', en: 'blue' }]
 };
-/* level 3: saying what colour something is (the lesson's reading practice joins colours and animals). All sentences are our own.
+/* level 3: saying what color something is (the lesson's reading practice joins colors and animals). All sentences are our own.
    show = the explanation card, pick = the right sentence (a = right, no = wrong ones), build = tap the words in order (ok = every right order) */
 var PATTERN = [
   { t: 'show', shape: '东西 ＋ 是 ＋ 颜色 ＋ 的', keys: ['是', '的'], end: '。', ask: 'Which one is right? Look at 是 and 的.',
-    what: 'To say what colour something is: first the thing, then 是, then the colour, then 的. 小羊是白色的 = the lamb is white. 色 means colour, and you can also leave it out: 草是绿的. Don’t forget 的 at the end!',
+    what: 'To say what color something is: first the thing, then 是, then the color, then 的. 小羊是白色的 = the lamb is white. 色 means color, and you can also leave it out: 草是绿的. Don’t forget 的 at the end!',
     ex: [{ s: '苹果是红色的。', en: 'The apple is red.' }, { s: '大海是蓝色的。', en: 'The sea is blue.' }, { s: '香蕉是黄色的。', en: 'Bananas are yellow.' }] },
   { t: 'pick', from: '乌鸦是什么颜色的？（black）', a: '乌鸦是黑色的。', no: ['乌鸦黑色是的。', '乌鸦是的黑色。'], en: 'Crows are black.' },
   { t: 'build', tiles: ['我的', '书包', '是', '蓝色', '的'], ok: ['我的书包是蓝色的。', '蓝色的书包是我的。', '蓝色的是我的书包。', '我的是蓝色的书包。'], en: 'My schoolbag is blue.' },
@@ -861,12 +861,12 @@ var SENTENCES = [
   { s: '大树上长满了＿。', a: '绿叶', no: ['牛奶', '金鱼'], en: 'The big tree is covered in green leaves.' },
   { s: '树上有一个＿，里面有三只小鸟。', a: '鸟窝', no: ['白云', '黑板'], en: 'There is a bird’s nest in the tree with three little birds in it.' },
   { s: '花上还有一只红色的小＿。', a: '虫子', no: ['白云', '马车'], en: 'There is a little red bug on a flower, too.' },
-  { s: '太阳是什么颜色的？弟弟说要用＿。', a: '黄色', no: ['马车', '鸟窝'], en: 'What colour is the sun? My brother said to use yellow.' },
+  { s: '太阳是什么颜色的？弟弟说要用＿。', a: '黄色', no: ['马车', '鸟窝'], en: 'What color is the sun? My brother said to use yellow.' },
   { s: '马路边的＿上有红灯、黄灯和绿灯。红灯停，绿灯行。', a: '红绿灯', no: ['山羊', '鸟窝'], en: 'By the road, the traffic lights have a red, a yellow and a green light: stop at red, go at green.' },
   { s: '明天我要把这张画贴在教室的＿旁边。', a: '黑板', no: ['白云', '牛奶'], en: 'Tomorrow I will put this picture up next to the blackboard in my classroom.' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '和奶奶一起画画', en: 'Painting with Grandma', lines: [
   { who: '👵 奶奶', s: '今天我们一起画画，画什么好呢？', py: 'Jīntiān wǒmen yìqǐ huà huà, huà shénme hǎo ne?', en: 'Let’s paint together today. What shall we paint?' },
   { who: '👦 弟弟', s: '我要画一匹黑马和一头黄牛！', py: 'Wǒ yào huà yì pǐ hēi mǎ hé yì tóu huángniú!', en: 'I want to paint a black horse and a yellow ox!' },
@@ -885,12 +885,12 @@ var LESSON = {
   levels: [
     { title: 'Meet the characters', zh: '认生字', text: 'Meet 13 new characters, then find each one among the crayon cards.' },
     { title: 'Build the words', zh: '组词', text: 'Each word is missing one character. Pick the right crayon card.' },
-    { title: 'Sentence pattern', zh: '句型 是……的', text: 'Learn to say what colour something is: 小羊是白色的 (the lamb is white). Pick the right one, then build your own from word tiles.' },
+    { title: 'Sentence pattern', zh: '句型 是……的', text: 'Learn to say what color something is: 小羊是白色的 (the lamb is white). Pick the right one, then build your own from word tiles.' },
     { title: 'Write the letter', zh: '写信', text: 'Finish our letter to Mom about the picture we painted: pick the missing word in each sentence, then send it.' },
-    { title: 'Colour Bingo', zh: '颜色 Bingo', text: 'Listen, then mark what you hear on your card. Make a line, then two lines, then fill the card.' }
+    { title: 'Color Bingo', zh: '颜色 Bingo', text: 'Listen, then mark what you hear on your card. Make a line, then two lines, then fill the card.' }
   ],
   pick: 'Which crayon card says…',                    // level 1: find the character
-  wrong: { pick: 'Not this one. Try another crayon card.', pattern: 'Not this one. The thing, then 是, then the colour, then 的. Try another.' },
+  wrong: { pick: 'Not this one. Try another crayon card.', pattern: 'Not this one. The thing, then 是, then the color, then 的. Try another.' },
   letter: { ready: 'Your letter to Mom is ready. Tap Send!', stamp: '🎨', greeting: '亲爱的妈妈：', signRight: false },   // level 4: the finished letter
   bingoFree: '🎨',             // the free middle square
   cast: {                      // the story's speakers, each with a voice of their own (the owner, 2026-11-12: Book 1 more fun); the one talking hops
@@ -1367,7 +1367,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1564,7 +1564,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

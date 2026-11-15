@@ -754,9 +754,9 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game 10. One idea: the 12 new characters of the lesson.
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own; only the characters and common words come from the lesson. */
-:root{ --page:#fcf0f6; --blue:#a3236b; --blue-s:#f6d6e7; --blue-d:#6e1747; }   /* this lesson's colours */
+:root{ --page:#fcf0f6; --blue:#a3236b; --blue-s:#f6d6e7; --blue-d:#6e1747; }   /* this lesson's colors */
 .opt::before{content:"";position:absolute;left:0;right:0;top:0;height:10px;background:repeating-linear-gradient(90deg,#e04a5f 0 10px,#fff 10px 20px);opacity:.7}
 </style>
 </head>
@@ -828,7 +828,7 @@ var MORE_WORDS = {
   '毛': [{ w: '羽毛', py: 'yǔmáo', en: 'feather' }, { w: '毛巾', py: 'máojīn', en: 'towel' }],
   '箭': [{ w: '弓箭', py: 'gōngjiàn', en: 'bow and arrow' }, { w: '箭头', py: 'jiàntóu', en: 'arrow (a sign)' }],
   '圆': [{ w: '圆圆', py: 'yuányuán', en: 'round' }, { w: '圆形', py: 'yuánxíng', en: 'circle' }],
-  '串': [{ w: '一串', py: 'yí chuàn', en: 'a bunch' }, { w: '串门', py: 'chuànmén', en: 'drop in on neighbours' }],
+  '串': [{ w: '一串', py: 'yí chuàn', en: 'a bunch' }, { w: '串门', py: 'chuànmén', en: 'drop in on neighbors' }],
   '苹': [{ w: '苹果树', py: 'píngguǒshù', en: 'apple tree' }, { w: '苹果汁', py: 'píngguǒzhī', en: 'apple juice' }],
   '葡': [{ w: '葡萄树', py: 'pútaoshù', en: 'grapevine' }, { w: '葡萄汁', py: 'pútaozhī', en: 'grape juice' }],
   '萄': [{ w: '葡萄树', py: 'pútaoshù', en: 'grapevine' }, { w: '葡萄汁', py: 'pútaozhī', en: 'grape juice' }]
@@ -857,11 +857,11 @@ var SENTENCES = [
   { s: '爸爸出的谜语，答案是我最爱吃的＿。', a: '葡萄干', no: ['火箭', '笔尖'], en: 'Dad\'s riddle had my favorite snack as the answer: raisins.' },
   { s: '弟弟的谜语最难，答案是能飞上太空的＿！', a: '火箭', no: ['毛衣', '圆圈'], en: 'My little brother\'s riddle was the hardest. The answer was something that can fly into space: a rocket!' },
   { s: '我猜对了三个谜语，爸爸跟我＿，说我真聪明。', a: '握手', no: ['弯腰', '回答'], en: 'I guessed three riddles right. Dad shook my hand and said I was really clever.' },
-  { s: '天快黑了，我们＿把垃圾都捡了起来。', a: '弯腰', no: ['火箭', '毛衣'], en: 'As it got dark, we bent down and picked up all our rubbish.' },
+  { s: '天快黑了，我们＿把垃圾都捡了起来。', a: '弯腰', no: ['火箭', '毛衣'], en: 'As it got dark, we bent down and picked up all our trash.' },
   { s: '回家以后，我把谜语都写了下来，写得太用力，＿都断了。', a: '笔尖', no: ['回答', '葡萄'], en: 'At home I wrote all the riddles down. I pressed so hard that the tip broke.' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '猜谜野餐', en: 'A riddle picnic', lines: [
   { who: '👩 妈妈', s: '我们坐小船到湖对岸去野餐吧！', py: 'Wǒmen zuò xiǎochuán dào hú duì\'àn qù yěcān ba!', en: 'Let\'s take a little boat to the other side of the lake for a picnic!' },
   { who: '🧒 我', s: '好！我带了苹果和一串葡萄。', py: 'Hǎo! Wǒ dàile píngguǒ hé yí chuàn pútao.', en: 'OK! I brought apples and a bunch of grapes.' },
@@ -1359,7 +1359,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1556,7 +1556,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

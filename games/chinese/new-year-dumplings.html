@@ -754,9 +754,9 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 1 lesson 12. One idea: the 12 new characters of the lesson (新到热闹穿衣戴帽祝身体习).
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the sentence pattern (什么＋真＋怎么样), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the sentence pattern (什么＋真＋怎么样), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own (not the textbook's 课文, 句子 or 对话); only the characters and common words come from the lesson. */
-:root{ --page:#fef2f2; --blue:#b91c1c; --blue-s:#fecaca; --blue-d:#7f1d1d; }   /* this lesson's colours */
+:root{ --page:#fef2f2; --blue:#b91c1c; --blue-s:#fecaca; --blue-d:#7f1d1d; }   /* this lesson's colors */
 .opt::before{content:"🧧";position:absolute;right:8px;top:4px;font-size:16px}
 </style>
 </head>
@@ -858,7 +858,7 @@ var SENTENCES = [
   { s: '我给爷爷奶奶送上新年的＿，祝他们身体健康。', a: '祝福', no: ['身上', '体育'], en: 'I gave Grandpa and Grandma my New Year wishes and wished them good health.' },
   { s: '爷爷说，他每天早上都去公园锻炼＿。', a: '身体', no: ['帽子', '毛衣'], en: 'Grandpa says he goes to the park every morning to exercise.' },
   { s: '中午，大家一起包饺子，饺子馅里的菜都很＿。', a: '新鲜', no: ['草帽', '体育'], en: 'At noon we all made dumplings together, and the vegetables in the filling were very fresh.' },
-  { s: '假期里我每天都＿写春联，爷爷说我写得越来越好了。', a: '练习', no: ['新鲜', '热水'], en: 'During the holiday I practised writing New Year couplets every day, and Grandpa says I write better and better.' },
+  { s: '假期里我每天都＿写春联，爷爷说我写得越来越好了。', a: '练习', no: ['新鲜', '热水'], en: 'During the holiday I practiced writing New Year couplets every day, and Grandpa says I write better and better.' },
   { s: '去看舞狮的路上风很大，我的＿差点儿被吹走了。', a: '帽子', no: ['学习', '新年'], en: 'On the way to the lion dance it was very windy, and my hat nearly blew away.' },
   { s: '晚上，大人们在院子里放鞭炮＿新年，我们小孩子站得远远的。', a: '庆祝', no: ['毛衣', '热水'], en: 'In the evening the grown-ups set off firecrackers in the yard to celebrate the New Year, and we children stood far away.' },
   { s: '我们站在门口，＿了天上漂亮的烟花。', a: '看到', no: ['体育', '闹钟'], en: 'We stood by the door and saw beautiful fireworks in the sky.' },
@@ -867,7 +867,7 @@ var SENTENCES = [
   { s: '假期快结束了，我把＿调好了，要早点起床。', a: '闹钟', no: ['新年', '体育'], en: 'The holiday is nearly over, so I have set my alarm clock to get up early.' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '新年饺子', en: 'New Year dumplings', lines: [
   { who: '👩 妈妈', s: '今天是大年初一！你的新衣服穿好了吗？', py: 'Jīntiān shì dànián chūyī! Nǐ de xīn yīfu chuānhǎo le ma?', en: 'It’s the first day of the New Year! Have you put on your new clothes?' },
   { who: '👧 我', s: '穿好了！我还戴上了奶奶织的红帽子。', py: 'Chuānhǎo le! Wǒ hái dàishang le nǎinai zhī de hóng màozi.', en: 'Yes! I’m also wearing the red hat Grandma knitted.' },
@@ -1370,7 +1370,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1567,7 +1567,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

@@ -439,7 +439,7 @@
 </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Car Wash Day · 加油站</title>
+<title>Car Wash Day · 洗车日</title>
 <meta name="theme-color" content="#047857">
 <link rel="stylesheet" href="../../fonts/fonts.css">
 <style>
@@ -754,14 +754,14 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 5 lesson 3. One idea: the 15 new characters of the lesson.
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own; only the characters and common words come from the lesson. */
-:root{ --page:#ecfdf5; --blue:#047857; --blue-s:#a7f3d0; --blue-d:#065f46; }   /* this lesson's colours */
+:root{ --page:#ecfdf5; --blue:#047857; --blue-s:#a7f3d0; --blue-d:#065f46; }   /* this lesson's colors */
 .opt::before{content:"🚗";position:absolute;right:8px;top:4px;font-size:16px}
 </style>
 </head>
 <body>
-<header class="top"><h1>🚗 Car Wash Day <span class="han">加油站</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
+<header class="top"><h1>🚗 Car Wash Day <span class="han">洗车日</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
 <div class="wrap" id="app"></div>
 <script>
 /* ---------- content (characters and words from the lesson; all sentences are our own) ---------- */
@@ -779,8 +779,8 @@ var CHARS = [
    rad = the radical (部首) with its name, what it usually means, and other characters where you can see it; how = the meaning */
 var PARTS = [
   { c: '加', parts: ['力', '口'], r: 0, rad: '力', name: '力字旁', npy: 'lì zì páng', means: 'strength.', see: '动 努 助 功', how: 'Strength (力) and a mouth (口): long ago it meant adding words, saying more. Now it means "add". 加油 = fill up with fuel; also "come on, you can do it!"' },
-  { c: '油', parts: ['氵', '由'], r: 0, rad: '氵', name: '三点水', npy: 'sān diǎn shuǐ', means: 'water. It is in characters about water and liquids.', see: '河 海 洗 游 汤', how: 'A liquid (氵) and 由 (yóu), which gives the sound: oil. 加油 = fill up with fuel; 汽油 = petrol.' },
-  { c: '站', parts: ['立', '占'], r: 0, rad: '立', name: '立字旁', npy: 'lì zì páng', means: 'standing.', see: '童 端 竞 亲', how: 'Standing (立) and 占 (zhàn), which gives the sound: to stand; a place where you stop. 车站 = bus stop; 加油站 = petrol station.' },
+  { c: '油', parts: ['氵', '由'], r: 0, rad: '氵', name: '三点水', npy: 'sān diǎn shuǐ', means: 'water. It is in characters about water and liquids.', see: '河 海 洗 游 汤', how: 'A liquid (氵) and 由 (yóu), which gives the sound: oil. 加油 = fill up with fuel; 汽油 = gasoline.' },
+  { c: '站', parts: ['立', '占'], r: 0, rad: '立', name: '立字旁', npy: 'lì zì páng', means: 'standing.', see: '童 端 竞 亲', how: 'Standing (立) and 占 (zhàn), which gives the sound: to stand; a place where you stop. 车站 = bus stop; 加油站 = gas station.' },
   { c: '阔', parts: ['门', '活'], r: 0, rad: '门', name: '门字框', npy: 'mén zì kuàng', means: 'a door.', see: '问 闪 间 闹 闭', how: 'A door (门) and 活 (huó), which helps with the sound: wide open. 宽阔 = wide.' },
   { c: '速', parts: ['辶', '束'], r: 0, rad: '辶', name: '走之底', npy: 'zǒu zhī dǐ', means: 'walking or going somewhere.', see: '这 过 还 远 送', how: 'Going (辶) and 束 (shù), which helps with the sound: quick. 速度 = speed; 快速 = fast.' },
   { c: '路', parts: ['⻊', '各'], r: 0, rad: '⻊', name: '足字旁', npy: 'zú zì páng', means: 'the foot. It is in characters about feet and moving.', see: '跑 跳 踢 跟', how: 'A foot (⻊) and 各 (gè), which helps with the sound: a road you walk on. 马路 = road; 公路 = highway.' },
@@ -817,7 +817,7 @@ var ANCIENT = {
 var GROUPS = [CHARS.slice(0, 5), CHARS.slice(5, 10), CHARS.slice(10)];
 /* level 2: build a word. w = the word, k = which character is missing, no = characters that would also make a real word, so they are never offered */
 var WORDS = [
-  { w: '加油', k: 0, py: 'jiāyóu', en: 'fill up; come on!', e: '💪', no: ['刷'] }, { w: '汽油', k: 1, py: 'qìyóu', en: 'petrol', e: '⛽' },
+  { w: '加油', k: 0, py: 'jiāyóu', en: 'fill up; come on!', e: '💪', no: ['刷'] }, { w: '汽油', k: 1, py: 'qìyóu', en: 'gas', e: '⛽' },
   { w: '车站', k: 1, py: 'chēzhàn', en: 'bus stop', e: '🚏', no: ['速', '辆', '旁'] }, { w: '站住', k: 0, py: 'zhànzhù', en: 'stop! stand still', e: '✋', no: ['挡'] },
   { w: '宽阔', k: 1, py: 'kuānkuò', en: 'wide', e: '↔️' }, { w: '速度', k: 0, py: 'sùdù', en: 'speed', e: '🏎️', no: ['数'] },
   { w: '马路', k: 1, py: 'mǎlù', en: 'road', e: '🛣️', no: ['表'] }, { w: '路边', k: 0, py: 'lùbiān', en: 'roadside', e: '🚶', no: ['旁', '站'] },
@@ -830,14 +830,14 @@ var WORDS = [
 /* "Write it": more words with each character (common words, or words from the lesson), shown under the writing boxes with the
    words of level 2 that have it. w = the word, py = its pinyin, en = what it means */
 var MORE_WORDS = {
-  '加': [{ w: '加法', py: 'jiāfǎ', en: 'adding (maths)' }],
+  '加': [{ w: '加法', py: 'jiāfǎ', en: 'adding (math)' }],
   '油': [{ w: '油画', py: 'yóuhuà', en: 'oil painting' }],
   '站': [{ w: '站起来', py: 'zhàn qǐlai', en: 'stand up' }],
   '速': [{ w: '快速', py: 'kuàisù', en: 'fast' }],
   '路': [{ w: '公路', py: 'gōnglù', en: 'highway' }],
   '刷': [{ w: '刷子', py: 'shuāzi', en: 'brush' }],
   '表': [{ w: '表扬', py: 'biǎoyáng', en: 'praise' }],
-  '数': [{ w: '数学', py: 'shùxué', en: 'maths' }],
+  '数': [{ w: '数学', py: 'shùxué', en: 'math' }],
   '谈': [{ w: '谈天', py: 'tántiān', en: 'chat' }],
   '指': [{ w: '指着', py: 'zhǐzhe', en: 'pointing at' }]
 };
@@ -848,18 +848,18 @@ var PATTERN = [
     what: 'To say what comes first and what comes next, put 先 before the first action and 然后再 before the next one: 我们先放好书包，然后再去玩 = we put our school bags away first, then go and play.',
     ex: [{ s: '我们先放好书包，然后再去玩。', en: 'We put our school bags away first, then go and play.' }, { s: '妹妹先画画，然后再写作业。', en: 'My little sister draws first, then does her homework.' }, { s: '我们跟着妈妈先过马路，然后再往右拐。', en: 'We cross the road with Mom first, then turn right.' }] },
   { t: 'pick', from: '我写作业。写完以后，我看电视。', a: '我先写作业，然后再看电视。', no: ['我然后写作业，先再看电视。', '先我写作业，再然后看电视。'], en: 'I do my homework first, then watch TV.' },
-  { t: 'build', tiles: ['我们', '先', '排队，', '然后再', '上车'], ok: ['我们先排队，然后再上车。'], en: 'We queue first, then get on the bus.' },
+  { t: 'build', tiles: ['我们', '先', '排队，', '然后再', '上车'], ok: ['我们先排队，然后再上车。'], en: 'We line up first, then get on the bus.' },
   { t: 'pick', from: '弟弟穿衣服，穿好以后刷牙。', a: '弟弟先穿衣服，然后再刷牙。', no: ['弟弟然后穿衣服，先再刷牙。', '弟弟穿衣服，先然后再刷牙。'], en: 'My little brother gets dressed first, then brushes his teeth.' },
   { t: 'build', tiles: ['爸爸', '先', '洗菜，', '然后再', '炒菜'], ok: ['爸爸先洗菜，然后再炒菜。'], en: 'Dad washes the vegetables first, then cooks them.' },
   { t: 'build', tiles: ['你', '先', '看一看，', '然后再', '说'], ok: ['你先看一看，然后再说。'], en: 'Have a look first, then speak.' }
 ];
-/* level 4: our own letter to Auntie (Mum's younger sister) about washing the car and a drive to the park, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的小姨：" */
+/* level 4: our own letter to Auntie (Mom's younger sister) about washing the car and a drive to the park, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的小姨：" */
 var SENTENCES = [
   { s: '星期六早上，我先＿，然后帮爸爸洗车。', a: '刷牙', no: ['车站', '宽阔'], en: 'On Saturday morning I brushed my teeth first, then helped Dad wash the car.' },
   { s: '我拿着＿，把车门刷了一遍又一遍。', a: '刷子', no: ['手表', '数字'], en: 'I took a brush and scrubbed the car doors again and again.' },
   { s: '爸爸说，车前面的大玻璃能＿风。', a: '挡住', no: ['谈话', '表演'], en: 'Dad said the big glass at the front of the car blocks the wind.' },
   { s: '洗完以后，车子变得很＿。', a: '干净', no: ['路边', '一辆'], en: 'After the wash, the car was really clean.' },
-  { s: '去公园的路上，我们先去＿给车加油。', a: '加油站', no: ['手指', '速度'], en: 'On the way to the park, we first went to the petrol station to fill up.' },
+  { s: '去公园的路上，我们先去＿给车加油。', a: '加油站', no: ['手指', '速度'], en: 'On the way to the park, we first went to the gas station to fill up.' },
   { s: '那条公路很＿，路上的车都开得很快。', a: '宽阔', no: ['刷牙', '手表'], en: 'The highway was very wide, and the cars on it were going fast.' },
   { s: '爸爸说，开车的＿不能太快。', a: '速度', no: ['旁边', '刷子'], en: 'Dad said you must not drive too fast.' },
   { s: '我坐在弟弟＿，看着窗外的风景。', a: '旁边', no: ['数字', '表演'], en: 'I sat next to my little brother and looked at the view out of the window.' },
@@ -869,18 +869,18 @@ var SENTENCES = [
   { s: '公园里有人在＿，大家都在拍手。', a: '表演', no: ['挡住', '汽油'], en: 'Someone was performing in the park, and everyone was clapping.' },
   { s: '回家的时候，我们在＿看见一只小猫。', a: '路边', no: ['数字', '宽阔'], en: 'On the way home, we saw a kitten by the side of the road.' },
   { s: '一路上，爸爸和我们一直在＿，大家都很开心。', a: '谈话', no: ['刷牙', '手表'], en: 'All the way, Dad kept chatting with us, and everyone was happy.' },
-  { s: '小姨，你知道汽车加一次＿要多少钱吗？', a: '汽油', no: ['旁边', '表演'], en: 'Auntie, do you know how much it costs to fill a car with petrol?' },
+  { s: '小姨，你知道汽车加一次＿要多少钱吗？', a: '汽油', no: ['旁边', '表演'], en: 'Auntie, do you know how much it costs to fill a car with gas?' },
   { s: '我会认一百以内的＿了！', a: '数字', no: ['宽阔', '车站'], en: 'I can read all the numbers up to a hundred now!' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '洗车日', en: 'Car wash day', lines: [
   { who: '👨 爸爸', s: '今天天气好，我们先把车洗干净，然后再去公园。', py: 'Jīntiān tiānqì hǎo, wǒmen xiān bǎ chē xǐ gānjìng, ránhòu zài qù gōngyuán.', en: 'It\'s a nice day. Let\'s wash the car first, then go to the park.', pat: true },
   { who: '🧒 我', s: '我拿刷子刷车门，弟弟刷车轮。', py: 'Wǒ ná shuāzi shuā chēmén, dìdi shuā chēlún.', en: 'I\'ll brush the doors, and my little brother can brush the wheels.' },
   { who: '👦 弟弟', s: '爸爸，车前面这块大玻璃叫什么？', py: 'Bàba, chē qiánmian zhè kuài dà bōli jiào shénme?', en: 'Dad, what is this big glass at the front of the car called?' },
   { who: '👨 爸爸', s: '叫挡风玻璃，它能挡住风，也能挡住小虫子。', py: 'Jiào dǎngfēng bōli, tā néng dǎngzhù fēng, yě néng dǎngzhù xiǎo chóngzi.', en: 'It\'s called the windscreen. It keeps out the wind, and little bugs too.' },
   { who: '🧒 我', s: '洗完了！这辆车干干净净的，像新的一样。', py: 'Xǐ wán le! Zhè liàng chē gāngānjìngjìng de, xiàng xīn de yíyàng.', en: 'All done! The car is spotless, like a new one.' },
-  { who: '👨 爸爸', s: '去公园的路上，我们在加油站停一下，给车加满油。', py: 'Qù gōngyuán de lù shang, wǒmen zài jiāyóuzhàn tíng yíxià, gěi chē jiā mǎn yóu.', en: 'On the way to the park, we\'ll stop at the petrol station and fill up the car.' },
+  { who: '👨 爸爸', s: '去公园的路上，我们在加油站停一下，给车加满油。', py: 'Qù gōngyuán de lù shang, wǒmen zài jiāyóuzhàn tíng yíxià, gěi chē jiā mǎn yóu.', en: 'On the way to the park, we\'ll stop at the gas station and fill up the car.' },
   { who: '👦 弟弟', s: '这条公路真宽阔！路旁的树往后跑，速度表上的数字越来越大。', py: 'Zhè tiáo gōnglù zhēn kuānkuò! Lù páng de shù wǎng hòu pǎo, sùdùbiǎo shang de shùzì yuè lái yuè dà.', en: 'This highway is so wide! The trees by the road rush past, and the numbers on the speedometer keep going up.' },
   { who: '🧒 我', s: '我指着表上的数字说：“爸爸，别开太快哦！”', py: 'Wǒ zhǐzhe biǎo shang de shùzì shuō: "Bàba, bié kāi tài kuài o!"', en: 'I point at the numbers on the dial and say, "Dad, don\'t drive too fast!"' },
   { who: '👨 爸爸', s: '放心！我们一边谈天，一边慢慢开。', py: 'Fàngxīn! Wǒmen yìbiān tántiān, yìbiān mànmàn kāi.', en: 'Don\'t worry! We\'ll chat and drive slowly.' }
@@ -1371,7 +1371,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1568,7 +1568,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

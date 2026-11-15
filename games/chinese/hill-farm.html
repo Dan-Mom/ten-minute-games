@@ -754,9 +754,9 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 1 lesson 3. One idea: the 10 new characters of the lesson (pictures of nature: 日月山石田水火土木禾).
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises saying dates (month first, then day), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises saying dates (month first, then day), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    The lesson has no sentence box; its reading practice is months and dates, so the pattern (数字＋月＋数字＋日) is our own choice from that. All sentences and the story here are our own; only the characters and common words come from the lesson. */
-:root{ --page:#f7fee7; --blue:#4d7c0f; --blue-s:#d9f99d; --blue-d:#3f6212; }   /* this lesson's colours */
+:root{ --page:#f7fee7; --blue:#4d7c0f; --blue-s:#d9f99d; --blue-d:#3f6212; }   /* this lesson's colors */
 .opt::before{content:"🌾";position:absolute;right:8px;top:4px;font-size:16px}
 </style>
 </head>
@@ -856,7 +856,7 @@ var SENTENCES = [
   { s: '爷爷说，下个月是我的＿，要给我做个大蛋糕！', a: '生日', no: ['火山', '石头'], en: 'Grandpa says my birthday is next month, and he will make me a big cake!' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '爷爷奶奶的农场', en: 'Grandpa and Grandma’s farm', lines: [
   { who: '👵 奶奶', s: '今天是七月十日，欢迎来农场玩！', py: 'Jīntiān shì qī yuè shí rì, huānyíng lái nóngchǎng wán!', en: 'Today is July 10th. Welcome to the farm!', pat: true },
   { who: '👦 弟弟', s: '哇，这里有山，有田，还有小河！', py: 'Wā, zhèlǐ yǒu shān, yǒu tián, hái yǒu xiǎo hé!', en: 'Wow, there are mountains, fields and a little river here!' },
@@ -1359,7 +1359,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1556,7 +1556,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

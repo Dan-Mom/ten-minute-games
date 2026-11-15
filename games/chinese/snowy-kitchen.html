@@ -439,7 +439,7 @@
 </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Snowy Kitchen · 雪</title>
+<title>Snowy Kitchen · 雪天厨房</title>
 <meta name="theme-color" content="#be123c">
 <link rel="stylesheet" href="../../fonts/fonts.css">
 <style>
@@ -754,20 +754,20 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 3 lesson 6. One idea: the 14 new characters of the lesson.
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own; only the characters and common words come from the lesson. */
-:root{ --page:#fff1f2; --blue:#be123c; --blue-s:#fecdd3; --blue-d:#9f1239; }   /* this lesson's colours */
+:root{ --page:#fff1f2; --blue:#be123c; --blue-s:#fecdd3; --blue-d:#9f1239; }   /* this lesson's colors */
 .opt::before{content:"❄";position:absolute;right:9px;top:4px;font-size:18px;color:#7dd3fc}
 </style>
 </head>
 <body>
-<header class="top"><h1>❄️ Snowy Kitchen <span class="han">雪</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
+<header class="top"><h1>❄️ Snowy Kitchen <span class="han">雪天厨房</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
 <div class="wrap" id="app"></div>
 <script>
 /* ---------- content (characters and words from the lesson; all sentences are our own) ---------- */
 var CHARS = [
   { c: '满', py: 'mǎn', en: 'full', e: '🫙' }, { c: '猫', py: 'māo', en: 'cat', e: '🐱' },
-  { c: '糖', py: 'táng', en: 'sugar; sweets', e: '🍬' }, { c: '狗', py: 'gǒu', en: 'dog', e: '🐶' },
+  { c: '糖', py: 'táng', en: 'sugar; candy', e: '🍬' }, { c: '狗', py: 'gǒu', en: 'dog', e: '🐶' },
   { c: '盐', py: 'yán', en: 'salt', e: '🧂' }, { c: '争', py: 'zhēng', en: 'argue; try to be first', e: '🗯️' },
   { c: '自', py: 'zì', en: 'self', e: '🙋' }, { c: '己', py: 'jǐ', en: 'oneself (自己)', e: '🪞' },
   { c: '兔', py: 'tù', en: 'rabbit', e: '🐰' }, { c: '过', py: 'guò', en: 'pass, go past', e: '🚶' },
@@ -779,7 +779,7 @@ var CHARS = [
 var PARTS = [
   { c: '满', parts: ['氵', ''], rest: 'right: a part that long ago gave the sound', r: 0, rad: '氵', name: '三点水', npy: 'sān diǎn shuǐ', means: 'water. It is in characters about water and liquids.', see: '河 海 洗 游 汤', how: 'Water (氵) and a part that long ago gave the sound: water right up to the top. 满地 = all over the ground; 装满 = fill up.' },
   { c: '猫', parts: ['犭', '苗'], r: 0, rad: '犭', name: '反犬旁', npy: 'fǎn quǎn páng', means: 'a dog or another animal.', see: '狗 猜 狮 猪 猴', how: 'An animal (犭) and 苗 (miáo), which gives the sound. Memory trick: 苗 sounds like a cat saying "miāo". 小猫 = kitten.' },
-  { c: '糖', parts: ['米', '唐'], r: 0, rad: '米', name: '米字旁', npy: 'mǐ zì páng', means: 'rice. It is in characters about rice and grain.', see: '粉 粮 粥 糕', how: 'Rice (米) and 唐 (táng), which gives the sound. Long ago sugar was made from rice and other grain. 白糖 = white sugar; 糖果 = sweets.' },
+  { c: '糖', parts: ['米', '唐'], r: 0, rad: '米', name: '米字旁', npy: 'mǐ zì páng', means: 'rice. It is in characters about rice and grain.', see: '粉 粮 粥 糕', how: 'Rice (米) and 唐 (táng), which gives the sound. Long ago sugar was made from rice and other grain. 白糖 = white sugar; 糖果 = candy.' },
   { c: '狗', parts: ['犭', '句'], r: 0, rad: '犭', name: '反犬旁', npy: 'fǎn quǎn páng', means: 'a dog or another animal.', see: '猫 猜 狮 猪 猴', how: 'An animal (犭) and 句, which helps with the sound. 小狗 = puppy.' },
   { c: '盐', parts: ['', '皿'], rest: 'top: 土 and 卜', r: 1, rad: '皿', name: '皿字底', npy: 'mǐn zì dǐ', means: 'a bowl or a dish.', see: '盘 盆 盒 盖', how: 'A dish (皿) at the bottom. The old form 鹽 was much harder to write. 放盐 = add salt; 盐水 = salt water.' },
   { c: '争', parts: ['⺈', ''], rest: 'below: 彐 and 亅', r: 0, rad: '⺈', name: '刀字头', npy: 'dāo zì tóu', means: 'a knife on its side. As a radical it often just marks the shape.', see: '危 免', how: 'Long ago 争 (爭) was two hands pulling at the same thing: both want it. 别争了 = stop arguing; 争着说 = all try to talk first.' },
@@ -830,7 +830,7 @@ var WORDS = [
 var MORE_WORDS = {
   '满': [{ w: '满意', py: 'mǎnyì', en: 'pleased' }],
   '猫': [{ w: '猫咪', py: 'māomī', en: 'kitty' }],
-  '糖': [{ w: '糖果', py: 'tángguǒ', en: 'sweets' }],
+  '糖': [{ w: '糖果', py: 'tángguǒ', en: 'candy' }],
   '狗': [{ w: '狗狗', py: 'gǒugou', en: 'doggy' }],
   '盐': [{ w: '盐水', py: 'yánshuǐ', en: 'salt water' }],
   '争': [{ w: '争吵', py: 'zhēngchǎo', en: 'quarrel' }],
@@ -851,10 +851,10 @@ var PATTERN = [
   { t: 'pick', from: '你闻一下，你会知道是什么。', a: '你闻一闻就知道是什么了。', no: ['你闻就一闻知道是什么了。', '你一闻闻就知道是什么了。'], en: 'Have a sniff and you\'ll know what it is.' },
   { t: 'build', tiles: ['你', '听一听', '就知道', '是谁', '来了'], ok: ['你听一听就知道是谁来了。'], en: 'Have a listen and you\'ll know who has come.' },
   { t: 'pick', from: '弟弟数了一下苹果，他知道有几个了。', a: '弟弟数一数，就知道有几个苹果了。', no: ['弟弟一数数，就知道有几个苹果了。', '弟弟数一数，知道就有几个苹果了。'], en: 'My little brother counts them, and then he knows how many apples there are.' },
-  { t: 'build', tiles: ['妈妈', '尝一尝', '就知道', '汤', '咸不咸'], ok: ['妈妈尝一尝就知道汤咸不咸。', '妈妈尝一尝汤就知道咸不咸。'], en: 'Mum has a taste and knows whether the soup is salty.' },
+  { t: 'build', tiles: ['妈妈', '尝一尝', '就知道', '汤', '咸不咸'], ok: ['妈妈尝一尝就知道汤咸不咸。', '妈妈尝一尝汤就知道咸不咸。'], en: 'Mom has a taste and knows whether the soup is salty.' },
   { t: 'build', tiles: ['我们', '找一找', '就能', '找到', '小猫'], ok: ['我们找一找就能找到小猫。'], en: 'If we look around a bit, we can find the kitten.' }
 ];
-/* level 4: our own letter to Grandma (Mum's mum) about making tangyuan on a snowy day, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的外婆：" */
+/* level 4: our own letter to Grandma (Mom's mom) about making tangyuan on a snowy day, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的外婆：" */
 var SENTENCES = [
   { s: '快＿了，奶奶带我们在厨房里做汤圆。', a: '过年', no: ['凉快', '白糖'], en: 'It was nearly New Year, so Grandma made tangyuan with us in the kitchen.' },
   { s: '桌上有两个罐子，都装得＿的。', a: '满满', no: ['自己', '路过'], en: 'There were two jars on the table, both filled right up.' },
@@ -873,7 +873,7 @@ var SENTENCES = [
   { s: '外婆，你喜欢吃＿的汤圆，还是咸咸的汤圆？', a: '甜甜', no: ['路过', '凉水'], en: 'Grandma, do you like sweet tangyuan or savoury ones?' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '白糖还是盐', en: 'Sugar or salt?', lines: [
   { who: '🧒 我', s: '外面下雪了，满地白白的，像撒了一层白糖！', py: 'Wàimian xià xuě le, mǎndì báibái de, xiàng sǎle yì céng báitáng!', en: 'It\'s snowing outside! The ground is all white, as if someone had sprinkled sugar on it!' },
   { who: '👵 奶奶', s: '快过年了，我们来做甜甜的汤圆吧！', py: 'Kuài guònián le, wǒmen lái zuò tiántián de tāngyuán ba!', en: 'It\'s nearly New Year. Let\'s make some sweet tangyuan!' },
@@ -1372,7 +1372,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1569,7 +1569,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

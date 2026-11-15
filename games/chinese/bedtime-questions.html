@@ -754,9 +754,9 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 2 lesson 9. One idea: the 11 new characters of the lesson (时夜光河流动湖飞游长想).
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the sentence pattern (为什么……？), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the sentence pattern (为什么……？), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own (not the textbook's 课文, 句子 or 对话); only the characters and common words come from the lesson. */
-:root{ --page:#f5f3ff; --blue:#6d28d9; --blue-s:#ddd6fe; --blue-d:#4c1d95; }   /* this lesson's colours */
+:root{ --page:#f5f3ff; --blue:#6d28d9; --blue-s:#ddd6fe; --blue-d:#4c1d95; }   /* this lesson's colors */
 .opt::before{content:"🌙";position:absolute;right:8px;top:4px;font-size:16px}
 </style>
 </head>
@@ -864,7 +864,7 @@ var SENTENCES = [
   { s: '您在外地工作，一定很＿吧？我们都很想您。', a: '想家', no: ['湖边', '飞机'], en: 'You work far from home, so you must be homesick. We all miss you.' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '睡前的问题', en: 'Bedtime questions', lines: [
   { who: '👵 奶奶', s: '九点了，睡觉的时间到了，快上床吧！', py: 'Jiǔ diǎn le, shuìjiào de shíjiān dào le, kuài shàng chuáng ba!', en: 'It’s nine o’clock. Bedtime! Into bed, quick!' },
   { who: '👦 弟弟', s: '奶奶，我还有一个问题：冬天湖面为什么会结冰？', py: 'Nǎinai, wǒ hái yǒu yí ge wèntí: dōngtiān húmiàn wèi shénme huì jié bīng?', en: 'Grandma, I have one more question: why does the lake freeze in winter?', pat: true },
@@ -1367,7 +1367,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1564,7 +1564,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

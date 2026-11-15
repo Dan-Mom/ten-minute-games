@@ -754,9 +754,9 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 1 lesson 1. One idea: the 17 new characters of the lesson (the numbers 一 to 十 and 百, and 又两水中不见).
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises counting with a number + 个, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises counting with a number + 个, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    The lesson has no sentence box, so the pattern (number + 个, and 两个 rather than 二个) is our own choice. All sentences and the story here are our own; only the characters and common words come from the lesson. */
-:root{ --page:#fff7ed; --blue:#c2410c; --blue-s:#fed7aa; --blue-d:#9a3412; }   /* this lesson's colours */
+:root{ --page:#fff7ed; --blue:#c2410c; --blue-s:#fed7aa; --blue-d:#9a3412; }   /* this lesson's colors */
 .opt::before{content:"🍎";position:absolute;right:8px;top:4px;font-size:16px}
 </style>
 </head>
@@ -825,8 +825,8 @@ var GROUPS = [CHARS.slice(0, 6), CHARS.slice(6, 11), CHARS.slice(11)];
 var WORDS = [
   { w: '一起', k: 0, py: 'yìqǐ', en: 'together', e: '🤝' }, { w: '二月', k: 0, py: 'èryuè', en: 'February', e: '📅' },
   { w: '星期三', k: 2, py: 'xīngqīsān', en: 'Wednesday', e: '🗓️' }, { w: '四季', k: 0, py: 'sìjì', en: 'the four seasons', e: '🍂' },
-  { w: '五颜六色', k: 0, py: 'wǔ yán liù sè', en: 'colourful, lots of colours', e: '🌈' }, { w: '六月', k: 0, py: 'liùyuè', en: 'June', e: '☀️' },
-  { w: '七彩', k: 0, py: 'qīcǎi', en: 'seven colours', e: '🎨', no: ['五', '水'] }, { w: '八爪鱼', k: 0, py: 'bāzhuǎyú', en: 'octopus (eight arms)', e: '🐙' },
+  { w: '五颜六色', k: 0, py: 'wǔ yán liù sè', en: 'colorful, lots of colors', e: '🌈' }, { w: '六月', k: 0, py: 'liùyuè', en: 'June', e: '☀️' },
+  { w: '七彩', k: 0, py: 'qīcǎi', en: 'seven colors', e: '🎨', no: ['五', '水'] }, { w: '八爪鱼', k: 0, py: 'bāzhuǎyú', en: 'octopus (eight arms)', e: '🐙' },
   { w: '九十', k: 0, py: 'jiǔshí', en: 'ninety (90)', e: '🔢' }, { w: '十五', k: 0, py: 'shíwǔ', en: 'fifteen (15)', e: '🔢' },
   { w: '一百', k: 1, py: 'yìbǎi', en: 'one hundred (100)', e: '💯', no: ['两'] }, { w: '又大又圆', k: 0, py: 'yòu dà yòu yuán', en: 'big and round', e: '🍉' },
   { w: '两个', k: 0, py: 'liǎng ge', en: 'two (things)', e: '✌️' }, { w: '喝水', k: 1, py: 'hē shuǐ', en: 'drink water', e: '🥤' },
@@ -869,11 +869,11 @@ var PATTERN = [
 /* level 4: our own letter to Grandma about a family trip to the fruit shop, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的爷爷：" */
 var SENTENCES = [
   { s: '今天是＿，爷爷、爸爸、妈妈和我去了水果店。', a: '星期三', no: ['八爪鱼', '喝水'], en: 'Today was Wednesday. Grandpa, Dad, Mom and I went to the fruit shop.' },
-  { s: '店里的水果＿的，真好看。', a: '五颜六色', no: ['再见', '两个'], en: 'The fruit in the shop came in all colours. So pretty!' },
+  { s: '店里的水果＿的，真好看。', a: '五颜六色', no: ['再见', '两个'], en: 'The fruit in the shop came in all colors. So pretty!' },
   { s: '叔叔说，店里一年＿都有水果。', a: '四季', no: ['喝水', '再见'], en: 'The man at the shop said they have fruit all year round.' },
   { s: '我用＿数了数苹果。', a: '中文', no: ['喝水', '八爪鱼'], en: 'I counted the apples in Chinese.' },
   { s: '店里的西瓜＿。', a: '又大又圆', no: ['中文', '再见'], en: 'The watermelons in the shop were big and round.' },
-  { s: '店里还有＿的棒棒糖，像彩虹一样。', a: '七彩', no: ['喝水', '再见'], en: 'The shop also had seven-coloured lollipops, like little rainbows.' },
+  { s: '店里还有＿的棒棒糖，像彩虹一样。', a: '七彩', no: ['喝水', '再见'], en: 'The shop also had seven-colored lollipops, like little rainbows.' },
   { s: '妈妈买了＿西瓜。', a: '两个', no: ['喝水', '四季'], en: 'Mom bought two watermelons.' },
   { s: '我们还买了＿个苹果。', a: '十五', no: ['中文', '不要'], en: 'We also bought fifteen apples.' },
   { s: '叔叔送我一个桃子，说这个＿钱。', a: '不要', no: ['一起', '星期三'], en: 'The man gave me a peach and said it was free.' },
@@ -884,11 +884,11 @@ var SENTENCES = [
   { s: '下次您和我们＿去，好吗？', a: '一起', no: ['再见', '九十'], en: 'Next time, will you come with us?' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '去水果店', en: 'Off to the fruit shop', lines: [
   { who: '👴 爷爷', s: '今天我们一起去水果店，好不好？', py: 'Jīntiān wǒmen yìqǐ qù shuǐguǒ diàn, hǎo bu hǎo?', en: 'Shall we all go to the fruit shop together today?' },
   { who: '👧 我', s: '好！爷爷，我会用中文数水果。', py: 'Hǎo! Yéye, wǒ huì yòng Zhōngwén shǔ shuǐguǒ.', en: 'Yes! Grandpa, I can count the fruit in Chinese.' },
-  { who: '🧑‍🌾 叔叔', s: '欢迎！看，我们的水果五颜六色的。', py: 'Huānyíng! Kàn, wǒmen de shuǐguǒ wǔ yán liù sè de.', en: 'Welcome! Look, our fruit comes in all colours.' },
+  { who: '🧑‍🌾 叔叔', s: '欢迎！看，我们的水果五颜六色的。', py: 'Huānyíng! Kàn, wǒmen de shuǐguǒ wǔ yán liù sè de.', en: 'Welcome! Look, our fruit comes in all colors.' },
   { who: '👧 我', s: '一、二、三、四、五、六、七、八、九、十！这一筐有十个苹果。', py: 'Yī, èr, sān, sì, wǔ, liù, qī, bā, jiǔ, shí! Zhè yì kuāng yǒu shí ge píngguǒ.', en: 'One, two, three, four, five, six, seven, eight, nine, ten! There are ten apples in this basket.' },
   { who: '👩 妈妈', s: '西瓜又大又圆，我们买两个西瓜吧。', py: 'Xīguā yòu dà yòu yuán, wǒmen mǎi liǎng ge xīguā ba.', en: 'The watermelons are big and round. Let’s buy two.', pat: true },
   { who: '🧑‍🌾 叔叔', s: '小朋友，这个桃子送给你，不要钱。', py: 'Xiǎopéngyou, zhège táozi sòng gěi nǐ, bú yào qián.', en: 'This peach is for you, little one. It’s free.' },
@@ -1390,7 +1390,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1587,7 +1587,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

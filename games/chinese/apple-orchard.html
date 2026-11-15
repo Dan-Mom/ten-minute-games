@@ -439,7 +439,7 @@
 </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Apple Orchard · 狐狸和葡萄</title>
+<title>Apple Orchard · 苹果园</title>
 <meta name="theme-color" content="#166534">
 <link rel="stylesheet" href="../../fonts/fonts.css">
 <style>
@@ -754,14 +754,14 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 5 lesson 5. One idea: the 15 new characters of the lesson.
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own; only the characters and common words come from the lesson. */
-:root{ --page:#f0fdf4; --blue:#166534; --blue-s:#bbf7d0; --blue-d:#14532d; }   /* this lesson's colours */
+:root{ --page:#f0fdf4; --blue:#166534; --blue-s:#bbf7d0; --blue-d:#14532d; }   /* this lesson's colors */
 .opt::before{content:"🍎";position:absolute;right:8px;top:4px;font-size:16px}
 </style>
 </head>
 <body>
-<header class="top"><h1>🍎 Apple Orchard <span class="han">狐狸和葡萄</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
+<header class="top"><h1>🍎 Apple Orchard <span class="han">苹果园</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
 <div class="wrap" id="app"></div>
 <script>
 /* ---------- content (characters and words from the lesson; all sentences are our own) ---------- */
@@ -869,7 +869,7 @@ var SENTENCES = [
   { s: '爷爷，你听了是不是也会＿大笑？', a: '哈哈', no: ['书架', '足够'], en: 'Grandpa, are you going to laugh "haha" when you hear this?' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '去果园摘苹果', en: 'Picking apples in the orchard', lines: [
   { who: '👨 爸爸', s: '今天天气很热，大家渴不渴？先喝点水，我们再去果园摘苹果。', py: 'Jīntiān tiānqì hěn rè, dàjiā kě bu kě? Xiān hē diǎn shuǐ, wǒmen zài qù guǒyuán zhāi píngguǒ.', en: 'It\'s hot today. Is anyone thirsty? Have some water first, then we\'ll go and pick apples in the orchard.' },
   { who: '🧒 我', s: '哈哈，树上的苹果又大又红，真不错！我们运气太好了！', py: 'Hāhā, shù shang de píngguǒ yòu dà yòu hóng, zhēn búcuò! Wǒmen yùnqi tài hǎo le!', en: 'Haha, the apples on the trees were big and red. Brilliant! We were so lucky!' },
@@ -1366,7 +1366,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1563,7 +1563,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

@@ -754,9 +754,9 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 1 lesson 11. One idea: the 10 new characters of the lesson (认方向面太阳东西北南).
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the sentence pattern (地方的＋东/南/西/北面＋是＋东西), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the sentence pattern (地方的＋东/南/西/北面＋是＋东西), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own (not the textbook's 课文, 句子 or 对话); only the characters and common words come from the lesson. */
-:root{ --page:#eff6ff; --blue:#1d4ed8; --blue-s:#bfdbfe; --blue-d:#1e3a8a; }   /* this lesson's colours */
+:root{ --page:#eff6ff; --blue:#1d4ed8; --blue-s:#bfdbfe; --blue-d:#1e3a8a; }   /* this lesson's colors */
 .opt::before{content:"🧭";position:absolute;right:8px;top:4px;font-size:16px}
 </style>
 </head>
@@ -766,7 +766,7 @@ button{-webkit-appearance:none;appearance:none}
 <script>
 /* ---------- content (characters and words from the lesson; all sentences are our own) ---------- */
 var CHARS = [
-  { c: '认', py: 'rèn', en: 'recognise, know', e: '🔍' }, { c: '方', py: 'fāng', en: 'direction; square', e: '🟦' },
+  { c: '认', py: 'rèn', en: 'recognize, know', e: '🔍' }, { c: '方', py: 'fāng', en: 'direction; square', e: '🟦' },
   { c: '向', py: 'xiàng', en: 'toward; direction', e: '➡️' }, { c: '面', py: 'miàn', en: 'face; side', e: '🙂' },
   { c: '太', py: 'tài', en: 'too, very', e: '💯' }, { c: '阳', py: 'yáng', en: 'the sun, sunshine', e: '☀️' },
   { c: '东', py: 'dōng', en: 'east', e: '🌅' }, { c: '西', py: 'xī', en: 'west', e: '🌇' },
@@ -775,7 +775,7 @@ var CHARS = [
 /* level 1: how each character is built. parts = the pieces (r = which piece is the radical; rest = a piece described in words),
    rad = the radical (部首) with its name, what it usually means, and other characters where you can see it; how = the meaning */
 var PARTS = [
-  { c: '认', parts: ['讠', '人'], r: 0, rad: '讠', name: '言字旁', npy: 'yán zì páng', means: 'words and speaking.', see: '说 话 语 读', how: 'Speech (讠) and a person (人). In old writing it was 認. 认 means recognise: 认识 = know (someone); 认字 = read characters.' },
+  { c: '认', parts: ['讠', '人'], r: 0, rad: '讠', name: '言字旁', npy: 'yán zì páng', means: 'words and speaking.', see: '说 话 语 读', how: 'Speech (讠) and a person (人). In old writing it was 認. 认 means recognize: 认识 = know (someone); 认字 = read characters.' },
   { c: '方', parts: ['方'], r: 0, rad: '方', name: '方字旁', npy: 'fāng zì páng', means: 'a square; a direction.', see: '旅 族 旗', how: '方 means a direction, or a square. 方向 = direction; 地方 = place.' },
   { c: '向', parts: ['丿', ''], rest: 'the rest: a house with a window (口)', r: 0, rad: '丿', name: '撇', npy: 'piě', means: 'a falling stroke. As a radical it does not add a meaning.', see: '九 久 么 乐', how: 'Long ago 向 was a house with a window (口). Some say it first meant a window. Today 向 means toward: 向北走 = walk north.' },
   { c: '面', parts: ['面'], r: 0, rad: '面', name: '面字', npy: 'miàn zì', means: 'a face. Very few characters have it.', see: '靥', how: 'Long ago 面 was a face with one big eye in it. 面 means face, or side: 东面 = the east side. 面条 = noodles (in old writing 麵).' },
@@ -857,7 +857,7 @@ var SENTENCES = [
   { s: '我们都很想您，希望能早点和您＿！', a: '见面', no: ['面条', '东方'], en: 'We all miss you and hope to see you soon!' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '指南针寻宝', en: 'A compass treasure hunt', lines: [
   { who: '👨 爸爸', s: '今天玩寻宝游戏！你们认识这个指南针吗？', py: 'Jīntiān wán xúnbǎo yóuxì! Nǐmen rènshi zhège zhǐnánzhēn ma?', en: 'Today we’re playing a treasure hunt! Do you know what this compass is?' },
   { who: '👧 我', s: '认识！红色的一头指向北方。', py: 'Rènshi! Hóngsè de yì tóu zhǐxiàng běifāng.', en: 'Yes! The red end points north.' },
@@ -1359,7 +1359,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1556,7 +1556,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

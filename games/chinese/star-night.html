@@ -439,7 +439,7 @@
 </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Star Night · 数星星</title>
+<title>Star Night · 星星之夜</title>
 <meta name="theme-color" content="#24366e">
 <link rel="stylesheet" href="../../fonts/fonts.css">
 <style>
@@ -754,14 +754,14 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game 9. One idea: the 13 new characters of the lesson.
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own; only the characters and common words come from the lesson. */
-:root{ --page:#eef1fa; --blue:#24366e; --blue-s:#d8def3; --blue-d:#172449; }   /* this lesson's colours */
+:root{ --page:#eef1fa; --blue:#24366e; --blue-s:#d8def3; --blue-d:#172449; }   /* this lesson's colors */
 .opt::before{content:"";position:absolute;right:8px;top:8px;width:18px;height:18px;background:#f5c518;clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)}
 </style>
 </head>
 <body>
-<header class="top"><h1>🔭 Star Night <span class="han">数星星</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
+<header class="top"><h1>🔭 Star Night <span class="han">星星之夜</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
 <div class="wrap" id="app"></div>
 <script>
 /* ---------- content (characters and words from the lesson; all sentences are our own) ---------- */
@@ -777,7 +777,7 @@ var CHARS = [
 /* level 1: how each character is built. parts = the pieces (r = which piece is the radical; rest = a piece described in words),
    rad = the radical (部首) with its name, what it usually means, and other characters where you can see it; how = the meaning */
 var PARTS = [
-  { c: '数', parts: ['娄', '攵'], r: 1, rad: '攵', name: '反文旁', npy: 'fǎn wén páng', means: 'a hand holding a stick: doing something.', see: '放 教 收 救 故', how: '娄 (lóu) helps with the sound and 攵 is a hand doing something: counting things one by one. 数 shǔ = to count; 数 shù = a number; 数学 = maths.' },
+  { c: '数', parts: ['娄', '攵'], r: 1, rad: '攵', name: '反文旁', npy: 'fǎn wén páng', means: 'a hand holding a stick: doing something.', see: '放 教 收 救 故', how: '娄 (lóu) helps with the sound and 攵 is a hand doing something: counting things one by one. 数 shǔ = to count; 数 shù = a number; 数学 = math.' },
   { c: '空', parts: ['穴', '工'], r: 0, rad: '穴', name: '穴宝盖', npy: 'xué bǎo gài', means: 'a cave or a hole. It is in characters about holes and openings.', see: '穿 窗 窄 究 突', how: 'A hole (穴) and 工 (gōng), which helps with the sound: an empty hole. 空 = empty; 天空 = the sky.' },
   { c: '靠', parts: ['告', '非'], r: 1, rad: '非', name: '非字底', npy: 'fēi zì dǐ', means: 'two sides back to back. Only a few characters are listed under it, but you can see 非 in many others.', see: '悲 排 辈 罪', how: '告 (gào) gives the sound and 非 below shows two sides back to back. 靠 = lean on; 靠近 = come close to.' },
   { c: '仰', parts: ['亻', '卬'], r: 0, rad: '亻', name: '单人旁', npy: 'dān rén páng', means: 'a person. It is in characters about people.', see: '你 他 们 住 休', how: 'A person (亻) and 卬 (áng), which helps with the sound: a person looking up. 仰头 = tilt your head back; 仰望 = look up at.' },
@@ -812,7 +812,7 @@ var ANCIENT = {
 var GROUPS = [CHARS.slice(0, 5), CHARS.slice(5, 9), CHARS.slice(9)];
 /* level 2: build a word. w = the word, k = which character is missing, no = characters that would also make a real word, so they are never offered */
 var WORDS = [
-  { w: '数学', k: 0, py: 'shùxué', en: 'maths', e: '➗', no: ['力'] }, { w: '数星星', k: 0, py: 'shǔ xīngxing', en: 'count the stars', e: '✨' }, { w: '天空', k: 1, py: 'tiānkōng', en: 'the sky', e: '🌌', no: ['数'] },
+  { w: '数学', k: 0, py: 'shùxué', en: 'math', e: '➗', no: ['力'] }, { w: '数星星', k: 0, py: 'shǔ xīngxing', en: 'count the stars', e: '✨' }, { w: '天空', k: 1, py: 'tiānkōng', en: 'the sky', e: '🌌', no: ['数'] },
   { w: '靠近', k: 0, py: 'kàojìn', en: 'come close to', e: '🤏', no: ['离'] }, { w: '仰头', k: 0, py: 'yǎngtóu', en: 'tilt your head back', e: '🙆', no: ['空'] },
   { w: '一颗星', k: 1, py: 'yì kē xīng', en: 'a star', e: '⭐' }, { w: '很久', k: 1, py: 'hěn jiǔ', en: 'a long time', e: '⏳', no: ['清', '空'] },
   { w: '清楚', k: 0, py: 'qīngchu', en: 'clear', e: '👓' }, { w: '连起来', k: 0, py: 'lián qǐlai', en: 'join up', e: '🔗', no: ['数', '仰'] },
@@ -861,12 +861,12 @@ var SENTENCES = [
   { s: '城市里的灯太亮了，要＿城市才能看到很多星星。', a: '离开', no: ['连起来', '力气'], en: 'The city lights are too bright. You have to leave the city to see lots of stars.' },
   { s: '晚上回到家，我们站在阳台上，月亮看得很＿。', a: '清楚', no: ['著名', '力气'], en: 'Back home that night, we stood on the balcony and could see the moon clearly.' },
   { s: '我真想＿星星看一看，可是它们离我们太远了。', a: '靠近', no: ['数学', '很久'], en: 'I really want to get close to the stars and have a look, but they are too far away from us.' },
-  { s: '我要好好学＿，长大了去研究星星。', a: '数学', no: ['勺子', '仰头'], en: 'I am going to study maths hard and study the stars when I grow up.' },
+  { s: '我要好好学＿，长大了去研究星星。', a: '数学', no: ['勺子', '仰头'], en: 'I am going to study math hard and study the stars when I grow up.' },
   { s: '爸爸说，你们宇航员每天都要锻炼，所以很有＿。', a: '力气', no: ['勺子', '清楚'], en: 'Dad says you astronauts exercise every day, so you are very strong.' },
   { s: '我每天都会＿锻炼身体，以后也去太空看一看！', a: '努力', no: ['勺子', '天空'], en: 'I will try hard to exercise every day, and one day I will go to space too!' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '数星星', en: 'Counting the stars', lines: [
   { who: '👨 爸爸', s: '这就是著名的天文馆，我们进去吧！', py: 'Zhè jiù shì zhùmíng de tiānwénguǎn, wǒmen jìnqu ba!', en: 'This is the famous planetarium. Let\'s go in!' },
   { who: '🧒 我', s: '哇，圆圆的屋顶变成了一片天空，满天都是星星！', py: 'Wā, yuányuán de wūdǐng biànchéngle yí piàn tiānkōng, mǎn tiān dōu shì xīngxing!', en: 'Wow, the round ceiling has turned into a sky, full of stars!' },
@@ -1363,7 +1363,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1560,7 +1560,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

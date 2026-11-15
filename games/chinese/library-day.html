@@ -439,7 +439,7 @@
 </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Library Day · 李时珍</title>
+<title>Library Day · 图书馆的一天</title>
 <meta name="theme-color" content="#166534">
 <link rel="stylesheet" href="../../fonts/fonts.css">
 <style>
@@ -754,14 +754,14 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 5 lesson 12. One idea: the 16 new characters of the lesson.
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own; only the characters and common words come from the lesson. */
-:root{ --page:#f0fdf4; --blue:#166534; --blue-s:#bbf7d0; --blue-d:#14532d; }   /* this lesson's colours */
+:root{ --page:#f0fdf4; --blue:#166534; --blue-s:#bbf7d0; --blue-d:#14532d; }   /* this lesson's colors */
 .opt::before{content:"📚";position:absolute;right:8px;top:4px;font-size:16px}
 </style>
 </head>
 <body>
-<header class="top"><h1>📚 Library Day <span class="han">李时珍</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
+<header class="top"><h1>📚 Library Day <span class="han">图书馆的一天</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
 <div class="wrap" id="app"></div>
 <script>
 /* ---------- content (characters and words from the lesson; all sentences are our own) ---------- */
@@ -851,7 +851,7 @@ var PATTERN = [
     ex: [{ s: '因为下雨了，所以我们在家看书。', en: 'Because it rained, we read at home.' }, { s: '因为妹妹很累，所以她早早就睡了。', en: 'Because my little sister was tired, she went to bed early.' }, { s: '因为这本书很有意思，所以我一口气就看完了。', en: 'Because this book was so interesting, I read it all in one go.' }] },
   { t: 'pick', from: '路上车很多。我们来晚了。', a: '因为路上车很多，所以我们来晚了。', no: ['所以路上车很多，因为我们来晚了。', '因为我们来晚了，所以路上车很多。'], en: 'Because there was lots of traffic, we were late.' },
   { t: 'build', tiles: ['因为', '天太黑了', '所以', '我们', '开了灯'], ok: ['因为天太黑了所以我们开了灯。', '我们因为天太黑了所以开了灯。'], en: 'Because it was too dark, we turned on the light.' },
-  { t: 'pick', from: '姐姐练习了很多次。她跳得很好。', a: '因为姐姐练习了很多次，所以她跳得很好。', no: ['所以姐姐练习了很多次，因为她跳得很好。', '因为姐姐练习了很多次，因为她跳得很好。'], en: 'Because my big sister practised many times, she dances very well.' },
+  { t: 'pick', from: '姐姐练习了很多次。她跳得很好。', a: '因为姐姐练习了很多次，所以她跳得很好。', no: ['所以姐姐练习了很多次，因为她跳得很好。', '因为姐姐练习了很多次，因为她跳得很好。'], en: 'Because my big sister practiced many times, she dances very well.' },
   { t: 'build', tiles: ['因为', '我', '起晚了', '所以', '没吃早饭'], ok: ['因为我起晚了所以没吃早饭。', '我因为起晚了所以没吃早饭。'], en: 'Because I got up late, I didn\'t have breakfast.' },
   { t: 'build', tiles: ['因为', '花', '需要水', '所以', '我', '每天给它浇水'], ok: ['因为花需要水所以我每天给它浇水。', '我因为花需要水所以每天给它浇水。', '花因为需要水所以我每天给它浇水。'], en: 'Because the flower needs water, I water it every day.' }
 ];
@@ -873,7 +873,7 @@ var SENTENCES = [
   { s: '图书馆快关门了，＿我们就回家了。爷爷，下次您也一起去吧！', a: '所以', no: ['因为', '但是'], en: 'The library was about to close, so we went home. Grandpa, come with us next time!' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '图书馆的一天', en: 'A day at the library', lines: [
   { who: '👨 爸爸', s: '这个图书馆分好几个部分，我们先去少儿部吧。', py: 'Zhège túshūguǎn fēn hǎo jǐ ge bùfen, wǒmen xiān qù shào\'ér bù ba.', en: 'This library has lots of parts. Let\'s go to the children\'s section first.' },
   { who: '🧒 我', s: '这儿有点儿暗，我们换个合适的地方坐吧。', py: 'Zhèr yǒudiǎnr àn, wǒmen huàn ge héshì de dìfang zuò ba.', en: 'It\'s a bit dark here. Let\'s find a better place to sit.' },
@@ -1371,7 +1371,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1568,7 +1568,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

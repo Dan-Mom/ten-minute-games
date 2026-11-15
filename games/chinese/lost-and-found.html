@@ -754,9 +754,9 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 2 lesson 2. One idea: the 12 new characters of the lesson (教室里书吗不那她笔本子讲).
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the sentence pattern (一句话＋吗？), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the sentence pattern (一句话＋吗？), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own (not the textbook's 课文, 句子 or 对话); only the characters and common words come from the lesson. */
-:root{ --page:#f0fdfa; --blue:#0f766e; --blue-s:#99f6e4; --blue-d:#134e4a; }   /* this lesson's colours */
+:root{ --page:#f0fdfa; --blue:#0f766e; --blue-s:#99f6e4; --blue-d:#134e4a; }   /* this lesson's colors */
 .opt::before{content:"📦";position:absolute;right:8px;top:4px;font-size:16px}
 </style>
 </head>
@@ -865,7 +865,7 @@ var SENTENCES = [
   { s: '爷爷，您上次说想听我＿，下次我讲给您听！', a: '讲故事', no: ['书包', '桌子'], en: 'Grandpa, last time you said you wanted to hear me tell a story. Next time I’ll tell you one!' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '失物招领', en: 'Lost and found', lines: [
   { who: '👩‍🏫 老师', s: '教室里有好多东西，是大家忘了拿走的。我们来找一找它们的主人吧！', py: 'Jiàoshì li yǒu hǎoduō dōngxi, shì dàjiā wàngle ná zǒu de. Wǒmen lái zhǎo yi zhǎo tāmen de zhǔrén ba!', en: 'There are lots of things in the classroom that people forgot to take. Let’s find who they belong to!' },
   { who: '👦 同学', s: '老师，您看见我的铅笔盒了吗？上面有一只小熊。', py: 'Lǎoshī, nín kànjiàn wǒ de qiānbǐhé le ma? Shàngmian yǒu yì zhī xiǎo xióng.', en: 'Have you seen my pencil case? It has a little bear on it.', pat: true },
@@ -1366,7 +1366,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1563,7 +1563,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

@@ -439,7 +439,7 @@
 </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Paper Making · 蔡伦造纸</title>
+<title>Paper Making · 造纸</title>
 <meta name="theme-color" content="#4d7c0f">
 <link rel="stylesheet" href="../../fonts/fonts.css">
 <style>
@@ -754,14 +754,14 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 3 lesson 9. One idea: the 15 new characters of the lesson.
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own; only the characters and common words come from the lesson. */
-:root{ --page:#f7fee7; --blue:#4d7c0f; --blue-s:#d9f99d; --blue-d:#3f6212; }   /* this lesson's colours */
+:root{ --page:#f7fee7; --blue:#4d7c0f; --blue-s:#d9f99d; --blue-d:#3f6212; }   /* this lesson's colors */
 .opt::before{content:"";position:absolute;right:10px;top:8px;width:14px;height:18px;background:#fff;border:2px solid #84cc16;border-radius:2px;box-shadow:2px 2px 0 #d9f99d}
 </style>
 </head>
 <body>
-<header class="top"><h1>📜 Paper Making <span class="han">蔡伦造纸</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
+<header class="top"><h1>📜 Paper Making <span class="han">造纸</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
 <div class="wrap" id="app"></div>
 <script>
 /* ---------- content (characters and words from the lesson; all sentences are our own) ---------- */
@@ -843,7 +843,7 @@ var MORE_WORDS = {
   '破': [{ w: '破洞', py: 'pòdòng', en: 'hole' }],
   '布': [{ w: '布娃娃', py: 'bù wáwa', en: 'rag doll' }],
   '打': [{ w: '打电话', py: 'dǎ diànhuà', en: 'make a phone call' }],
-  '干': [{ w: '饼干', py: 'bǐnggān', en: 'biscuit' }, { w: '干净', py: 'gānjìng', en: 'clean' }],
+  '干': [{ w: '饼干', py: 'bǐnggān', en: 'cookie' }, { w: '干净', py: 'gānjìng', en: 'clean' }],
   '之': [{ w: '之中', py: 'zhī zhōng', en: 'among' }]
 };
 /* level 3: the lesson's sentence pattern 是……的 (pointing out who, when or how something was done). All sentences are our own. show = the explanation card,
@@ -852,7 +852,7 @@ var PATTERN = [
   { t: 'show', shape: '是……的', keys: ['是', '的'], end: '。', ask: 'Where do 是 and 的 go? Pick the right sentence.',
     what: 'Use 是……的 to point out who, when, where or how something was done. It is for something that has already happened. Put 是 just before the part you want to point out, and 的 at the end: 这幅画是妹妹画的 = It was my little sister who painted this.',
     ex: [{ s: '这幅画是妹妹画的。', en: 'My little sister painted this picture.' }, { s: '我们是坐火车来的。', en: 'We came by train.' }, { s: '这个蛋糕是奶奶做的。', en: 'Granny made this cake.' }] },
-  { t: 'pick', from: '外婆织了这件毛衣。', a: '这件毛衣是外婆织的。', no: ['这件毛衣是外婆织。', '这件毛衣外婆织的是。'], en: 'Grandma knitted this jumper.' },
+  { t: 'pick', from: '外婆织了这件毛衣。', a: '这件毛衣是外婆织的。', no: ['这件毛衣是外婆织。', '这件毛衣外婆织的是。'], en: 'Grandma knitted this sweater.' },
   { t: 'build', tiles: ['这个风筝', '是', '我', '自己', '做的'], ok: ['这个风筝是我自己做的。', '这个风筝我是自己做的。', '我自己做的是这个风筝。', '我是自己做的这个风筝。'], en: 'I made this kite myself.' },
   { t: 'pick', from: '小狗昨天来到我们家。', a: '小狗是昨天来我们家的。', no: ['是小狗昨天来我们家。', '小狗是昨天的来我们家。'], en: 'The puppy came to our home yesterday.' },
   { t: 'build', tiles: ['我们', '是', '走路', '去', '学校的'], ok: ['我们是走路去学校的。', '是我们走路去学校的。'], en: 'We walked to school.' },
@@ -870,15 +870,15 @@ var SENTENCES = [
   { s: '老师＿机器，把纸浆打得细细的。', a: '打开', no: ['竹片', '干果'], en: 'The teacher switched on the machine and beat the pulp until it was fine.' },
   { s: '纸浆要铺在＿做的小帘子上。', a: '竹片', no: ['皮包', '公元'], en: 'The pulp has to be spread on a little screen made of bamboo strips.' },
   { s: '纸放在太阳下一个下午，终于＿了。', a: '晒干', no: ['皮包', '花布'], en: 'The paper sat in the sun all afternoon, and at last it was dry.' },
-  { s: '我＿在纸上画一朵小花，送给妈妈。', a: '决定', no: ['皮包', '白纸'], en: 'I decided to draw a little flower on my paper for Mum.' },
-  { s: '妈妈说，＿的纸大多是用机器做的。', a: '现代', no: ['干果', '花布'], en: 'Mum said that paper today is mostly made by machines.' },
-  { s: '妈妈把我的纸放进了她的＿里，说要好好收着。', a: '皮包', no: ['公元', '决心'], en: 'Mum put my paper in her leather bag and said she would keep it safe.' },
+  { s: '我＿在纸上画一朵小花，送给妈妈。', a: '决定', no: ['皮包', '白纸'], en: 'I decided to draw a little flower on my paper for Mom.' },
+  { s: '妈妈说，＿的纸大多是用机器做的。', a: '现代', no: ['干果', '花布'], en: 'Mom said that paper today is mostly made by machines.' },
+  { s: '妈妈把我的纸放进了她的＿里，说要好好收着。', a: '皮包', no: ['公元', '决心'], en: 'Mom put my paper in her leather bag and said she would keep it safe.' },
   { s: '门的＿上，也挂着我们做的小纸花。', a: '把手', no: ['公元', '之一'], en: 'A little paper flower we made is hanging on the door handle too.' },
   { s: '吃完晚饭，我们一边吃＿一边聊造纸的事。', a: '干果', no: ['竹片', '树皮'], en: 'After dinner, we ate dried fruit and nuts and talked about making paper.' },
   { s: '表姐，下次我教你，你一定要有＿，多试几次！', a: '决心', no: ['公元', '之一'], en: 'Cousin, next time I\'ll teach you. You must keep at it and try a few times!' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '我们来造纸', en: 'Let\'s make paper', lines: [
   { who: '👩‍🏫 老师', s: '今天手工课，我们来自己造纸！', py: 'Jīntiān shǒugōng kè, wǒmen lái zìjǐ zào zhǐ!', en: 'In crafts class today, we\'re going to make our own paper!' },
   { who: '🧒 我', s: '我在书上看过，古代的人在细细的竹片上写字，一本书搬起来可重了！', py: 'Wǒ zài shū shang kànguo, gǔdài de rén zài xìxì de zhúpiàn shang xiě zì, yì běn shū bān qǐlai kě zhòng le!', en: 'I read in a book that in ancient times people wrote on thin bamboo strips. One book was so heavy to carry!' },
@@ -887,7 +887,7 @@ var STORY = { title: '我们来造纸', en: 'Let\'s make paper', lines: [
   { who: '👧 同桌', s: '纸浆放在小竹帘上，要铺得又平又薄。', py: 'Zhǐjiāng fàng zài xiǎo zhúlián shang, yào pū de yòu píng yòu báo.', en: 'The pulp goes on a little bamboo screen. It has to be spread flat and thin.' },
   { who: '🧒 我', s: '等它干了，我们的纸就做好了！我决定在上面画一朵花。', py: 'Děng tā gān le, wǒmen de zhǐ jiù zuòhǎo le! Wǒ juédìng zài shàngmian huà yì duǒ huā.', en: 'When it\'s dry, our paper will be ready! I\'ve decided to draw a flower on it.' },
   { who: '👩‍🏫 老师', s: '大约在公元一百年，有个叫蔡伦的人让造纸的办法变得更好。纸是中国古代的发明之一。', py: 'Dàyuē zài gōngyuán yì bǎi nián, yǒu ge jiào Cài Lún de rén ràng zào zhǐ de bànfǎ biàn de gèng hǎo. Zhǐ shì Zhōngguó gǔdài de fāmíng zhī yī.', en: 'Around the year 100 AD, a man called Cai Lun made papermaking much better. Paper is one of ancient China\'s great inventions.' },
-  { who: '🧒 我', s: '这张纸是我们自己做的，我要把它送给妈妈！', py: 'Zhè zhāng zhǐ shì wǒmen zìjǐ zuò de, wǒ yào bǎ tā sòng gěi māma!', en: 'We made this paper ourselves! I\'m going to give it to Mum!', pat: true }
+  { who: '🧒 我', s: '这张纸是我们自己做的，我要把它送给妈妈！', py: 'Zhè zhāng zhǐ shì wǒmen zìjǐ zuò de, wǒ yào bǎ tā sòng gěi māma!', en: 'We made this paper ourselves! I\'m going to give it to Mom!', pat: true }
 ] };
 
 /* ---------- this lesson's settings: the shared engine (../_engine/chinese-engine.js) reads them ---------- */
@@ -1375,7 +1375,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1572,7 +1572,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

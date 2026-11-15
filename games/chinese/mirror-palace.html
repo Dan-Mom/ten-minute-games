@@ -439,7 +439,7 @@
 </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Mirror Palace · 参观凡尔赛宫</title>
+<title>Mirror Palace · 镜子宫殿</title>
 <meta name="theme-color" content="#6a3fb5">
 <link rel="stylesheet" href="../../fonts/fonts.css">
 <style>
@@ -754,14 +754,14 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game 3. One idea: the 14 new characters of the lesson.
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own; only the characters and common words come from the lesson. */
-:root{ --page:#f6f1ff; --blue:#6a3fb5; --blue-s:#e5dbfa; --blue-d:#47257f; }   /* this lesson's colours */
+:root{ --page:#f6f1ff; --blue:#6a3fb5; --blue-s:#e5dbfa; --blue-d:#47257f; }   /* this lesson's colors */
 .opt::before{content:"";position:absolute;left:8px;right:8px;top:6px;height:10px;border-radius:6px;background:linear-gradient(90deg,#e9c46a,#fff3c4,#e9c46a);opacity:.8}
 </style>
 </head>
 <body>
-<header class="top"><h1>🏰 Mirror Palace <span class="han">参观凡尔赛宫</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
+<header class="top"><h1>🏰 Mirror Palace <span class="han">镜子宫殿</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
 <div class="wrap" id="app"></div>
 <script>
 /* ---------- content (characters and words from the lesson; all sentences are our own) ---------- */
@@ -818,7 +818,7 @@ var WORDS = [
   { w: '国王', k: 1, py: 'guówáng', en: 'king', e: '🤴' }, { w: '大厅', k: 1, py: 'dàtīng', en: 'big hall', e: '🏛️', no: ['王', '些'] },
   { w: '这些', k: 1, py: 'zhèxiē', en: 'these', e: '👉', no: ['样'] }, { w: '有趣', k: 1, py: 'yǒuqù', en: 'fun, interesting', e: '🎈', no: ['些', '如'] },
   { w: '镜子', k: 0, py: 'jìngzi', en: 'mirror', e: '🪞', no: ['样', '影', '窗', '林', '王'] }, { w: '窗户', k: 0, py: 'chuānghu', en: 'window', e: '🪟' },
-  { w: '放映', k: 1, py: 'fàngyìng', en: 'show (a film)', e: '📽️' }, { w: '如同', k: 0, py: 'rútóng', en: 'just like', e: '🟰' },
+  { w: '放映', k: 1, py: 'fàngyìng', en: 'show (a movie)', e: '📽️' }, { w: '如同', k: 0, py: 'rútóng', en: 'just like', e: '🟰' },
   { w: '一样', k: 1, py: 'yíyàng', en: 'the same', e: '👯', no: ['些', '如'] }, { w: '香蕉', k: 0, py: 'xiāngjiāo', en: 'banana', e: '🍌' },
   { w: '花香', k: 1, py: 'huāxiāng', en: 'the smell of flowers', e: '🌸', no: ['样', '镜', '窗', '影', '迷', '王'] }, { w: '影子', k: 0, py: 'yǐngzi', en: 'shadow', e: '👤', no: ['镜', '样', '窗', '林', '王'] },
   { w: '电影', k: 1, py: 'diànyǐng', en: 'movie', e: '🎬' }, { w: '迷路', k: 0, py: 'mílù', en: 'get lost', e: '🧭' },
@@ -835,7 +835,7 @@ var MORE_WORDS = {
   '趣': [{ w: '兴趣', py: 'xìngqù', en: 'interest' }, { w: '趣事', py: 'qùshì', en: 'a funny thing that happened' }],
   '镜': [{ w: '眼镜', py: 'yǎnjìng', en: 'glasses' }, { w: '照镜子', py: 'zhào jìngzi', en: 'look in the mirror' }],
   '窗': [{ w: '窗外', py: 'chuāngwài', en: 'outside the window' }, { w: '窗口', py: 'chuāngkǒu', en: 'window (an opening)' }],
-  '映': [{ w: '倒映', py: 'dàoyìng', en: 'reflected upside down (in water)' }, { w: '上映', py: 'shàngyìng', en: '(a film) is showing' }],
+  '映': [{ w: '倒映', py: 'dàoyìng', en: 'reflected upside down (in water)' }, { w: '上映', py: 'shàngyìng', en: '(a movie) is showing' }],
   '如': [{ w: '如果', py: 'rúguǒ', en: 'if' }, { w: '比如', py: 'bǐrú', en: 'for example' }],
   '样': [{ w: '样子', py: 'yàngzi', en: 'how it looks' }, { w: '怎么样', py: 'zěnmeyàng', en: 'how is it?' }],
   '香': [{ w: '香味', py: 'xiāngwèi', en: 'nice smell' }, { w: '香水', py: 'xiāngshuǐ', en: 'perfume' }],
@@ -873,7 +873,7 @@ var SENTENCES = [
   { s: '凡尔赛宫真＿，我还想再来一次！', a: '迷人', no: ['影子', '镜子'], en: 'Versailles is so charming. I want to come again!' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '参观凡尔赛宫', en: 'A visit to Versailles', lines: [
   { who: '👩 妈妈', s: '快看，我们到凡尔赛宫了！以前，法国的国王就住在这里。', py: 'Kuài kàn, wǒmen dào Fán\'ěrsài Gōng le! Yǐqián, Fǎguó de guówáng jiù zhù zài zhèlǐ.', en: 'Look, we have arrived at the Palace of Versailles! The kings of France used to live right here.' },
   { who: '🧒 我', s: '王宫好大啊！我们先去看哪个大厅？', py: 'Wánggōng hǎo dà a! Wǒmen xiān qù kàn nǎge dàtīng?', en: 'The palace is so big! Which hall shall we see first?' },
@@ -1370,7 +1370,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1567,7 +1567,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

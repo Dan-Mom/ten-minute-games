@@ -754,9 +754,9 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 1 lesson 9. One idea: the 15 new characters of the lesson: the 9 of the text (family: 的家这有爷奶爸妈和) and the 6 of its reading 放学歌 (放回到给完把), added because the engine needs at least 10 (the owner, 2026-11-13).
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern (这是＋谁的＋东西), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern (这是＋谁的＋东西), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own (not the textbook's 课文, 句子 or 对话); only the characters and common words come from the lesson. */
-:root{ --page:#fefce8; --blue:#a16207; --blue-s:#fef08a; --blue-d:#854d0e; }   /* this lesson's colours */
+:root{ --page:#fefce8; --blue:#a16207; --blue-s:#fef08a; --blue-d:#854d0e; }   /* this lesson's colors */
 .opt::before{content:"🎂";position:absolute;right:8px;top:4px;font-size:16px}
 </style>
 </head>
@@ -788,7 +788,7 @@ var PARTS = [
   { c: '妈', parts: ['女', '马'], r: 0, rad: '女', name: '女字旁', npy: 'nǚ zì páng', means: 'a woman or girl.', see: '奶 姐 妹 好', how: 'A woman (女); 马 gives the sound (mǎ, mā). 妈妈 = mom.' },
   { c: '和', parts: ['禾', '口'], r: 0, rad: '禾', name: '禾木旁', npy: 'hé mù páng', means: 'grain plants.', see: '秋 种 稻 秒', how: 'Grain (禾) gives the sound (hé), and a mouth (口). 和 = and: 爸爸和妈妈 = Dad and Mom.' },
   { c: '放', parts: ['方', '攵'], r: 1, rad: '攵', name: '反文旁', npy: 'fǎn wén páng', means: 'a hand holding a stick; doing something.', see: '收 改 教 数', how: 'A hand with a stick (攵); 方 gives the sound (fāng, fàng). 放学 = school is out.' },
-  { c: '回', parts: ['回'], r: 0, rad: '囗', name: '国字框', npy: 'guó zì kuàng', means: 'an enclosure, a fence all round.', see: '国 园 图 四', how: 'Long ago 回 was a swirl going round and round: coming back. 回家 = go home.' },
+  { c: '回', parts: ['回'], r: 0, rad: '囗', name: '国字框', npy: 'guó zì kuàng', means: 'an enclosure, a fence all around.', see: '国 园 图 四', how: 'Long ago 回 was a swirl going round and round: coming back. 回家 = go home.' },
   { c: '到', parts: ['至', '刂'], r: 1, rad: '刂', name: '立刀旁', npy: 'lì dāo páng', means: 'a knife.', see: '刚 别 刻 判', how: '至 (arrive) on the left; 刂 (dāo) on the right gives the sound. 到了 = we’re here!' },
   { c: '给', parts: ['纟', '合'], r: 0, rad: '纟', name: '绞丝旁', npy: 'jiǎo sī páng', means: 'silk, thread.', see: '红 绿 线 纸', how: 'Silk thread (纟) and 合. Some say it first meant having enough thread. Today 给 means give. 送给 = give as a present.' },
   { c: '完', parts: ['宀', '元'], r: 0, rad: '宀', name: '宝盖头', npy: 'bǎo gài tóu', means: 'a roof, a house.', see: '家 安 字 室', how: 'A roof (宀); 元 gives the sound (yuán, wán). 完 means finished, whole. 吃完 = finish eating.' },
@@ -841,7 +841,7 @@ var MORE_WORDS = {
   '爸': [{ w: '爸妈', py: 'bàmā', en: 'Mom and Dad' }],
   '妈': [{ w: '大妈', py: 'dàmā', en: 'auntie (an older lady)' }],
   '和': [{ w: '和平', py: 'hépíng', en: 'peace' }],
-  '放': [{ w: '放假', py: 'fàngjià', en: 'have a holiday' }],
+  '放': [{ w: '放假', py: 'fàngjià', en: 'be on vacation' }],
   '回': [{ w: '回答', py: 'huídá', en: 'answer' }],
   '到': [{ w: '看到', py: 'kàndào', en: 'see' }],
   '给': [{ w: '给你', py: 'gěi nǐ', en: 'here you are' }],
@@ -880,7 +880,7 @@ var SENTENCES = [
   { s: '晚上九点，客人们都＿了。', a: '回家', no: ['牛奶', '把手'], en: 'At nine in the evening, the guests all went home.' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '奶奶的生日', en: 'Grandma’s birthday', lines: [
   { who: '👩 妈妈', s: '今天是奶奶的生日，孩子们一放学就回到家了！', py: 'Jīntiān shì nǎinai de shēngrì, háizimen yí fàngxué jiù huídào jiā le!', en: 'It’s Grandma’s birthday today, and the kids came straight home after school!' },
   { who: '👧 我', s: '奶奶，这是我的礼物，是我画的画！', py: 'Nǎinai, zhè shì wǒ de lǐwù, shì wǒ huà de huà!', en: 'Grandma, this is my present. It’s a picture I painted!', pat: true },
@@ -1384,7 +1384,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1581,7 +1581,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

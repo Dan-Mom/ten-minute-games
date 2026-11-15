@@ -439,7 +439,7 @@
 </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Bookshop Day · 去书店</title>
+<title>Bookshop Day · 书店的一天</title>
 <meta name="theme-color" content="#7c3aed">
 <link rel="stylesheet" href="../../fonts/fonts.css">
 <style>
@@ -754,14 +754,14 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 3 lesson 2. One idea: the 14 new characters of the lesson.
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own; only the characters and common words come from the lesson. */
-:root{ --page:#f5f0ff; --blue:#7c3aed; --blue-s:#e4d7fd; --blue-d:#5b21b6; }   /* this lesson's colours */
+:root{ --page:#f5f0ff; --blue:#7c3aed; --blue-s:#e4d7fd; --blue-d:#5b21b6; }   /* this lesson's colors */
 .opt::before{content:"";position:absolute;right:9px;top:8px;width:18px;height:24px;border-radius:2px 4px 4px 2px;background:linear-gradient(90deg,#5b21b6 0 5px,#c4b5fd 5px 7px,#ede9fe 7px);box-shadow:1px 1px 0 #5b21b6}
 </style>
 </head>
 <body>
-<header class="top"><h1>📚 Bookshop Day <span class="han">去书店</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
+<header class="top"><h1>📚 Bookshop Day <span class="han">书店的一天</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
 <div class="wrap" id="app"></div>
 <script>
 /* ---------- content (characters and words from the lesson; all sentences are our own) ---------- */
@@ -853,16 +853,16 @@ var PATTERN = [
   { t: 'pick', from: '我们很快乐，一起去吃饭。', a: '我们快快乐乐地去吃饭。', no: ['我们快乐快乐地去吃饭。', '我们快快乐乐去地吃饭。'], en: 'We happily go off to eat.' },
   { t: 'build', tiles: ['奶奶', '开开心心', '地', '走进', '公园'], ok: ['奶奶开开心心地走进公园。'], en: 'Grandma walks into the park happily.' },
   { t: 'pick', from: '妹妹很认真，她在写作业。', a: '妹妹认认真真地写作业。', no: ['妹妹认真认真地写作业。', '妹妹认认真真写作业地。'], en: 'My little sister does her homework carefully.' },
-  { t: 'build', tiles: ['我们', '安安静静', '地', '等', '妈妈'], ok: ['我们安安静静地等妈妈。'], en: 'We wait quietly for Mum.' },
+  { t: 'build', tiles: ['我们', '安安静静', '地', '等', '妈妈'], ok: ['我们安安静静地等妈妈。'], en: 'We wait quietly for Mom.' },
   { t: 'build', tiles: ['弟弟', '高高兴兴', '地', '拿着', '新书', '回家'], ok: ['弟弟高高兴兴地拿着新书回家。', '弟弟拿着新书高高兴兴地回家。'], en: 'My little brother happily carries his new book home.' }
 ];
-/* level 4: our own letter to Mum about a trip to the bookshop, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的妈妈：" */
+/* level 4: our own letter to Mom about a trip to the bookshop, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的妈妈：" */
 var SENTENCES = [
   { s: '星期六上午，奶奶带我和弟弟去＿买书。', a: '书店', no: ['早饭', '钱包'], en: 'On Saturday morning, Grandma took my little brother and me to the bookshop to buy books.' },
   { s: '书店里有很多给＿看的书，还有好多画报。', a: '儿童', no: ['付钱', '发现'], en: 'The bookshop had lots of books for children, and lots of picture magazines too.' },
   { s: '我选了一本＿书，里面有十个好听的故事。', a: '童话', no: ['午饭', '等车'], en: 'I picked a fairy-tale book with ten lovely stories in it.' },
   { s: '弟弟看见一本恐龙＿，高兴得跳了起来。', a: '画报', no: ['早饭', '说话'], en: 'My little brother saw a dinosaur picture magazine and jumped for joy.' },
-  { s: '奶奶还给我买了下学期的＿。', a: '课本', no: ['饭店', '说话'], en: 'Grandma also bought me my textbooks for next term.' },
+  { s: '奶奶还给我买了下学期的＿。', a: '课本', no: ['饭店', '说话'], en: 'Grandma also bought me my textbooks for next semester.' },
   { s: '我从＿里拿出零花钱，自己付了钱。', a: '钱包', no: ['饭店', '上课'], en: 'I took my pocket money out of my wallet and paid by myself.' },
   { s: '弟弟说："下次我也要自己＿！"', a: '付钱', no: ['儿童', '早饭'], en: 'My little brother said, "Next time I want to pay by myself too!"' },
   { s: '收银台的阿姨把书装进袋子里，让我们＿。', a: '拿走', no: ['早饭', '儿童'], en: 'The lady at the till put the books in a bag for us to take away.' },
@@ -875,7 +875,7 @@ var SENTENCES = [
   { s: '我今天过得很开心，＿？', a: '你呢', no: ['饭店', '课本'], en: 'I had a great day today. How about you?' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '和奶奶去书店', en: 'To the bookshop with Grandma', lines: [
   { who: '👵 奶奶', s: '书店新到了很多儿童书，我们去看看吧！你们想买什么书呢？', py: 'Shūdiàn xīn dàole hěn duō értóng shū, wǒmen qù kànkan ba! Nǐmen xiǎng mǎi shénme shū ne?', en: 'The bookshop has lots of new children\'s books. Let\'s go and look! What books would you like?' },
   { who: '🧒 我', s: '我想买一本童话故事书，我最喜欢听故事了。', py: 'Wǒ xiǎng mǎi yì běn tónghuà gùshi shū, wǒ zuì xǐhuan tīng gùshi le.', en: 'I want a book of fairy tales. I love stories best.' },
@@ -896,12 +896,12 @@ var LESSON = {
     { title: 'Meet the characters', zh: '认生字', text: 'Meet 14 new characters, then find each one among the book cards.' },
     { title: 'Build the words', zh: '组词', text: 'Each word is missing one character. Pick the right book card.' },
     { title: 'Sentence pattern', zh: '句型 高高兴兴地', text: 'Learn to say how someone does something with a doubled word and 地, as in 高高兴兴地走 (walk along happily). Pick the right sentence, then build your own from word tiles.' },
-    { title: 'Write the letter', zh: '写信', text: 'Finish our letter to Mum about the trip to the bookshop: pick the missing word in each sentence, then send it.' },
+    { title: 'Write the letter', zh: '写信', text: 'Finish our letter to Mom about the trip to the bookshop: pick the missing word in each sentence, then send it.' },
     { title: 'Bookshop Bingo', zh: '书店 Bingo', text: 'Listen, then mark what you hear on your card. Make a line, then two lines, then fill the card.' }
   ],
   pick: 'Which book card says…',                       // level 1: find the character
   wrong: { pick: 'Not this one. Try another book card.', pattern: 'Not this one. Look at the doubled word and where 地 goes, and try another.' },
-  letter: { ready: 'Your letter to Mum is ready. Tap Send!', stamp: '📚', greeting: '亲爱的妈妈：', signRight: false },   // level 4: the finished letter
+  letter: { ready: 'Your letter to Mom is ready. Tap Send!', stamp: '📚', greeting: '亲爱的妈妈：', signRight: false },   // level 4: the finished letter
   bingoFree: '📚',             // the free middle square
   write: true                  // the "Write it 写一写" page (needs hanzi-writer.min.js below and the strokes/ folder)
 };
@@ -1372,7 +1372,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1569,7 +1569,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

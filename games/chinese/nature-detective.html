@@ -754,9 +754,9 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game 11. One idea: the 14 new characters of the lesson.
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own; only the characters and common words come from the lesson. */
-:root{ --page:#fbf3ea; --blue:#9a4a12; --blue-s:#f3dcc7; --blue-d:#6b330c; }   /* this lesson's colours */
+:root{ --page:#fbf3ea; --blue:#9a4a12; --blue-s:#f3dcc7; --blue-d:#6b330c; }   /* this lesson's colors */
 .opt::before{content:"";position:absolute;right:8px;top:8px;width:16px;height:16px;background:#e0892b;border-radius:0 70% 0 70%}
 </style>
 </head>
@@ -858,25 +858,25 @@ var SENTENCES = [
   { s: '妈妈说下午可能会下雨，让我把＿放进书包。', a: '雨伞', no: ['冰块', '变化'], en: 'Mom said it might rain in the afternoon, so she told me to put an umbrella in my backpack.' },
   { s: '老师说，小动物不会说话，可是它们也有自己的＿。', a: '语言', no: ['树叶', '冰块'], en: 'Our teacher said little animals can\'t talk, but they have their own kind of language too.' },
   { s: '我捡起一片红红的＿，上面有很多细细的线。', a: '树叶', no: ['语言', '晴天'], en: 'I picked up a red leaf with lots of thin lines on it.' },
-  { s: '老师说，秋天到了，树叶的颜色有了＿。', a: '变化', no: ['雨伞', '冰块'], en: 'Our teacher said autumn is here, so the colour of the leaves has changed.' },
+  { s: '老师说，秋天到了，树叶的颜色有了＿。', a: '变化', no: ['雨伞', '冰块'], en: 'Our teacher said fall is here, so the color of the leaves has changed.' },
   { s: '我拿着放大镜，＿地看一只小蜗牛。', a: '细心', no: ['冰块', '晴天'], en: 'I held a magnifying glass and carefully looked at a little snail.' },
   { s: '小蜗牛背着它的家，好像在＿一样。', a: '搬家', no: ['树叶', '雨伞'], en: 'The little snail carries its home on its back, as if it were moving house.' },
   { s: '我们又＿了一会儿池塘里的小鱼。', a: '观察', no: ['丰收', '奇妙'], en: 'Then we watched the little fish in the pond for a while.' },
   { s: '中午很热，老师给我们每人一杯放了＿的果汁。', a: '冰块', no: ['树叶', '语言'], en: 'At noon it was hot, and our teacher gave each of us a juice with ice in it.' },
   { s: '公园旁边的苹果树结满了果子，今年真是个＿年！', a: '丰收', no: ['晴天', '搬家'], en: 'The apple trees next to the park were full of fruit. This must be a year with a big harvest.' },
-  { s: '池塘边的小花有红的、黄的、白的，颜色真＿。', a: '丰富', no: ['冰块', '雨伞'], en: 'The little flowers by the pond were red, yellow and white. So many colours!' },
+  { s: '池塘边的小花有红的、黄的、白的，颜色真＿。', a: '丰富', no: ['冰块', '雨伞'], en: 'The little flowers by the pond were red, yellow and white. So many colors!' },
   { s: '大自然真＿，有那么多有意思的东西。', a: '奇妙', no: ['雨伞', '树叶'], en: 'Nature is amazing. There are so many interesting things.' },
-  { s: '晚上，我们一家人一起＿了一个讲小动物的节目。', a: '观看', no: ['树叶', '冰块'], en: 'In the evening, our family watched a programme about little animals together.' },
+  { s: '晚上，我们一家人一起＿了一个讲小动物的节目。', a: '观看', no: ['树叶', '冰块'], en: 'In the evening, our family watched a show about little animals together.' },
   { s: '我把今天看到的都画了下来，连妹妹都＿了。', a: '看懂', no: ['丰收', '冰块'], en: 'I drew everything I saw today, and even my little sister understood it.' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '自然小侦探', en: 'Nature detectives', lines: [
   { who: '👩 老师', s: '今天是晴天，我们来当自然小侦探！', py: 'Jīntiān shì qíngtiān, wǒmen lái dāng zìrán xiǎo zhēntàn!', en: 'It\'s a sunny day today. Let\'s be nature detectives!' },
   { who: '🧒 我', s: '老师，我带了雨伞，可是好像用不上了。', py: 'Lǎoshī, wǒ dàile yǔsǎn, kěshì hǎoxiàng yòng bu shàng le.', en: 'Teacher, I brought an umbrella, but it looks like I won\'t need it.' },
   { who: '👩 老师', s: '没关系。我们用眼睛细细地观察，听听小动物的“语言”。', py: 'Méi guānxi. Wǒmen yòng yǎnjing xìxì de guānchá, tīngting xiǎo dòngwù de “yǔyán”.', en: 'That\'s fine. Let\'s look closely with our eyes and listen to the "language" of little animals.' },
   { who: '🧒 我', s: '老师，那只小松鼠正在搬松果呢！', py: 'Lǎoshī, nà zhī xiǎo sōngshǔ zhèngzài bān sōngguǒ ne!', en: 'Teacher, that little squirrel is carrying pine cones right now!', pat: true },
-  { who: '👩 老师', s: '你看，枫叶变红了，银杏叶变黄了，秋天的颜色多丰富！', py: 'Nǐ kàn, fēngyè biàn hóng le, yínxìngyè biàn huáng le, qiūtiān de yánsè duō fēngfù!', en: 'Look, the maple leaves have turned red and the ginkgo leaves yellow. Autumn has so many colours!' },
+  { who: '👩 老师', s: '你看，枫叶变红了，银杏叶变黄了，秋天的颜色多丰富！', py: 'Nǐ kàn, fēngyè biàn hóng le, yínxìngyè biàn huáng le, qiūtiān de yánsè duō fēngfù!', en: 'Look, the maple leaves have turned red and the ginkgo leaves yellow. Fall has so many colors!' },
   { who: '🧒 我', s: '哎呀，我的冰棍化了，滴到手上了！', py: 'Āiyā, wǒ de bīnggùn huà le, dī dào shǒu shang le!', en: 'Oh no, my ice pop has melted and dripped onto my hand!' },
   { who: '👩 老师', s: '快擦擦手吧！你看，小松鼠会把松果藏起来，等冬天再吃，是不是很妙？', py: 'Kuài cāca shǒu ba! Nǐ kàn, xiǎo sōngshǔ huì bǎ sōngguǒ cáng qǐlai, děng dōngtiān zài chī, shì bu shì hěn miào?', en: 'Quick, wipe your hands! Look, the little squirrel hides its pine cones to eat in winter. Isn\'t that clever?' },
   { who: '🧒 我', s: '太妙了！我懂了，小动物也有自己的办法。', py: 'Tài miào le! Wǒ dǒng le, xiǎo dòngwù yě yǒu zìjǐ de bànfǎ.', en: 'So clever! Now I understand: little animals have their own ways too.' }
@@ -1367,7 +1367,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1564,7 +1564,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

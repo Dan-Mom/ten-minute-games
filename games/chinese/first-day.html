@@ -754,9 +754,9 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 1 lesson 7. One idea: the 10 new characters of the lesson (school: 学生我是爱老师同文校).
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern (谁＋是＋谁／什么), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern (谁＋是＋谁／什么), level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own (not the textbook's 课文, 句子 or 对话); only the characters and common words come from the lesson. */
-:root{ --page:#fff7ed; --blue:#c2410c; --blue-s:#fed7aa; --blue-d:#9a3412; }   /* this lesson's colours */
+:root{ --page:#fff7ed; --blue:#c2410c; --blue-s:#fed7aa; --blue-d:#9a3412; }   /* this lesson's colors */
 .opt::before{content:"✏️";position:absolute;right:8px;top:4px;font-size:16px}
 </style>
 </head>
@@ -847,7 +847,7 @@ var SENTENCES = [
   { s: '他说他很爱说＿，也很喜欢写汉字。', a: '中文', no: ['老人', '厨师'], en: 'He says he loves speaking Chinese and likes writing characters too.' },
   { s: '我们的中文＿笑着说：“欢迎你！”', a: '老师', no: ['校车', '作文'], en: 'Our Chinese teacher smiled and said, "Welcome!"' },
   { s: '老师说，上课的时候要好好＿。', a: '学习', no: ['生日', '我们'], en: 'The teacher says we should study hard in class.' },
-  { s: '下课了，＿一起去操场玩。', a: '我们', no: ['作文', '生日'], en: 'At break time, we went to play on the playground together.' },
+  { s: '下课了，＿一起去操场玩。', a: '我们', no: ['作文', '生日'], en: 'At recess, we went to play on the playground together.' },
   { s: '新同学给我看他家小猫的照片，真＿！', a: '可爱', no: ['作文', '学习'], en: 'The new classmate showed me a photo of his kitten. So cute!' },
   { s: '他的爸爸是一位＿，会做很多好吃的菜。', a: '厨师', no: ['校车', '作文'], en: 'His dad is a chef and can cook lots of yummy dishes.' },
   { s: '新同学说，我们学校的＿都很友好。', a: '学生', no: ['校车', '作文'], en: 'The new classmate says the students at our school are all very friendly.' },
@@ -858,7 +858,7 @@ var SENTENCES = [
   { s: '老师问我：“你是新同学的好朋友吗？”我说：“＿！”', a: '是的', no: ['校车', '作文'], en: 'The teacher asked me, "Are you the new classmate’s good friend?" I said, "Yes!"' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '新同学', en: 'The new classmate', lines: [
   { who: '👩‍🏫 老师', s: '同学们好！今天我们班来了一位新同学。', py: 'Tóngxuémen hǎo! Jīntiān wǒmen bān lái le yí wèi xīn tóngxué.', en: 'Hello, everyone! Today a new classmate has joined our class.' },
   { who: '👦 新同学', s: '大家好！我是新来的学生，我爱学中文。', py: 'Dàjiā hǎo! Wǒ shì xīn lái de xuéshēng, wǒ ài xué Zhōngwén.', en: 'Hello, everyone! I’m the new student, and I love learning Chinese.', pat: true },
@@ -1359,7 +1359,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1556,7 +1556,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

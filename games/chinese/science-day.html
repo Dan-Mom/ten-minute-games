@@ -439,7 +439,7 @@
 </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Science Day · 壶盖为什么会动</title>
+<title>Science Day · 科学日</title>
 <meta name="theme-color" content="#92400e">
 <link rel="stylesheet" href="../../fonts/fonts.css">
 <style>
@@ -754,14 +754,14 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 3 lesson 8. One idea: the 14 new characters of the lesson.
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own; only the characters and common words come from the lesson. */
-:root{ --page:#fffbeb; --blue:#92400e; --blue-s:#fde68a; --blue-d:#78350f; }   /* this lesson's colours */
+:root{ --page:#fffbeb; --blue:#92400e; --blue-s:#fde68a; --blue-d:#78350f; }   /* this lesson's colors */
 .opt::before{content:"⚙";position:absolute;right:9px;top:3px;font-size:20px;color:#b45309}
 </style>
 </head>
 <body>
-<header class="top"><h1>🫖 Science Day <span class="han">壶盖为什么会动</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
+<header class="top"><h1>🫖 Science Day <span class="han">科学日</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
 <div class="wrap" id="app"></div>
 <script>
 /* ---------- content (characters and words from the lesson; all sentences are our own) ---------- */
@@ -789,7 +789,7 @@ var PARTS = [
   { c: '常', parts: ['', '巾'], rest: 'top: 尚 (shàng), a little squeezed, which helps with the sound', r: 1, rad: '巾', name: '巾字底', npy: 'jīn zì dǐ', means: 'a piece of cloth.', see: '布 帽 帮 希', how: 'A cloth (巾) under 尚 (shàng), which helps with the sound. 常常 = often; 常用 = often used.' },
   { c: '试', parts: ['讠', '式'], r: 0, rad: '讠', name: '言字旁', npy: 'yán zì páng', means: 'words and speaking.', see: '说 语 读 请 认', how: 'Words (讠) and 式 (shì, a way of doing), which gives the sound: to test, to try. 试一试 = have a try; 考试 = exam.' },
   { c: '验', parts: ['马', '佥'], r: 0, rad: '马', name: '马字旁', npy: 'mǎ zì páng', means: 'a horse.', see: '骑 驾 驶 驴', how: 'A horse (马) and 佥 (qiān). Long ago 驗 was the name of a kind of horse; now it means "test, check". 试验 = experiment.' },
-  { c: '机', parts: ['木', '几'], r: 0, rad: '木', name: '木字旁', npy: 'mù zì páng', means: 'a tree or wood. It is in characters about trees and things made of wood.', see: '树 林 桌 椅 桥', how: 'Wood (木) and 几 (jī), which gives the sound. A way to remember: long ago machines were made of wood. 飞机 = plane; 手机 = mobile phone.' },
+  { c: '机', parts: ['木', '几'], r: 0, rad: '木', name: '木字旁', npy: 'mù zì páng', means: 'a tree or wood. It is in characters about trees and things made of wood.', see: '树 林 桌 椅 桥', how: 'Wood (木) and 几 (jī), which gives the sound. A way to remember: long ago machines were made of wood. 飞机 = plane; 手机 = cell phone.' },
   { c: '位', parts: ['亻', '立'], r: 0, rad: '亻', name: '单人旁', npy: 'dān rén páng', means: 'a person. It is in characters about people.', see: '你 他 们 住 休', how: 'A person (亻) standing (立) in their place: a position. 座位 = seat; 一位老师 = a teacher (said politely).' }
 ];
 /* level 1: each character long ago (public-domain drawings from Wikimedia Commons, Ancient Chinese characters project, in ancient/).
@@ -821,7 +821,7 @@ var WORDS = [
   { w: '空气', k: 1, py: 'kōngqì', en: 'air', e: '🌬️', no: ['位', '壶'] }, { w: '冲出来', k: 0, py: 'chōng chūlai', en: 'rush out', e: '💨', no: ['让', '试', '盖', '验'] },
   { w: '让开', k: 0, py: 'ràngkāi', en: 'make way', e: '🚶', no: ['冲', '常', '试'] }, { w: '常常', k: 0, py: 'chángcháng', en: 'often', e: '🔁' },
   { w: '试一试', k: 0, py: 'shì yi shì', en: 'have a try', e: '🧪' }, { w: '试验', k: 1, py: 'shìyàn', en: 'experiment', e: '🧪', no: ['机'] },
-  { w: '飞机', k: 1, py: 'fēijī', en: 'plane', e: '✈️' }, { w: '手机', k: 1, py: 'shǒujī', en: 'mobile phone', e: '📱', no: ['气', '冲'] },
+  { w: '飞机', k: 1, py: 'fēijī', en: 'plane', e: '✈️' }, { w: '手机', k: 1, py: 'shǒujī', en: 'cell phone', e: '📱', no: ['气', '冲'] },
   { w: '一位', k: 1, py: 'yí wèi', en: 'one (polite, for a person)', e: '🧑' , no: ['壶', '气', '试'] }, { w: '座位', k: 1, py: 'zuòwèi', en: 'seat', e: '💺', no: ['机'] }
 ];
 /* "Write it": more words with each character (common words, or words from the lesson), shown under the writing boxes with the
@@ -854,7 +854,7 @@ var PATTERN = [
   { t: 'build', tiles: ['我', '能', '用英语', '说', '你好'], ok: ['我能用英语说你好。', '我用英语能说你好。', '你好我能用英语说。'], en: 'I can say hello in English.' },
   { t: 'build', tiles: ['一阵风', '能', '让', '风筝', '飞起来'], ok: ['一阵风能让风筝飞起来。'], en: 'A gust of wind can make the kite fly up.' }
 ];
-/* level 4: our own letter to Uncle (Mum's brother) about a day at the science museum, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的舅舅：" */
+/* level 4: our own letter to Uncle (Mom's brother) about a day at the science museum, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的舅舅：" */
 var SENTENCES = [
   { s: '星期天，爸爸带我和妹妹去＿馆玩。', a: '科学', no: ['生气', '座位'], en: 'On Sunday, Dad took my little sister and me to the science museum.' },
   { s: '馆里有一个大＿，里面的水开了。', a: '水壶', no: ['英语', '手机'], en: 'In the museum there was a big kettle, and the water in it was boiling.' },
@@ -873,7 +873,7 @@ var SENTENCES = [
   { s: '舅舅，你下次来，我们一起用气球＿吧！', a: '试一试', no: ['让开', '英国'], en: 'Uncle, next time you come, let\'s try it with a balloon together!' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '去科学馆', en: 'At the science museum', lines: [
   { who: '👨 爸爸', s: '今天我们去科学馆，看看科学家的发明。', py: 'Jīntiān wǒmen qù kēxuéguǎn, kànkan kēxuéjiā de fāmíng.', en: 'Today we\'re going to the science museum to see what scientists have invented.' },
   { who: '🧒 我', s: '快看！这个玻璃水壶里的水开了，壶盖一跳一跳的，好奇怪！', py: 'Kuài kàn! Zhè ge bōli shuǐhú li de shuǐ kāi le, húgài yí tiào yí tiào de, hǎo qíguài!', en: 'Look! The water in this glass kettle is boiling, and the lid keeps jumping. How strange!' },
@@ -1370,7 +1370,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1567,7 +1567,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

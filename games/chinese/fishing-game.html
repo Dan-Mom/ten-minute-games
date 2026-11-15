@@ -439,7 +439,7 @@
 </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Fishing Game · 小猫钓鱼</title>
+<title>Fishing Game · 钓鱼游戏</title>
 <meta name="theme-color" content="#a21caf">
 <link rel="stylesheet" href="../../fonts/fonts.css">
 <style>
@@ -754,14 +754,14 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 3 lesson 11. One idea: the 10 new characters of the lesson.
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own; only the characters and common words come from the lesson. */
-:root{ --page:#fdf4ff; --blue:#a21caf; --blue-s:#f5d0fe; --blue-d:#86198f; }   /* this lesson's colours */
+:root{ --page:#fdf4ff; --blue:#a21caf; --blue-s:#f5d0fe; --blue-d:#86198f; }   /* this lesson's colors */
 .opt::before{content:"🐟";position:absolute;right:8px;top:4px;font-size:16px}
 </style>
 </head>
 <body>
-<header class="top"><h1>🎣 Fishing Game <span class="han">小猫钓鱼</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
+<header class="top"><h1>🎣 Fishing Game <span class="han">钓鱼游戏</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
 <div class="wrap" id="app"></div>
 <script>
 /* ---------- content (characters and words from the lesson; all sentences are our own) ---------- */
@@ -847,17 +847,17 @@ var SENTENCES = [
   { s: '我说：“因为你不＿呀！”', a: '专心', no: ['经过', '捉住'], en: 'I said, "Because you\'re not concentrating!"' },
   { s: '这次弟弟一直看着小鱼的嘴，＿他越钓越多。', a: '结果', no: ['捉迷藏', '怎样'], en: 'This time my brother kept watching the fishes\' mouths, and in the end he caught more and more.' },
   { s: '游戏＿以后，我们数了数小鱼。', a: '结束', no: ['可能', '几个'], en: 'When the game was over, we counted our fish.' },
-  { s: '妈妈说弟弟真＿，一会儿就钓了这么多。', a: '能干', no: ['经过', '钓鱼'], en: 'Mum said my brother was really good at it to catch so many so quickly.' },
+  { s: '妈妈说弟弟真＿，一会儿就钓了这么多。', a: '能干', no: ['经过', '钓鱼'], en: 'Mom said my brother was really good at it: he caught so many so quickly.' },
   { s: '弟弟讲了一个＿，我们都笑得肚子疼。', a: '笑话', no: ['已经', '结束'], en: 'My brother told a joke, and we laughed until our tummies hurt.' },
   { s: '爸爸听见了，也跟着哈哈＿。', a: '大笑', no: ['专心', '捉住'], en: 'Dad heard it and laughed out loud too.' },
   { s: '晚上，我们又玩了一会儿＿。', a: '捉迷藏', no: ['已经', '怎样'], en: 'In the evening, we played hide-and-seek for a while.' },
-  { s: '妈妈说，明天＿会出太阳。', a: '可能', no: ['专心', '结束'], en: 'Mum said the sun might come out tomorrow.' },
+  { s: '妈妈说，明天＿会出太阳。', a: '可能', no: ['专心', '结束'], en: 'Mom said the sun might come out tomorrow.' },
   { s: '明天我想请＿好朋友来家里一起玩。', a: '几个', no: ['怎么', '结果'], en: 'Tomorrow I want to invite a few good friends over to play.' },
   { s: '姑姑，你小时候喜欢玩什么游戏？是＿玩的？', a: '怎样', no: ['大笑', '钓到'], en: 'Auntie, what games did you like when you were little? How did you play them?' },
   { s: '下次你来我家，路上会＿一个大公园，我们一起去玩吧！', a: '经过', no: ['几个', '能干'], en: 'Next time you come, you\'ll pass a big park on the way. Let\'s go and play there!' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '钓鱼游戏', en: 'The fishing game', lines: [
   { who: '👧 我', s: '我们来玩钓鱼游戏吧！谁钓到的小鱼多，谁就赢。', py: 'Wǒmen lái wán diào yú yóuxì ba! Shéi diào dào de xiǎo yú duō, shéi jiù yíng.', en: 'Let\'s play the fishing game! Whoever catches the most little fish wins.' },
   { who: '👦 弟弟', s: '好！我要钓那条红色的大鱼！', py: 'Hǎo! Wǒ yào diào nà tiáo hóngsè de dà yú!', en: 'OK! I\'m going to catch that big red fish!' },
@@ -1354,7 +1354,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1551,7 +1551,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

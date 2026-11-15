@@ -439,7 +439,7 @@
 </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Weighing the Elephant · 曹冲称象</title>
+<title>Weighing the Elephant · 称大象</title>
 <meta name="theme-color" content="#0f766e">
 <link rel="stylesheet" href="../../fonts/fonts.css">
 <style>
@@ -754,14 +754,14 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 5 lesson 10. One idea: the 13 new characters of the lesson.
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own; only the characters and common words come from the lesson. */
-:root{ --page:#f0fdfa; --blue:#0f766e; --blue-s:#99f6e4; --blue-d:#115e59; }   /* this lesson's colours */
+:root{ --page:#f0fdfa; --blue:#0f766e; --blue-s:#99f6e4; --blue-d:#115e59; }   /* this lesson's colors */
 .opt::before{content:"🐘";position:absolute;right:8px;top:4px;font-size:16px}
 </style>
 </head>
 <body>
-<header class="top"><h1>🐘 Weighing the Elephant <span class="han">曹冲称象</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
+<header class="top"><h1>🐘 Weighing the Elephant <span class="han">称大象</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
 <div class="wrap" id="app"></div>
 <script>
 /* ---------- content (characters and words from the lesson; all sentences are our own) ---------- */
@@ -838,12 +838,12 @@ var MORE_WORDS = {
    pick = the right sentence (a = right, no = wrong ones), build = tap the words in order (ok = every right order) */
 var PATTERN = [
   { t: 'show', shape: '称赞……是……', keys: ['称赞', '是'], end: '。', ask: 'Where do 称赞 and 是 go? Pick the right sentence.',
-    what: '称赞 means "praise". First say who praises, then 称赞 and who is praised, then 是 and what they are: 同学们都称赞她是个好老师 = the pupils all praise her as a good teacher.',
-    ex: [{ s: '同学们都称赞她是个好老师。', en: 'The pupils all praise her as a good teacher.' }, { s: '妈妈称赞弟弟是个勇敢的孩子。', en: 'Mum praised my little brother as a brave boy.' }, { s: '爷爷称赞我是他的好帮手。', en: 'Grandpa praises me as his good helper.' }] },
+    what: '称赞 means "praise". First say who praises, then 称赞 and who is praised, then 是 and what they are: 同学们都称赞她是个好老师 = the students all praise her as a good teacher.',
+    ex: [{ s: '同学们都称赞她是个好老师。', en: 'The students all praise her as a good teacher.' }, { s: '妈妈称赞弟弟是个勇敢的孩子。', en: 'Mom praised my little brother as a brave boy.' }, { s: '爷爷称赞我是他的好帮手。', en: 'Grandpa praises me as his good helper.' }] },
   { t: 'pick', from: '奶奶说：“你是个小画家。”', a: '奶奶称赞我是个小画家。', no: ['奶奶是我称赞个小画家。', '奶奶称赞是我个小画家。'], en: 'Grandma praised me as a little artist.' },
-  { t: 'build', tiles: ['邻居们', '都称赞', '哥哥', '是个', '热心人'], ok: ['邻居们都称赞哥哥是个热心人。'], en: 'The neighbours all praise my big brother as a kind, helpful person.' },
+  { t: 'build', tiles: ['邻居们', '都称赞', '哥哥', '是个', '热心人'], ok: ['邻居们都称赞哥哥是个热心人。'], en: 'The neighbors all praise my big brother as a kind, helpful person.' },
   { t: 'pick', from: '老师说：“他是个爱读书的孩子。”', a: '老师称赞他是个爱读书的孩子。', no: ['老师是他称赞个爱读书的孩子。', '老师称赞他个爱读书的孩子是。'], en: 'The teacher praised him as a child who loves reading.' },
-  { t: 'build', tiles: ['客人们', '称赞', '妈妈', '是个', '做菜高手'], ok: ['客人们称赞妈妈是个做菜高手。'], en: 'The guests praised Mum as a great cook.' },
+  { t: 'build', tiles: ['客人们', '称赞', '妈妈', '是个', '做菜高手'], ok: ['客人们称赞妈妈是个做菜高手。'], en: 'The guests praised Mom as a great cook.' },
   { t: 'build', tiles: ['教练', '称赞', '他', '是个', '好队长'], ok: ['教练称赞他是个好队长。'], en: 'The coach praised him as a good team captain.' }
 ];
 /* level 4: our own letter to Grandma about seeing a baby elephant weighed at the zoo, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的奶奶：" */
@@ -861,10 +861,10 @@ var SENTENCES = [
   { s: '饲养员叔叔问我累不累，我笑着＿，说我不累。', a: '摇头', no: ['电子秤', '官员'], en: 'The zookeeper asked if I was tired. I smiled, shook my head and said I was not tired.' },
   { s: '回到家，我想出了一个好＿：自己也来试一试。', a: '主意', no: ['墙上', '重量'], en: 'At home I came up with a good idea: to try it myself.' },
   { s: '我把玩具放进小船，船就慢慢＿了一点儿。', a: '下沉', no: ['摇头', '称赞'], en: 'I put some toys in a little boat, and it slowly sank down a bit.' },
-  { s: '妈妈说，多动脑筋很＿。奶奶，您说对吗？', a: '重要', no: ['下沉', '前腿'], en: 'Mum says using your brain is important. Grandma, don\'t you think so?' }
+  { s: '妈妈说，多动脑筋很＿。奶奶，您说对吗？', a: '重要', no: ['下沉', '前腿'], en: 'Mom says using your brain is important. Grandma, don\'t you think so?' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '动物园称小象', en: 'Weighing a baby elephant at the zoo', lines: [
   { who: '🧑‍🌾 饲养员', s: '今天我们要给小象称一称，看看它有多重。', py: 'Jīntiān wǒmen yào gěi xiǎoxiàng chēng yi chēng, kànkan tā yǒu duō zhòng.', en: 'Today we\'re going to weigh the baby elephant and see how heavy it is.' },
   { who: '🧒 我', s: '哇，墙边的这个秤好大！小象站上去，一动也不动。', py: 'Wā, qiáng biān de zhège chèng hǎo dà! Xiǎoxiàng zhàn shangqu, yí dòng yě bú dòng.', en: 'Wow, the scale by the wall is huge! The baby elephant steps onto it and stands very still.' },
@@ -884,7 +884,7 @@ var LESSON = {
   levels: [
     { title: 'Meet the characters', zh: '认生字', text: 'Meet 13 new characters, then find each one among the elephant cards.' },
     { title: 'Build the words', zh: '组词', text: 'Each word is missing one character. Pick the right elephant card.' },
-    { title: 'Sentence pattern', zh: '句型 称赞……是……', text: 'Learn to praise someone with 称赞……是……, as in 同学们都称赞她是个好老师 (the pupils all praise her as a good teacher). Pick the right sentence, then build your own from word tiles.' },
+    { title: 'Sentence pattern', zh: '句型 称赞……是……', text: 'Learn to praise someone with 称赞……是……, as in 同学们都称赞她是个好老师 (the students all praise her as a good teacher). Pick the right sentence, then build your own from word tiles.' },
     { title: 'Write the letter', zh: '写信', text: 'Finish our letter to Grandma about the baby elephant at the zoo: pick the missing word in each sentence, then send it.' },
     { title: 'Elephant Bingo', zh: '大象 Bingo', text: 'Listen, then mark what you hear on your card. Make a line, then two lines, then fill the card.' }
   ],
@@ -1361,7 +1361,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1558,7 +1558,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

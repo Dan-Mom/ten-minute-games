@@ -439,7 +439,7 @@
 </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Noodle House · 上餐馆</title>
+<title>Noodle House · 面馆</title>
 <meta name="theme-color" content="#b91c1c">
 <link rel="stylesheet" href="../../fonts/fonts.css">
 <style>
@@ -754,14 +754,14 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 5 lesson 2. One idea: the 14 new characters of the lesson.
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own; only the characters and common words come from the lesson. */
-:root{ --page:#fef2f2; --blue:#b91c1c; --blue-s:#fecaca; --blue-d:#991b1b; }   /* this lesson's colours */
+:root{ --page:#fef2f2; --blue:#b91c1c; --blue-s:#fecaca; --blue-d:#991b1b; }   /* this lesson's colors */
 .opt::before{content:"🥢";position:absolute;right:8px;top:4px;font-size:16px}
 </style>
 </head>
 <body>
-<header class="top"><h1>🍜 Noodle House <span class="han">上餐馆</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
+<header class="top"><h1>🍜 Noodle House <span class="han">面馆</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
 <div class="wrap" id="app"></div>
 <script>
 /* ---------- content (characters and words from the lesson; all sentences are our own) ---------- */
@@ -782,7 +782,7 @@ var PARTS = [
   { c: '菜', parts: ['艹', '采'], r: 0, rad: '艹', name: '草字头', npy: 'cǎo zì tóu', means: 'grass and plants.', see: '花 草 茶 苹 药', how: 'Plants (艹) and 采 (pick), which also helps with the sound: plants you pick to eat, vegetables. Then any dish. 青菜 = green vegetables; 炒菜 = stir-fry a dish.' },
   { c: '肉', parts: ['肉'], r: 0, rad: '肉', name: '肉字', npy: 'ròu zì', means: 'meat. On the left of a character it is written 月, as in 肚 and 脸.', see: '腐', how: '肉 is one whole shape. Long ago it was a drawing of a slice of meat with lines in it. On the left of a character it is written 月. 牛肉 = beef.' },
   { c: '鲜', parts: ['鱼', '羊'], r: 0, rad: '鱼', name: '鱼字旁', npy: 'yú zì páng', means: 'fish.', see: '鲸 鲨 鲤 鳄', how: 'Fish (鱼) and sheep (羊). People say these were the tastiest foods long ago, so 鲜 means fresh and tasty. 新鲜 = fresh; 海鲜 = seafood.' },
-  { c: '青', parts: ['青'], r: 0, rad: '青', name: '青字旁', npy: 'qīng zì páng', means: 'blue-green; clear.', see: '静', how: '青 is one whole shape. Long ago it meant the colour of young plants, a fresh blue-green. 青菜 = green vegetables.' },
+  { c: '青', parts: ['青'], r: 0, rad: '青', name: '青字旁', npy: 'qīng zì páng', means: 'blue-green; clear.', see: '静', how: '青 is one whole shape. Long ago it meant the color of young plants, a fresh blue-green. 青菜 = green vegetables.' },
   { c: '味', parts: ['口', '未'], r: 0, rad: '口', name: '口字旁', npy: 'kǒu zì páng', means: 'a mouth. It is in characters about the mouth, eating and sounds.', see: '喝 叫 唱 吗 吃', how: 'A mouth (口) and 未 (wèi), which gives the sound: taste. 味道 = taste.' },
   { c: '茶', parts: ['艹', '人', '木'], r: 0, rad: '艹', name: '草字头', npy: 'cǎo zì tóu', means: 'grass and plants.', see: '花 草 菜 苹 药', how: 'Plants (艹) over a person (人) and a tree (木). Memory trick: a person among the plants and trees, picking tea leaves. 喝茶 = drink tea; 茶叶 = tea leaves.' },
   { c: '汤', parts: ['氵', ''], rest: 'right: part of 昜 (yáng), which helps with the sound', r: 0, rad: '氵', name: '三点水', npy: 'sān diǎn shuǐ', means: 'water. It is in characters about water and liquids.', see: '河 海 洗 游 漂', how: 'Water (氵) and part of 昜 (yáng), which helps with the sound. Long ago it meant hot water; now it means soup. 鸡汤 = chicken soup.' },
@@ -872,7 +872,7 @@ var SENTENCES = [
   { s: '叔叔，下次你来，我和奶奶一起给你＿。', a: '炒菜', no: ['空位子', '餐馆'], en: 'Uncle, next time you come, Grandma and I will cook you a stir-fry together.' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '去面馆吃午饭', en: 'Lunch at the noodle house', lines: [
   { who: '👵 奶奶', s: '今天我请客，我们去那家面馆吃午饭！', py: 'Jīntiān wǒ qǐngkè, wǒmen qù nà jiā miànguǎn chī wǔfàn!', en: 'Today it\'s my treat. Let\'s have lunch at that noodle house!' },
   { who: '🧒 我', s: '店里人真多，还好有几个空位子。', py: 'Diàn li rén zhēn duō, háihǎo yǒu jǐ ge kòngwèizi.', en: 'It\'s so busy in here! Luckily there are a few empty seats.' },
@@ -1369,7 +1369,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1566,7 +1566,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

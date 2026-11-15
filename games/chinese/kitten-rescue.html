@@ -754,9 +754,9 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game 8. One idea: the 14 new characters of the lesson.
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises the lesson's sentence pattern, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    All sentences and the story here are our own; only the characters and common words come from the lesson. */
-:root{ --page:#eaf6f6; --blue:#1f6f78; --blue-s:#cfe9ec; --blue-d:#134a50; }   /* this lesson's colours */
+:root{ --page:#eaf6f6; --blue:#1f6f78; --blue-s:#cfe9ec; --blue-d:#134a50; }   /* this lesson's colors */
 .opt::before{content:"";position:absolute;right:9px;top:9px;width:14px;height:17px;border-radius:50%;background:#a0703c;box-shadow:inset -3px 0 0 #7a5228}
 </style>
 </head>
@@ -849,9 +849,9 @@ var PATTERN = [
     ex: [{ s: '湖里的鸭子有的在游泳，有的在睡觉。', en: 'Some of the ducks on the lake are swimming, and some are sleeping.' }, { s: '我的书有的是中文书，有的是英文书。', en: 'Some of my books are in Chinese, and some are in English.' }, { s: '超市里的人有的买菜，有的买水果，有的买面包。', en: 'In the supermarket, some people buy vegetables, some buy fruit, and some buy bread.' }] },
   { t: 'pick', from: '一些同学在画画，一些同学在唱歌。', a: '同学们有的在画画，有的在唱歌。', no: ['同学们有的在画画，在唱歌有的。', '同学们有的有的在画画，在唱歌。'], en: 'Some classmates are drawing, and some are singing.' },
   { t: 'build', tiles: ['鱼缸里的', '小鱼', '有的是红的，', '有的是黑的'], ok: ['鱼缸里的小鱼有的是红的，有的是黑的。'], en: 'Some of the fish in the tank are red, and some are black.' },
-  { t: 'pick', from: '一些小朋友在踢球，一些小朋友在放风筝。', a: '小朋友们有的在踢球，有的在放风筝。', no: ['小朋友们有的在踢球，有的放风筝在。', '小朋友们在踢球有的，在放风筝有的。'], en: 'Some children are playing football, and some are flying kites.' },
+  { t: 'pick', from: '一些小朋友在踢球，一些小朋友在放风筝。', a: '小朋友们有的在踢球，有的在放风筝。', no: ['小朋友们有的在踢球，有的放风筝在。', '小朋友们在踢球有的，在放风筝有的。'], en: 'Some children are playing soccer, and some are flying kites.' },
   { t: 'build', tiles: ['妹妹的', '玩具', '有的是小熊，', '有的是小车'], ok: ['妹妹的玩具有的是小熊，有的是小车。'], en: 'Some of my little sister\'s toys are teddy bears, and some are little cars.' },
-  { t: 'build', tiles: ['放学后，', '我们', '有的回家，', '有的去踢球'], ok: ['放学后，我们有的回家，有的去踢球。', '我们放学后，有的回家，有的去踢球。'], en: 'After school, some of us go home, and some go to play football.' }
+  { t: 'build', tiles: ['放学后，', '我们', '有的回家，', '有的去踢球'], ok: ['放学后，我们有的回家，有的去踢球。', '我们放学后，有的回家，有的去踢球。'], en: 'After school, some of us go home, and some go to play soccer.' }
 ];
 /* level 4: our own story for the class newsletter, one missing word per sentence (a = the word, no = two words that do not fit). It starts after the title "公园里的小英雄" */
 var SENTENCES = [
@@ -871,7 +871,7 @@ var SENTENCES = [
   { s: '小猫没事了，小妹妹也笑了。我们都觉得，找大人帮忙是最好的＿。', a: '办法', no: ['石块', '鱼缸'], en: 'The kitten was fine and the little girl smiled. We all think asking a grown-up for help is the best way.' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
-   s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '救小猫', en: 'Saving the kitten', lines: [
   { who: '🧒 我', s: '公园里的人真多，有的在放风筝，有的在野餐。', py: 'Gōngyuán li de rén zhēn duō, yǒude zài fàng fēngzheng, yǒude zài yěcān.', en: 'There are so many people in the park. Some are flying kites, and some are having picnics.', pat: true },
   { who: '👦 好朋友', s: '我们玩了好久的游戏，好渴啊！还好出门前我把水壶装满了水。', py: 'Wǒmen wánle hǎo jiǔ de yóuxì, hǎo kě a! Háihǎo chūmén qián wǒ bǎ shuǐhú zhuāngmǎnle shuǐ.', en: 'We\'ve played games for ages, and I\'m so thirsty! Good thing I filled my water bottle before we came out.' },
@@ -880,7 +880,7 @@ var STORY = { title: '救小猫', en: 'Saving the kitten', lines: [
   { who: '🧒 我', s: '旁边的小妹妹都急哭了，大家都很惊慌。', py: 'Pángbiān de xiǎo mèimei dōu jí kū le, dàjiā dōu hěn jīnghuāng.', en: 'A little girl nearby is so worried she\'s crying, and everyone is in a panic.' },
   { who: '👦 好朋友', s: '我们自己不能爬树。我有办法：去找公园的叔叔！', py: 'Wǒmen zìjǐ bù néng pá shù. Wǒ yǒu bànfǎ: qù zhǎo gōngyuán de shūshu!', en: 'We can\'t climb the tree ourselves. I have an idea: let\'s find the park keeper!' },
   { who: '🧒 我', s: '叔叔搬来梯子，使劲往上爬，把小猫救了下来！', py: 'Shūshu bānlái tīzi, shǐjìn wǎng shàng pá, bǎ xiǎo māo jiùle xiàlai!', en: 'The park keeper brought a ladder, climbed up hard, and rescued the kitten!' },
-  { who: '👦 好朋友', s: '叔叔说，小猫是小店里养的，它最喜欢趴在鱼缸边看金鱼。', py: 'Shūshu shuō, xiǎo māo shì xiǎodiàn li yǎng de, tā zuì xǐhuan pā zài yúgāng biān kàn jīnyú.', en: 'The park keeper says the kitten lives at the little shop. Its favourite thing is lying by the fish tank, watching the goldfish.' },
+  { who: '👦 好朋友', s: '叔叔说，小猫是小店里养的，它最喜欢趴在鱼缸边看金鱼。', py: 'Shūshu shuō, xiǎo māo shì xiǎodiàn li yǎng de, tā zuì xǐhuan pā zài yúgāng biān kàn jīnyú.', en: 'The park keeper says the kitten lives at the little shop. Its favorite thing is lying by the fish tank, watching the goldfish.' },
   { who: '🧒 我', s: '你真聪明！我们小孩不能爬树，找叔叔帮忙最安全。', py: 'Nǐ zhēn cōngmíng! Wǒmen xiǎohái bù néng pá shù, zhǎo shūshu bāngmáng zuì ānquán.', en: 'You\'re so clever! We kids shouldn\'t climb trees. Getting the park keeper to help was the safest thing.' }
 ] };
 
@@ -1369,7 +1369,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1566,7 +1566,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {

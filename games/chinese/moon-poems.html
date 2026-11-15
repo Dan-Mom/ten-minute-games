@@ -439,7 +439,7 @@
 </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Moon Poems · 古诗二首</title>
+<title>Moon Poems · 月亮的诗</title>
 <meta name="theme-color" content="#4338ca">
 <link rel="stylesheet" href="../../fonts/fonts.css">
 <style>
@@ -754,14 +754,14 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 <style>
 /* Chinese game, book 3 lesson 7. One idea: the 13 new characters of the lesson.
-   Level 1 meets and recognises them, level 2 builds words with them, level 3 practises a sentence pattern from the lesson, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
+   Level 1 meets and recognizes them, level 2 builds words with them, level 3 practises a sentence pattern from the lesson, level 4 uses whole words in sentences, level 5 finds them by ear on a bingo card. About ten minutes a level.
    The story and sentences are our own; the two Tang poems (Li Bai, Wang Zhihuan, about 1,300 years old) are quoted in the talk. */
-:root{ --page:#eef2ff; --blue:#4338ca; --blue-s:#c7d2fe; --blue-d:#3730a3; }   /* this lesson's colours */
+:root{ --page:#eef2ff; --blue:#4338ca; --blue-s:#c7d2fe; --blue-d:#3730a3; }   /* this lesson's colors */
 .opt::before{content:"☾";position:absolute;right:9px;top:2px;font-size:22px;color:#f59e0b}
 </style>
 </head>
 <body>
-<header class="top"><h1>🌕 Moon Poems <span class="han">古诗二首</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
+<header class="top"><h1>🌕 Moon Poems <span class="han">月亮的诗</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Levels</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
 <div class="wrap" id="app"></div>
 <script>
 /* ---------- content (characters and words from the lesson; all sentences are our own, the two old poems are quoted) ---------- */
@@ -834,7 +834,7 @@ var MORE_WORDS = {
   '低': [{ w: '低声', py: 'dīshēng', en: 'in a low voice' }],
   '乡': [{ w: '老乡', py: 'lǎoxiāng', en: 'someone from your hometown' }],
   '楼': [{ w: '楼梯', py: 'lóutī', en: 'stairs' }],
-  '千': [{ w: '千米', py: 'qiānmǐ', en: 'kilometre' }],
+  '千': [{ w: '千米', py: 'qiānmǐ', en: 'kilometer' }],
   '更': [{ w: '更多', py: 'gèng duō', en: 'even more' }],
   '层': [{ w: '楼层', py: 'lóucéng', en: 'floor of a building' }]
 };
@@ -870,7 +870,7 @@ var SENTENCES = [
   { s: '我＿明年中秋节能和你一起看月亮。', a: '希望', no: ['低头', '三层'], en: 'I hope I can look at the moon with you next Mid-Autumn Festival.' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines; the poem lines are quoted from the two Tang poems.
-   who = who is speaking, s = the line (the lesson's characters in it are coloured and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
+   who = who is speaking, s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '中秋节读古诗', en: 'Old poems on Mid-Autumn night', lines: [
   { who: '🧒 我', s: '月光照在床前，白白的，我还以为是地上的霜呢！', py: 'Yuèguāng zhào zài chuáng qián, báibái de, wǒ hái yǐwéi shì dì shang de shuāng ne!', en: 'The moonlight is shining in front of the bed, all white. I thought it was frost on the ground!' },
   { who: '👴 爷爷', s: '李白有一首古诗，说的就是这个。我们一起读：床前明月光，疑是地上霜。', py: 'Lǐ Bái yǒu yì shǒu gǔshī, shuō de jiù shì zhè ge. Wǒmen yìqǐ dú: chuáng qián míng yuè guāng, yí shì dì shàng shuāng.', en: 'Li Bai wrote an old poem about just that. Let\'s read it together: "Bright moonlight before my bed; I thought it was frost on the ground."' },
@@ -1367,7 +1367,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
   CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
-  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
+  p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">colored</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
   if (LESSON.cast) {   // the cast on a little stage, each with their emoji and name; the one talking hops
     stage = E('div', 'stage'); stage.setAttribute('aria-hidden', 'true');   // the bubbles already say who speaks
@@ -1564,7 +1564,7 @@ function writeIt(at) {
   function start() {
     if (!quiz || failed) return;
     var c = CHARS[cur].c; nextStroke = 0;
-    msg.textContent = 'Write it stroke by stroke, inside the grey shape. Start with the first stroke.';
+    msg.textContent = 'Write it stroke by stroke, inside the gray shape. Start with the first stroke.';
     try {
       quiz.quiz({
         onCorrectStroke: function (d) {
