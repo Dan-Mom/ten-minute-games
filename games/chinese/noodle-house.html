@@ -766,7 +766,7 @@ button{-webkit-appearance:none;appearance:none}
 <script>
 /* ---------- content (characters and words from the lesson; all sentences are our own) ---------- */
 var CHARS = [
-  { c: '馆', py: 'guǎn', en: 'a place for guests (餐馆 = restaurant)', e: '🏮' }, { c: '空', py: 'kòng', en: 'free, not taken', e: '💺' },
+  { c: '馆', py: 'guǎn', en: 'a place for guests (餐馆 = restaurant)', e: '🏮' }, { c: '空', py: 'kòng', en: 'free, not taken', e: '💺', hear: '有空' },
   { c: '菜', py: 'cài', en: 'vegetable; dish', e: '🥬' }, { c: '肉', py: 'ròu', en: 'meat', e: '🍖' },
   { c: '鲜', py: 'xiān', en: 'fresh', e: '🐟' }, { c: '青', py: 'qīng', en: 'green, blue-green', e: '🟢' },
   { c: '味', py: 'wèi', en: 'taste', e: '😋' }, { c: '茶', py: 'chá', en: 'tea', e: '🍵' },
@@ -942,9 +942,15 @@ var app = document.getElementById('app');
 function E(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
 function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
 /* a character that sounds the same as another of the lesson's characters (附 and 复 are both fù) is said as "word 的 character"
-   (附近的附) wherever the child must pick it by ear; 网站/voice-lines.cjs records the same text */
+   (附近的附) wherever the child must pick it by ear; 网站/voice-lines.cjs records the same text.
+   A character with two readings can set `hear`, a common word with the card's reading (兴: hear '高兴'): the voice reads a
+   character alone with its most common reading, so the word is said instead, everywhere it is said on its own (the owner,
+   2026-11-14). "word的char" does not work for this: the voice reads the last character alone again */
+function charOf(t) { var me = null; CHARS.forEach(function (x) { if (x.c === t) me = x; }); return me; }
+function cardSay(t) { var me = charOf(t); return me && me.hear ? me.hear : t; }   // a character said on its own (cards, chips, taps)
 function hearAs(t) {
-  var me = null; CHARS.forEach(function (x) { if (x.c === t) me = x; });
+  var me = charOf(t);
+  if (me && me.hear) return me.hear;
   if (!me || !CHARS.some(function (x) { return x !== me && String(x.py || '').normalize('NFC') === String(me.py || '').normalize('NFC'); })) return t;
   var w = WORDS.filter(function (x) { return x.w.length > 1 && x.w.indexOf(t) >= 0; })[0];
   return w ? w.w + '的' + t : t;
@@ -1189,7 +1195,7 @@ function warm(texts) {
 function levelTexts(steps) {   // every line a level can say: characters, radical names, examples, answers, options
   var out = [];
   steps.forEach(function (s) {
-    if (s.c) { out.push(s.c.c); PARTS.forEach(function (x) { if (x.c === s.c.c) out.push(x.name); }); }
+    if (s.c) { out.push(cardSay(s.c.c)); PARTS.forEach(function (x) { if (x.c === s.c.c) out.push(x.name); }); }
     if (s.type === 'show') PATTERN[0].ex.forEach(function (e) { out.push(e.s); });
     if (s.x) out = out.concat(s.x.ok);
     out = out.concat([s.answer, s.sayAfter, s.sayFirst], s.opts || [], s.hint || []);   // hint: level 1's blank-word hints
@@ -1316,7 +1322,7 @@ function storyLine(x) {   // the line with the lesson's characters coloured (tap
   list.forEach(function (ch, n) {
     if (PUNCT.indexOf(ch) >= 0 && n > 0 && (chars[list[n - 1]] || inKey[n - 1])) return;   // already added with the character before it
     var el;
-    if (chars[ch]) { el = E('button', 'newc' + (inKey[n] ? ' key' : ''), ch); el.type = 'button'; el.setAttribute('aria-label', ch); el.onclick = function () { say(ch); }; }
+    if (chars[ch]) { el = E('button', 'newc' + (inKey[n] ? ' key' : ''), ch); el.type = 'button'; el.setAttribute('aria-label', ch); el.onclick = function () { say(cardSay(ch)); }; }
     else if (inKey[n]) el = E('span', 'key', ch);
     else { var last = d.lastChild; if (last && last.nodeType === 3) last.appendData(ch); else d.appendChild(document.createTextNode(ch)); return; }   // plain text in one piece: iPad Safari did not wrap a line made of one-character pieces (2026-11-07)
     var nx = list[n + 1];
@@ -1350,7 +1356,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   from = Math.max(0, Math.min(STORY.lines.length, Math.floor(+from) || 0));
   app.classList.remove('big', 'bwide'); app.classList.add('storyw');   // wide screens: buttons in side columns, the talk in the middle (2026-11-08)
   app.innerHTML = '';
-  warm(STORY.lines.map(lineText).concat(CHARS.map(function (c) { return c.c; })));
+  warm(STORY.lines.map(lineText).concat(CHARS.map(function (c) { return cardSay(c.c); })));
   var shown = 0, first = STORY.lines[0].who, run = ++storyRun;
   var nav = E('div', 'nav');
   var ls = E('button', 'btn ghost', '✕ Quit 退出'); ls.type = 'button'; ls.onclick = function () { afterVoice(menu, ls); };
@@ -1361,7 +1367,7 @@ function story(from) {   // from = how many lines to show at once, without readi
   // today's new characters: each one lights up when the talk first uses it, and says itself when tapped
   var today = E('div', 'today'), chip = {};
   today.appendChild(E('span', 'tlab', 'New today <span class="han">今天的生字</span>'));
-  CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(c.c); }; chip[c.c] = b; today.appendChild(b); });
+  CHARS.forEach(function (c) { var b = txt('button', 'tchar han', c.c); b.type = 'button'; b.setAttribute('aria-label', c.c + ', ' + c.py); b.onclick = function () { say(cardSay(c.c)); }; chip[c.c] = b; today.appendChild(b); });
   p.appendChild(today);
   p.appendChild(E('p', 'shelp', 'Tap a line to hear it again, and say it with the voice. Tap a <span class="newc demo">coloured</span> character to hear just that character. The pink words show the sentence pattern.'));
   var stage = null, actors = {};
@@ -1484,7 +1490,7 @@ function writeIt(at) {
   app.classList.remove('big', 'bwide', 'storyw');
   app.innerHTML = '';
   if (!isObj(save.write)) save.write = {};
-  warm(CHARS.map(function (c) { return c.c; }));
+  warm(CHARS.map(function (c) { return cardSay(c.c); }));
   var cur = at || 0, demo = null, quiz = null, nextStroke = 0, total = 0, failed = false, lastS = 0;
   if (!isObj(save.wslip)) save.wslip = {};
   function slipped(c) { if (!written(c)) { save.wslip[c] = (+save.wslip[c] || 0) + 1; store(); } }   // each mistake or hint before the character was first written
@@ -1585,7 +1591,7 @@ function writeIt(at) {
           msg.innerHTML = (all && fresh ? 'You wrote all ' + CHARS.length + '! <span class="han">全写完了！</span>' : 'Well done! <span class="han">写得好！</span>') + won + ' '
             + (all ? '' : cur < CHARS.length - 1 ? 'Tap Next for the next character.' : 'Tap a character above that is not green yet.');
           beepPrep(); afterPaint(function () { if (qEl.isConnected) beep(true); });
-          setTimeout(function () { if (qEl.isConnected && CHARS[cur].c === c && !speaking()) say(c); }, 450);
+          setTimeout(function () { if (qEl.isConnected && CHARS[cur].c === c && !speaking()) say(cardSay(c)); }, 450);
         }
       });
     } catch (e) { failed = true; msg.textContent = 'Oops, this one did not load. Ask a grown-up to check the internet, then tap ↺ Again.'; }
@@ -1600,7 +1606,7 @@ function writeIt(at) {
     var c = CHARS[n]; info.innerHTML = '';
     info.appendChild(txt('span', 'wbig han', c.c));
     var t = E('div', 'wtext'); t.appendChild(txt('div', 'py', c.py)); t.appendChild(txt('div', 'mean', c.e + ' ' + c.en)); info.appendChild(t);
-    info.appendChild(speakBtn(c.c));
+    info.appendChild(speakBtn(cardSay(c.c)));
     words.innerHTML = '';
     var ws = wordsOf(c.c, 3);   // three fit in one row under the boxes
     if (ws.length) {
@@ -1612,7 +1618,7 @@ function writeIt(at) {
         b.onclick = function () { say(w.w); }; words.appendChild(b);
       });
     }
-    mark(); load(); say(c.c);
+    mark(); load(); say(cardSay(c.c));
   }
   writeRedraw = resize;
   pick(Math.max(0, Math.min(CHARS.length - 1, cur)));
@@ -1711,9 +1717,9 @@ function play(L, redo) {   // redo = { steps }: a second try at the questions mi
     p.appendChild(E('div', 'mean', s.c.e + ' ' + s.c.en));
     var part = PARTS.filter(function (x) { return x.c === s.c.c; })[0];
     if (part) p.appendChild(built(part));
-    var r = E('div', 'row'); r.appendChild(speakBtn(s.c.c));
+    var r = E('div', 'row'); r.appendChild(speakBtn(cardSay(s.c.c)));
     var go = E('button', 'btn', 'Got it ▶'); go.type = 'button'; go.onclick = function () { afterVoice(next, go); }; r.appendChild(go); p.appendChild(r);
-    say(s.c.c);
+    say(cardSay(s.c.c));
   }
   function mark(t) { var P = PATTERN[0]; P.keys.forEach(function (k) { t = t.split(k).join('<span class="key">' + k + '</span>'); }); return t; }   // every time the key is there (不…不… has it twice)
   function show(p, s) {   // the pattern, what it is for, and three examples to hear
@@ -1850,7 +1856,7 @@ function redoSteps(L, ids) {
     return ids.filter(function (id) { return pool.indexOf(id.slice(id.indexOf(':') + 1)) >= 0; }).map(function (id) {   // only words still in the lesson
       var t = id.slice(id.indexOf(':') + 1);   // id = card:word
       return { id: id, label: t, prompt: 'Listen, then pick what you hear.', answer: t, word: true, sayFirst: hearAs(t),
-        opts: shuffle([t].concat(shuffle(pool.filter(function (x) { return x !== t && hearAs(t).indexOf(x + '的') !== 0; })).slice(0, 2))),
+        opts: shuffle([t].concat(shuffle(pool.filter(function (x) { return x !== t && !(hearAs(t) !== t && hearAs(t).indexOf(x) >= 0); })).slice(0, 2))),   // nothing that is part of what was said
         top: function () { var d = E('div', 'row'); d.appendChild(speakBtn(hearAs(t))); return d; } };
     });
   }
@@ -1888,7 +1894,7 @@ var BINGO_LINES = (function () {
 var BINGO_GOALS = [{ lines: 1, text: 'Make 1 line' }, { lines: 2, text: 'Make 2 lines' }, { lines: 12, text: 'Fill the whole card' }];
 function bingoItems() {   // every one of the lesson's characters, plus words to fill the 24 squares (15 characters + 9 words, 14 + 10, …)
   return CHARS.map(function (x) { return { t: x.c, py: x.py, en: x.en }; })
-    .concat(shuffle(WORDS.filter(function (x) { return !CHARS.some(function (c) { return hearAs(c.c) === x.w + '的' + c.c; }); }))   // not 附近 when 附 is called as 附近的附
+    .concat(shuffle(WORDS.filter(function (x) { return !CHARS.some(function (c) { return hearAs(c.c) !== c.c && hearAs(c.c).indexOf(x.w) >= 0; }); }))   // not 附近 when 附 is called as 附近的附, not 高兴 when 兴 is called as 高兴
       .slice(0, 24 - CHARS.length).map(function (x) { return { t: x.w, py: x.py, en: x.en }; }));
 }
 function bingo(L) {
@@ -1992,12 +1998,12 @@ function level1() {   // meet 5, find them by pinyin, find them by sound; three 
   GROUPS.forEach(function (g, gi) {
     g.forEach(function (c) { out.push({ type: 'meet', c: c }); });
     shuffle(g).forEach(function (c) {
-      out.push({ id: 'p' + c.c, prompt: LESSON.pick, answer: c.c, opts: pick3(c.c),
+      out.push({ id: 'p' + c.c, prompt: LESSON.pick, answer: c.c, opts: pick3(c.c), sayAfter: cardSay(c.c),
         top: function () { var d = E('div'); d.appendChild(E('div', 'py', c.py)); d.appendChild(E('div', 'mean', c.e + ' ' + c.en)); var bw = LESSON.pickWords && blankWords(c.c); if (bw) d.appendChild(bw); return d; },
         hint: LESSON.pickWords ? wordsOf(c.c, 2).map(function (w) { return w.w; }) : null });
     });
     shuffle(g).forEach(function (c) {
-      out.push({ id: 's' + c.c, prompt: 'Listen, then pick the character you hear.', answer: c.c, opts: pick3(c.c), sayFirst: hearAs(c.c),
+      out.push({ id: 's' + c.c, prompt: 'Listen, then pick the character you hear.', answer: c.c, opts: pick3(c.c, hearAs(c.c).split('')), sayFirst: hearAs(c.c),   // no option that is part of what is said (高 when 兴 is said as 高兴)
         top: function () { var d = E('div', 'row'); d.appendChild(speakBtn(hearAs(c.c))); return d; } });
     });
   });
