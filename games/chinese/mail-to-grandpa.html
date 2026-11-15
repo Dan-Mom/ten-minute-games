@@ -767,10 +767,10 @@ button{-webkit-appearance:none;appearance:none}
 /* ---------- content (characters and words from the lesson; all sentences are our own) ---------- */
 var CHARS = [
   { c: '信', py: 'xìn', en: 'letter', e: '✉️' }, { c: '封', py: 'fēng', en: 'envelope; (a measure word for letters)', e: '📨' },
-  { c: '邮', py: 'yóu', en: 'mail, post', e: '📮' }, { c: '票', py: 'piào', en: 'ticket, stamp', e: '🎟️' },
-  { c: '城', py: 'chéng', en: 'city; city wall', e: '🏯' }, { c: '京', py: 'jīng', en: 'capital (as in Beijing)', e: '🏙️' },
-  { c: '广', py: 'guǎng', en: 'wide', e: '↔️' }, { c: '场', py: 'chǎng', en: 'open place, field', e: '🏟️' },
-  { c: '安', py: 'ān', en: 'safe, calm', e: '🛡️' }, { c: '全', py: 'quán', en: 'whole, all', e: '💯' },
+  { c: '城', py: 'chéng', en: 'city; city wall', e: '🏯' }, { c: '邮', py: 'yóu', en: 'mail, post', e: '📮' },
+  { c: '票', py: 'piào', en: 'ticket, stamp', e: '🎟️' }, { c: '京', py: 'jīng', en: 'capital (as in Beijing)', e: '🏙️' },
+  { c: '安', py: 'ān', en: 'safe, calm', e: '🛡️' }, { c: '广', py: 'guǎng', en: 'wide', e: '↔️' },
+  { c: '场', py: 'chǎng', en: 'open place, field', e: '🏟️' }, { c: '全', py: 'quán', en: 'whole, all', e: '💯' },
   { c: '平', py: 'píng', en: 'flat, even, calm', e: '➖' }, { c: '提', py: 'tí', en: 'lift; raise (a question)', e: '🙋' },
   { c: '取', py: 'qǔ', en: 'take, pick up', e: '🤲' }, { c: '进', py: 'jìn', en: 'go in; move forward', e: '🚪' },
   { c: '孙', py: 'sūn', en: 'grandchild', e: '👧' }
@@ -779,20 +779,20 @@ var CHARS = [
    rad = the radical (部首) with its name, what it usually means, and other characters where you can see it; how = the meaning */
 var PARTS = [
   { c: '信', parts: ['亻', '言'], r: 0, rad: '亻', name: '单人旁', npy: 'dān rén páng', means: 'a person. It is in characters about people and what they do.', see: '你 他 们 休 住', how: 'A person (亻) and words (言): words from a person you can trust. That is how 信 came to mean a letter, a message.' },
-  { c: '封', parts: ['圭', '寸'], r: 1, rad: '寸', name: '寸字旁', npy: 'cùn zì páng', means: 'a hand. 寸 was once a hand with a mark at the wrist.', see: '对 射 导', how: 'Earth (圭 is two 土) and a hand (寸): close something up and seal it. An envelope seals a letter, and 一封信 is one letter.' },
-  { c: '邮', parts: ['由', '阝'], r: 1, rad: '阝', name: '右耳旁', npy: 'yòu ěr páng', means: 'a town or a place. On the right side, 阝 comes from 邑, a town.', see: '都 那 部 邻', how: '由 (yóu) gives the sound, and 阝 says it is about places: mail goes from place to place.' },
-  { c: '票', parts: ['覀', '示'], r: 1, rad: '示', name: '示字底', npy: 'shì zì dǐ', means: 'to show. 示 was once a picture of an altar; on the left side it is written 礻.', see: '礼 福 神 禁', how: 'A ticket or a stamp is a small piece of paper. Think of it this way: it shows (示) that you have paid.' },
+  { c: '封', parts: ['圭', '寸'], r: 1, rad: '寸', name: '寸字旁', npy: 'cùn zì páng', means: 'a hand. 寸 was once a hand with a mark at the wrist.', see: '导 寿', how: 'Earth (圭 is two 土) and a hand (寸): close something up and seal it. An envelope seals a letter, and 一封信 is one letter.' },
   { c: '城', parts: ['土', '成'], r: 0, rad: '土', name: '提土旁', npy: 'tí tǔ páng', means: 'earth, the ground. It is in characters about land and building.', see: '地 场 块 坐 墙', how: 'Earth (土) and 成 (chéng), which gives the sound. Long ago city walls were built of earth, so 城 means a city wall and a city.' },
-  { c: '京', parts: ['亠', '口', '小'], r: 0, rad: '亠', name: '京字头', npy: 'jīng zì tóu', means: 'nothing on its own. It is a little lid on top of characters.', see: '六 市 交 高', how: 'Long ago 京 was a picture of a tall building on a high hill. A big city with tall buildings is a capital: 北京 is "the northern capital".' },
-  { c: '广', parts: ['广'], r: 0, rad: '广', name: '广字旁', npy: 'guǎng zì páng', means: 'a house with one side open. It is in characters about buildings.', see: '床 店 庄 座 底', how: '广 is the simple form of 廣 (a big hall with no walls), which came to mean "wide", as in 广场.' },
-  { c: '场', parts: ['土', ''], rest: 'right side, as in 汤 肠', r: 0, rad: '土', name: '提土旁', npy: 'tí tǔ páng', means: 'earth, the ground. It is in characters about land and building.', see: '地 城 块 坐 墙', how: 'Earth (土) means ground: 场 is an open piece of ground, a field or a square. 操场 is a playground.' },
+  { c: '邮', parts: ['由', '阝'], r: 1, rad: '阝', name: '右耳旁', npy: 'yòu ěr páng', means: 'a town or a place. On the right side, 阝 comes from 邑, a town.', see: '都 那 部 邻', how: '由 (yóu) gives the sound, and 阝 says it is about places: mail goes from place to place.' },
+  { c: '票', parts: ['覀', '示'], r: 1, rad: '示', name: '示字底', npy: 'shì zì dǐ', means: 'to show. 示 was once a picture of an altar; on the left side it is written 礻.', see: '礼 福 神 禁', how: 'A ticket or a stamp is a small piece of paper. A trick: it shows (示) that you have paid.' },
+  { c: '京', parts: ['亠', '口', '小'], r: 0, rad: '亠', name: '京字头', npy: 'jīng zì tóu', means: 'nothing on its own. It is a little lid on top of characters.', see: '市 交 亡 亮', how: 'Long ago 京 was a picture of a tall building on a high hill. A big city with tall buildings is a capital: 北京 is "the northern capital".' },
   { c: '安', parts: ['宀', '女'], r: 0, rad: '宀', name: '宝盖头', npy: 'bǎo gài tóu', means: 'a roof, a house. It is in characters about homes and rooms.', see: '家 字 室 宝 完', how: 'A woman (女) under a roof (宀), safe at home: safe and calm. 平安 means safe and sound.' },
+  { c: '广', parts: ['广'], r: 0, rad: '广', name: '广字', npy: 'guǎng zì', means: 'a house with one side open. It is in characters about buildings.', see: '床 店 庄 座 底', how: '广 is the simple form of 廣 (a big hall with no walls), which came to mean "wide", as in 广场.' },
+  { c: '场', parts: ['土', ''], rest: 'right side, as in 汤 肠', r: 0, rad: '土', name: '提土旁', npy: 'tí tǔ páng', means: 'earth, the ground. It is in characters about land and building.', see: '地 城 块 坐 墙', how: 'Earth (土) means ground: 场 is an open piece of ground, a field or a square. 操场 is a playground.' },
   { c: '全', parts: ['人', '王'], r: 0, rad: '人', name: '人字头', npy: 'rén zì tóu', means: 'a person. On top it is spread out like a roof.', see: '会 个 今 合', how: '王 here was once 玉, jade. Perfect jade with nothing missing is 全: whole, all. 全家 is the whole family.' },
-  { c: '平', parts: ['平'], r: 0, rad: '一', name: '横', npy: 'héng', means: 'just one stroke across. As a radical it does not add a meaning.', see: '上 下 七 不', how: '平 is one whole shape, listed under its top stroke 一. Think of a level scale: 平 means flat, even and calm.' },
+  { c: '平', parts: ['平'], r: 0, rad: '一', name: '横', npy: 'héng', means: 'just one stroke across. As a radical it does not add a meaning.', see: '上 下 七 不', how: '平 is one whole shape, listed under its top stroke 一. A trick: think of a level scale. 平 means flat, even and calm.' },
   { c: '提', parts: ['扌', '是'], r: 0, rad: '扌', name: '提手旁', npy: 'tí shǒu páng', means: 'a hand. It is in characters about things you do with your hands.', see: '打 拉 拍 找 抱', how: 'A hand (扌) and 是 (shì), which helps with the sound: to lift or carry. 提问 means to raise a question, to ask.' },
-  { c: '取', parts: ['耳', '又'], r: 1, rad: '又', name: '又字旁', npy: 'yòu zì páng', means: 'a hand. 又 was once a picture of a right hand.', see: '友 双 受 反', how: 'A hand (又) taking hold of an ear (耳): to take, to get. 取票 is to pick up tickets.' },
+  { c: '取', parts: ['耳', '又'], r: 0, rad: '耳', name: '耳字旁', npy: 'ěr zì páng', means: 'an ear. It is in characters about hearing.', see: '职 聊 联 聪', how: 'A hand (又) taking hold of an ear (耳): to take, to get. 取票 is to pick up tickets.' },
   { c: '进', parts: ['井', '辶'], r: 1, rad: '辶', name: '走之底', npy: 'zǒu zhī dǐ', means: 'walking, going somewhere. It wraps around the bottom of the character.', see: '这 过 还 送 远', how: 'Walking (辶) and 井 (jǐng), which helps with the sound: to go in, to move forward. 进步 is getting better.' },
-  { c: '孙', parts: ['子', '小'], r: 0, rad: '子', name: '子字旁', npy: 'zǐ zì páng', means: 'a child. It is in characters about children.', see: '孩 字 学 孔', how: 'A little (小) child (子): a grandchild. 孙女 is a granddaughter, 孙子 a grandson.' }
+  { c: '孙', parts: ['子', '小'], r: 0, rad: '子', name: '子字旁', npy: 'zǐ zì páng', means: 'a child. It is in characters about children.', see: '孩 孔 孤', how: 'The old form 孫 was a child (子) and a thread (系): a family line going on. A trick: a little (小) child (子) is a grandchild. 孙女 is a granddaughter, 孙子 a grandson.' }
 ];
 /* level 1: each character long ago (public-domain drawings from Wikimedia Commons, Ancient Chinese characters project, in ancient/).
    kind = which old script; rad = when the character itself has no old form, its radical is shown instead (form = the old character drawn);
@@ -861,14 +861,14 @@ var PATTERN = [
 var SENTENCES = [
   { s: '这是我第一次给您＿。', a: '写信', no: ['邮票', '城市'], en: 'This is the first letter I have ever written to you.' },
   { s: '我把信装进了一个红色的＿。', a: '信封', no: ['北京', '进步'], en: 'I put it in a red envelope.' },
-  { s: '信封上贴着一张长城＿。', a: '邮票', no: ['操场', '全家'], en: 'There is a Great Wall stamp on the envelope.' },
+  { s: '信封上贴着一张熊猫＿。', a: '邮票', no: ['操场', '全家'], en: 'There is a panda stamp on the envelope.' },
   { s: '妈妈说，这封信要走很远的路，才能到＿。', a: '北京', no: ['信封', '提出'], en: 'Mom says this letter has a long way to go to reach Beijing.' },
   { s: '您住的＿很大，有很多高楼。', a: '城市', no: ['邮件', '孙女'], en: 'The city you live in is big, with lots of tall buildings.' },
   { s: '听说您家旁边有一个大＿。', a: '广场', no: ['安全', '提出'], en: 'I heard there is a big square next to your home.' },
   { s: '我们学校也有一个大＿，我每天在那里跑步。', a: '操场', no: ['平安', '邮票'], en: 'Our school has a big playground too, and I run there every day.' },
-  { s: '我的中文有了很大的＿，老师夸我了。', a: '进步', no: ['北京', '广场'], en: 'My Chinese got much better, and my teacher praised me.' },
+  { s: '我天天练习写汉字，＿很快，老师都夸我了。', a: '进步', no: ['北京', '广场'], en: 'I practice writing Chinese characters every day and I am getting better fast. My teacher praised me.' },
   { s: '我想＿一个问题：北京的冬天冷不冷？', a: '提出', no: ['城市', '信封'], en: 'I want to ask a question: are winters in Beijing cold?' },
-  { s: '放假的时候，我们＿要去看您。', a: '全家', no: ['邮票', '操场'], en: 'During vacation our whole family will come to see you.' },
+  { s: '假期一到，我们＿就飞去北京找您。', a: '全家', no: ['邮票', '操场'], en: 'As soon as vacation starts, our whole family will fly to Beijing to see you.' },
   { s: '妈妈订好了机票，到时候去机场＿。', a: '取票', no: ['平安', '进步'], en: 'Mom booked the flight and will pick up the tickets at the airport.' },
   { s: '坐飞机很＿，您不用担心。', a: '安全', no: ['信封', '孙女'], en: 'Flying is safe, so please do not worry.' },
   { s: '我们会先给您发一封电子＿。', a: '邮件', no: ['城市', '广场'], en: 'We will send you an email first.' },
@@ -884,7 +884,7 @@ var STORY = { title: '给爷爷写信', en: 'Writing to Grandpa', lines: [
   { who: '👩 妈妈', s: '北京是个大城市。爷爷家旁边有个广场，晚上很多人在那里跳舞。', py: 'Běijīng shì ge dà chéngshì. Yéye jiā pángbiān yǒu ge guǎngchǎng, wǎnshang hěn duō rén zài nàlǐ tiàowǔ.', en: 'Beijing is a big city. There is a square next to Grandpa\'s home, and in the evening lots of people dance there.' },
   { who: '🧒 我', s: '我要告诉爷爷，我每天都练习写汉字，进步很快！', py: 'Wǒ yào gàosu yéye, wǒ měi tiān dōu liànxí xiě Hànzì, jìnbù hěn kuài!', en: 'I will tell Grandpa that I practice writing Chinese characters every day, and I am getting better fast!' },
   { who: '👩 妈妈', s: '你还可以提一个问题，问问爷爷北京冷不冷。', py: 'Nǐ hái kěyǐ tí yí ge wèntí, wènwen yéye Běijīng lěng bu lěng.', en: 'You could also ask Grandpa a question, like whether it is cold in Beijing.' },
-  { who: '🧒 我', s: '我好想爷爷！放假了，我们全家去北京看他，好不好？', py: 'Wǒ hǎo xiǎng yéye! Fàngjià le, wǒmen quánjiā qù Běijīng kàn tā, hǎo bu hǎo?', en: 'I miss Grandpa so much! When vacation comes, can our whole family go to Beijing to see him?' },
+  { who: '🧒 我', s: '我好想爷爷！假期一到，我们全家就飞去北京找他，好不好？', py: 'Wǒ hǎo xiǎng yéye! Jiàqī yí dào, wǒmen quánjiā jiù fēi qù Běijīng zhǎo tā, hǎo bu hǎo?', en: 'I miss Grandpa so much! As soon as vacation starts, can our whole family fly to Beijing to see him?' },
   { who: '👩 妈妈', s: '当然好！到时候我们先去机场取票，再坐飞机。', py: 'Dāngrán hǎo! Dào shíhou wǒmen xiān qù jīchǎng qǔpiào, zài zuò fēijī.', en: 'Of course! When the day comes, we will pick up our tickets at the airport and then get on the plane.' },
   { who: '🧒 我', s: '我要祝爷爷平平安安，最后写上：爱您的小孙女。', py: 'Wǒ yào zhù yéye píngpíng-ān\'ān, zuìhòu xiěshang: ài nín de xiǎo sūnnǚ.', en: 'I will wish Grandpa safe and well, and at the end write: love, your little granddaughter.' }
 ] };

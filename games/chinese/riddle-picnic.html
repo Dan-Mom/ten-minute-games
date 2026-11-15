@@ -776,12 +776,12 @@ var CHARS = [
 /* level 1: how each character is built. parts = the pieces (r = which piece is the radical; rest = a piece described in words),
    rad = the radical (部首) with its name, what it usually means, and other characters where you can see it; how = the meaning */
 var PARTS = [
-  { c: '答', parts: ['⺮', '合'], r: 0, rad: '⺮', name: '竹字头', npy: 'zhú zì tóu', means: 'bamboo. It is in characters about bamboo and things made of it.', see: '笔 笑 第 等 筷', how: 'Bamboo (⺮) and 合 (hé), which helps with the sound. 回答 = answer; 答对了 = got it right!' },
+  { c: '答', parts: ['⺮', '合'], r: 0, rad: '⺮', name: '竹字头', npy: 'zhú zì tóu', means: 'bamboo. It is in characters about bamboo and things made of it.', see: '笔 笑 第 等 筷', how: 'Bamboo (⺮) and 合 (hé), which helps with the sound. 回答 = answer; 答对了 = got it right! Said dā in 答应 (say yes).' },
   { c: '弯', parts: ['亦', '弓'], r: 1, rad: '弓', name: '弓字底', npy: 'gōng zì dǐ', means: 'a bow for shooting arrows.', see: '引 张 弹 强 弱', how: 'A bow (弓) at the bottom, and a bow is bent. The top helps with the sound. 弯 = bent, curved; 弯腰 = bend down.' },
   { c: '船', parts: ['舟', ''], rest: 'right side: 几 over 口', r: 0, rad: '舟', name: '舟字旁', npy: 'zhōu zì páng', means: 'a boat. It is in characters about boats.', see: '航 般 舰 艇', how: 'A boat (舟) and a right side that helps with the sound. 船 = a boat or a ship; 小船 = a little boat.' },
   { c: '尖', parts: ['小', '大'], r: 0, rad: '小', name: '小字头', npy: 'xiǎo zì tóu', means: 'small. It is in a few characters.', see: '少 尘 尚', how: 'Small (小) on top of big (大): thin at the top and wide at the bottom, so it comes to a point. 尖 = pointed; 笔尖 = the tip of a pen.' },
   { c: '握', parts: ['扌', '屋'], r: 0, rad: '扌', name: '提手旁', npy: 'tí shǒu páng', means: 'a hand. It is in characters about doing things with your hands.', see: '打 拉 把 找 拍', how: 'A hand (扌) and 屋 (wū), which helps with the sound: to hold something tight in your hand. 握手 = shake hands.' },
-  { c: '毛', parts: ['毛'], r: 0, rad: '毛', name: '毛字旁', npy: 'máo zì páng', means: 'hair, fur and feathers.', see: '毯 毫 毽 毡', how: '毛 is one whole shape. Long ago it was a picture of a tuft of hair. 毛 = hair, fur; 毛衣 = a wool sweater; 毛笔 = a writing brush.' },
+  { c: '毛', parts: ['毛'], r: 0, rad: '毛', name: '毛字', npy: 'máo zì', means: 'hair, fur and feathers.', see: '毯 毽 毡', how: '毛 is one whole shape. Long ago it was a picture of a tuft of hair. 毛 = hair, fur; 毛衣 = a wool sweater; 毛笔 = a writing brush.' },
   { c: '箭', parts: ['⺮', '前'], r: 0, rad: '⺮', name: '竹字头', npy: 'zhú zì tóu', means: 'bamboo. It is in characters about bamboo and things made of it.', see: '笔 笑 第 等 筷', how: 'Bamboo (⺮) and 前 (qián), which helps with the sound: long ago arrows were made of bamboo. 箭 = an arrow; 火箭 = a rocket.' },
   { c: '圆', parts: ['囗', '员'], r: 0, rad: '囗', name: '国字框', npy: 'guó zì kuàng', means: 'a frame all around. It is in characters about things inside a border.', see: '国 园 图 回 四', how: 'A frame all around (囗) and 员 (yuán), which gives the sound: something round. 圆 = round; 圆圈 = a circle.' },
   { c: '串', parts: ['串'], r: 0, rad: '丨', name: '竖', npy: 'shù', means: 'one stroke going down. As a radical it does not add a meaning.', see: '中 丰 临', how: '串 is one whole shape: two things on one stick, like food on a skewer. 一串葡萄 = a bunch of grapes; 肉串 = a meat skewer.' },
@@ -841,7 +841,7 @@ var PATTERN = [
     ex: [{ s: '什么白白天上飘？', en: 'What is white and floats in the sky? (Clouds!)' }, { s: '什么黄黄弯又长？', en: 'What is yellow, bent and long? (A banana!)' }, { s: '什么高高站路边？', en: 'What is tall and stands by the road? (A tree!)' }] },
   { t: 'pick', from: '雪花白白满天飞。', a: '什么白白满天飞？', no: ['白白什么满天飞？', '什么满天飞白白？'], en: 'What is white and flies all over the sky? (Snowflakes!)' },
   { t: 'build', tiles: ['什么', '黑黑', '树上', '叫'], ok: ['什么黑黑树上叫？'], en: 'What is black and calls from the tree? (A crow!)' },
-  { t: 'pick', from: '西瓜圆圆地里长。', a: '什么圆圆地里长？', no: ['圆圆什么地里长？', '什么地里长圆圆？'], en: 'What is round and grows in the field? (A watermelon!)' },
+  { t: 'pick', from: '南瓜胖胖田里长。', a: '什么胖胖田里长？', no: ['胖胖什么田里长？', '什么田里长胖胖？'], en: 'What is fat and grows in the field? (A pumpkin!)' },
   { t: 'build', tiles: ['什么', '软软', '床上', '躺'], ok: ['什么软软床上躺？'], en: 'What is soft and lies on the bed? (A pillow!)' },
   { t: 'build', tiles: ['什么', '小小', '天上', '闪'], ok: ['什么小小天上闪？'], en: 'What is small and twinkles in the sky? (The stars!)' }
 ];
@@ -865,8 +865,8 @@ var SENTENCES = [
 var STORY = { title: '猜谜野餐', en: 'A riddle picnic', lines: [
   { who: '👩 妈妈', s: '我们坐小船到湖对岸去野餐吧！', py: 'Wǒmen zuò xiǎochuán dào hú duì\'àn qù yěcān ba!', en: 'Let\'s take a little boat to the other side of the lake for a picnic!' },
   { who: '🧒 我', s: '好！我带了苹果和一串葡萄。', py: 'Hǎo! Wǒ dàile píngguǒ hé yí chuàn pútao.', en: 'OK! I brought apples and a bunch of grapes.' },
-  { who: '👩 妈妈', s: '我出一个谜语：什么尖尖地上长？', py: 'Wǒ chū yí ge míyǔ: shénme jiānjiān dì shang zhǎng?', en: 'Here\'s a riddle: what is pointed and grows out of the ground?', pat: true },
-  { who: '🧒 我', s: '是竹笋！我答对了吗？', py: 'Shì zhúsǔn! Wǒ dá duì le ma?', en: 'A bamboo shoot! Did I get it right?' },
+  { who: '👩 妈妈', s: '我出一个谜语：什么绿绿地上长？', py: 'Wǒ chū yí ge míyǔ: shénme lǜlǜ dì shang zhǎng?', en: 'Here\'s a riddle: what is green and grows out of the ground?', pat: true },
+  { who: '🧒 我', s: '是小草！它的叶子尖尖的。我答对了吗？', py: 'Shì xiǎocǎo! Tā de yèzi jiānjiān de. Wǒ dá duì le ma?', en: 'Grass! Its blades are pointed. Did I get it right?' },
   { who: '👩 妈妈', s: '答对了！你的手握得这么紧，是不是有点儿冷？', py: 'Dá duì le! Nǐ de shǒu wò de zhème jǐn, shì bu shì yǒudiǎnr lěng?', en: 'Right! You\'re holding your hands so tight. Are you a bit cold?' },
   { who: '🧒 我', s: '有一点儿。我把毛衣穿上吧。', py: 'Yǒu yìdiǎnr. Wǒ bǎ máoyī chuān shang ba.', en: 'A little. I\'ll put my sweater on.' },
   { who: '👩 妈妈', s: '你看，湖边的柳枝弯弯的，风一吹，像在跳舞。', py: 'Nǐ kàn, húbiān de liǔzhī wānwān de, fēng yì chuī, xiàng zài tiàowǔ.', en: 'Look, the willow branches by the lake are curved. When the wind blows, they look like they\'re dancing.' },

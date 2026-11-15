@@ -777,12 +777,12 @@ var CHARS = [
 /* level 1: how each character is built. parts = the pieces (r = which piece is the radical; rest = a piece described in words),
    rad = the radical (部首) with its name, what it usually means, and other characters where you can see it; how = the meaning */
 var PARTS = [
-  { c: '聪', parts: ['耳', '总'], r: 0, rad: '耳', name: '耳字旁', npy: 'ěr zì páng', means: 'an ear. It is in characters about hearing.', see: '取 职 聊 联', how: 'An ear (耳) and 总 (zǒng), which helps with the sound: long ago 聪 meant hearing well. Someone who hears and understands fast is clever. 聪明 = clever.' },
-  { c: '戏', parts: ['又', '戈'], r: 1, rad: '戈', name: '戈字旁', npy: 'gē zì páng', means: 'an old weapon, a dagger-axe.', see: '我 成 战 或', how: '又 and 戈 (an old weapon). Long ago 戏 had to do with weapons; later it came to mean play and shows. 游戏 = game; 看戏 = watch a show.' },
+  { c: '聪', parts: ['耳', '总'], r: 0, rad: '耳', name: '耳字旁', npy: 'ěr zì páng', means: 'an ear. It is in characters about hearing.', see: '耳 职 聊 联', how: 'An ear (耳) and 总 (zǒng), which helps with the sound: long ago 聪 meant hearing well. Someone who hears and understands fast is clever. 聪明 = clever.' },
+  { c: '戏', parts: ['又', '戈'], r: 0, rad: '又', name: '又字旁', npy: 'yòu zì páng', means: 'a right hand; in many simple characters it stands in for a harder old part.', see: '对 难 观 欢', how: '又 and 戈 (an old weapon). In the old form 戲 the left side was a harder part (虍 over 豆); today it is written 又. 戏 = play, a show: 游戏 = game; 看戏 = watch a show.' },
   { c: '缸', parts: ['缶', '工'], r: 0, rad: '缶', name: '缶字旁', npy: 'fǒu zì páng', means: 'a clay pot. It is in characters about pots and jars.', see: '罐 缺', how: 'A clay pot (缶) and 工 (gōng), which helps with the sound: a big jar. 水缸 = a big water jar; 鱼缸 = a fish tank.' },
   { c: '装', parts: ['壮', '衣'], r: 1, rad: '衣', name: '衣字底', npy: 'yī zì dǐ', means: 'clothes. It is in characters about clothing.', see: '袋 裂 裁', how: '壮 (zhuàng) gives the sound and 衣 (cloth, clothes) is below: long ago 装 meant wrapping and packing things up. 装满 = fill up.' },
-  { c: '吓', parts: ['口', '下'], r: 0, rad: '口', name: '口字旁', npy: 'kǒu zì páng', means: 'a mouth. It is in characters about eating, drinking and speaking.', see: '吃 叫 唱 吗 听', how: 'A mouth (口) and 下 (xià), which gives the sound: a shout that gives you a fright. 吓 = scare; 吓了一跳 = got a fright.' },
-  { c: '哭', parts: ['口', '口', '犬'], r: 0, rad: '口', name: '口字旁', npy: 'kǒu zì páng', means: 'a mouth. It is in characters about eating, drinking and speaking.', see: '吃 叫 唱 吗 听', how: 'Two mouths (口口) over 犬 (a dog). Memory trick: crying loudly, like a howling dog. 哭 = cry; 大哭 = cry loudly.' },
+  { c: '吓', parts: ['口', '下'], r: 0, rad: '口', name: '口字旁', npy: 'kǒu zì páng', means: 'a mouth. It is in characters about eating, drinking and speaking.', see: '吃 叫 唱 吗 听', how: 'A mouth (口) and 下 (xià), which gives the sound: a shout that gives you a fright. 吓 = scare; 吓了一跳 = got a fright. 吓 is also read hè, as in 恐吓 (to threaten).' },
+  { c: '哭', parts: ['口', '口', '犬'], r: 0, rad: '口', name: '口字头', npy: 'kǒu zì tóu', means: 'a mouth. It is in characters about eating, drinking and speaking.', see: '号 另 员 品', how: 'Two mouths (口口) over 犬 (a dog). A trick: crying loudly, like a howling dog. 哭 = cry; 大哭 = cry loudly.' },
   { c: '惊', parts: ['忄', '京'], r: 0, rad: '忄', name: '竖心旁', npy: 'shù xīn páng', means: 'the heart and feelings. It is in characters about how you feel.', see: '快 怕 情 忙 慢', how: 'The heart (忄) and 京 (jīng), which gives the sound: your heart jumps when you get a shock. 吃惊 = surprised.' },
   { c: '慌', parts: ['忄', '荒'], r: 0, rad: '忄', name: '竖心旁', npy: 'shù xīn páng', means: 'the heart and feelings. It is in characters about how you feel.', see: '快 怕 情 忙 慢', how: 'The heart (忄) and 荒 (huāng), which gives the sound: a heart in a hurry. 慌张 = flustered; 别慌 = don\'t panic!' },
   { c: '法', parts: ['氵', '去'], r: 0, rad: '氵', name: '三点水', npy: 'sān diǎn shuǐ', means: 'water. It is in characters about water, rivers and the sea.', see: '河 湖 海 洗 游', how: 'Water (氵) and 去. Long ago 法 meant law, and people said the law should be fair and level, like water. Later it also meant a way of doing things. 办法 = a way to do it.' },
@@ -790,7 +790,7 @@ var PARTS = [
   { c: '使', parts: ['亻', '吏'], r: 0, rad: '亻', name: '单人旁', npy: 'dān rén páng', means: 'a person. It is in characters about people.', see: '你 他 们 住 休', how: 'A person (亻) and 吏 (lì, an official): someone sent to do a job. 使 = use; make; 使劲 = use all your strength.' },
   { c: '劲', parts: ['', '力'], rest: 'left: 又 over 工', r: 1, rad: '力', name: '力字旁', npy: 'lì zì páng', means: 'strength. It is in characters about work and effort.', see: '加 动 办 助 努', how: 'Strength (力) on the right and a left side that helps with the sound: power. 使劲 = with all your strength; 有劲 = strong.' },
   { c: '砸', parts: ['石', '匝'], r: 0, rad: '石', name: '石字旁', npy: 'shí zì páng', means: 'a stone. It is in characters about rocks.', see: '破 砖 码 研', how: 'A stone (石) and 匝 (zā), which gives the sound: to hit hard, as with a stone. 砸开 = crack open.' },
-  { c: '救', parts: ['求', '攵'], r: 1, rad: '攵', name: '反文旁', npy: 'fǎn wén páng', means: 'a hand holding a stick: doing something.', see: '放 教 收 数 故', how: '求 (qiú, ask for) gives the sound and 攵 is a hand doing something: helping someone in trouble. 救命！ = Help!; 救人 = save someone.' }
+  { c: '救', parts: ['求', '攵'], r: 1, rad: '攵', name: '反文旁', npy: 'fǎn wén páng', means: 'a hand holding a stick: doing something.', see: '教 收 数 故', how: '求 (qiú, ask for) gives the sound and 攵 is a hand doing something: helping someone in trouble. 救命！ = Help!; 救人 = save someone.' }
 ];
 /* level 1: each character long ago (public-domain drawings from Wikimedia Commons, Ancient Chinese characters project, in ancient/).
    kind = which old script; rad = when the character itself has no old form, its radical is shown instead (form = the old character drawn);
@@ -846,7 +846,7 @@ var MORE_WORDS = {
 var PATTERN = [
   { t: 'show', shape: '……有的……，有的……', keys: ['有的'], end: '。', ask: 'Where do the two 有的 go? Pick the right sentence.',
     what: 'Use 有的…，有的… to say what different ones in a group do: "some … and some …". Say the group first, then 有的 before each part. 鸭子有的在游泳，有的在睡觉 = some ducks swim, some sleep.',
-    ex: [{ s: '湖里的鸭子有的在游泳，有的在睡觉。', en: 'Some of the ducks on the lake are swimming, and some are sleeping.' }, { s: '我的书有的是中文书，有的是英文书。', en: 'Some of my books are in Chinese, and some are in English.' }, { s: '超市里的人有的买菜，有的买水果，有的买面包。', en: 'In the supermarket, some people buy vegetables, some buy fruit, and some buy bread.' }] },
+    ex: [{ s: '湖里的鸭子有的在游泳，有的在睡觉。', en: 'Some of the ducks on the lake are swimming, and some are sleeping.' }, { s: '我的书有的是中文书，有的是英文书。', en: 'Some of my books are in Chinese, and some are in English.' }, { s: '树上的叶子有的是绿的，有的是黄的，有的是红的。', en: 'Some of the leaves on the tree are green, some are yellow, and some are red.' }] },
   { t: 'pick', from: '一些同学在画画，一些同学在唱歌。', a: '同学们有的在画画，有的在唱歌。', no: ['同学们有的在画画，在唱歌有的。', '同学们有的有的在画画，在唱歌。'], en: 'Some classmates are drawing, and some are singing.' },
   { t: 'build', tiles: ['鱼缸里的', '小鱼', '有的是红的，', '有的是黑的'], ok: ['鱼缸里的小鱼有的是红的，有的是黑的。'], en: 'Some of the fish in the tank are red, and some are black.' },
   { t: 'pick', from: '一些小朋友在踢球，一些小朋友在放风筝。', a: '小朋友们有的在踢球，有的在放风筝。', no: ['小朋友们有的在踢球，有的放风筝在。', '小朋友们在踢球有的，在放风筝有的。'], en: 'Some children are playing soccer, and some are flying kites.' },
@@ -855,33 +855,34 @@ var PATTERN = [
 ];
 /* level 4: our own story for the class newsletter, one missing word per sentence (a = the word, no = two words that do not fit). It starts after the title "公园里的小英雄" */
 var SENTENCES = [
-  { s: '星期天，我们几个好朋友去公园玩＿。', a: '游戏', no: ['慌张', '吃惊'], en: 'On Sunday, a few of us friends went to the park to play games.' },
-  { s: '出发前，我们把水壶＿了水。', a: '装满', no: ['吓哭', '砸开'], en: 'Before we set off, we filled our water bottles.' },
-  { s: '公园门口的小店里卖小金鱼，还有漂亮的＿。', a: '鱼缸', no: ['惊慌', '有劲'], en: 'A little shop at the park gate sells goldfish, and pretty fish tanks too.' },
-  { s: '我们坐在树下吃核桃。我找来一个＿，想把核桃砸开。', a: '石块', no: ['游戏', '救命'], en: 'We sat under a tree eating walnuts. I found a stone to crack them open.' },
-  { s: '核桃很硬，我＿砸了好几下。', a: '使劲', no: ['鱼缸', '聪明'], en: 'The walnuts were hard, and I hit them with all my strength many times.' },
-  { s: '我们一边吃＿的核桃，一边聊天。', a: '砸开', no: ['惊慌', '救命'], en: 'We ate the cracked walnuts and chatted.' },
-  { s: '突然，树上传来"喵喵"的叫声，大家都很＿。', a: '吃惊', no: ['石块', '鱼缸'], en: 'Suddenly there was a "meow" from up in the tree, and we were all surprised.' },
-  { s: '原来有一只小猫爬到树上，下不来了，它很＿。', a: '惊慌', no: ['有劲', '鱼缸'], en: 'A kitten had climbed up the tree and couldn\'t get down. It was very frightened.' },
-  { s: '旁边的小妹妹怕小猫掉下来，都被＿了。', a: '吓哭', no: ['装满', '砸开'], en: 'A little girl nearby was afraid the kitten would fall, and she was so scared she cried.' },
-  { s: '大家都很＿，你看看我，我看看你。', a: '慌张', no: ['鱼缸', '石块'], en: 'Everyone was flustered and just looked at each other.' },
-  { s: '我的好朋友很＿，他说："我们自己不能爬树，快去找大人！"', a: '聪明', no: ['石块', '鱼缸'], en: 'My good friend is clever. He said, "We can\'t climb the tree ourselves. Let\'s find a grown-up!"' },
+  { s: '星期天，我和好朋友在公园的大树下，一个小松果砸到了我的头，我很＿。', a: '吃惊', no: ['石块', '鱼缸'], en: 'On Sunday, my good friend and I were under a big tree in the park when a little pine cone hit me on the head. I was very surprised.' },
+  { s: '抬头一看，树上有一只小猫，看起来很＿。', a: '惊慌', no: ['砸开', '游戏'], en: 'I looked up and saw a kitten in the tree. It looked very frightened.' },
+  { s: '小猫下不来了，树下的小妹妹怕它掉下来，都被＿了。', a: '吓哭', no: ['装满', '砸开'], en: 'The kitten couldn\'t get down. A little girl under the tree was afraid it would fall, and she was so scared she cried.' },
+  { s: '我们小孩不能爬树。好朋友说，找大人帮忙才是好＿。', a: '办法', no: ['鱼缸', '吓哭'], en: 'We kids can\'t climb trees. My good friend said getting a grown-up to help was the right way.' },
   { s: '他跑去找公园的叔叔，大声喊："＿！快救救小猫！"', a: '救命', no: ['游戏', '慌张'], en: 'He ran to find the park keeper and shouted, "Help! Quick, save the kitten!"' },
-  { s: '叔叔很＿，一个人就扛来一把大梯子，爬上去把小猫抱了下来。', a: '有劲', no: ['鱼缸', '游戏'], en: 'The park keeper was strong. He carried a big ladder over all by himself, climbed up and brought the kitten down.' },
-  { s: '小猫没事了，小妹妹也笑了。我们都觉得，找大人帮忙是最好的＿。', a: '办法', no: ['石块', '鱼缸'], en: 'The kitten was fine and the little girl smiled. We all think asking a grown-up for help is the best way.' }
+  { s: '叔叔很＿，一个人就搬来一把大梯子。', a: '有劲', no: ['鱼缸', '游戏'], en: 'The park keeper was strong. He carried a big ladder over all by himself.' },
+  { s: '他＿往上爬，把小猫抱了下来。', a: '使劲', no: ['鱼缸', '砸开'], en: 'He climbed up hard and brought the kitten down.' },
+  { s: '小猫一点儿也不＿了，树下的小朋友都高兴极了。', a: '慌张', no: ['石块', '救命'], en: 'The kitten wasn\'t flustered anymore, and the children under the tree were overjoyed.' },
+  { s: '原来小猫是小店里养的，它最喜欢趴在＿边看金鱼。', a: '鱼缸', no: ['救命', '慌张'], en: 'It turned out the kitten lives at the little shop. It loves lying by the fish tank, watching the goldfish.' },
+  { s: '小店的阿姨说我们很＿，知道找大人帮忙。', a: '聪明', no: ['石块', '砸开'], en: 'The lady at the little shop said we were clever to get a grown-up to help.' },
+  { s: '阿姨还帮我们把水壶＿了水。', a: '装满', no: ['吓哭', '砸开'], en: 'She also filled our water bottles for us.' },
+  { s: '我们回到大树下，我找来一个＿，想把带来的核桃砸开。', a: '石块', no: ['游戏', '救命'], en: 'We went back to the big tree, and I found a stone to crack open the walnuts we had brought.' },
+  { s: '我们一边吃＿的核桃，一边聊天。', a: '砸开', no: ['惊慌', '救命'], en: 'We ate the cracked walnuts and chatted.' },
+  { s: '吃完核桃，我们又玩了一会儿＿。', a: '游戏', no: ['慌张', '吃惊'], en: 'After the walnuts, we played games for a while.' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
    s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '救小猫', en: 'Saving the kitten', lines: [
-  { who: '🧒 我', s: '公园里的人真多，有的在放风筝，有的在野餐。', py: 'Gōngyuán li de rén zhēn duō, yǒude zài fàng fēngzheng, yǒude zài yěcān.', en: 'There are so many people in the park. Some are flying kites, and some are having picnics.', pat: true },
-  { who: '👦 好朋友', s: '我们玩了好久的游戏，好渴啊！还好出门前我把水壶装满了水。', py: 'Wǒmen wánle hǎo jiǔ de yóuxì, hǎo kě a! Háihǎo chūmén qián wǒ bǎ shuǐhú zhuāngmǎnle shuǐ.', en: 'We\'ve played games for ages, and I\'m so thirsty! Good thing I filled my water bottle before we came out.' },
-  { who: '🧒 我', s: '我带了核桃。我们坐下来，用石块把它们砸开吧！', py: 'Wǒ dàile hétao. Wǒmen zuò xiàlai, yòng shíkuài bǎ tāmen zákāi ba!', en: 'I brought some walnuts. Let\'s sit down and crack them open with a stone!' },
-  { who: '👦 好朋友', s: '咦？树上有只小猫在叫，它好像吓坏了。', py: 'Yí? Shù shang yǒu zhī xiǎo māo zài jiào, tā hǎoxiàng xiàhuài le.', en: 'Huh? There\'s a kitten crying up in the tree. It looks really scared.' },
-  { who: '🧒 我', s: '旁边的小妹妹都急哭了，大家都很惊慌。', py: 'Pángbiān de xiǎo mèimei dōu jí kū le, dàjiā dōu hěn jīnghuāng.', en: 'A little girl nearby is so worried she\'s crying, and everyone is in a panic.' },
-  { who: '👦 好朋友', s: '我们自己不能爬树。我有办法：去找公园的叔叔！', py: 'Wǒmen zìjǐ bù néng pá shù. Wǒ yǒu bànfǎ: qù zhǎo gōngyuán de shūshu!', en: 'We can\'t climb the tree ourselves. I have an idea: let\'s find the park keeper!' },
+  { who: '🧒 我', s: '哎哟！吓我一跳！是什么东西砸到了我的头？', py: 'Āiyō! Xià wǒ yí tiào! Shì shénme dōngxi zádàole wǒ de tóu?', en: 'Ouch! That gave me a fright! What just hit me on the head?' },
+  { who: '👦 好朋友', s: '是一个小松果。你看，树上有只小猫，它看起来好惊慌！', py: 'Shì yí ge xiǎo sōngguǒ. Nǐ kàn, shù shang yǒu zhī xiǎo māo, tā kàn qǐlai hǎo jīnghuāng!', en: 'It\'s a little pine cone. Look, there\'s a kitten up in the tree. It looks so frightened!' },
+  { who: '🧒 我', s: '它好像下不来了。树下有个小妹妹，急得都哭了。', py: 'Tā hǎoxiàng xià bu lái le. Shù xià yǒu ge xiǎo mèimei, jí de dōu kū le.', en: 'It seems it can\'t get down. A little girl under the tree is so worried she\'s crying.' },
+  { who: '👦 好朋友', s: '我们小孩不能爬树。找大人帮忙才是好方法，我去找公园的叔叔！', py: 'Wǒmen xiǎohái bù néng pá shù. Zhǎo dàrén bāngmáng cái shì hǎo fāngfǎ, wǒ qù zhǎo gōngyuán de shūshu!', en: 'We kids can\'t climb trees. Getting a grown-up to help is the right way. I\'ll go and get the park keeper!' },
   { who: '🧒 我', s: '叔叔搬来梯子，使劲往上爬，把小猫救了下来！', py: 'Shūshu bānlái tīzi, shǐjìn wǎng shàng pá, bǎ xiǎo māo jiùle xiàlai!', en: 'The park keeper brought a ladder, climbed up hard, and rescued the kitten!' },
-  { who: '👦 好朋友', s: '叔叔说，小猫是小店里养的，它最喜欢趴在鱼缸边看金鱼。', py: 'Shūshu shuō, xiǎo māo shì xiǎodiàn li yǎng de, tā zuì xǐhuan pā zài yúgāng biān kàn jīnyú.', en: 'The park keeper says the kitten lives at the little shop. Its favorite thing is lying by the fish tank, watching the goldfish.' },
-  { who: '🧒 我', s: '你真聪明！我们小孩不能爬树，找叔叔帮忙最安全。', py: 'Nǐ zhēn cōngmíng! Wǒmen xiǎohái bù néng pá shù, zhǎo shūshu bāngmáng zuì ānquán.', en: 'You\'re so clever! We kids shouldn\'t climb trees. Getting the park keeper to help was the safest thing.' }
+  { who: '👦 好朋友', s: '树下的小朋友有的在拍手，有的高兴得跳了起来。', py: 'Shù xià de xiǎopéngyou yǒude zài pāishǒu, yǒude gāoxìng de tiàole qǐlai.', en: 'Some of the children under the tree are clapping, and some are jumping for joy.', pat: true },
+  { who: '🧒 我', s: '叔叔说，小猫是小店里养的，它最喜欢趴在鱼缸边看金鱼。', py: 'Shūshu shuō, xiǎo māo shì xiǎodiàn li yǎng de, tā zuì xǐhuan pā zài yúgāng biān kàn jīnyú.', en: 'The park keeper says the kitten lives at the little shop. Its favorite thing is lying by the fish tank, watching the goldfish.' },
+  { who: '👦 好朋友', s: '小店的阿姨说我们很聪明，还帮我们把水壶装满了水。', py: 'Xiǎodiàn de āyí shuō wǒmen hěn cōngmíng, hái bāng wǒmen bǎ shuǐhú zhuāngmǎnle shuǐ.', en: 'The lady at the little shop says we were clever, and she filled our water bottles for us.' },
+  { who: '🧒 我', s: '我带了核桃。我们回到树下，用石块把它们砸开吧！', py: 'Wǒ dàile hétao. Wǒmen huídào shù xià, yòng shíkuài bǎ tāmen zákāi ba!', en: 'I brought some walnuts. Let\'s go back to the tree and crack them open with a stone!' },
+  { who: '👦 好朋友', s: '好啊！吃完核桃，我们再玩一会儿游戏。', py: 'Hǎo a! Chīwán hétao, wǒmen zài wán yíhuìr yóuxì.', en: 'OK! After the walnuts, let\'s play games a bit longer.' }
 ] };
 
 /* ---------- this lesson's settings: the shared engine (../_engine/chinese-engine.js) reads them ---------- */

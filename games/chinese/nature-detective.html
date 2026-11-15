@@ -777,16 +777,16 @@ var CHARS = [
 /* level 1: how each character is built. parts = the pieces (r = which piece is the radical; rest = a piece described in words),
    rad = the radical (部首) with its name, what it usually means, and other characters where you can see it; how = the meaning */
 var PARTS = [
-  { c: '言', parts: ['言'], r: 0, rad: '言', name: '言字旁', npy: 'yán zì páng', means: 'words, speaking. On the left side it is written 讠.', see: '说 话 语 读 请', how: '言 is one whole shape. Long ago it was a mouth (口) with something coming out of it: words. 语言 = language; 发言 = speak up.' },
+  { c: '言', parts: ['言'], r: 0, rad: '言', name: '言字', npy: 'yán zì', means: 'words, speaking. On the left side it is written 讠.', see: '说 话 语 读 请', how: '言 is one whole shape. Long ago it was a mouth (口) with something coming out of it: words. 语言 = language; 发言 = speak up.' },
   { c: '丰', parts: ['丰'], r: 0, rad: '丨', name: '竖', npy: 'shù', means: 'one stroke going down. As a radical it does not add a meaning.', see: '中 串 临', how: '丰 is one whole shape. Long ago it showed a plant growing thick and full. 丰收 = a big harvest; 丰富 = rich, plenty of.' },
   { c: '富', parts: ['宀', '畐'], r: 0, rad: '宀', name: '宝盖头', npy: 'bǎo gài tóu', means: 'a roof, a house. It is in characters about homes and rooms.', see: '家 字 室 安 完', how: 'A roof (宀) and 畐 (fú), which gives the sound; 畐 looked like a full jar. A house with full jars is rich. 富 = rich; 丰富 = plenty of.' },
   { c: '晴', parts: ['日', '青'], r: 0, rad: '日', name: '日字旁', npy: 'rì zì páng', means: 'the sun. It is in characters about light, days and time.', see: '明 时 晚 昨 映', how: 'The sun (日) and 青 (qīng), which gives the sound: a clear, sunny day. 晴天 = a sunny day.' },
-  { c: '搬', parts: ['扌', '般'], r: 0, rad: '扌', name: '提手旁', npy: 'tí shǒu páng', means: 'a hand. It is in characters about doing things with your hands.', see: '打 拉 把 找 拍', how: 'A hand (扌) and 般 (bān), which gives the sound: to move things with your hands. 搬家 = move house.' },
+  { c: '搬', parts: ['扌', '般'], r: 0, rad: '扌', name: '提手旁', npy: 'tí shǒu páng', means: 'a hand. It is in characters about doing things with your hands.', see: '打 拉 把 找 拍', how: 'A hand (扌) and 般 (bān), which gives the sound: to move things with your hands. 搬家 = move to a new home.' },
   { c: '伞', parts: ['伞'], r: 0, rad: '人', name: '人字头', npy: 'rén zì tóu', means: 'a person. On top it looks like a roof.', see: '今 个 会 全 合', how: '伞 is one whole shape, and it looks like an open umbrella on its handle. 雨伞 = an umbrella; 打伞 = hold up an umbrella.' },
   { c: '冰', parts: ['冫', '水'], r: 0, rad: '冫', name: '两点水', npy: 'liǎng diǎn shuǐ', means: 'ice and cold. It is in characters about cold things.', see: '冷 冻 凉 准 净', how: 'Ice (冫) and water (水): water that has frozen. 冰 = ice; 冰块 = an ice cube.' },
   { c: '化', parts: ['亻', '匕'], r: 0, rad: '亻', name: '单人旁', npy: 'dān rén páng', means: 'a person. It is in characters about people.', see: '你 他 们 住 休', how: 'Long ago 化 showed one person standing (亻) and one upside down (匕): something has changed. 变化 = a change; 冰化了 = the ice melted.' },
   { c: '叶', parts: ['口', '十'], r: 0, rad: '口', name: '口字旁', npy: 'kǒu zì páng', means: 'a mouth. It is in characters about eating, drinking and speaking.', see: '吃 叫 唱 吗 听', how: 'The old form 葉 had a tree with leaves on top. 叶 is a short way to write it, so 口 here does not mean a mouth. 树叶 = tree leaves.' },
-  { c: '妙', parts: ['女', '少'], r: 0, rad: '女', name: '女字旁', npy: 'nǚ zì páng', means: 'a woman or a girl. It is in characters about women and family.', see: '妈 姐 妹 好 奶', how: 'A girl (女) and 少 (shǎo, little). Memory trick: a little girl with a wonderful idea! 奇妙 = amazing; 太妙了 = how clever!' },
+  { c: '妙', parts: ['女', '少'], r: 0, rad: '女', name: '女字旁', npy: 'nǚ zì páng', means: 'a woman or a girl. It is in characters about women and family.', see: '妈 姐 妹 好 奶', how: 'A girl (女) and 少 (shǎo, little). A trick: a little girl with a wonderful idea! 奇妙 = amazing; 太妙了 = how clever!' },
   { c: '细', parts: ['纟', '田'], r: 0, rad: '纟', name: '绞丝旁', npy: 'jiǎo sī páng', means: 'silk thread. It is in characters about threads and cloth.', see: '红 线 纸 给 绿', how: 'Silk thread (纟) is very thin, so 细 means thin. (田 here was once a different shape that helped with the sound.) 细心 = careful.' },
   { c: '观', parts: ['又', '见'], r: 0, rad: '又', name: '又字旁', npy: 'yòu zì páng', means: 'a hand. 又 was once a picture of a right hand.', see: '友 双 对 欢', how: 'Here 又 is just a short way to write an old sound part, not a hand; 见 means to see. 观看 = watch; 观察 = look closely.' },
   { c: '察', parts: ['宀', '祭'], r: 0, rad: '宀', name: '宝盖头', npy: 'bǎo gài tóu', means: 'a roof, a house. It is in characters about homes and rooms.', see: '家 字 室 安 完', how: 'A roof (宀) and 祭 (jì), which helps with the sound: looking carefully at everything. 观察 = observe; 警察 = police officer.' },
@@ -816,7 +816,7 @@ var GROUPS = [CHARS.slice(0, 5), CHARS.slice(5, 10), CHARS.slice(10)];
 var WORDS = [
   { w: '语言', k: 1, py: 'yǔyán', en: 'language', e: '🗣️' }, { w: '丰收', k: 0, py: 'fēngshōu', en: 'a big harvest', e: '🌾' },
   { w: '丰富', k: 1, py: 'fēngfù', en: 'rich, plenty of', e: '🎁' }, { w: '晴天', k: 0, py: 'qíngtiān', en: 'a sunny day', e: '☀️', no: ['冰', '观'] },
-  { w: '搬家', k: 0, py: 'bānjiā', en: 'move house', e: '📦', no: ['富', '叶'] }, { w: '雨伞', k: 1, py: 'yǔsǎn', en: 'umbrella', e: '☂️' },
+  { w: '搬家', k: 0, py: 'bānjiā', en: 'move to a new home', e: '📦', no: ['富', '叶'] }, { w: '雨伞', k: 1, py: 'yǔsǎn', en: 'umbrella', e: '☂️' },
   { w: '冰块', k: 0, py: 'bīngkuài', en: 'ice cube', e: '🧊' }, { w: '变化', k: 1, py: 'biànhuà', en: 'a change', e: '🔄', no: ['富', '细', '晴', '冰'] },
   { w: '树叶', k: 1, py: 'shùyè', en: 'tree leaves', e: '🍂', no: ['冰'] }, { w: '奇妙', k: 1, py: 'qímiào', en: 'amazing', e: '✨', no: ['观'] },
   { w: '细心', k: 0, py: 'xìxīn', en: 'careful', e: '🔍', no: ['冰'] }, { w: '观看', k: 0, py: 'guānkàn', en: 'watch', e: '👀', no: ['细', '察'] },
@@ -854,32 +854,32 @@ var PATTERN = [
 ];
 /* level 4: our own nature journal from a walk in the park, one missing word per sentence (a = the word, no = two words that do not fit). It starts after the title "我的观察日记" */
 var SENTENCES = [
-  { s: '今天是＿，老师带我们去公园观察大自然。', a: '晴天', no: ['冰块', '雨伞'], en: 'Today was a sunny day, and our teacher took us to the park to look at nature.' },
-  { s: '妈妈说下午可能会下雨，让我把＿放进书包。', a: '雨伞', no: ['冰块', '变化'], en: 'Mom said it might rain in the afternoon, so she told me to put an umbrella in my backpack.' },
-  { s: '老师说，小动物不会说话，可是它们也有自己的＿。', a: '语言', no: ['树叶', '冰块'], en: 'Our teacher said little animals can\'t talk, but they have their own kind of language too.' },
+  { s: '今天，老师带我们去公园＿大自然。', a: '观察', no: ['丰收', '雨伞'], en: 'Today our teacher took us to the park to look closely at nature.' },
+  { s: '我拿着放大镜，＿地看一只小蜗牛。', a: '细心', no: ['冰块', '晴天'], en: 'I held a magnifying glass and carefully looked at a little snail.' },
+  { s: '小蜗牛背着它的家，好像在＿一样。', a: '搬家', no: ['树叶', '雨伞'], en: 'The little snail carries its home on its back, as if it were moving to a new home.' },
+  { s: '一只小松鼠把吃不完的松果藏起来，等冬天再吃，真是太＿了！', a: '奇妙', no: ['雨伞', '冰块'], en: 'A little squirrel hid the pine cones it couldn\'t finish, to eat in winter. How amazing!' },
   { s: '我捡起一片红红的＿，上面有很多细细的线。', a: '树叶', no: ['语言', '晴天'], en: 'I picked up a red leaf with lots of thin lines on it.' },
   { s: '老师说，秋天到了，树叶的颜色有了＿。', a: '变化', no: ['雨伞', '冰块'], en: 'Our teacher said fall is here, so the color of the leaves has changed.' },
-  { s: '我拿着放大镜，＿地看一只小蜗牛。', a: '细心', no: ['冰块', '晴天'], en: 'I held a magnifying glass and carefully looked at a little snail.' },
-  { s: '小蜗牛背着它的家，好像在＿一样。', a: '搬家', no: ['树叶', '雨伞'], en: 'The little snail carries its home on its back, as if it were moving house.' },
-  { s: '我们又＿了一会儿池塘里的小鱼。', a: '观察', no: ['丰收', '奇妙'], en: 'Then we watched the little fish in the pond for a while.' },
-  { s: '中午很热，老师给我们每人一杯放了＿的果汁。', a: '冰块', no: ['树叶', '语言'], en: 'At noon it was hot, and our teacher gave each of us a juice with ice in it.' },
-  { s: '公园旁边的苹果树结满了果子，今年真是个＿年！', a: '丰收', no: ['晴天', '搬家'], en: 'The apple trees next to the park were full of fruit. This must be a year with a big harvest.' },
   { s: '池塘边的小花有红的、黄的、白的，颜色真＿。', a: '丰富', no: ['冰块', '雨伞'], en: 'The little flowers by the pond were red, yellow and white. So many colors!' },
-  { s: '大自然真＿，有那么多有意思的东西。', a: '奇妙', no: ['雨伞', '树叶'], en: 'Nature is amazing. There are so many interesting things.' },
+  { s: '公园旁边的苹果树结满了果子，今年真是个＿年！', a: '丰收', no: ['晴天', '搬家'], en: 'The apple trees next to the park were full of fruit. This must be a year with a big harvest.' },
+  { s: '中午很热，老师给我们每人一杯放了＿的果汁。', a: '冰块', no: ['树叶', '语言'], en: 'At noon it was hot, and our teacher gave each of us a juice with ice in it.' },
+  { s: '老师说，小鸟叽叽喳喳地叫，那是它们的＿。', a: '语言', no: ['树叶', '冰块'], en: 'Our teacher said that when little birds chirp, that is their language.' },
+  { s: '今天是个＿，太阳一直照着，一滴雨也没下。', a: '晴天', no: ['冰块', '变化'], en: 'It was a sunny day today. The sun shone all day, and not a drop of rain fell.' },
+  { s: '早上妈妈让我把＿放进书包，可是今天没用上。', a: '雨伞', no: ['变化', '语言'], en: 'This morning Mom had me put an umbrella in my backpack, but I didn\'t need it today.' },
   { s: '晚上，我们一家人一起＿了一个讲小动物的节目。', a: '观看', no: ['树叶', '冰块'], en: 'In the evening, our family watched a show about little animals together.' },
   { s: '我把今天看到的都画了下来，连妹妹都＿了。', a: '看懂', no: ['丰收', '冰块'], en: 'I drew everything I saw today, and even my little sister understood it.' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
    s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '自然小侦探', en: 'Nature detectives', lines: [
-  { who: '👩 老师', s: '今天是晴天，我们来当自然小侦探！', py: 'Jīntiān shì qíngtiān, wǒmen lái dāng zìrán xiǎo zhēntàn!', en: 'It\'s a sunny day today. Let\'s be nature detectives!' },
-  { who: '🧒 我', s: '老师，我带了雨伞，可是好像用不上了。', py: 'Lǎoshī, wǒ dàile yǔsǎn, kěshì hǎoxiàng yòng bu shàng le.', en: 'Teacher, I brought an umbrella, but it looks like I won\'t need it.' },
-  { who: '👩 老师', s: '没关系。我们用眼睛细细地观察，听听小动物的“语言”。', py: 'Méi guānxi. Wǒmen yòng yǎnjing xìxì de guānchá, tīngting xiǎo dòngwù de “yǔyán”.', en: 'That\'s fine. Let\'s look closely with our eyes and listen to the "language" of little animals.' },
-  { who: '🧒 我', s: '老师，那只小松鼠正在搬松果呢！', py: 'Lǎoshī, nà zhī xiǎo sōngshǔ zhèngzài bān sōngguǒ ne!', en: 'Teacher, that little squirrel is carrying pine cones right now!', pat: true },
+  { who: '👩 老师', s: '小侦探们，今天我们来公园，用眼睛细细地观察大自然！', py: 'Xiǎo zhēntànmen, jīntiān wǒmen lái gōngyuán, yòng yǎnjing xìxì de guānchá dà zìrán!', en: 'Little detectives, today we\'re in the park to look closely at nature with our own eyes!' },
+  { who: '🧒 我', s: '老师快看，那只小松鼠正在树上吃松果呢！', py: 'Lǎoshī kuài kàn, nà zhī xiǎo sōngshǔ zhèngzài shù shang chī sōngguǒ ne!', en: 'Teacher, look! That little squirrel is eating a pine cone up in the tree right now!', pat: true },
+  { who: '👩 老师', s: '它吃不完的松果，会搬走藏起来，等冬天再吃。是不是很妙？', py: 'Tā chī bu wán de sōngguǒ, huì bānzǒu cáng qǐlai, děng dōngtiān zài chī. Shì bu shì hěn miào?', en: 'The pine cones it can\'t finish, it carries off and hides to eat in winter. Isn\'t that clever?' },
+  { who: '🧒 我', s: '太妙了！我懂了，它是在为冬天做准备。', py: 'Tài miào le! Wǒ dǒng le, tā shì zài wèi dōngtiān zuò zhǔnbèi.', en: 'So clever! Now I get it: it\'s getting ready for winter.' },
   { who: '👩 老师', s: '你看，枫叶变红了，银杏叶变黄了，秋天的颜色多丰富！', py: 'Nǐ kàn, fēngyè biàn hóng le, yínxìngyè biàn huáng le, qiūtiān de yánsè duō fēngfù!', en: 'Look, the maple leaves have turned red and the ginkgo leaves yellow. Fall has so many colors!' },
   { who: '🧒 我', s: '哎呀，我的冰棍化了，滴到手上了！', py: 'Āiyā, wǒ de bīnggùn huà le, dī dào shǒu shang le!', en: 'Oh no, my ice pop has melted and dripped onto my hand!' },
-  { who: '👩 老师', s: '快擦擦手吧！你看，小松鼠会把松果藏起来，等冬天再吃，是不是很妙？', py: 'Kuài cāca shǒu ba! Nǐ kàn, xiǎo sōngshǔ huì bǎ sōngguǒ cáng qǐlai, děng dōngtiān zài chī, shì bu shì hěn miào?', en: 'Quick, wipe your hands! Look, the little squirrel hides its pine cones to eat in winter. Isn\'t that clever?' },
-  { who: '🧒 我', s: '太妙了！我懂了，小动物也有自己的办法。', py: 'Tài miào le! Wǒ dǒng le, xiǎo dòngwù yě yǒu zìjǐ de bànfǎ.', en: 'So clever! Now I understand: little animals have their own ways too.' }
+  { who: '👩 老师', s: '快擦擦手吧！你听，小鸟叫得多欢，这就是它们的“语言”。', py: 'Kuài cāca shǒu ba! Nǐ tīng, xiǎoniǎo jiào de duō huān, zhè jiù shì tāmen de “yǔyán”.', en: 'Quick, wipe your hands! Listen, the little birds are chirping so happily. That\'s their "language".' },
+  { who: '🧒 我', s: '天这么晴，我带的雨伞用不上了，就让它在书包里睡觉吧！', py: 'Tiān zhème qíng, wǒ dài de yǔsǎn yòng bu shàng le, jiù ràng tā zài shūbāo li shuìjiào ba!', en: 'The sky is so clear that I won\'t need the umbrella I brought. I\'ll let it nap in my backpack!' }
 ] };
 
 /* ---------- this lesson's settings: the shared engine (../_engine/chinese-engine.js) reads them ---------- */

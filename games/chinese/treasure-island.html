@@ -778,20 +778,20 @@ var CHARS = [
 /* level 1: how each character is built. parts = the pieces (r = which piece is the radical; rest = a piece described in words),
    rad = the radical (部首) with its name, what it usually means, and other characters where you can see it; how = the meaning */
 var PARTS = [
-  { c: '美', parts: ['羊', '大'], r: 0, rad: '羊', name: '羊字头', npy: 'yáng zì tóu', means: 'a sheep. On top, its tail is cut short.', see: '着 差 羔', how: '美 means beautiful, and 美丽 too. Memory trick: a big (大) sheep (羊) was a fine thing to have.' },
+  { c: '美', parts: ['羊', '大'], r: 0, rad: '羊', name: '羊字头', npy: 'yáng zì tóu', means: 'a sheep. On top, its tail is cut short.', see: '着 差 羔', how: '美 means beautiful, and 美丽 too. A trick: a big (大) sheep (羊) was a fine thing to have.' },
   { c: '丽', parts: ['丽'], r: 0, rad: '一', name: '横', npy: 'héng', means: 'just one stroke across. As a radical it does not add a meaning.', see: '上 下 七 不', how: '丽 is one whole shape; dictionaries put it under its top stroke, 一. Its old form 麗 was a deer with a fine pair of antlers. 美丽 means beautiful.' },
   { c: '完', parts: ['宀', '元'], r: 0, rad: '宀', name: '宝盖头', npy: 'bǎo gài tóu', means: 'a roof, a house. It is in characters about homes and rooms.', see: '家 字 室 宝 安', how: 'A roof (宀) and 元 (yuán), which helps with the sound. A house with nothing missing is whole: 完 means whole, finished. 做完 is "finished doing".' },
-  { c: '登', parts: ['癶', '豆'], r: 0, rad: '癶', name: '登字头', npy: 'dēng zì tóu', means: 'two feet, walking. It is on top of characters about stepping.', see: '癸 凳 蹬', how: 'Two feet (癶) stepping up onto 豆, which long ago was a tall stand: to climb up. 登山 is to climb a mountain.' },
-  { c: '景', parts: ['日', '京'], r: 0, rad: '日', name: '日字头', npy: 'rì zì tóu', means: 'the sun. It is in characters about sunshine, days and time.', see: '早 星 春 晴', how: 'The sun (日) over 京 (jīng), which helps with the sound. Sunlight shows you everything around: 风景 is the scenery.' },
-  { c: '色', parts: ['色'], r: 0, rad: '色', name: '色字旁', npy: 'sè zì páng', means: 'color. It is a radical in only a few characters.', see: '艳', how: '色 is one whole shape, and a radical too. It means color: 颜色 is color, and 景色 is the view.' },
-  { c: '岸', parts: ['山', '厂', '干'], r: 0, rad: '山', name: '山字头', npy: 'shān zì tóu', means: 'a mountain or a hill. It is in characters about mountains.', see: '岛 岩 峰 崖', how: 'A mountain (山) over a steep cliff (厂), with 干 (gān) helping with the sound: the high bank of a river, lake or sea. 岸边 is by the shore.' },
-  { c: '岛', parts: ['', '山'], rest: 'top: 鸟 (a bird) without its last stroke', r: 1, rad: '山', name: '山字底', npy: 'shān zì dǐ', means: 'a mountain or a hill. It is in characters about mountains.', see: '岸 岩 峰 崖', how: 'A bird (鸟) resting on a mountain (山) out in the sea: an island. 小岛 is a small island.' },
+  { c: '登', parts: ['癶', '豆'], r: 0, rad: '癶', name: '登字头', npy: 'dēng zì tóu', means: 'two feet, walking. It is on top of characters about stepping.', see: '癸', how: 'Two feet (癶) stepping up onto 豆, which long ago was a tall stand: to climb up. 登山 is to climb a mountain.' },
+  { c: '景', parts: ['日', '京'], r: 0, rad: '日', name: '日字头', npy: 'rì zì tóu', means: 'the sun. It is in characters about sunshine, days and time.', see: '早 星 晨 昌', how: 'The sun (日) over 京 (jīng), which helps with the sound. Sunlight shows you everything around: 风景 is the scenery.' },
+  { c: '色', parts: ['色'], r: 0, rad: '色', name: '色字', npy: 'sè zì', means: 'color. It is a radical in only a few characters.', see: '艳', how: '色 is one whole shape, and a radical too. It means color: 颜色 is color, and 景色 is the view.' },
+  { c: '岸', parts: ['山', '厂', '干'], r: 0, rad: '山', name: '山字头', npy: 'shān zì tóu', means: 'a mountain or a hill. It is in characters about mountains.', see: '岩 崖 岁', how: 'A mountain (山) over a steep cliff (厂), with 干 (gān) helping with the sound: the high bank of a river, lake or sea. 岸边 is by the shore.' },
+  { c: '岛', parts: ['', '山'], rest: 'top: 鸟 (a bird) without its last stroke', r: 1, rad: '山', name: '山字底', npy: 'shān zì dǐ', means: 'a mountain or a hill. It is in characters about mountains.', see: '岳 岔 峦', how: '鸟 (niǎo) helps with the sound, and a mountain (山) in the sea is an island. A trick: a bird (鸟) resting on a mountain. 小岛 is a small island.' },
   { c: '沿', parts: ['氵', ''], rest: 'right side, as in 船 铅', r: 0, rad: '氵', name: '三点水', npy: 'sān diǎn shuǐ', means: 'water. It is in characters about water, rivers and the sea.', see: '河 湖 海 洗 游', how: 'Water (氵): going along the edge of a river or lake. 沿着 means along.' },
   { c: '座', parts: ['广', '坐'], r: 0, rad: '广', name: '广字旁', npy: 'guǎng zì páng', means: 'a house with one side open. It is in characters about buildings.', see: '床 店 庄 底', how: 'A building (广) where people sit (坐): a seat. It also counts big things: 一座桥 is one bridge, 一座山 one mountain.' },
-  { c: '桥', parts: ['木', '乔'], r: 0, rad: '木', name: '木字旁', npy: 'mù zì páng', means: 'a tree, wood. It is in characters about trees and things made of wood.', see: '树 林 桌 椅', how: 'Wood (木) and 乔 (qiáo), which gives the sound. Long ago bridges were made of wood. 大桥 is a big bridge.' },
-  { c: '柱', parts: ['木', '主'], r: 0, rad: '木', name: '木字旁', npy: 'mù zì páng', means: 'a tree, wood. It is in characters about trees and things made of wood.', see: '树 林 桌 椅', how: 'Wood (木) and 主 (zhǔ), which helps with the sound: a post or a pillar, once a tree trunk. 柱子 is a pillar.' },
+  { c: '桥', parts: ['木', '乔'], r: 0, rad: '木', name: '木字旁', npy: 'mù zì páng', means: 'a tree, wood. It is in characters about trees and things made of wood.', see: '树 林 机 椅', how: 'Wood (木) and 乔 (qiáo), which gives the sound. Long ago bridges were made of wood. 大桥 is a big bridge.' },
+  { c: '柱', parts: ['木', '主'], r: 0, rad: '木', name: '木字旁', npy: 'mù zì páng', means: 'a tree, wood. It is in characters about trees and things made of wood.', see: '树 林 校 板', how: 'Wood (木) and 主 (zhǔ), which helps with the sound: a post or a pillar, once a tree trunk. 柱子 is a pillar.' },
   { c: '狮', parts: ['犭', '师'], r: 0, rad: '犭', name: '反犬旁', npy: 'fǎn quǎn páng', means: 'an animal. 犭 comes from 犬, a dog.', see: '猫 狗 猪 猴', how: 'An animal (犭) and 师 (shī), which gives the sound: a lion. 狮子 is a lion.' },
-  { c: '分', parts: ['八', '刀'], r: 0, rad: '八', name: '八字头', npy: 'bā zì tóu', means: 'two parts going apart. Long ago 八 meant "to split".', see: '公 共 兵', how: 'A knife (刀) cutting something into two parts (八): to divide. 十分 means very, completely.' },
+  { c: '分', parts: ['八', '刀'], r: 0, rad: '八', name: '八字头', npy: 'bā zì tóu', means: 'two parts going apart. Long ago 八 meant "to split".', see: '公 半 关', how: 'A knife (刀) cutting something into two parts (八): to divide. 十分 means very, completely.' },
   { c: '啊', parts: ['口', '阿'], r: 0, rad: '口', name: '口字旁', npy: 'kǒu zì páng', means: 'a mouth. It is in characters about talking, eating and sounds we make.', see: '吃 喝 唱 叫 吗', how: 'A mouth (口) and 阿 (ā), which gives the sound: a sound you make when you feel something. 好高啊！ means "So high!"' }
 ];
 /* level 1: each character long ago (public-domain drawings from Wikimedia Commons, Ancient Chinese characters project, in ancient/).
@@ -850,42 +850,43 @@ var MORE_WORDS = {
 var PATTERN = [
   { t: 'show', shape: '…可真…啊！', keys: ['可真', '啊'], end: '！', ask: 'Say it with feeling! Which one is right?',
     what: 'Use 可真…啊！ when you feel something strongly: "It is really so …!" Put 可真 just before the describing word, and 啊 at the very end.',
-    ex: [{ s: '这个小岛可真美丽啊！', en: 'This little island is really beautiful!' }, { s: '海边的景色可真好看啊！', en: 'The view by the sea is really lovely!' }, { s: '今天的海水可真蓝啊！', en: 'The sea is really blue today!' }] },
+    ex: [{ s: '这个小岛可真美丽啊！', en: 'This little island is really beautiful!' }, { s: '海边的沙子可真软啊！', en: 'The sand by the sea is really soft!' }, { s: '今天的海水可真蓝啊！', en: 'The sea is really blue today!' }] },
   { t: 'pick', from: '这座山很高。', a: '这座山可真高啊！', no: ['这座山真可高啊！', '可真这座山高啊！'], en: 'This mountain is really tall!' },
-  { t: 'build', tiles: ['小岛上的景色', '可真', '美', '啊'], ok: ['小岛上的景色可真美啊！'], en: 'The view on the island is really beautiful!' },
-  { t: 'pick', from: '桥柱上的石狮子很多。', a: '桥柱上的石狮子可真多啊！', no: ['桥柱上的石狮子真可多啊！', '可真桥柱上的石狮子多啊！'], en: 'There are really so many stone lions on the bridge posts!' },
+  { t: 'build', tiles: ['岸边的小船', '可真', '多', '啊'], ok: ['岸边的小船可真多啊！'], en: 'There are really so many little boats by the shore!' },
+  { t: 'pick', from: '岛上的小路很弯。', a: '岛上的小路可真弯啊！', no: ['岛上的小路真可弯啊！', '可真岛上的小路弯啊！'], en: 'The paths on the island are really winding!' },
   { t: 'build', tiles: ['这座桥', '可真', '长', '啊'], ok: ['这座桥可真长啊！'], en: 'This bridge is really long!' },
-  { t: 'build', tiles: ['石狮子', '可真', '可爱', '啊'], ok: ['石狮子可真可爱啊！'], en: 'The stone lions are really cute!' }
+  { t: 'build', tiles: ['这些贝壳', '可真', '漂亮', '啊'], ok: ['这些贝壳可真漂亮啊！'], en: 'These shells are really pretty!' }
 ];
 /* level 4: our own postcard, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的朋友：" */
 var SENTENCES = [
-  { s: '今天天气真好，湖边的＿好看极了。', a: '风景', no: ['柱子', '完成'], en: 'The weather is lovely today, and the view by the lake is wonderful.' },
-  { s: '湖水的＿很蓝，像一块大玻璃。', a: '颜色', no: ['登山', '十分'], en: 'The water is so blue, like a big sheet of glass.' },
-  { s: '爸爸说，湖的＿有一个宝岛。', a: '对岸', no: ['好啊', '做完'], en: 'Dad said the island on the far side of the lake was called Treasure Island.' },
-  { s: '＿湖边走了一会儿，我们看见了宝岛。', a: '沿着', no: ['美丽', '狮子'], en: 'After walking along the lake for a while, we saw Treasure Island.' },
-  { s: '＿上有很多高高的树。', a: '小岛', no: ['十分', '沿着'], en: 'There are many tall trees on the little island.' },
-  { s: '要去那儿，先要走过＿石桥。', a: '一座', no: ['好啊', '颜色'], en: 'To get there, you first cross a stone bridge.' },
-  { s: '这座＿又长又宽，走起来很稳。', a: '大桥', no: ['美景', '做完'], en: 'This big bridge is long and wide, and it feels steady to walk on.' },
-  { s: '桥边立着一根一根的＿。', a: '柱子', no: ['小岛', '颜色'], en: 'Pillars stand one after another beside the bridge.' },
-  { s: '每根柱子上都有一只小石＿。', a: '狮子', no: ['颜色', '沿着'], en: 'On every pillar sits a little stone lion.' },
-  { s: '这些小狮子＿可爱，我一直看。', a: '十分', no: ['一座', '岸边'], en: 'These little lions are so cute that I could not stop looking.' },
-  { s: '我们一口气＿了岛上的小山。', a: '登上', no: ['美景', '颜色'], en: 'We climbed the little hill on the island without stopping.' },
-  { s: '＿！山下的人都变小了。', a: '好高啊', no: ['十分', '做完'], en: 'So high! The people below looked tiny.' },
-  { s: '这是一个＿的地方，我很喜欢这里。', a: '美丽', no: ['柱子', '沿着'], en: 'This is a beautiful place, and I like it very much.' },
-  { s: '＿的一天过得真快。', a: '美好', no: ['颜色', '柱子'], en: 'A wonderful day goes by so fast.' },
-  { s: '＿了回家的路，我又想再来一次了。', a: '走完', no: ['十分', '狮子'], en: 'By the time we finished the walk home, I wanted to come again.' }
+  { s: '今天我和爸爸坐船去了一个＿，它叫藏宝岛。', a: '小岛', no: ['柱子', '颜色'], en: 'Today Dad and I took a boat to a little island called Treasure Island.' },
+  { s: '船停在＿，我们走上了沙滩。', a: '岸边', no: ['十分', '做完'], en: 'The boat stopped by the shore, and we walked onto the sand.' },
+  { s: '寻宝图上说，先要走过＿小木桥。', a: '一座', no: ['颜色', '做完'], en: 'The treasure map said to cross a little wooden bridge first.' },
+  { s: '这座＿又小又窄，爸爸拉着我的手走。', a: '木桥', no: ['颜色', '美丽'], en: 'The wooden bridge was small and narrow, so Dad held my hand.' },
+  { s: '桥头的＿上画着一个红色的箭头。', a: '柱子', no: ['十分', '登山'], en: 'A red arrow was drawn on the post at the end of the bridge.' },
+  { s: '我们＿沙滩往前走。', a: '沿着', no: ['美丽', '狮子'], en: 'We walked on along the beach.' },
+  { s: '海边有一块大石头，像一只＿。', a: '狮子', no: ['颜色', '沿着'], en: 'By the sea there was a big rock that looked like a lion.' },
+  { s: '这只石头狮子＿高大，我和爸爸都没有它高。', a: '十分', no: ['一座', '岸边'], en: 'This stone lion was very big, taller than Dad and me.' },
+  { s: '狮子脚下的纸条让我们＿小山。', a: '登上', no: ['美丽', '柱子'], en: 'The note under the lion told us to climb the little hill.' },
+  { s: '到了山顶，爸爸说：“我们看看风景吧！”我说：“＿！”', a: '好啊', no: ['十分', '柱子'], en: 'At the top, Dad said, “Let’s look at the view!” I said, “OK!”' },
+  { s: '大海是蓝色的，树是绿色的，＿真好看。', a: '颜色', no: ['沿着', '做完'], en: 'The sea was blue and the trees were green: such lovely colors.' },
+  { s: '山顶上的＿太美了！', a: '风景', no: ['一座', '十分'], en: 'The view from the hilltop was so beautiful!' },
+  { s: '我们找到了宝盒，里面有两张＿的贴纸。', a: '美丽', no: ['沿着', '一座'], en: 'We found the treasure box, and inside were two pretty stickers.' },
+  { s: '寻宝游戏＿了，我马上给你写了这张明信片。', a: '完成', no: ['颜色', '柱子'], en: 'The treasure hunt was over, so I wrote you this postcard right away.' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
    s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
-var STORY = { title: '宝岛一日游', en: 'A day at Treasure Island', lines: [
-  { who: '🧒 我', s: '爸爸，湖对岸那个小岛叫什么名字？', py: 'Bàba, hú duì\'àn nàge xiǎodǎo jiào shénme míngzi?', en: 'Dad, what is the little island on the other side of the lake called?' },
-  { who: '👨 爸爸', s: '它叫宝岛。我们沿着湖边走过去吧！', py: 'Tā jiào Bǎodǎo. Wǒmen yánzhe húbiān zǒu guòqu ba!', en: 'It is called Treasure Island. Let\'s walk there along the lake!' },
-  { who: '🧒 我', s: '看，前面有一座石桥！桥上的柱子真多。', py: 'Kàn, qiánmiàn yǒu yí zuò shíqiáo! Qiáo shang de zhùzi zhēn duō.', en: 'Look, there is a stone bridge ahead! It has so many posts.' },
-  { who: '👨 爸爸', s: '柱子上还站着小石狮子，有的张着嘴，有的闭着眼。', py: 'Zhùzi shang hái zhànzhe xiǎo shí shīzi, yǒude zhāngzhe zuǐ, yǒude bìzhe yǎn.', en: 'Little stone lions stand on the posts too. Some have their mouths open, some have their eyes shut.' },
-  { who: '🧒 我', s: '这些小狮子可真好玩啊！', py: 'Zhèxiē xiǎo shīzi kě zhēn hǎowán a!', en: 'These little lions are so much fun!', pat: true },
-  { who: '👨 爸爸', s: '看完小狮子，我们比一比，看谁先登上山顶！', py: 'Kànwán xiǎo shīzi, wǒmen bǐ yi bǐ, kàn shéi xiān dēngshàng shāndǐng!', en: 'When we have finished looking at the little lions, let\'s have a race to see who gets to the top of the hill first!' },
-  { who: '🧒 我', s: '好高啊！这里的景色十分美丽。', py: 'Hǎo gāo a! Zhèlǐ de jǐngsè shífēn měilì.', en: 'So high! The view here is really beautiful.' },
-  { who: '👨 爸爸', s: '对！我们买一张明信片，写给你的好朋友吧！', py: 'Duì! Wǒmen mǎi yì zhāng míngxìnpiàn, xiě gěi nǐ de hǎo péngyou ba!', en: 'Yes! Let\'s buy a postcard and write to your good friend!' }
+var STORY = { title: '藏宝岛寻宝', en: 'A treasure hunt on Treasure Island', lines: [
+  { who: '👨 爸爸', s: '船靠岸了！欢迎来到藏宝岛，这是一张寻宝图。', py: 'Chuán kào\'àn le! Huānyíng láidào Cángbǎo Dǎo, zhè shì yì zhāng xúnbǎotú.', en: 'The boat is at the shore! Welcome to Treasure Island. Here is a treasure map.' },
+  { who: '🧒 我', s: '地图上说，先走过一座小木桥。', py: 'Dìtú shang shuō, xiān zǒuguò yí zuò xiǎo mùqiáo.', en: 'The map says to cross a little wooden bridge first.' },
+  { who: '👨 爸爸', s: '你看，桥头的柱子上画着一个红色的箭头。', py: 'Nǐ kàn, qiáotóu de zhùzi shang huàzhe yí ge hóngsè de jiàntóu.', en: 'Look, a red arrow is drawn on the post at the end of the bridge.' },
+  { who: '🧒 我', s: '箭头指着海边。爸爸，我们沿着沙滩走吧！', py: 'Jiàntóu zhǐzhe hǎibiān. Bàba, wǒmen yánzhe shātān zǒu ba!', en: 'The arrow points to the sea. Dad, let\'s walk along the beach!' },
+  { who: '👨 爸爸', s: '快看，那块大石头像不像一只狮子？', py: 'Kuài kàn, nà kuài dà shítou xiàng bu xiàng yì zhī shīzi?', en: 'Look! Doesn\'t that big rock look like a lion?' },
+  { who: '🧒 我', s: '真像！这只石头狮子可真大啊！', py: 'Zhēn xiàng! Zhè zhī shítou shīzi kě zhēn dà a!', en: 'It really does! This stone lion is really big!', pat: true },
+  { who: '👨 爸爸', s: '狮子脚下有一张纸条：登上小山，就能找到宝贝！', py: 'Shīzi jiǎo xià yǒu yì zhāng zhǐtiáo: dēngshàng xiǎo shān, jiù néng zhǎodào bǎobèi!', en: 'There is a note under the lion\'s paw: climb the little hill and you will find the treasure!' },
+  { who: '🧒 我', s: '我们到山顶了！蓝色的海，绿色的树，景色多美丽！', py: 'Wǒmen dào shāndǐng le! Lánsè de hǎi, lǜsè de shù, jǐngsè duō měilì!', en: 'We are at the top! Blue sea, green trees: what a beautiful view!' },
+  { who: '👨 爸爸', s: '宝盒找到啦！里面有两张贴纸，我们一人分一张。', py: 'Bǎohé zhǎodào la! Lǐmiàn yǒu liǎng zhāng tiēzhǐ, wǒmen yì rén fēn yì zhāng.', en: 'We found the treasure box! There are two stickers inside, one for each of us.' },
+  { who: '🧒 我', s: '寻宝完成了！我要买一张明信片，写给我的好朋友。', py: 'Xúnbǎo wánchéng le! Wǒ yào mǎi yì zhāng míngxìnpiàn, xiě gěi wǒ de hǎo péngyou.', en: 'The treasure hunt is done! I will buy a postcard and write to my good friend.' }
 ] };
 
 /* ---------- this lesson's settings: the shared engine (../_engine/chinese-engine.js) reads them ---------- */
