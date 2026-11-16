@@ -778,21 +778,21 @@ var CHARS = [
 /* level 1: how each character is built. parts = the pieces (r = which piece is the radical; rest = a piece described in words),
    rad = the radical (部首) with its name, what it usually means, and other characters where you can see it; how = the meaning */
 var PARTS = [
-  { c: '载', parts: ['', '车'], rest: 'around it: 十 and 戈 (from 𢦏, which gives the sound)', r: 1, rad: '车', name: '车字旁', npy: 'chē zì páng', means: 'a vehicle.', see: '轮 软 转 辆', how: 'A cart (车) and a part that gives the sound: to carry on a vehicle. 载人 = carrying people.' },
+  { c: '载', parts: ['', '车'], rest: 'around it: 十 and 戈 (from 𢦏, which gives the sound)', r: 1, rad: '车', name: '车字旁', npy: 'chē zì páng', means: 'a vehicle.', see: '轮 软 转 辆', how: 'A cart (车) and a part that gives the sound: to carry on a vehicle. 载人 = carrying people. Also read zǎi: 记载 = write down.' },
   { c: '卫', parts: ['卫'], r: 0, rad: '卩', name: '单耳旁', npy: 'dān ěr páng', means: 'a kneeling person.', see: '印 却 即', how: '卫 is one whole shape. The old form 衛 showed feet walking all around a place: guarding it. 卫星 = satellite; 保卫 = defend.' },
-  { c: '射', parts: ['身', '寸'], r: 1, rad: '寸', name: '寸字旁', npy: 'cùn zì páng', means: 'a hand; a short length.', see: '对 封 寺', how: 'Long ago 射 was a bow with an arrow, held by a hand (寸). Later the bow was written 身. 发射 = launch; 射门 = shoot at goal.' },
-  { c: '升', parts: ['升'], r: 0, rad: '十', name: '十字', npy: 'shí zì', means: 'ten.', see: '南 博 协 午', how: '升 is one whole shape. Long ago it was a ladle for measuring grain. Now it means "rise". 升空 = rise into the sky; 升国旗 = raise the flag.' },
+  { c: '射', parts: ['身', '寸'], r: 0, rad: '身', name: '身字旁', npy: 'shēn zì páng', means: 'the body.', see: '躲 躺 躬', how: 'Long ago 射 was a bow with an arrow, held by a hand (寸). Later the bow was written 身. 发射 = launch; 射门 = shoot at goal.' },
+  { c: '升', parts: ['升'], r: 0, rad: '十', name: '十字', npy: 'shí zì', means: 'ten.', see: '南 真 卖 古', how: '升 is one whole shape. Long ago it was a ladle for measuring grain. Now it means "rise". 升空 = rise into the sky; 升国旗 = raise the flag.' },
   { c: '雷', parts: ['雨', '田'], r: 0, rad: '雨', name: '雨字头', npy: 'yǔ zì tóu', means: 'rain and weather.', see: '雪 雾 零 雹', how: 'Rain (雨) over 田. Long ago 田 was drawn as rolling drums, the sound of thunder. 打雷 = it thunders; 雷声 = thunder.' },
   { c: '客', parts: ['宀', '各'], r: 0, rad: '宀', name: '宝盖头', npy: 'bǎo gài tóu', means: 'a roof. It is in characters about houses.', see: '家 字 安 室', how: 'A house (宀) and 各 (a foot coming in): someone coming into the house, a guest. 客人 = guest; 做客 = be a guest.' },
   { c: '旗', parts: ['方', ''], rest: 'right: 𠂉 (a waving flag) over 其 (qí), which gives the sound', r: 0, rad: '方', name: '方字旁', npy: 'fāng zì páng', means: 'a square; a direction.', see: '旅 族 施', how: 'A flagpole and a waving flag, with 其 (qí), which gives the sound: a flag. 国旗 = national flag.' },
   { c: '民', parts: ['民'], r: 0, rad: '乙', name: '乙字', npy: 'yǐ zì', means: 'a bent line. As a radical it does not add a meaning.', see: '也 乞 买', how: '民 is one whole shape. It means ordinary people. 人民 = the people; 人民币 = China\'s money (RMB).' },
-  { c: '币', parts: ['丿', '巾'], r: 1, rad: '巾', name: '巾字底', npy: 'jīn zì dǐ', means: 'a piece of cloth.', see: '布 帽 帮 常', how: 'Cloth (巾) under 丿. The old form 幣 meant a piece of silk given as a gift; later it meant money. 人民币 = RMB; 硬币 = coin.' },
+  { c: '币', parts: ['丿', '巾'], r: 1, rad: '巾', name: '巾字底', npy: 'jīn zì dǐ', means: 'a piece of cloth.', see: '布 帮 常 带', how: 'Cloth (巾) under 丿. The old form 幣 meant a piece of silk given as a gift; later it meant money. 人民币 = RMB; 硬币 = coin.' },
   { c: '纪', parts: ['纟', '己'], r: 0, rad: '纟', name: '绞丝旁', npy: 'jiǎo sī páng', means: 'silk and thread.', see: '红 绿 线 结', how: 'Thread (纟) and 己 (jǐ), which helps with the sound. Long ago it meant the end of a thread, used to keep things in order. 纪念 = remember, commemorate.' },
-  { c: '念', parts: ['今', '心'], r: 1, rad: '心', name: '心字底', npy: 'xīn zì dǐ', means: 'the heart. It is in characters about feelings and thinking.', see: '想 思 意 感', how: '今 (jīn, now), which helps with the sound, over the heart (心): keeping someone in your heart. 想念 = miss; 纪念 = remember.' },
+  { c: '念', parts: ['今', '心'], r: 1, rad: '心', name: '心字底', npy: 'xīn zì dǐ', means: 'the heart. It is in characters about feelings and thinking.', see: '想 您 感 急', how: '今 (jīn, now), which helps with the sound, over the heart (心): keeping someone in your heart. 想念 = miss; 纪念 = remember.' },
   { c: '程', parts: ['禾', '呈'], r: 0, rad: '禾', name: '禾木旁', npy: 'hé mù páng', means: 'grain plants.', see: '秋 种 秒 租', how: 'Grain (禾) and 呈 (chéng), which gives the sound. Long ago it meant measuring grain; then rules, steps. 工程 = project, engineering; 课程 = course.' },
-  { c: '雄', parts: ['厷', '隹'], r: 1, rad: '隹', name: '隹字旁', npy: 'zhuī zì páng', means: 'a bird.', see: '集 雀 雅 雕', how: '厷 (gōng), which helps with the sound, and a bird (隹): long ago, a male bird. So 雄 means strong and brave. 英雄 = hero.' },
-  { c: '顺', parts: ['川', '页'], r: 1, rad: '页', name: '页字旁', npy: 'yè zì páng', means: 'the head.', see: '顶 须 题 顿', how: 'A river (川) and a head (页): going along the way the river flows. 顺利 = smoothly; 顺便 = on the way.' },
-  { c: '利', parts: ['禾', '刂'], r: 1, rad: '刂', name: '立刀旁', npy: 'lì dāo páng', means: 'a knife.', see: '到 别 刚 刮', how: 'Grain (禾) and a knife (刂): a sharp knife cutting grain. So 利 means sharp, and then good for you. 顺利 = smoothly; 胜利 = victory.' }
+  { c: '雄', parts: ['厷', '隹'], r: 1, rad: '隹', name: '隹字旁', npy: 'zhuī zì páng', means: 'a bird.', see: '集 售 雌 雕', how: '厷 (gōng), which helps with the sound, and a bird (隹): long ago, a male bird. So 雄 means strong and brave. 英雄 = hero.' },
+  { c: '顺', parts: ['川', '页'], r: 1, rad: '页', name: '页字旁', npy: 'yè zì páng', means: 'the head.', see: '顶 题 顿 颜', how: 'A river (川) and a head (页): going along the way the river flows. 顺利 = smoothly; 顺便 = on the way.' },
+  { c: '利', parts: ['禾', '刂'], r: 0, rad: '禾', name: '禾木旁', npy: 'hé mù páng', means: 'grain plants.', see: '秋 种 科 秒', how: 'Grain (禾) and a knife (刂): a sharp knife cutting grain. So 利 means sharp, and then good for you. 顺利 = smoothly; 胜利 = victory.' }
 ];
 /* level 1: each character long ago (public-domain drawings from Wikimedia Commons, Ancient Chinese characters project, in ancient/).
    kind = which old script; rad = when the character itself has no old form, its radical is shown instead (form = the old character drawn);
@@ -855,32 +855,32 @@ var PATTERN = [
 ];
 /* level 4: our own letter to Grandpa about watching a rocket launch on TV, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的爷爷：" */
 var SENTENCES = [
-  { s: '昨天晚上，我们和您一起在电视上看火箭＿。', a: '发射', no: ['人民', '想念'], en: 'Last night we watched a rocket launch on TV with you.' },
-  { s: '火箭一下子就＿了，后面喷着大火。', a: '升空', no: ['客人', '国旗'], en: 'The rocket shot up into the sky, with huge flames behind it.' },
-  { s: '声音大得像＿一样。', a: '打雷', no: ['国旗', '工程'], en: 'It was as loud as thunder.' },
-  { s: '这是一艘＿飞船，上面有宇航员。', a: '载人', no: ['想念', '顺利'], en: 'It was a crewed spacecraft, with astronauts on board.' },
+  { s: '谢谢您带来的那枚＿。', a: '纪念币', no: ['工程', '升空'], en: 'Thank you for the commemorative coin you brought.' },
+  { s: '纪念币上有一艘飞船和一面＿。', a: '国旗', no: ['想念', '发射'], en: 'It has a spacecraft and a national flag on it.' },
+  { s: '那天外面一直在＿，妹妹很担心。', a: '打雷', no: ['国旗', '工程'], en: 'That day it kept thundering outside, and my little sister was worried.' },
+  { s: '可是发射的地方是晴天，火箭可以按时＿。', a: '发射', no: ['人民', '想念'], en: 'But it was sunny at the launch site, so the rocket could launch on time.' },
+  { s: '我们在电视前等了好久，火箭终于＿了！', a: '升空', no: ['客人', '国旗'], en: 'We waited in front of the TV for ages, and at last the rocket rose into the sky!' },
+  { s: '这是一艘＿飞船，上面有三位宇航员。', a: '载人', no: ['想念', '顺利'], en: 'It was a crewed spacecraft, with three astronauts on board.' },
+  { s: '爸爸说，宇航员都是了不起的＿。', a: '英雄', no: ['打雷', '想念'], en: 'Dad says astronauts are amazing heroes.' },
   { s: '妹妹说，她长大想去太空当＿。', a: '游客', no: ['工程', '想念'], en: 'My little sister says she wants to go to space as a tourist when she grows up.' },
-  { s: '我还知道，天上有很多＿，能帮我们预报天气。', a: '卫星', no: ['客人', '英雄'], en: 'I also know there are lots of satellites up there that help us forecast the weather.' },
-  { s: '我长大也想当一名＿，像宇航员一样。', a: '英雄', no: ['打雷', '想念'], en: 'When I grow up, I want to be a hero too, like the astronauts.' },
-  { s: '纪念邮票上也有飞船和一面＿。', a: '国旗', no: ['想念', '发射'], en: 'The special stamp had a spacecraft and a national flag on it too.' },
-  { s: '在中国，买东西用的钱叫＿。', a: '人民币', no: ['卫星', '英雄'], en: 'In China, the money people use to buy things is called RMB.' },
-  { s: '造一艘飞船，是一个很大的＿。', a: '工程', no: ['打雷', '想念'], en: 'Building a spacecraft is a huge project.' },
+  { s: '您告诉我们，天上有很多＿，能帮我们预报天气。', a: '卫星', no: ['客人', '英雄'], en: 'You told us there are lots of satellites up there that help us forecast the weather.' },
+  { s: '后来，飞船＿进入了太空。', a: '顺利', no: ['打雷', '想念'], en: 'Then the spacecraft got safely into space.' },
+  { s: '爸爸说，造飞船是一个很大的＿。', a: '工程', no: ['打雷', '想念'], en: 'Dad says building a spacecraft is a huge project.' },
   { s: '全国＿都很高兴。', a: '人民', no: ['打雷', '发射'], en: 'People all over the country were happy.' },
-  { s: '我们等了十分钟，飞船＿进入了太空。', a: '顺利', no: ['打雷', '想念'], en: 'We waited ten minutes, and the spacecraft got safely into space.' },
-  { s: '谢谢您给我看的那枚＿，上面有一艘飞船。', a: '纪念币', no: ['工程', '升空'], en: 'Thank you for showing me that commemorative coin with a spacecraft on it.' },
   { s: '爷爷，您刚走，我就开始＿您了！', a: '想念', no: ['卫星', '工程'], en: 'Grandpa, you have only just left and I already miss you!' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
    s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '看火箭发射', en: 'Watching a rocket launch', lines: [
-  { who: '👨 爸爸', s: '快来看电视，火箭要发射了！', py: 'Kuài lái kàn diànshì, huǒjiàn yào fāshè le!', en: 'Come and watch TV, quick! The rocket is about to launch!' },
-  { who: '🧒 我', s: '五、四、三、二、一——升空了！声音像打雷一样响！', py: 'Wǔ, sì, sān, èr, yī — shēngkōng le! Shēngyīn xiàng dǎléi yíyàng xiǎng!', en: 'Five, four, three, two, one — lift-off! It\'s as loud as thunder!' },
-  { who: '👨 爸爸', s: '飞船载着三位宇航员，他们要去太空做科学实验。', py: 'Fēichuán zàizhe sān wèi yǔhángyuán, tāmen yào qù tàikōng zuò kēxué shíyàn.', en: 'The spacecraft is carrying three astronauts. They\'re going into space to do science experiments.' },
-  { who: '👧 妹妹', s: '我也想去太空当游客！', py: 'Wǒ yě xiǎng qù tàikōng dāng yóukè!', en: 'I want to go to space as a tourist too!' },
-  { who: '👨 爸爸', s: '宇航员都是了不起的英雄！', py: 'Yǔhángyuán dōu shì liǎobuqǐ de yīngxióng!', en: 'Astronauts are amazing heroes!' },
-  { who: '👴 爷爷', s: '我这儿有一张纪念邮票和一枚纪念币，上面有飞船和国旗。', py: 'Wǒ zhèr yǒu yì zhāng jìniàn yóupiào hé yì méi jìniànbì, shàngmian yǒu fēichuán hé guóqí.', en: 'I\'ve got a special stamp and a special coin here, with a spacecraft and the national flag on them.' },
-  { who: '🧒 我', s: '我们等了差不多十分钟，飞船终于顺利进入太空了！', py: 'Wǒmen děngle chàbuduō shí fēnzhōng, fēichuán zhōngyú shùnlì jìnrù tàikōng le!', en: 'We waited about ten minutes, and at last the spacecraft got safely into space!', pat: true },
-  { who: '👴 爷爷', s: '造飞船和卫星是很大的工程，全国人民都很高兴。', py: 'Zào fēichuán hé wèixīng shì hěn dà de gōngchéng, quánguó rénmín dōu hěn gāoxìng.', en: 'Building spacecraft and satellites is a huge job, and people all over the country are happy.' }
+  { who: '👴 爷爷', s: '我带来了一枚纪念币，上面有一艘飞船和一面国旗。', py: 'Wǒ dàiláile yì méi jìniànbì, shàngmian yǒu yì sōu fēichuán hé yí miàn guóqí.', en: 'I\'ve brought a commemorative coin, with a spacecraft and a national flag on it.' },
+  { who: '👧 妹妹', s: '外面在打雷！火箭今天还能发射吗？', py: 'Wàimian zài dǎléi! Huǒjiàn jīntiān hái néng fāshè ma?', en: 'It\'s thundering outside! Can the rocket still launch today?' },
+  { who: '👨 爸爸', s: '别担心，发射的地方离我们很远，那儿是晴天。', py: 'Bié dānxīn, fāshè de dìfang lí wǒmen hěn yuǎn, nàr shì qíngtiān.', en: 'Don\'t worry. The launch site is far away from us, and it\'s sunny there.' },
+  { who: '🧒 我', s: '我们在电视前等了好久，火箭终于升空了！', py: 'Wǒmen zài diànshì qián děngle hǎo jiǔ, huǒjiàn zhōngyú shēngkōng le!', en: 'We waited in front of the TV for ages, and at last the rocket rose into the sky!', pat: true },
+  { who: '👨 爸爸', s: '这艘飞船载着三位宇航员，他们都是英雄。', py: 'Zhè sōu fēichuán zàizhe sān wèi yǔhángyuán, tāmen dōu shì yīngxióng.', en: 'This spacecraft is carrying three astronauts. They are all heroes.' },
+  { who: '👧 妹妹', s: '我长大也想去太空当游客！', py: 'Wǒ zhǎngdà yě xiǎng qù tàikōng dāng yóukè!', en: 'When I grow up, I want to go to space as a tourist too!' },
+  { who: '👴 爷爷', s: '天上还有很多卫星，能帮我们预报天气。', py: 'Tiānshàng hái yǒu hěn duō wèixīng, néng bāng wǒmen yùbào tiānqì.', en: 'There are lots of satellites up there too. They help us forecast the weather.' },
+  { who: '🧒 我', s: '看，飞船顺利进入太空了！', py: 'Kàn, fēichuán shùnlì jìnrù tàikōng le!', en: 'Look, the spacecraft got safely into space!' },
+  { who: '👨 爸爸', s: '造飞船是很大的工程，全国人民都很高兴。', py: 'Zào fēichuán shì hěn dà de gōngchéng, quánguó rénmín dōu hěn gāoxìng.', en: 'Building a spacecraft is a huge project, and people all over the country are happy.' }
 ] };
 
 /* ---------- this lesson's settings: the shared engine (../_engine/chinese-engine.js) reads them ---------- */

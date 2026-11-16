@@ -777,17 +777,17 @@ var CHARS = [
 /* level 1: how each character is built. parts = the pieces (r = which piece is the radical; rest = a piece described in words),
    rad = the radical (部首) with its name, what it usually means, and other characters where you can see it; how = the meaning */
 var PARTS = [
-  { c: '总', parts: ['丷', '口', '心'], r: 2, rad: '心', name: '心字底', npy: 'xīn zì dǐ', means: 'the heart. It is in characters about feelings and thinking.', see: '想 思 念 意', how: 'The old form 總 had silk (糸): gathering threads together. So 总 means "all together" or "always". The 心 at the bottom only gave the sound here; it is not about feelings. 总是 = always; 总得 = have to.' },
+  { c: '总', parts: ['丷', '口', '心'], r: 2, rad: '心', name: '心字底', npy: 'xīn zì dǐ', means: 'the heart. It is in characters about feelings and thinking.', see: '想 念 忘 怎 急', how: 'The old form 總 had silk (糸): gathering threads together. So 总 means "all together" or "always". The 心 at the bottom only gave the sound here; it is not about feelings. 总是 = always; 总得 = have to.' },
   { c: '得', parts: ['彳', ''], rest: 'right: a hand holding a shell (long ago, money)', r: 0, rad: '彳', name: '双人旁', npy: 'shuāng rén páng', means: 'walking, roads.', see: '往 很 待 律', how: 'Walking (彳) and a hand holding a shell, which long ago was money: going out and getting something. Said děi it means "must": 总得 = have to. (Said dé: 得到 = get.)' },
-  { c: '找', parts: ['扌', '戈'], r: 0, rad: '扌', name: '提手旁', npy: 'tí shǒu páng', means: 'a hand. It is in characters about things you do with your hands.', see: '打 拍 把 抱 指', how: 'A hand (扌) and 戈 (an old weapon). Memory trick: a hand reaching around, looking for its weapon. 找到 = find.' },
+  { c: '找', parts: ['扌', '戈'], r: 0, rad: '扌', name: '提手旁', npy: 'tí shǒu páng', means: 'a hand. It is in characters about things you do with your hands.', see: '打 拍 把 抱 指', how: 'A hand (扌) and 戈 (an old weapon). A trick: a hand reaching around, looking for its weapon. 找到 = find.' },
   { c: '借', parts: ['亻', '昔'], r: 0, rad: '亻', name: '单人旁', npy: 'dān rén páng', means: 'a person. It is in characters about people.', see: '你 他 们 住 休', how: 'A person (亻) and 昔 (xī), which helps with the sound: to borrow or lend. 借书 = borrow a book; 借给 = lend to.' },
   { c: '行', parts: ['彳', '亍'], r: 0, rad: '彳', name: '双人旁', npy: 'shuāng rén páng', means: 'walking, roads.', see: '往 很 待 律', how: 'Long ago 行 was a crossroads. Said xíng it means "walk" or "OK": 行人 = pedestrian; 不行 = no way. (Said háng: 一行字 = a line of words.)' },
-  { c: '脏', parts: ['月', '庄'], r: 0, rad: '月', name: '月字旁', npy: 'yuè zì páng', means: 'the body (here 月 is a form of 肉, meat).', see: '脸 脚 肚 腿', how: 'The body (月, from 肉) and 庄 (zhuāng), which helps with the sound. Said zāng it means "dirty": 弄脏 = make dirty.' },
+  { c: '脏', parts: ['月', '庄'], r: 0, rad: '月', name: '月字旁', npy: 'yuè zì páng', means: 'the body (here 月 is a form of 肉, meat).', see: '脸 脚 肚 腿', how: 'The body (月, from 肉) and 庄 (zhuāng), which helps with the sound. Said zāng it means "dirty": 弄脏 = make dirty. (Said zàng: 心脏 = heart.)' },
   { c: '害', parts: ['宀', ''], rest: 'below: a part that long ago gave the sound', r: 0, rad: '宀', name: '宝盖头', npy: 'bǎo gài tóu', means: 'a roof. It is in characters about houses.', see: '家 字 安 室', how: 'A roof (宀) and a part that long ago gave the sound: harm. 害怕 = afraid; 害人 = harm people.' },
   { c: '轻', parts: ['车', ''], rest: 'right: a part that helps with the sound', r: 0, rad: '车', name: '车字旁', npy: 'chē zì páng', means: 'a vehicle.', see: '轮 软 转 辆', how: 'A cart (车) and a part that helps with the sound: long ago, a light, fast cart. So 轻 means light or gentle. 轻轻地 = gently; 年轻 = young.' },
-  { c: '您', parts: ['你', '心'], r: 1, rad: '心', name: '心字底', npy: 'xīn zì dǐ', means: 'the heart. It is in characters about feelings and thinking.', see: '想 思 念 意', how: '你 (you) over the heart (心): "you", said with respect, to a grown-up. 您好 = hello (polite).' },
+  { c: '您', parts: ['你', '心'], r: 1, rad: '心', name: '心字底', npy: 'xīn zì dǐ', means: 'the heart. It is in characters about feelings and thinking.', see: '想 念 忘 怎 急', how: '你 (you) over the heart (心): "you", said with respect, to a grown-up. 您好 = hello (polite).' },
   { c: '算', parts: ['⺮', '目', '廾'], r: 0, rad: '⺮', name: '竹字头', npy: 'zhú zì tóu', means: 'bamboo. It is in characters about things made of bamboo.', see: '笔 第 答 笑', how: 'Bamboo (⺮), 目 (here from an old vessel, not an eye) and two hands (廾): long ago people counted with bamboo sticks held in their hands. 计算 = calculate; 算了 = forget it.' },
-  { c: '坏', parts: ['土', '不'], r: 0, rad: '土', name: '土字旁', npy: 'tǔ zì páng', means: 'earth, soil.', see: '地 场 块 坐', how: 'Earth (土) and 不 (not). Memory trick: earth that is "not" good, crumbling. The old form 壞 was a wall falling down. 弄坏 = break; 坏人 = bad person.' },
+  { c: '坏', parts: ['土', '不'], r: 0, rad: '土', name: '土字旁', npy: 'tǔ zì páng', means: 'earth, soil.', see: '地 场 块 坐', how: 'Earth (土) and 不 (not). A trick: earth that is "not" good, crumbling. Some say the old form 壞 first meant a wall falling down. 弄坏 = break; 坏人 = bad person.' },
   { c: '近', parts: ['辶', '斤'], r: 0, rad: '辶', name: '走之底', npy: 'zǒu zhī dǐ', means: 'walking or going somewhere.', see: '这 过 还 远 送', how: 'Going (辶) and 斤 (jīn), which helps with the sound: near. 附近 = nearby; 走近 = come close.' },
   { c: '反', parts: ['厂', '又'], r: 1, rad: '又', name: '又字底', npy: 'yòu zì dǐ', means: 'a right hand.', see: '友 双 发', how: 'Long ago 反 was a hand (又) climbing up a cliff (厂). Now it means "the other way round". 反正 = anyway; 相反 = opposite.' },
   { c: '扑', parts: ['扌', '卜'], r: 0, rad: '扌', name: '提手旁', npy: 'tí shǒu páng', means: 'a hand. It is in characters about things you do with your hands.', see: '打 拍 把 抱 指', how: 'A hand (扌) and 卜 (bǔ), which helps with the sound: to pounce, to throw yourself at something. 扑过去 = pounce.' }
@@ -845,7 +845,7 @@ var MORE_WORDS = {
 var PATTERN = [
   { t: 'show', shape: '……把……＋动词＋结果', keys: ['把'], end: '。', ask: 'Where does 把 go? Pick the right sentence.',
     what: 'Use 把 to say what you do to something and how it ends up. Say who does it, then 把 and the thing, then the action and what happens to it: 我把房间打扫干净了 = I cleaned my room (and now it is clean).',
-    ex: [{ s: '我把房间打扫干净了。', en: 'I cleaned my room.' }, { s: '弟弟把玩具收好了。', en: 'My little brother tidied away his toys.' }, { s: '风把门吹开了。', en: 'The wind blew the door open.' }] },
+    ex: [{ s: '我把房间打扫干净了。', en: 'I cleaned my room.' }, { s: '弟弟把玩具收好了。', en: 'My little brother put away his toys.' }, { s: '风把门吹开了。', en: 'The wind blew the door open.' }] },
   { t: 'pick', from: '妹妹吃完了饼干。', a: '妹妹把饼干吃完了。', no: ['妹妹饼干把吃完了。', '把妹妹饼干吃完了。'], en: 'My little sister finished the cookies.' },
   { t: 'build', tiles: ['我', '把', '书', '放', '在桌子上'], ok: ['我把书放在桌子上。'], en: 'I put the book on the table.' },
   { t: 'pick', from: '小狗咬坏了我的鞋子。', a: '小狗把我的鞋子咬坏了。', no: ['小狗我的鞋子把咬坏了。', '把小狗我的鞋子咬坏了。'], en: 'The puppy chewed up my shoes.' },
@@ -862,7 +862,7 @@ var SENTENCES = [
   { s: '小猫自己也吓了一跳，看起来很＿。', a: '害怕', no: ['反正', '行人'], en: 'The kitten got a fright too and looked very scared.' },
   { s: '还好，妹妹的彩笔一支也没有被＿。', a: '弄坏', no: ['年轻', '附近'], en: 'Luckily, not one of my sister\'s markers was broken.' },
   { s: '我说：“＿我还有纸，再画一张吧！”', a: '反正', no: ['您好', '行人'], en: 'I said, "I\'ve got more paper anyway. Let\'s do another one!"' },
-  { s: '奶奶看起来很＿，走路比我还快！', a: '年轻', no: ['总是', '行人'], en: 'Granny (Dad\'s mom) looks so young. She walks even faster than me!' },
+  { s: '奶奶看起来很＿，走路比我还快！', a: '年轻', no: ['总是', '行人'], en: 'Grandma (Dad\'s mom) looks so young. She walks even faster than me!' },
   { s: '我家＿有一个小公园，我们常去那里画画。', a: '附近', no: ['计算', '害怕'], en: 'There\'s a little park near our home, and we often go there to paint.' },
   { s: '妹妹会＿了，她说一加二等于三。', a: '计算', no: ['脏衣服', '附近'], en: 'My sister can do addition now. She says one plus two is three.' },
   { s: '见到邻居王爷爷，我们都说“＿！”', a: '您好', no: ['害怕', '反正'], en: 'When we see Grandpa Wang next door, we all say "Hello!"' },
@@ -873,13 +873,13 @@ var SENTENCES = [
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
    s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '弄脏的画', en: 'The messy painting', lines: [
-  { who: '🧒 我', s: '我想画一张画，可是我的彩笔不见了，总得找一找吧。', py: 'Wǒ xiǎng huà yì zhāng huà, kěshì wǒ de cǎibǐ bú jiàn le, zǒng děi zhǎo yi zhǎo ba.', en: 'I want to paint a picture, but my markers have disappeared. I\'ll have to look for them.' },
-  { who: '🧒 我', s: '奶奶，您看见我的彩笔了吗？', py: 'Nǎinai, nín kànjiàn wǒ de cǎibǐ le ma?', en: 'Granny, have you seen my markers?' },
+  { who: '🧒 我', s: '我想画一张画，可是我的彩笔又找不到了，它们总是乱跑！', py: 'Wǒ xiǎng huà yì zhāng huà, kěshì wǒ de cǎibǐ yòu zhǎo bu dào le, tāmen zǒngshì luàn pǎo!', en: 'I want to paint a picture, but I can\'t find my markers again. They\'re always running off!' },
+  { who: '🧒 我', s: '奶奶，您看见我的彩笔了吗？', py: 'Nǎinai, nín kànjiàn wǒ de cǎibǐ le ma?', en: 'Grandma, have you seen my markers?' },
   { who: '👵 奶奶', s: '没看见。你去跟妹妹借几支吧，行不行？', py: 'Méi kànjiàn. Nǐ qù gēn mèimei jiè jǐ zhī ba, xíng bu xíng?', en: 'No, I haven\'t. Why not borrow a few from your little sister?' },
-  { who: '👧 妹妹', s: '行！借给你，画完要还我哦。', py: 'Xíng! Jiè gěi nǐ, huà wán yào huán wǒ o.', en: 'OK! You can borrow them, but give them back when you\'re done.' },
+  { who: '👧 妹妹', s: '行！借给你，画完你得还我哦。', py: 'Xíng! Jiè gěi nǐ, huà wán nǐ děi huán wǒ o.', en: 'OK! You can borrow them, but you have to give them back when you\'re done.' },
   { who: '🧒 我', s: '我画得正高兴，小猫一下子扑到桌子上，打翻了水杯！', py: 'Wǒ huà de zhèng gāoxìng, xiǎomāo yíxiàzi pū dào zhuōzi shang, dǎfānle shuǐbēi!', en: 'I\'m happily painting when the kitten suddenly pounces onto the table and knocks over the water cup!' },
-  { who: '🧒 我', s: '水把我的画弄脏了！小猫真坏！', py: 'Shuǐ bǎ wǒ de huà nòngzāng le! Xiǎomāo zhēn huài!', en: 'The water has ruined my painting! Naughty kitten!', pat: true },
-  { who: '👵 奶奶', s: '别生气，它不是故意害你的。以后水杯别放得离画太近。', py: 'Bié shēngqì, tā bú shì gùyì hài nǐ de. Yǐhòu shuǐbēi bié fàng de lí huà tài jìn.', en: 'Don\'t be cross. It didn\'t mean to spoil it for you. Next time, don\'t put the water cup so close to your painting.' },
+  { who: '🧒 我', s: '水把我的画打湿了，画都脏了！小猫真坏！', py: 'Shuǐ bǎ wǒ de huà dǎshī le, huà dōu zāng le! Xiǎomāo zhēn huài!', en: 'The water has soaked my painting, and now it\'s all dirty! Naughty kitten!', pat: true },
+  { who: '👵 奶奶', s: '别生气，它不是故意害你的。以后水杯别放得离画太近。', py: 'Bié shēngqì, tā bú shì gùyì hài nǐ de. Yǐhòu shuǐbēi bié fàng de lí huà tài jìn.', en: 'Don\'t be upset. It didn\'t mean to spoil it for you. Next time, don\'t put the water cup so close to your painting.' },
   { who: '🧒 我', s: '算了，反正还有纸。我轻轻地把小猫抱下来，再画一张！', py: 'Suàn le, fǎnzhèng hái yǒu zhǐ. Wǒ qīngqīng de bǎ xiǎomāo bào xiàlai, zài huà yì zhāng!', en: 'Never mind, I\'ve got more paper anyway. I gently lift the kitten down and paint another one!' }
 ] };
 

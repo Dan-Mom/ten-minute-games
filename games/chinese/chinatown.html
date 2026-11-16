@@ -778,14 +778,14 @@ var CHARS = [
    rad = the radical (部首) with its name, what it usually means, and other characters where you can see it; how = the meaning */
 var PARTS = [
   { c: '历', parts: ['厂', '力'], r: 0, rad: '厂', name: '厂字旁', npy: 'chǎng zì páng', means: 'a cliff.', see: '厅 厚 原 厨', how: '厂 and 力 (lì), which gives the sound. The old form 歷 had 止 (a foot): walking past, going through. 历史 = history; 日历 = calendar.' },
-  { c: '史', parts: ['史'], r: 0, rad: '口', name: '口字旁', npy: 'kǒu zì páng', means: 'a mouth. It is in characters about the mouth, eating and sounds.', see: '喝 叫 唱 吃', how: '史 is one whole shape. Long ago it was a hand holding a writing tool: someone who kept records. 历史 = history.' },
-  { c: '繁', parts: ['敏', '糸'], r: 1, rad: '糸', name: '绞丝底', npy: 'jiǎo sī dǐ', means: 'silk thread.', see: '紧 素 累 紫', how: '敏 (mǐn), which helps with the sound, over thread (糸). Memory trick: lots and lots of thread, so many. 繁荣 = prosperous; 繁华 = busy and lively.' },
+  { c: '史', parts: ['史'], r: 0, rad: '口', name: '口字头', npy: 'kǒu zì tóu', means: 'a mouth. It is in characters about the mouth, eating and sounds.', see: '号 另 员 只', how: '史 is one whole shape. Long ago it was a hand holding a writing tool: someone who kept records. 历史 = history.' },
+  { c: '繁', parts: ['敏', '糸'], r: 1, rad: '糸', name: '绞丝底', npy: 'jiǎo sī dǐ', means: 'silk thread.', see: '紧 素 紫 絮', how: '敏 (mǐn), which helps with the sound, over thread (糸). A trick: lots and lots of thread, so many. 繁荣 = prosperous; 繁华 = busy and lively.' },
   { c: '荣', parts: ['艹', '冖', '木'], r: 0, rad: '艹', name: '草字头', npy: 'cǎo zì tóu', means: 'grass and plants.', see: '花 草 茶 菜', how: 'The old form 榮 was a tree (木) in full flower. So 荣 means flourishing, glory. 繁荣 = prosperous; 光荣 = glory.' },
-  { c: '强', parts: ['弓', ''], rest: 'right: a part that helps with the sound', r: 0, rad: '弓', name: '弓字旁', npy: 'gōng zì páng', means: 'a bow.', see: '张 弹 引 弯', how: 'A bow (弓) and a part that helps with the sound. Memory trick: pulling a big bow takes a strong arm. 强大 = strong, powerful; 强壮 = sturdy.' },
+  { c: '强', parts: ['弓', ''], rest: 'right: a part that helps with the sound', r: 0, rad: '弓', name: '弓字旁', npy: 'gōng zì páng', means: 'a bow.', see: '张 弹 引 弯', how: 'A bow (弓) and a part that helps with the sound. A trick: pulling a big bow takes a strong arm. 强大 = strong, powerful; 强壮 = sturdy.' },
   { c: '侨', parts: ['亻', '乔'], r: 0, rad: '亻', name: '单人旁', npy: 'dān rén páng', means: 'a person. It is in characters about people.', see: '你 他 们 住 休', how: 'A person (亻) and 乔 (qiáo), which gives the sound: a person living far from home. 华侨 = Chinese people living abroad.' },
-  { c: '集', parts: ['隹', '木'], r: 0, rad: '隹', name: '隹字旁', npy: 'zhuī zì páng', means: 'a bird.', see: '雀 雄 雅 雕', how: 'Long ago 集 was birds (隹) on a tree (木): coming together. 集中 = gather together; 集市 = market.' },
+  { c: '集', parts: ['隹', '木'], r: 0, rad: '隹', name: '隹字头', npy: 'zhuī zì tóu', means: 'a bird.', see: '雄 雕 售 焦', how: 'Long ago 集 was birds (隹) on a tree (木): coming together. 集中 = gather together; 集市 = market.' },
   { c: '功', parts: ['工', '力'], r: 1, rad: '力', name: '力字旁', npy: 'lì zì páng', means: 'strength.', see: '加 动 助 努', how: '工 (gōng, work), which gives the sound, and strength (力): hard work that gets something done. 成功 = success; 功课 = homework.' },
-  { c: '卖', parts: ['十', '买'], r: 0, rad: '十', name: '十字', npy: 'shí zì', means: 'ten.', see: '南 博 协 午', how: 'The old form 賣 was 出 (out) over 買 (buy): letting things go out, selling. 卖东西 = sell things; 买卖 = business.' },
+  { c: '卖', parts: ['十', '买'], r: 0, rad: '十', name: '十字头', npy: 'shí zì tóu', means: 'ten.', see: '南 真 直 古', how: 'The old form 賣 was 出 (out) over 買 (buy): letting things go out, selling. 卖东西 = sell things; 买卖 = business.' },
   { c: '越', parts: ['走', '戉'], r: 0, rad: '走', name: '走字旁', npy: 'zǒu zì páng', means: 'walking, running.', see: '赶 起 超 趣', how: 'Running (走) and 戉 (yuè), which gives the sound: to jump over. 越过 = go over; 越来越 = more and more.' },
   { c: '节', parts: ['艹', '卩'], r: 0, rad: '艹', name: '草字头', npy: 'cǎo zì tóu', means: 'grass and plants.', see: '花 草 茶 菜', how: 'The old form 節 had bamboo (⺮): the joints on a bamboo stalk. So 节 is a joint, a section, and also a festival. 春节 = Spring Festival; 节日 = festival.' },
   { c: '贴', parts: ['贝', '占'], r: 0, rad: '贝', name: '贝字旁', npy: 'bèi zì páng', means: 'a shell. Long ago shells were money.', see: '货 资 贵 费', how: 'A shell (贝, long ago money) and 占 (zhān), which helps with the sound. Long ago it meant leaving something as a promise to pay; now it means "stick on". 贴对联 = put up couplets.' },
@@ -844,38 +844,38 @@ var PATTERN = [
   { t: 'build', tiles: ['雨', '下得', '越来越', '大'], ok: ['雨下得越来越大。'], en: 'The rain is getting heavier and heavier.' },
   { t: 'pick', from: '妹妹画画，画得比以前好多了。', a: '妹妹画得越来越好了。', no: ['妹妹画得越来好越了。', '妹妹越来越得画好了。'], en: 'My little sister draws better and better.' },
   { t: 'build', tiles: ['公园里的', '花', '越来越', '多了'], ok: ['公园里的花越来越多了。'], en: 'There are more and more flowers in the park.' },
-  { t: 'build', tiles: ['我们的', '城市', '越来越', '漂亮'], ok: ['我们的城市越来越漂亮。'], en: 'Our city is getting prettier and prettier.' }
+  { t: 'build', tiles: ['我的', '房间', '越来越', '干净了'], ok: ['我的房间越来越干净了。'], en: 'My room is getting cleaner and cleaner.' }
 ];
 /* level 4: our own letter to Grandma about New Year in Chinatown, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的奶奶：" */
 var SENTENCES = [
-  { s: '＿快到了，我们全家去唐人街玩。', a: '春节', no: ['功课', '史书'], en: 'Spring Festival was coming, so the whole family went to Chinatown.' },
+  { s: '＿到了，我们全家去唐人街过节。', a: '春节', no: ['功课', '史书'], en: 'Spring Festival came, and our whole family went to Chinatown to celebrate.' },
   { s: '我们的车＿了一座大桥，就到了唐人街。', a: '越过', no: ['集中', '跳舞'], en: 'Our car went over a big bridge, and then we were in Chinatown.' },
-  { s: '爷爷说，唐人街的＿很长。', a: '历史', no: ['跳舞', '集中'], en: 'Grandpa said Chinatown has a long history.' },
-  { s: '很早以前，有很多＿来到这里生活。', a: '华侨', no: ['成功', '越过'], en: 'Long ago, many Chinese people from abroad came here to live.' },
-  { s: '他们开饭馆、开商店，做起了＿。', a: '买卖', no: ['历史', '春节'], en: 'They opened restaurants and shops and started businesses.' },
-  { s: '现在，这条街越来越＿了。', a: '繁荣', no: ['集市', '功课'], en: 'Now this street is getting busier and more prosperous.' },
+  { s: '街上人很多，爸爸让我们＿在一起走，别走散了。', a: '集中', no: ['光荣', '卖东西'], en: 'There were lots of people on the street, so Dad had us stay together so nobody got lost.' },
+  { s: '广场上鼓声越来越响，大家都在看＿。', a: '舞狮子', no: ['集中', '光荣'], en: 'In the square the drums got louder and louder, and everyone was watching the lion dance.' },
+  { s: '舞狮子的叔叔身体很＿，一下子就跳上了高桌子。', a: '强壮', no: ['集市', '买卖'], en: 'The lion dancers were very strong. They jumped right up onto a tall table.' },
   { s: '路边有很多人在＿，有灯笼，有糖葫芦，也有对联。', a: '卖东西', no: ['华侨', '史书'], en: 'Lots of people by the road were selling things: lanterns, candied fruit on sticks, and couplets.' },
-  { s: '我们买了一副，准备回家＿。', a: '贴对联', no: ['历史', '光荣'], en: 'We bought a pair, to put up at home.' },
-  { s: '人们都＿在广场上，等着看表演。', a: '集中', no: ['光荣', '卖东西'], en: 'Everyone gathered in the square, waiting for the show.' },
-  { s: '广场上，大家正在看＿。', a: '舞狮子', no: ['春节', '集中'], en: 'In the square, everyone was watching the lion dance.' },
-  { s: '舞狮子的叔叔身体很＿。', a: '强壮', no: ['集市', '买卖'], en: 'The men doing the lion dance were very strong.' },
-  { s: '我和妹妹也跟着音乐＿。', a: '跳舞', no: ['史书', '华侨'], en: 'My little sister and I danced to the music too.' },
-  { s: '回家以后，我先把＿做完了。', a: '功课', no: ['舞狮子', '华侨'], en: 'When we got home, I finished my homework first.' },
-  { s: '春节是中国人最重要的＿。', a: '节日', no: ['功课', '买卖'], en: 'Spring Festival is the most important festival for Chinese people.' },
+  { s: '卖对联的老奶奶是一位＿，在这里住了五十年了。', a: '华侨', no: ['成功', '越过'], en: 'The old lady selling couplets is Chinese and has lived here for fifty years.' },
+  { s: '她在唐人街做了很多年＿。', a: '买卖', no: ['历史', '春节'], en: 'She has done business in Chinatown for many years.' },
+  { s: '她说，舞狮子在中国已经有一千多年的＿了。', a: '历史', no: ['跳舞', '集中'], en: 'She said the lion dance has more than a thousand years of history in China.' },
+  { s: '过节的唐人街真＿，每家商店门口都挂着红灯笼。', a: '繁荣', no: ['集市', '功课'], en: 'Chinatown at festival time was so busy and thriving. Every shop had red lanterns at its door.' },
+  { s: '我们买了一副对联，准备回家＿。', a: '贴对联', no: ['历史', '光荣'], en: 'We bought a pair, to put up at home.' },
   { s: '爸爸说，唐人街附近还有一个＿，什么都有卖。', a: '集市', no: ['跳舞', '成功'], en: 'Dad said there is also a market near Chinatown that sells everything.' },
+  { s: '回家以后，我先把＿做完了。', a: '功课', no: ['舞狮子', '华侨'], en: 'When we got home, I finished my homework first.' },
+  { s: '春节是中国人最重要的＿，晚上我们一起吃了年夜饭。', a: '节日', no: ['功课', '买卖'], en: 'Spring Festival is the most important festival for Chinese people. In the evening we had the New Year\'s Eve dinner together.' },
+  { s: '吃完饭，我和妹妹跟着音乐＿。', a: '跳舞', no: ['史书', '华侨'], en: 'After dinner, my little sister and I danced to the music.' },
   { s: '奶奶，我第一次自己贴对联，一下子就＿了！下次你也来看吧！', a: '成功', no: ['历史', '华侨'], en: 'Grandma, I put up the couplets by myself for the first time, and got it right straight away! Come and see next time!' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
    s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '唐人街过春节', en: 'New Year in Chinatown', lines: [
-  { who: '👨 爸爸', s: '春节快到了，我们去唐人街看看吧！', py: 'Chūnjié kuài dào le, wǒmen qù Tángrénjiē kànkan ba!', en: 'Spring Festival is nearly here. Let\'s go and have a look at Chinatown!' },
-  { who: '🧒 我', s: '街上人越来越多，到处都挂着红灯笼。', py: 'Jiē shang rén yuè lái yuè duō, dàochù dōu guàzhe hóng dēnglong.', en: 'There are more and more people on the street, and red lanterns hang everywhere.', pat: true },
-  { who: '👴 爷爷', s: '这条街历史很长，很早以前就有华侨在这里生活。', py: 'Zhè tiáo jiē lìshǐ hěn cháng, hěn zǎo yǐqián jiù yǒu huáqiáo zài zhèlǐ shēnghuó.', en: 'This street has a long history. Chinese people from abroad were living here a long time ago.' },
-  { who: '👨 爸爸', s: '他们开饭馆、开商店，让这座城市更繁荣，立了大功。', py: 'Tāmen kāi fànguǎn, kāi shāngdiàn, ràng zhè zuò chéngshì gèng fánróng, lìle dà gōng.', en: 'They opened restaurants and shops and helped the city thrive. They did great work.' },
-  { who: '👧 妹妹', s: '快看，那边有人在卖糖葫芦和对联！', py: 'Kuài kàn, nàbiān yǒu rén zài mài tánghúlu hé duìlián!', en: 'Look, over there someone is selling candied fruit on sticks, and couplets!' },
-  { who: '🧒 我', s: '我们买一副对联，回家贴在门上吧。', py: 'Wǒmen mǎi yí fù duìlián, huí jiā tiē zài mén shang ba.', en: 'Let\'s buy a pair of couplets and put them up on our door at home.' },
-  { who: '👴 爷爷', s: '大家都集中到广场上了，舞狮子要开始啦！', py: 'Dàjiā dōu jízhōng dào guǎngchǎng shang le, wǔ shīzi yào kāishǐ la!', en: 'Everyone has gathered in the square. The lion dance is about to start!' },
-  { who: '🧒 我', s: '舞狮子的叔叔真强壮，狮子一跳就跳得好高，大家都拍手叫好！', py: 'Wǔ shīzi de shūshu zhēn qiángzhuàng, shīzi yí tiào jiù tiào de hǎo gāo, dàjiā dōu pāishǒu jiàohǎo!', en: 'The lion dancers are so strong! The lion leaps up really high, and everyone claps and cheers!' }
+  { who: '👧 妹妹', s: '春节到了！今天唐人街有舞狮子，我们快去看吧！', py: 'Chūnjié dào le! Jīntiān Tángrénjiē yǒu wǔ shīzi, wǒmen kuài qù kàn ba!', en: 'Spring Festival is here! There\'s a lion dance in Chinatown today. Let\'s go and watch!' },
+  { who: '👨 爸爸', s: '街上人很多，大家集中在一起走，别走散了。', py: 'Jiē shang rén hěn duō, dàjiā jízhōng zài yìqǐ zǒu, bié zǒusàn le.', en: 'There are lots of people on the street. Let\'s all stay together so nobody gets lost.' },
+  { who: '🧒 我', s: '咚咚咚，鼓声越来越响，两只狮子跳出来了！', py: 'Dōng dōng dōng, gǔshēng yuè lái yuè xiǎng, liǎng zhī shīzi tiào chūlai le!', en: 'Boom, boom, boom! The drums get louder and louder, and two lions jump out!', pat: true },
+  { who: '👴 爷爷', s: '舞狮子的叔叔真强壮，一下子就跳上了高高的桌子。', py: 'Wǔ shīzi de shūshu zhēn qiángzhuàng, yíxiàzi jiù tiàoshàngle gāogāo de zhuōzi.', en: 'The lion dancers are so strong. They jump right up onto a tall table.' },
+  { who: '👧 妹妹', s: '快看，那边有位老奶奶在卖对联！', py: 'Kuài kàn, nàbiān yǒu wèi lǎo nǎinai zài mài duìlián!', en: 'Look, there\'s an old lady over there selling couplets!' },
+  { who: '👵 老奶奶', s: '我是华侨，在这里住了五十年了。舞狮子在中国已经有一千多年的历史啦！', py: 'Wǒ shì huáqiáo, zài zhèlǐ zhùle wǔshí nián le. Wǔ shīzi zài Zhōngguó yǐjīng yǒu yìqiān duō nián de lìshǐ la!', en: 'I\'m Chinese and have lived here for fifty years. The lion dance has more than a thousand years of history in China!' },
+  { who: '👨 爸爸', s: '过节的唐人街真繁荣，每家商店门口都挂着红灯笼。', py: 'Guò jié de Tángrénjiē zhēn fánróng, měi jiā shāngdiàn ménkǒu dōu guàzhe hóng dēnglong.', en: 'Chinatown at festival time is so busy and thriving. Every shop has red lanterns at its door.' },
+  { who: '🧒 我', s: '我们买一副对联吧！回家我自己贴，一定能贴成功！', py: 'Wǒmen mǎi yí fù duìlián ba! Huí jiā wǒ zìjǐ tiē, yídìng néng tiē chénggōng!', en: 'Let\'s buy a pair of couplets! At home I\'ll put them up myself. I know I can do it!' }
 ] };
 
 /* ---------- this lesson's settings: the shared engine (../_engine/chinese-engine.js) reads them ---------- */

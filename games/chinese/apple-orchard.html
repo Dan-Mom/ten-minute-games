@@ -785,13 +785,13 @@ var PARTS = [
   { c: '错', parts: ['钅', '昔'], r: 0, rad: '钅', name: '金字旁', npy: 'jīn zì páng', means: 'metal. It is in characters about metals and things made of metal.', see: '钱 针 钟 铁 银', how: 'Metal (钅) and 昔 (xī), which helps with the sound. Long ago it meant inlaying metal into something; now it means "wrong". 做错 = do something wrong; 不错 = not bad.' },
   { c: '准', parts: ['冫', '隹'], r: 0, rad: '冫', name: '两点水', npy: 'liǎng diǎn shuǐ', means: 'ice. It is in characters about cold.', see: '冰 冷 凉 净', how: '冫 and 隹 (zhuī, a short-tailed bird), which helps with the sound: exact, on target. 看准 = aim carefully; 准备 = get ready.' },
   { c: '摘', parts: ['扌', ''], rest: 'right: a part that helps with the sound', r: 0, rad: '扌', name: '提手旁', npy: 'tí shǒu páng', means: 'a hand. It is in characters about things you do with your hands.', see: '打 拍 把 抱 指', how: 'A hand (扌) and a part that helps with the sound: to pick fruit or flowers. 摘苹果 = pick apples.' },
-  { c: '够', parts: ['句', '夕', '夕'], r: 1, rad: '夕', name: '夕字旁', npy: 'xī zì páng', means: 'evening; the moon.', see: '多 外 梦 夜', how: '句 (gōu), which helps with the sound, and 多 (many, made of two 夕): enough. 足够 = enough; 够不着 = can\'t reach.' },
-  { c: '着', parts: ['', '目'], rest: 'top: a part like 羊', r: 1, rad: '目', name: '目字底', npy: 'mù zì dǐ', means: 'the eye. It is in characters about eyes and seeing.', see: '看 睡 眼 睛', how: 'An eye (目) under a part like 羊. Said zháo it means "reach, manage": 够不着 = can\'t reach; 着急 = worried.' },
+  { c: '够', parts: ['句', '夕', '夕'], r: 1, rad: '夕', name: '夕字旁', npy: 'xī zì páng', means: 'evening; the moon.', see: '多 外 梦 名', how: '句 (gōu), which helps with the sound, and 多 (many, made of two 夕): enough. 足够 = enough; 够不着 = can\'t reach.' },
+  { c: '着', parts: ['⺶', '目'], r: 0, rad: '⺶', name: '羊字头', npy: 'yáng zì tóu', means: 'a sheep. On top of a character it is written ⺶ or ⺷.', see: '美 羞 羔', how: '⺶ over an eye (目). Said zháo it means "reach, manage": 够不着 = can\'t reach; 着急 = worried. After a doing word it is said zhe: 看着 = looking at.' },
   { c: '始', parts: ['女', '台'], r: 0, rad: '女', name: '女字旁', npy: 'nǚ zì páng', means: 'a woman or girl.', see: '妈 姐 奶 她 好', how: 'A woman (女) and 台, which helps with the sound: the beginning. 开始 = begin.' },
   { c: '终', parts: ['纟', '冬'], r: 0, rad: '纟', name: '绞丝旁', npy: 'jiǎo sī páng', means: 'silk and thread.', see: '红 绿 线 纸 结', how: 'Thread (纟) and 冬 (dōng), which helps with the sound. Long ago it was a thread knotted at both ends: the end. 终于 = at last; 始终 = all along.' },
-  { c: '累', parts: ['田', '糸'], r: 1, rad: '糸', name: '绞丝底', npy: 'jiǎo sī dǐ', means: 'silk thread.', see: '紧 素 索 紫', how: '田 (long ago 畾, things piled up) over thread (糸): tying things together, piling up. Said lèi it means "tired". 很累 = very tired.' },
+  { c: '累', parts: ['田', '糸'], r: 1, rad: '糸', name: '绞丝底', npy: 'jiǎo sī dǐ', means: 'silk thread.', see: '紧 素 紫 絮', how: '田 (long ago 畾, things piled up) over thread (糸): tying things together, piling up. Said lèi it means "tired". 很累 = very tired.' },
   { c: '垂', parts: ['垂'], r: 0, rad: '丿', name: '撇', npy: 'piě', means: 'a falling stroke. As a radical it does not add a meaning.', see: '九 久 么 乐', how: '垂 is one whole shape. Long ago it was a plant with branches drooping down. 垂下 = hang down; 垂头丧气 = down in the dumps.' },
-  { c: '丧', parts: ['丧'], r: 0, rad: '十', name: '十字', npy: 'shí zì', means: 'ten.', see: '南 博 协 卖', how: '丧 is one whole shape. The old form 喪 had mouths crying around a mulberry tree: sadness, loss. 垂头丧气 = down in the dumps.' },
+  { c: '丧', parts: ['丧'], r: 0, rad: '十', name: '十字头', npy: 'shí zì tóu', means: 'ten.', see: '南 真 卖 古', how: '丧 is one whole shape. The old form 喪 had mouths crying around a mulberry tree: sadness, loss. 垂头丧气 = down in the dumps.' },
   { c: '酸', parts: ['酉', '夋'], r: 0, rad: '酉', name: '酉字旁', npy: 'yǒu zì páng', means: 'a wine jar.', see: '醋 酱 醒 配', how: 'A wine jar (酉) and 夋 (qūn), which helps with the sound: sour, like vinegar. 酸奶 = yogurt; 好酸 = so sour.' }
 ];
 /* level 1: each character long ago (public-domain drawings from Wikimedia Commons, Ancient Chinese characters project, in ancient/).
@@ -806,7 +806,7 @@ var ANCIENT = {
   '准': { f: 'ancient/51ab-oracle.svg', kind: 'oracle', rad: "冫", form: '冫', pic: "" },
   '摘': { f: 'ancient/624b-bronze.svg', kind: 'bronze', rad: "扌", form: '手', pic: "a hand with five fingers" },
   '够': { f: 'ancient/5915-oracle.svg', kind: 'oracle', rad: "夕", form: '夕', pic: "a crescent moon" },
-  '着': { f: 'ancient/76ee-oracle.svg', kind: 'oracle', rad: "目", form: '目', pic: "an eye" },
+  '着': { f: 'ancient/7f8a-oracle.svg', kind: 'oracle', rad: "羊", form: '羊', pic: "a sheep’s head with horns" },
   '始': { f: 'ancient/5973-oracle.svg', kind: 'oracle', rad: "女", form: '女', pic: "a woman kneeling" },
   '终': { f: 'ancient/7d42-oracle.svg', kind: 'oracle', rad: "", form: '終', pic: "a thread knotted at both ends" },
   '累': { f: 'ancient/7cf8-oracle.svg', kind: 'oracle', rad: "糸", form: '糸', pic: "a twist of silk thread" },
@@ -851,34 +851,34 @@ var PATTERN = [
 ];
 /* level 4: our own letter to Grandpa about picking apples, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的爷爷：" */
 var SENTENCES = [
-  { s: '星期天天气很热，我们走了很远，都＿了。', a: '口渴', no: ['书架', '酸奶'], en: 'It was hot on Sunday, and after a long walk we were all thirsty.' },
-  { s: '爸爸说：“先喝水，然后我们去果园＿。”', a: '摘苹果', no: ['着急', '终于'], en: 'Dad said, "Have a drink first, then we\'ll go and pick apples in the orchard."' },
-  { s: '水壶里的水＿我们三个人喝。', a: '足够', no: ['垂下', '书架'], en: 'There was enough water in the bottle for the three of us.' },
-  { s: '树上的苹果又大又红，我们的＿真好！', a: '运气', no: ['着急', '垂下'], en: 'The apples on the trees were big and red. We were so lucky!' },
-  { s: '我＿了一个最大的苹果，跳起来去摘。', a: '看准', no: ['开始', '书架'], en: 'I aimed at the biggest apple and jumped up to grab it.' },
-  { s: '弟弟个子小，怎么跳也摘不到，＿得都快哭了。', a: '着急', no: ['书架', '做错'], en: 'My little brother is small, and however hard he jumped he couldn\'t reach. He was so upset he nearly cried.' },
-  { s: '我们跳啊跳，最后都＿了。', a: '很累', no: ['准备', '书架'], en: 'We jumped and jumped, and in the end we were all very tired.' },
-  { s: '弟弟有点儿＿，坐在地上不说话。', a: '垂头丧气', no: ['书架', '足够'], en: 'My brother was a bit down in the dumps and sat on the ground without a word.' },
-  { s: '高高的树枝上挂满了苹果，枝头都＿来了。', a: '垂下', no: ['运气', '开始'], en: 'The high branches were so full of apples that their tips hung down.' },
-  { s: '爸爸把我们抱起来，我们＿摘到了苹果！', a: '终于', no: ['书架', '口渴'], en: 'Dad lifted us up, and at last we picked some apples!' },
-  { s: '我们还去了葡萄架下，＿摘葡萄。', a: '开始', no: ['酸奶', '做错'], en: 'We also went under the grape trellis and started picking grapes.' },
-  { s: '弟弟拿错了篮子，他说：“对不起，我＿了。”', a: '做错', no: ['书架', '运气'], en: 'My brother took the wrong basket. He said, "Sorry, my mistake."' },
-  { s: '晚上，爸爸给我们每人一杯＿。', a: '酸奶', no: ['书架', '垂下'], en: 'In the evening, Dad gave each of us a cup of yogurt.' },
-  { s: '回到家，我把苹果放在＿上。', a: '书架', no: ['着急', '终于'], en: 'Back home, I put the apples on the bookshelf.' },
-  { s: '爷爷，下次我们一起去摘苹果，我已经＿好篮子了！', a: '准备', no: ['垂下', '哈哈'], en: 'Grandpa, next time let\'s go apple picking together. I\'ve already got the basket ready!' },
+  { s: '星期天，爸爸带我和弟弟去果园＿。', a: '摘苹果', no: ['着急', '书架'], en: 'On Sunday, Dad took my little brother and me to the orchard to pick apples.' },
+  { s: '出门前，我们把篮子和水壶都＿好了。', a: '准备', no: ['垂下', '哈哈'], en: 'Before we left, we got the basket and the water bottle ready.' },
+  { s: '弟弟尝了一颗还没熟的葡萄，说它比＿还酸！', a: '酸奶', no: ['书架', '运气'], en: 'My little brother tasted an unripe grape and said it was even more sour than yogurt!' },
+  { s: '他有点儿＿，我说那边还有苹果树呢。', a: '垂头丧气', no: ['书架', '足够'], en: 'He was a bit down in the dumps, so I told him there were apple trees over there.' },
+  { s: '苹果树的树枝都＿来了，低的苹果一伸手就能摘到。', a: '垂下', no: ['运气', '开始'], en: 'The apple branches hung down low, and we could pick the low apples just by reaching out.' },
+  { s: '可是最红的苹果挂得太高，弟弟够不到，＿得都快哭了。', a: '着急', no: ['书架', '做错'], en: 'But the reddest apple hung too high. My brother couldn\'t reach it and was so upset he nearly cried.' },
+  { s: '爸爸把弟弟举起来，还告诉他要摘红的，别＿了。', a: '做错', no: ['书架', '运气'], en: 'Dad lifted my brother up and told him to pick the red ones and not get it wrong.' },
+  { s: '我们从早上＿摘，一直摘到中午。', a: '开始', no: ['酸奶', '做错'], en: 'We started picking in the morning and kept going until noon.' },
+  { s: '中午，篮子＿满了！', a: '终于', no: ['书架', '口渴'], en: 'At noon, the basket was full at last!' },
+  { s: '摘了一上午，我们都＿了。', a: '很累', no: ['垂下', '书架'], en: 'After a whole morning of picking, we were all very tired.' },
+  { s: '我们也＿了，爸爸让我们先喝点水。', a: '口渴', no: ['书架', '酸奶'], en: 'We were thirsty too, so Dad had us drink some water first.' },
+  { s: '爸爸说，这些苹果＿我们吃一个星期了。', a: '足够', no: ['垂下', '书架'], en: 'Dad said these apples were enough for us to eat for a whole week.' },
+  { s: '这么多苹果，一个都没摔坏，我们的＿真好！', a: '运气', no: ['着急', '垂下'], en: 'So many apples, and not one got bruised. We were so lucky!' },
+  { s: '回到家，我把最红的苹果放在＿上，每天都能看到。', a: '书架', no: ['着急', '终于'], en: 'Back home, I put the reddest apple on the bookshelf, so I can see it every day.' },
   { s: '爷爷，你听了是不是也会＿大笑？', a: '哈哈', no: ['书架', '足够'], en: 'Grandpa, are you going to laugh "haha" when you hear this?' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
    s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '去果园摘苹果', en: 'Picking apples in the orchard', lines: [
-  { who: '👨 爸爸', s: '今天天气很热，大家渴不渴？先喝点水，我们再去果园摘苹果。', py: 'Jīntiān tiānqì hěn rè, dàjiā kě bu kě? Xiān hē diǎn shuǐ, wǒmen zài qù guǒyuán zhāi píngguǒ.', en: 'It\'s hot today. Is anyone thirsty? Have some water first, then we\'ll go and pick apples in the orchard.' },
-  { who: '🧒 我', s: '哈哈，树上的苹果又大又红，真不错！我们运气太好了！', py: 'Hāhā, shù shang de píngguǒ yòu dà yòu hóng, zhēn búcuò! Wǒmen yùnqi tài hǎo le!', en: 'Haha, the apples on the trees were big and red. Brilliant! We were so lucky!' },
-  { who: '🧒 我', s: '我看准一个最大的，跳起来去摘，可是手太短，够不着。', py: 'Wǒ kànzhǔn yí ge zuì dà de, tiào qǐlai qù zhāi, kěshì shǒu tài duǎn, gòu bu zháo.', en: 'I picked out the biggest one and jumped up to grab it, but my arms were too short. I couldn\'t reach.' },
-  { who: '👦 弟弟', s: '苹果挂得那么高，我怎么跳都摘不到！', py: 'Píngguǒ guà de nàme gāo, wǒ zěnme tiào dōu zhāi bu dào!', en: 'The apples hang so high. However hard I jump, I can\'t pick one!', pat: true },
-  { who: '🧒 我', s: '我们跳啊跳，开始还很高兴，后来累得坐在地上。', py: 'Wǒmen tiào a tiào, kāishǐ hái hěn gāoxìng, hòulái lèi de zuò zài dì shang.', en: 'We jumped and jumped. At first we were happy, but then we got so tired we sat down on the ground.' },
-  { who: '👨 爸爸', s: '别垂头丧气的！我把你们抱起来，就够得着了。', py: 'Bié chuítóu sàngqì de! Wǒ bǎ nǐmen bào qǐlai, jiù gòu de zháo le.', en: 'Don\'t look so down! I\'ll lift you up, and then you can reach.' },
-  { who: '🧒 我', s: '摘到了！我们终于摘到了！我们又去葡萄架下摘了一串葡萄。', py: 'Zhāi dào le! Wǒmen zhōngyú zhāi dào le! Wǒmen yòu qù pútaojià xià zhāile yí chuàn pútao.', en: 'Got one! We finally got one! Then we went under the grape trellis and picked a bunch of grapes.' },
-  { who: '👦 弟弟', s: '哎呀，这串葡萄还没熟，好酸啊！', py: 'Āiyā, zhè chuàn pútao hái méi shú, hǎo suān a!', en: 'Ugh, these grapes aren\'t ripe yet. So sour!' }
+  { who: '👨 爸爸', s: '篮子和水壶都准备好了吗？我们去果园摘苹果！', py: 'Lánzi hé shuǐhú dōu zhǔnbèi hǎo le ma? Wǒmen qù guǒyuán zhāi píngguǒ!', en: 'Are the basket and the water bottle ready? Let\'s go pick apples in the orchard!' },
+  { who: '👦 弟弟', s: '果园门口有个葡萄架。我先尝一颗……哎呀，比酸奶还酸！', py: 'Guǒyuán ménkǒu yǒu ge pútaojià. Wǒ xiān cháng yì kē……Āiyā, bǐ suānnǎi hái suān!', en: 'There\'s a grape trellis at the orchard gate. Let me try one first... Ugh, it\'s even more sour than yogurt!' },
+  { who: '🧒 我', s: '哈哈，葡萄还没熟呢。别垂头丧气的，那边有苹果树！', py: 'Hāhā, pútao hái méi shú ne. Bié chuítóu sàngqì de, nàbiān yǒu píngguǒ shù!', en: 'Haha, the grapes aren\'t ripe yet. Don\'t look so down, there are apple trees over there!' },
+  { who: '🧒 我', s: '这棵树的树枝垂得低低的，我一伸手就摘到了一个大苹果。', py: 'Zhè kē shù de shùzhī chuí de dīdī de, wǒ yì shēnshǒu jiù zhāidàole yí ge dà píngguǒ.', en: 'This tree\'s branches hang down low. I reached out and picked a big apple right away.' },
+  { who: '👦 弟弟', s: '最红的那个挂得太高了，我踮起脚也够不到！', py: 'Zuì hóng de nàge guà de tài gāo le, wǒ diǎnqǐ jiǎo yě gòu bu dào!', en: 'The reddest one hangs too high. Even on tiptoe I can\'t reach it!', pat: true },
+  { who: '👨 爸爸', s: '别着急，我把你举起来。要摘红的，别摘错了！', py: 'Bié zháojí, wǒ bǎ nǐ jǔ qǐlai. Yào zhāi hóng de, bié zhāicuò le!', en: 'Don\'t worry, I\'ll lift you up. Pick the red ones, and don\'t pick the wrong ones!' },
+  { who: '🧒 我', s: '我们从早上开始摘，到中午篮子终于满了。我好累，也好渴！', py: 'Wǒmen cóng zǎoshang kāishǐ zhāi, dào zhōngwǔ lánzi zhōngyú mǎn le. Wǒ hǎo lèi, yě hǎo kě!', en: 'We started picking in the morning, and by noon the basket was finally full. I\'m so tired, and so thirsty!' },
+  { who: '👨 爸爸', s: '来，喝点水。这些苹果够我们吃一个星期了！', py: 'Lái, hē diǎn shuǐ. Zhèxiē píngguǒ gòu wǒmen chī yí ge xīngqī le!', en: 'Here, have some water. These apples are enough for a whole week!' },
+  { who: '🧒 我', s: '这么多苹果，一个也没摔坏，我们的运气太好了！', py: 'Zhème duō píngguǒ, yí ge yě méi shuāihuài, wǒmen de yùnqi tài hǎo le!', en: 'So many apples, and not one got bruised. We were so lucky!' }
 ] };
 
 /* ---------- this lesson's settings: the shared engine (../_engine/chinese-engine.js) reads them ---------- */

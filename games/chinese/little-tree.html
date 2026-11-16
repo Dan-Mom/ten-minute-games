@@ -777,19 +777,19 @@ var CHARS = [
 /* level 1: how each character is built. parts = the pieces (r = which piece is the radical; rest = a piece described in words),
    rad = the radical (部首) with its name, what it usually means, and other characters where you can see it; how = the meaning */
 var PARTS = [
-  { c: '守', parts: ['宀', '寸'], r: 0, rad: '宀', name: '宝盖头', npy: 'bǎo gài tóu', means: 'a roof. It is in characters about houses.', see: '家 字 安 室 害', how: 'A roof (宀) and a hand (寸). A way to remember: a hand looking after the house, guarding it. 守门员 = goalkeeper; 守住 = guard.' },
-  { c: '待', parts: ['彳', '寺'], r: 0, rad: '彳', name: '双人旁', npy: 'shuāng rén páng', means: 'walking, roads.', see: '往 很 得 律', how: 'Walking (彳) and 寺 (sì), which helps with the sound: to wait. 等待 = wait; 接待 = welcome guests.' },
+  { c: '守', parts: ['宀', '寸'], r: 0, rad: '宀', name: '宝盖头', npy: 'bǎo gài tóu', means: 'a roof. It is in characters about houses.', see: '家 字 安 室 害', how: 'A roof (宀) and a hand (寸). A trick: a hand looking after the house, guarding it. 守门员 = goalkeeper; 守住 = guard.' },
+  { c: '待', parts: ['彳', '寺'], r: 0, rad: '彳', name: '双人旁', npy: 'shuāng rén páng', means: 'walking, roads.', see: '往 很 得 律', how: 'Walking (彳) and 寺 (sì), which helps with the sound: to wait. 等待 = wait; 接待 = welcome guests. Also said dāi, to stay: 待一会儿 = stay a while.' },
   { c: '棵', parts: ['木', '果'], r: 0, rad: '木', name: '木字旁', npy: 'mù zì páng', means: 'a tree or wood. It is in characters about trees and things made of wood.', see: '树 林 桌 椅 桥', how: 'A tree (木) and 果 (guǒ), which helps with the sound: counts trees and plants. 一棵树 = a tree.' },
   { c: '休', parts: ['亻', '木'], r: 0, rad: '亻', name: '单人旁', npy: 'dān rén páng', means: 'a person. It is in characters about people.', see: '你 他 们 住 借', how: 'A person (亻) leaning against a tree (木): resting. 休息 = rest.' },
-  { c: '息', parts: ['自', '心'], r: 1, rad: '心', name: '心字底', npy: 'xīn zì dǐ', means: 'the heart. It is in characters about feelings and thinking.', see: '想 思 念 意', how: 'A nose (自) over the heart (心): breathing. 休息 = rest; 消息 = news.' },
+  { c: '息', parts: ['自', '心'], r: 1, rad: '心', name: '心字底', npy: 'xīn zì dǐ', means: 'the heart. It is in characters about feelings and thinking.', see: '想 念 您 忘 感', how: 'A nose (自) over the heart (心): breathing. 休息 = rest; 消息 = news.' },
   { c: '撞', parts: ['扌', '童'], r: 0, rad: '扌', name: '提手旁', npy: 'tí shǒu páng', means: 'a hand. It is in characters about things you do with your hands.', see: '打 拍 把 抱 指', how: 'A hand (扌) and 童 (tóng), which helps with the sound: to bump into. 撞到 = bump into.' },
   { c: '死', parts: ['歹', '匕'], r: 0, rad: '歹', name: '歹字旁', npy: 'dǎi zì páng', means: 'bones; something bad.', see: '残', how: '歹 (remains) and 匕 (a person). Long ago it showed a person kneeling by someone who had died: to die. People also say 饿死了 just to mean "starving!"' },
   { c: '每', parts: ['𠂉', '母'], r: 1, rad: '母', name: '母字', npy: 'mǔ zì', means: 'a mother.', see: '毒', how: 'Long ago 每 was a woman with an ornament in her hair. Now it means "every". 每天 = every day.' },
-  { c: '此', parts: ['止', '匕'], r: 0, rad: '止', name: '止字旁', npy: 'zhǐ zì páng', means: 'a foot; to stop.', see: '正 步 武 歪', how: 'A foot (止) next to a person (匕): the spot where someone stands, here. 此 means "this, here". 从此 = from then on; 此外 = besides.' },
-  { c: '求', parts: ['求'], r: 0, rad: '氺', name: '水字底', npy: 'shuǐ zì dǐ', means: 'water. At the bottom it is written 水 or 氺 (as in 求 and 泰).', see: '泰 泉 浆', how: '求 is one whole shape. Long ago it was a fur coat (later written 裘). Now it means "ask for, beg". 请求 = request; 求救 = call for help.' },
-  { c: '剑', parts: ['佥', '刂'], r: 1, rad: '刂', name: '立刀旁', npy: 'lì dāo páng', means: 'a knife.', see: '到 别 利 刚 刮', how: 'A blade (刂) and 佥 (qiān), which helps with the sound: a sword. 宝剑 = sword; 玩具剑 = toy sword.' },
+  { c: '此', parts: ['止', '匕'], r: 0, rad: '止', name: '止字旁', npy: 'zhǐ zì páng', means: 'a foot; to stop.', see: '步 歪 肯 歧', how: 'A foot (止) next to a person (匕): the spot where someone stands, here. 此 means "this, here". 从此 = from then on; 此外 = besides.' },
+  { c: '求', parts: ['求'], r: 0, rad: '氺', name: '水字底', npy: 'shuǐ zì dǐ', means: 'water. At the bottom it is written 水 or 氺 (as in 求 and 泰).', see: '泰 浆', how: '求 is one whole shape. Long ago it was a fur coat (later written 裘). Now it means "ask for, beg". 请求 = request; 求救 = call for help.' },
+  { c: '剑', parts: ['佥', '刂'], r: 1, rad: '刂', name: '立刀旁', npy: 'lì dāo páng', means: 'a knife.', see: '别 刚 刻 剧 创', how: 'A blade (刂) and 佥 (qiān), which helps with the sound: a sword. 宝剑 = sword; 玩具剑 = toy sword.' },
   { c: '赶', parts: ['走', '干'], r: 0, rad: '走', name: '走字旁', npy: 'zǒu zì páng', means: 'walking, running.', see: '起 超 趣 越', how: 'Running (走) and 干 (gān), which helps with the sound: to hurry, to catch up. 赶快 = quickly; 赶车 = catch the bus.' },
-  { c: '急', parts: ['', '心'], rest: 'top: an old form of 及 (jí), which gives the sound', r: 1, rad: '心', name: '心字底', npy: 'xīn zì dǐ', means: 'the heart. It is in characters about feelings and thinking.', see: '想 思 念 意', how: 'An old form of 及 (jí), which gives the sound, over the heart (心): a hurried, worried heart. 着急 = worried; 急忙 = in a hurry.' }
+  { c: '急', parts: ['', '心'], rest: 'top: an old form of 及 (jí), which gives the sound', r: 1, rad: '心', name: '心字底', npy: 'xīn zì dǐ', means: 'the heart. It is in characters about feelings and thinking.', see: '想 念 您 忘 感', how: 'An old form of 及 (jí), which gives the sound, over the heart (心): a hurried, worried heart. 着急 = worried; 急忙 = in a hurry.' }
 ];
 /* level 1: each character long ago (public-domain drawings from Wikimedia Commons, Ancient Chinese characters project, in ancient/).
    kind = which old script; rad = when the character itself has no old form, its radical is shown instead (form = the old character drawn);
@@ -839,7 +839,7 @@ var MORE_WORDS = {
 var PATTERN = [
   { t: 'show', shape: '天天＋动作', keys: ['天天'], end: '。', ask: 'Where does 天天 go? Pick the right sentence.',
     what: 'Say 天 twice, 天天, to mean "every day". Put it after the person and before the action: 我天天刷牙 = I brush my teeth every day. Other words work the same way: 人人 = everyone.',
-    ex: [{ s: '我天天刷牙。', en: 'I brush my teeth every day.' }, { s: '奶奶天天去公园散步。', en: 'Granny goes for a walk in the park every day.' }, { s: '小鸟天天在树上唱歌。', en: 'The little birds sing in the tree every day.' }] },
+    ex: [{ s: '我天天刷牙。', en: 'I brush my teeth every day.' }, { s: '奶奶天天去公园散步。', en: 'Grandma goes for a walk in the park every day.' }, { s: '小鸟天天在树上唱歌。', en: 'The little birds sing in the tree every day.' }] },
   { t: 'pick', from: '妹妹每一天都喝牛奶。', a: '妹妹天天喝牛奶。', no: ['妹妹喝天天牛奶。', '妹妹喝牛奶天天。'], en: 'My little sister drinks milk every day.' },
   { t: 'build', tiles: ['爷爷', '天天', '给花', '浇水'], ok: ['爷爷天天给花浇水。'], en: 'Grandpa waters the flowers every day.' },
   { t: 'pick', from: '我每天都练琴。', a: '我天天练琴。', no: ['我练天天琴。', '天天练我琴。'], en: 'I practice the piano every day.' },
@@ -849,15 +849,15 @@ var PATTERN = [
 /* level 4: our own letter to Auntie (Uncle's wife) about a little apple tree and a lost toy sword, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的舅妈：" */
 var SENTENCES = [
   { s: '春天到了，爷爷和我在院子里种了＿小苹果树。', a: '一棵', no: ['每天', '求救'], en: 'Spring came, and Grandpa and I planted a little apple tree in the yard.' },
-  { s: '我＿都去看它，希望它快点儿长大。', a: '每天', no: ['宝剑', '守门员'], en: 'I went to look at it every day, hoping it would grow quickly.' },
-  { s: '可是我只是看着它＿，不给它浇水。', a: '等待', no: ['宝剑', '从此'], en: 'But I only looked at it and didn\'t water it. I just waited.' },
-  { s: '爷爷说小树渴了。我听了，＿去拿水壶。', a: '赶快', no: ['宝剑', '消息'], en: 'Grandpa said the little tree was thirsty. When I heard that, I hurried to get the watering can.' },
-  { s: '＿，我天天给小树浇水。', a: '从此', no: ['着急', '宝剑'], en: 'From then on, I watered the little tree every day.' },
-  { s: '上午，弟弟的玩具＿从小桥上掉到了小河里。', a: '宝剑', no: ['消息', '每天'], en: 'In the morning, my brother\'s toy sword fell into the stream.' },
-  { s: '弟弟很＿，做了一个记号。', a: '着急', no: ['从此', '一棵'], en: 'My brother was worried and made a mark.' },
-  { s: '他大声＿：“谁来帮帮我？”', a: '求救', no: ['休息', '一棵'], en: 'He called out for help: "Who can help me?"' },
-  { s: '他跑得太急，还不小心＿了栏杆。', a: '撞到', no: ['每天', '接待'], en: 'He ran so fast that he bumped into the railing.' },
-  { s: '爷爷用网子把剑捞上来以后，我们坐下来＿了一会儿。', a: '休息', no: ['宝剑', '守住'], en: 'After Grandpa fished the sword out with a net, we sat down and rested for a while.' },
+  { s: '有一天，弟弟的玩具＿卡在了小树上。', a: '宝剑', no: ['消息', '每天'], en: 'One day, my little brother’s toy sword got stuck in the little tree.' },
+  { s: '他大声＿：“爷爷，快帮帮我！”', a: '求救', no: ['休息', '一棵'], en: 'He called out for help: “Grandpa, help me, quick!”' },
+  { s: '爷爷说：“别＿，我来拿。”', a: '着急', no: ['从此', '一棵'], en: 'Grandpa said, “Don’t worry, I’ll get it.”' },
+  { s: '爷爷发现小树的叶子黄了。我＿都去看它，可是忘了浇水。', a: '每天', no: ['宝剑', '守门员'], en: 'Grandpa saw that the little tree’s leaves had turned yellow. I went to look at it every day, but I forgot to water it.' },
+  { s: '爷爷说，光＿可不行，要天天给它浇水。', a: '等待', no: ['宝剑', '从此'], en: 'Grandpa said just waiting won’t do; it needs water every day.' },
+  { s: '我听了，＿去拿水壶。', a: '赶快', no: ['宝剑', '消息'], en: 'When I heard that, I hurried to get the watering can.' },
+  { s: '弟弟跑得太快，＿了门框。', a: '撞到', no: ['每天', '接待'], en: 'My little brother ran too fast and bumped into the door frame.' },
+  { s: '浇完水，我们坐下来＿了一会儿。', a: '休息', no: ['宝剑', '守住'], en: 'After watering, we sat down and rested for a while.' },
+  { s: '＿，小树的叶子又绿了。', a: '从此', no: ['着急', '宝剑'], en: 'From then on, the little tree’s leaves turned green again.' },
   { s: '弟弟一进门就喊：“我＿！”', a: '饿死了', no: ['从此', '宝剑'], en: 'My little brother came in shouting, "I\'m starving!"' },
   { s: '晚上，我们在家＿来做客的王阿姨。', a: '接待', no: ['一棵', '赶快'], en: 'In the evening, we welcomed Auntie Wang, who came to visit.' },
   { s: '第二天踢球，我当＿，守住了好几个球。', a: '守门员', no: ['消息', '从此'], en: 'The next day we played soccer. I was the goalkeeper and saved several shots.' },
@@ -867,14 +867,14 @@ var SENTENCES = [
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
    s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '小苹果树和玩具剑', en: 'The little apple tree and the toy sword', lines: [
-  { who: '👴 爷爷', s: '我们在院子里种一棵小苹果树吧！', py: 'Wǒmen zài yuànzi li zhòng yì kē xiǎo píngguǒshù ba!', en: 'Let\'s plant a little apple tree in the yard!' },
-  { who: '🧒 我', s: '我每天都来看它，可是它怎么还不长大？', py: 'Wǒ měitiān dōu lái kàn tā, kěshì tā zěnme hái bù zhǎngdà?', en: 'I come and look at it every day, but why isn\'t it growing?' },
-  { who: '👴 爷爷', s: '光等待可不行，你得天天给它浇水。', py: 'Guāng děngdài kě bù xíng, nǐ děi tiāntiān gěi tā jiāo shuǐ.', en: 'Just waiting won\'t do. You have to water it every day.', pat: true },
-  { who: '👦 弟弟', s: '我知道一个故事：有个人捡到一只撞到树上的兔子，就不干活了，守着那棵树等下一只。', py: 'Wǒ zhīdao yí ge gùshi: yǒu ge rén jiǎndào yì zhī zhuàngdào shù shang de tùzi, jiù bú gàn huór le, shǒuzhe nà kē shù děng xià yì zhī.', en: 'I know a story: a man once picked up a hare that had bumped into a tree, so he stopped working and kept watch by that tree, waiting for the next one.' },
-  { who: '🧒 我', s: '要是不浇水，小树会干死的！我赶快去拿水壶。', py: 'Yàoshi bù jiāo shuǐ, xiǎo shù huì gānsǐ de! Wǒ gǎnkuài qù ná shuǐhú.', en: 'If I don\'t water it, the little tree will dry up and die! I hurry to get the watering can.' },
-  { who: '👦 弟弟', s: '哎呀，我的玩具剑从小桥上掉进水里了！我在桥上做个记号吧！爷爷，求求你帮我捞上来！', py: 'Āiyā, wǒ de wánjù jiàn cóng xiǎo qiáo shang diào jìn shuǐ li le! Wǒ zài qiáo shang zuò ge jìhao ba! Yéye, qiúqiu nǐ bāng wǒ lāo shànglai!', en: 'Oh no, my toy sword fell off the little bridge into the water! I\'ll make a mark on the bridge! Grandpa, please, please fish it out for me!' },
-  { who: '👴 爷爷', s: '别着急！水会把它冲走，在此做记号可没用，这就是“刻舟求剑”呀。', py: 'Bié zháojí! Shuǐ huì bǎ tā chōng zǒu, zài cǐ zuò jìhao kě méi yòng, zhè jiù shì "kè zhōu qiú jiàn" ya.', en: 'Don\'t worry! The water carries it away, so making a mark right here won\'t help. That\'s just like the idiom "mark the boat to find the sword".' },
-  { who: '👴 爷爷', s: '我用网子帮你捞上来。玩了一上午，我们去休息一会儿吧。', py: 'Wǒ yòng wǎngzi bāng nǐ lāo shànglai. Wánle yí shàngwǔ, wǒmen qù xiūxi yíhuìr ba.', en: 'I\'ll get it out with a net for you. We\'ve played all morning; let\'s go and rest for a bit.' }
+  { who: '👦 弟弟', s: '爷爷，我的玩具剑卡在苹果树上了，求求你帮我拿下来！', py: 'Yéye, wǒ de wánjù jiàn qiǎ zài píngguǒshù shang le, qiúqiu nǐ bāng wǒ ná xiàlai!', en: 'Grandpa, my toy sword is stuck in the apple tree. Please, please get it down for me!' },
+  { who: '👴 爷爷', s: '别着急，我来拿。咦，这棵小树的叶子怎么黄了？', py: 'Bié zháojí, wǒ lái ná. Yí, zhè kē xiǎo shù de yèzi zěnme huáng le?', en: 'Don’t worry, I’ll get it. Hey, why are this little tree’s leaves turning yellow?' },
+  { who: '🧒 我', s: '我每天都来看它，可是忘了给它浇水。', py: 'Wǒ měitiān dōu lái kàn tā, kěshì wàngle gěi tā jiāo shuǐ.', en: 'I come and look at it every day, but I forgot to water it.' },
+  { who: '👴 爷爷', s: '光等待可不行，你得天天给它浇水。', py: 'Guāng děngdài kě bù xíng, nǐ děi tiāntiān gěi tā jiāo shuǐ.', en: 'Just waiting won’t do. You have to water it every day.', pat: true },
+  { who: '🧒 我', s: '要是不浇水，小树会干死的！我赶快去拿水壶。', py: 'Yàoshi bù jiāo shuǐ, xiǎo shù huì gānsǐ de! Wǒ gǎnkuài qù ná shuǐhú.', en: 'If I don’t water it, the little tree will dry up and die! I hurry to get the watering can.' },
+  { who: '👦 弟弟', s: '我也来帮忙！哎呀，我跑得太快，撞到了门框。', py: 'Wǒ yě lái bāngmáng! Āiyā, wǒ pǎo de tài kuài, zhuàngdàole ménkuàng.', en: 'I’ll help too! Ouch, I ran too fast and bumped into the door frame.' },
+  { who: '👴 爷爷', s: '慢点儿跑！浇完水，大家坐下来休息一会儿吧。', py: 'Màn diǎnr pǎo! Jiāo wán shuǐ, dàjiā zuò xiàlai xiūxi yíhuìr ba.', en: 'Slow down! When we’ve finished watering, let’s all sit down and rest a bit.' },
+  { who: '🧒 我', s: '因此我要每天给它浇水，守着它慢慢长大！', py: 'Yīncǐ wǒ yào měitiān gěi tā jiāo shuǐ, shǒuzhe tā mànmàn zhǎngdà!', en: 'So I’ll water it every day and look after it as it grows!' }
 ] };
 
 /* ---------- this lesson's settings: the shared engine (../_engine/chinese-engine.js) reads them ---------- */

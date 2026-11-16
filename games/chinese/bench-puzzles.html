@@ -777,20 +777,20 @@ var CHARS = [
 /* level 1: how each character is built. parts = the pieces (r = which piece is the radical; rest = a piece described in words),
    rad = the radical (部首) with its name, what it usually means, and other characters where you can see it; how = the meaning */
 var PARTS = [
-  { c: '晨', parts: ['日', '辰'], r: 0, rad: '日', name: '日字头', npy: 'rì zì tóu', means: 'the sun.', see: '早 星 是 晚', how: 'The sun (日) over 辰 (chén), which gives the sound: early morning. 早晨 = morning; 清晨 = early morning.' },
-  { c: '椅', parts: ['木', '奇'], r: 0, rad: '木', name: '木字旁', npy: 'mù zì páng', means: 'trees and wood.', see: '林 桥 树 桌', how: 'Wood (木) and 奇 (qí), which helps with the sound: a chair, made of wood. 椅子 = chair.' },
+  { c: '晨', parts: ['日', '辰'], r: 0, rad: '日', name: '日字头', npy: 'rì zì tóu', means: 'the sun.', see: '早 星 是 景', how: 'The sun (日) over 辰 (chén), which gives the sound: early morning. 早晨 = morning; 清晨 = early morning.' },
+  { c: '椅', parts: ['木', '奇'], r: 0, rad: '木', name: '木字旁', npy: 'mù zì páng', means: 'trees and wood.', see: '林 桥 树 村', how: 'Wood (木) and 奇 (qí), which helps with the sound: a chair, made of wood. 椅子 = chair.' },
   { c: '解', parts: ['角', '刀', '牛'], r: 0, rad: '角', name: '角字旁', npy: 'jiǎo zì páng', means: 'the horn of an animal.', see: '触', how: 'A horn (角), a knife (刀) and an ox (牛): long ago, cutting the horn off an ox. Now it means take apart, solve, explain. 解答 = answer.' },
-  { c: '题', parts: ['是', '页'], r: 1, rad: '页', name: '页字旁', npy: 'yè zì páng', means: 'the head.', see: '顶 须 顺 顿', how: '是 (shì), which helps with the sound, and a head (页). Long ago it meant the forehead; now a topic or a question. 问题 = question; 题目 = exercise.' },
-  { c: '相', parts: ['木', '目'], r: 1, rad: '目', name: '目字旁', npy: 'mù zì páng', means: 'the eye.', see: '看 睡 眼 眉', how: 'An eye (目) looking at a tree (木): to look closely. Now 相 often means "each other". 相遇 = meet; 相信 = believe.' },
+  { c: '题', parts: ['是', '页'], r: 1, rad: '页', name: '页字旁', npy: 'yè zì páng', means: 'the head.', see: '顶 顿 领 颜', how: '是 (shì), which helps with the sound, and a head (页). Long ago it meant the forehead; now a topic or a question. 问题 = question; 题目 = exercise.' },
+  { c: '相', parts: ['木', '目'], r: 0, rad: '木', name: '木字旁', npy: 'mù zì páng', means: 'trees and wood.', see: '林 树 校 板', how: 'An eye (目) looking at a tree (木): to look closely. Now 相 often means "each other". 相遇 = meet; 相信 = believe. Also read xiàng: 照相 = take a photo.' },
   { c: '遇', parts: ['禺', '辶'], r: 1, rad: '辶', name: '走之旁', npy: 'zǒu zhī páng', means: 'walking, going.', see: '过 还 进 远', how: 'Walking (辶) and 禺 (yú), which helps with the sound: to come across someone on the way. 相遇 = meet; 遇见 = run into.' },
   { c: '情', parts: ['忄', '青'], r: 0, rad: '忄', name: '竖心旁', npy: 'shù xīn páng', means: 'the heart; feelings.', see: '快 怕 慢 忙', how: 'The heart (忄) and 青 (qīng), which gives the sound: feelings. 心情 = mood; 友情 = friendship.' },
-  { c: '为', parts: ['为'], r: 0, rad: '丶', name: '点', npy: 'diǎn', means: 'a dot.', see: '义 之 主', how: '为 is one whole shape. The old form 為 showed a hand leading an elephant to work: to do. 以为 = think (often wrongly); 认为 = think.' },
+  { c: '为', parts: ['为'], r: 0, rad: '丶', name: '点', npy: 'diǎn', means: 'a dot.', see: '义 之 主', how: '为 is one whole shape. The old form 為 showed a hand leading an elephant to work: to do. 以为 = think (often wrongly); 认为 = think. Also read wèi: 为什么 = why.' },
   { c: '讨', parts: ['讠', '寸'], r: 0, rad: '讠', name: '言字旁', npy: 'yán zì páng', means: 'speaking and words.', see: '说 话 语 读', how: 'Words (讠) and a hand (寸). 讨论 = discuss; 讨厌 = annoying.' },
   { c: '论', parts: ['讠', '仑'], r: 0, rad: '讠', name: '言字旁', npy: 'yán zì páng', means: 'speaking and words.', see: '请 让 记 认', how: 'Words (讠) and 仑 (lún), which gives the sound: talking something over. 讨论 = discuss.' },
-  { c: '度', parts: ['广', ''], rest: 'inside: 廿 and 又 (a hand)', r: 0, rad: '广', name: '广字旁', npy: 'guǎng zì páng', means: 'a building with one open side.', see: '店 床 座 底', how: 'A building (广) with a hand (又) inside. People think that long ago it meant measuring with the hand. 温度 = temperature; 度过 = spend (time).' },
+  { c: '度', parts: ['广', ''], rest: 'inside: 廿 and 又 (a hand)', r: 0, rad: '广', name: '广字旁', npy: 'guǎng zì páng', means: 'a building with one open side.', see: '店 床 座 底', how: 'A building (广) with a hand (又) inside. Some say long ago it meant measuring with the hand. 温度 = temperature; 度过 = spend (time).' },
   { c: '愉', parts: ['忄', '俞'], r: 0, rad: '忄', name: '竖心旁', npy: 'shù xīn páng', means: 'the heart; feelings.', see: '懂 惊 慌 怪', how: 'The heart (忄) and 俞 (yú), which gives the sound: a happy heart. 愉快 = happy, pleasant.' },
   { c: '简', parts: ['⺮', '间'], r: 0, rad: '⺮', name: '竹字头', npy: 'zhú zì tóu', means: 'bamboo.', see: '笔 笑 第 答', how: 'Bamboo (⺮) and 间 (jiān), which gives the sound. Long ago people wrote on strips of bamboo; a strip was a 简. Now it means simple. 简单 = simple.' },
-  { c: '单', parts: ['单'], r: 0, rad: '丷', name: '倒八', npy: 'dào bā', means: 'two dots, like an upside-down 八.', see: '半 并 首 前', how: '单 is one whole shape. It means one, single, or a sheet with a list on it. 简单 = simple; 名单 = list of names.' }
+  { c: '单', parts: ['单'], r: 0, rad: '丷', name: '倒八', npy: 'dào bā', means: 'two dots, like an upside-down 八.', see: '半 关 并 前', how: '单 is one whole shape. It means one, single, or a sheet with a list on it. 简单 = simple; 名单 = list of names.' }
 ];
 /* level 1: each character long ago (public-domain drawings from Wikimedia Commons, Ancient Chinese characters project, in ancient/).
    kind = which old script; rad = when the character itself has no old form, its radical is shown instead (form = the old character drawn);
@@ -800,7 +800,7 @@ var ANCIENT = {
   '椅': { f: 'ancient/6728-oracle.svg', kind: 'oracle', rad: "木", form: '木', pic: "a tree" },
   '解': { f: 'ancient/89e3-oracle.svg', kind: 'oracle', rad: "", form: '解', pic: "two hands pulling a horn off an ox" },
   '题': { f: 'ancient/984c-seal.svg', kind: 'seal', rad: "", form: '題', pic: "" },
-  '相': { f: 'ancient/76ee-oracle.svg', kind: 'oracle', rad: "目", form: '目', pic: "an eye" },
+  '相': { f: 'ancient/6728-oracle.svg', kind: 'oracle', rad: "木", form: '木', pic: "a tree" },
   '遇': { f: 'ancient/8fb5-seal.svg', kind: 'seal', rad: "辶", form: '辵', pic: "walking along a road" },
   '情': { f: 'ancient/5fc3-oracle.svg', kind: 'oracle', rad: "忄", form: '心', pic: "a heart" },
   '为': { f: 'ancient/70ba-oracle.svg', kind: 'oracle', rad: "", form: '為', pic: "a hand leading an elephant" },
@@ -852,32 +852,32 @@ var PATTERN = [
 ];
 /* level 4: our own letter to a cousin about puzzle mornings in the park, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的表姐：" */
 var SENTENCES = [
-  { s: '每天＿，我和奶奶都去公园散步。', a: '清晨', no: ['名单', '讨厌'], en: 'Every morning, Grandma and I go for a walk in the park.' },
-  { s: '今天的＿不高不低，坐在外面很舒服。', a: '温度', no: ['名单', '题目'], en: 'Today it was not too hot and not too cold, so it was nice to sit outside.' },
-  { s: '我们常常坐在湖边的＿上看书。', a: '椅子', no: ['问题', '心情'], en: 'We often sit on a bench by the lake and read.' },
-  { s: '我带了一本谜题书，里面的＿都很有意思。', a: '题目', no: ['温度', '椅子'], en: 'I took a puzzle book, and all the puzzles in it are really fun.' },
+  { s: '今天＿，我和奶奶去公园散步。', a: '清晨', no: ['名单', '讨厌'], en: 'Early this morning, Grandma and I went for a walk in the park.' },
   { s: '在公园里，我＿了一个同学。', a: '遇见', no: ['温度', '简单'], en: 'In the park I ran into a classmate.' },
-  { s: '同学说，我们在这儿＿，真是太巧了。', a: '相遇', no: ['讨厌', '名单'], en: 'My classmate said it was such a nice surprise to meet here.' },
+  { s: '同学说，我们又在这儿＿，真是太巧了。', a: '相遇', no: ['讨厌', '名单'], en: 'My classmate said it was such a nice surprise to meet here again.' },
+  { s: '我带了一本谜题书。我以前＿谜题很难，其实很有意思。', a: '以为', no: ['椅子', '温度'], en: 'I took a puzzle book. I used to think puzzles were hard, but they are really fun.' },
+  { s: '书里的＿都很好玩。', a: '题目', no: ['温度', '椅子'], en: 'All the puzzles in the book are fun.' },
   { s: '第一道题很＿，我们一下子就做出来了。', a: '简单', no: ['温度', '名单'], en: 'The first puzzle was easy; we got it right away.' },
-  { s: '我们一起＿怎么解下一道题。', a: '讨论', no: ['相信', '度过'], en: 'We talked together about how to solve the next puzzle.' },
-  { s: '那道题很难，我和同学想了很久才＿出来。', a: '解答', no: ['温度', '清晨'], en: 'That puzzle was hard; my classmate and I thought for a long time before we worked it out.' },
-  { s: '原来是这样！我以前＿数学很难。', a: '以为', no: ['椅子', '温度'], en: 'So that\'s how it works! I used to think math was hard.' },
+  { s: '下一道难一点儿，我们一起＿怎么解。', a: '讨论', no: ['相信', '度过'], en: 'The next one was a bit harder, so we talked together about how to solve it.' },
+  { s: '今天的＿不高不低，坐在外面很舒服。', a: '温度', no: ['名单', '题目'], en: 'It was not too hot and not too cold today, so it was nice to sit outside.' },
+  { s: '我们就坐在公园的＿上一起想。', a: '椅子', no: ['问题', '心情'], en: 'So we sat on a bench in the park and thought about it together.' },
+  { s: '那道题很难，我们想了很久才＿出来。', a: '解答', no: ['温度', '清晨'], en: 'That puzzle was hard; we thought for a long time before we worked it out.' },
   { s: '如果你有不会的＿，也可以来问我们！', a: '问题', no: ['清晨', '椅子'], en: 'If there is a question you can\'t do, you can ask us too!' },
-  { s: '我们在公园＿了一个愉快的上午。', a: '度过', no: ['相信', '名单'], en: 'We spent a happy morning in the park.' },
-  { s: '和奶奶、同学一起解题，真是一件＿的事。', a: '愉快', no: ['名单', '椅子'], en: 'Solving puzzles with Grandma and my classmate is such a happy thing to do.' },
-  { s: '今天我的＿特别好。表姐，你什么时候来和我们一起玩？', a: '心情', no: ['相信', '度过'], en: 'I\'m in a really good mood today. When will you come and play with us?' }
+  { s: '我们在公园＿了一个开心的上午。', a: '度过', no: ['相信', '名单'], en: 'We spent a fun morning in the park.' },
+  { s: '和同学一起解题，真是一件＿的事。', a: '愉快', no: ['名单', '椅子'], en: 'Solving puzzles with my classmate is such a happy thing to do.' },
+  { s: '今天我的＿特别好。表姐，明天早晨你也来和我们一起玩吧！', a: '心情', no: ['相信', '度过'], en: 'I\'m in a really good mood today. Come and play with us tomorrow morning!' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
    s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '公园里的谜题', en: 'Puzzles in the park', lines: [
-  { who: '👵 奶奶', s: '早晨的公园真安静，温度也正好。我们坐这把长椅吧！', py: 'Zǎochén de gōngyuán zhēn ānjìng, wēndù yě zhènghǎo. Wǒmen zuò zhè bǎ chángyǐ ba!', en: 'The park is so quiet in the morning, and it\'s just the right temperature. Let\'s sit on this bench!' },
-  { who: '🧒 我', s: '奶奶，我带了一本谜题书，我们来解题吧！', py: 'Nǎinai, wǒ dàile yì běn mítí shū, wǒmen lái jiětí ba!', en: 'Grandma, I brought a puzzle book. Let\'s solve some puzzles!' },
-  { who: '👧 同学', s: '真巧，我们又在这儿相遇了！我也要玩。', py: 'Zhēn qiǎo, wǒmen yòu zài zhèr xiāngyù le! Wǒ yě yào wán.', en: 'What luck, we\'ve met here again! I want to play too.' },
+  { who: '👧 同学', s: '嘿，真巧，我们又在公园相遇了！你在看什么书？', py: 'Hēi, zhēn qiǎo, wǒmen yòu zài gōngyuán xiāngyù le! Nǐ zài kàn shénme shū?', en: 'Hey, what luck, we\'ve met in the park again! What are you reading?' },
+  { who: '🧒 我', s: '一本谜题书。我以为谜题很难，没想到这么有意思！', py: 'Yì běn mítí shū. Wǒ yǐwéi mítí hěn nán, méi xiǎngdào zhème yǒu yìsi!', en: 'A puzzle book. I thought puzzles were hard, but they\'re so much fun!' },
   { who: '🧒 我', s: '第一道题很简单：一只鸡有两条腿，三只鸡有几条腿？', py: 'Dì yī dào tí hěn jiǎndān: yì zhī jī yǒu liǎng tiáo tuǐ, sān zhī jī yǒu jǐ tiáo tuǐ?', en: 'The first puzzle is easy: one chicken has two legs, so how many legs do three chickens have?' },
-  { who: '👧 同学', s: '六条！我们来讨论一道难一点儿的吧。', py: 'Liù tiáo! Wǒmen lái tǎolùn yí dào nán yìdiǎnr de ba.', en: 'Six! Let\'s talk about a harder one.' },
-  { who: '👵 奶奶', s: '你们俩一讨论问题就停不下来！', py: 'Nǐmen liǎ yì tǎolùn wèntí jiù tíng bu xiàlái!', en: 'As soon as you two start talking about a problem, you can\'t stop!', pat: true },
-  { who: '🧒 我', s: '我以前以为数学很难，现在觉得太有意思了。', py: 'Wǒ yǐqián yǐwéi shùxué hěn nán, xiànzài juéde tài yǒu yìsi le.', en: 'I used to think math was hard. Now I think it\'s so much fun.' },
-  { who: '🧒 我', s: '今天早晨过得真愉快，我的心情特别好！', py: 'Jīntiān zǎochén guò de zhēn yúkuài, wǒ de xīnqíng tèbié hǎo!', en: 'This morning has been so much fun. I\'m in a really good mood!' }
+  { who: '👧 同学', s: '六条！下一道难一点儿，我们一起讨论吧。', py: 'Liù tiáo! Xià yí dào nán yìdiǎnr, wǒmen yìqǐ tǎolùn ba.', en: 'Six! The next one is a bit harder. Let\'s talk it over together.' },
+  { who: '👵 奶奶', s: '你们俩一讨论起来就停不下来！', py: 'Nǐmen liǎ yì tǎolùn qǐlai jiù tíng bu xiàlai!', en: 'As soon as you two start talking it over, you can\'t stop!', pat: true },
+  { who: '👵 奶奶', s: '今天温度正好，我们坐到那把长椅上慢慢想吧。', py: 'Jīntiān wēndù zhènghǎo, wǒmen zuòdào nà bǎ chángyǐ shang mànmàn xiǎng ba.', en: 'It\'s just the right temperature today. Let\'s sit on that bench and think it through.' },
+  { who: '👧 同学', s: '明天早晨我还来，我们再比一比！', py: 'Míngtiān zǎochén wǒ hái lái, wǒmen zài bǐ yi bǐ!', en: 'I\'ll come again tomorrow morning, and we can have another contest!' },
+  { who: '🧒 我', s: '好啊！跟你一起解题，我的心情特别愉快！', py: 'Hǎo a! Gēn nǐ yìqǐ jiětí, wǒ de xīnqíng tèbié yúkuài!', en: 'Sure! Solving puzzles with you puts me in such a happy mood!' }
 ] };
 
 /* ---------- this lesson's settings: the shared engine (../_engine/chinese-engine.js) reads them ---------- */

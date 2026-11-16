@@ -777,18 +777,18 @@ var CHARS = [
 /* level 1: how each character is built. parts = the pieces (r = which piece is the radical; rest = a piece described in words),
    rad = the radical (部首) with its name, what it usually means, and other characters where you can see it; how = the meaning */
 var PARTS = [
-  { c: '称', parts: ['禾', '尔'], r: 0, rad: '禾', name: '禾木旁', npy: 'hé mù páng', means: 'grain plants.', see: '秋 种 秒 租', how: 'Grain (禾) and 尔. The old form was 稱, which meant to weigh. 称一称 = weigh it; 称赞 = praise.' },
-  { c: '象', parts: ['象'], r: 0, rad: '豕', name: '豕字', npy: 'shǐ zì', means: 'a pig.', see: '豚 豪 豫', how: '象 is one whole shape. Long ago it was a drawing of an elephant, with a long trunk, a big body and legs. 大象 = elephant.' },
+  { c: '称', parts: ['禾', '尔'], r: 0, rad: '禾', name: '禾木旁', npy: 'hé mù páng', means: 'grain plants.', see: '秋 种 秒 租', how: 'Grain (禾) and 尔. The old form was 稱, which meant to weigh. 称一称 = weigh it; 称赞 = praise. Also read chèn: 对称 = symmetrical.' },
+  { c: '象', parts: ['象'], r: 0, rad: '豕', name: '豕字', npy: 'shǐ zì', means: 'a pig.', see: '豪 豫', how: '象 is one whole shape. Long ago it was a drawing of an elephant, with a long trunk, a big body and legs. 大象 = elephant.' },
   { c: '官', parts: ['宀', ''], rest: 'below: 㠯 (two boxes joined)', r: 0, rad: '宀', name: '宝盖头', npy: 'bǎo gài tóu', means: 'a roof. It is in characters about houses.', see: '家 字 安 室', how: 'A roof (宀) over a big building. Long ago it meant the hall where officials worked. 官员 = official; 大官 = high official.' },
   { c: '墙', parts: ['土', '啬'], r: 0, rad: '土', name: '提土旁', npy: 'tí tǔ páng', means: 'earth, soil.', see: '地 场 城 块', how: 'Earth (土) and 啬 (sè). Long ago walls were built of earth. 一面墙 = a wall; 墙上 = on the wall.' },
   { c: '腿', parts: ['月', '退'], r: 0, rad: '月', name: '月字旁', npy: 'yuè zì páng', means: 'the body. This 月 comes from 肉 (meat).', see: '脚 脸 胖 肚', how: 'The body (月) and 退 (tuì), which gives the sound: a leg. 大腿 = thigh; 小腿 = lower leg.' },
-  { c: '重', parts: ['重'], r: 0, rad: '里', name: '里字', npy: 'lǐ zì', means: 'a village; inside.', see: '野 量 厘', how: '重 is one whole shape. Long ago it showed a person carrying a heavy bag. 重 zhòng = heavy; 重量 = weight; 重要 = important.' },
-  { c: '秤', parts: ['禾', '平'], r: 0, rad: '禾', name: '禾木旁', npy: 'hé mù páng', means: 'grain plants.', see: '科 稻 秧 秀', how: 'Grain (禾) and 平 (píng, level). Memory trick: a scale weighs grain until it hangs level. 电子秤 = electronic scale.' },
-  { c: '杀', parts: ['乂', '木'], r: 1, rad: '木', name: '木字底', npy: 'mù zì dǐ', means: 'a tree, wood.', see: '条 果 李 呆', how: '乂 (a cross) over 木. 杀 means to kill. 杀虫 = kill pests.' },
-  { c: '切', parts: ['七', '刀'], r: 1, rad: '刀', name: '刀字旁', npy: 'dāo zì páng', means: 'a knife.', see: '分 初 剪 劈', how: '七 (qī), which helps with the sound, and a knife (刀): to cut. 切菜 = chop vegetables; 切开 = cut open.' },
+  { c: '重', parts: ['重'], r: 0, rad: '里', name: '里字', npy: 'lǐ zì', means: 'a village; inside.', see: '野', how: '重 is one whole shape. Long ago it showed a person carrying a heavy bag. 重 zhòng = heavy; 重量 = weight; 重要 = important. Also read chóng: 重新 = again.' },
+  { c: '秤', parts: ['禾', '平'], r: 0, rad: '禾', name: '禾木旁', npy: 'hé mù páng', means: 'grain plants.', see: '科 稻 秧 秀', how: 'Grain (禾) and 平 (píng, level). A trick: a scale weighs grain until it hangs level. 电子秤 = electronic scale.' },
+  { c: '杀', parts: ['乂', '木'], r: 1, rad: '木', name: '木字底', npy: 'mù zì dǐ', means: 'a tree, wood.', see: '果 杂 架 桌', how: '乂 (a cross) over 木. 杀 means to kill. 杀虫 = kill pests.' },
+  { c: '切', parts: ['七', '刀'], r: 1, rad: '刀', name: '刀字旁', npy: 'dāo zì páng', means: 'a knife.', see: '刃 剪 劈 券', how: '七 (qī), which helps with the sound, and a knife (刀): to cut. 切菜 = chop vegetables; 切开 = cut open. Also read qiè: 一切 = everything.' },
   { c: '摇', parts: ['扌', '䍃'], r: 0, rad: '扌', name: '提手旁', npy: 'tí shǒu páng', means: 'the hand.', see: '打 拍 找 推', how: 'A hand (扌) and 䍃 (yáo), which gives the sound: to shake or wave. 摇头 = shake your head.' },
   { c: '主', parts: ['主'], r: 0, rad: '丶', name: '点', npy: 'diǎn', means: 'a dot.', see: '义 之 丸', how: '主 is one whole shape. Long ago it was a lamp, and the dot on top was its flame. 主人 = owner, host; 主意 = idea.' },
-  { c: '沉', parts: ['氵', ''], rest: 'right: a part like 冗 (long ago it was 冘, which gave the sound)', r: 0, rad: '氵', name: '三点水', npy: 'sān diǎn shuǐ', means: 'water.', see: '河 湖 洗 游', how: 'Water (氵) and a part that once gave the sound: going down into the water. 下沉 = sink.' },
+  { c: '沉', parts: ['氵', ''], rest: 'right: a part like 冗 (long ago it was 冘, which gave the sound)', r: 0, rad: '氵', name: '三点水', npy: 'sān diǎn shuǐ', means: 'water.', see: '河 湖 洗 游', how: 'Water (氵) and a part that once gave the sound: going down into the water. 下沉 = sink; 好沉 = so heavy.' },
   { c: '赞', parts: ['', '贝'], rest: 'top: 兟 (two 先, xiān)', r: 1, rad: '贝', name: '贝字底', npy: 'bèi zì dǐ', means: 'a shell. Long ago shells were money.', see: '贵 货 资 费', how: 'Two 先 (xiān) over a shell (贝). It means to praise. 称赞 = praise; 赞美 = admire.' }
 ];
 /* level 1: each character long ago (public-domain drawings from Wikimedia Commons, Ancient Chinese characters project, in ancient/).
@@ -838,42 +838,39 @@ var MORE_WORDS = {
    pick = the right sentence (a = right, no = wrong ones), build = tap the words in order (ok = every right order) */
 var PATTERN = [
   { t: 'show', shape: '称赞……是……', keys: ['称赞', '是'], end: '。', ask: 'Where do 称赞 and 是 go? Pick the right sentence.',
-    what: '称赞 means "praise". First say who praises, then 称赞 and who is praised, then 是 and what they are: 同学们都称赞她是个好老师 = the students all praise her as a good teacher.',
-    ex: [{ s: '同学们都称赞她是个好老师。', en: 'The students all praise her as a good teacher.' }, { s: '妈妈称赞弟弟是个勇敢的孩子。', en: 'Mom praised my little brother as a brave boy.' }, { s: '爷爷称赞我是他的好帮手。', en: 'Grandpa praises me as his good helper.' }] },
+    what: '称赞 means "praise". First say who praises, then 称赞 and who or what is praised, then 是 and what they are: 爷爷称赞我是他的好帮手 = Grandpa praises me as his good helper.',
+    ex: [{ s: '爷爷称赞我是他的好帮手。', en: 'Grandpa praises me as his good helper.' }, { s: '小朋友们称赞这本书是今年最有趣的一本。', en: 'The children praised this book as the most fun one this year.' }, { s: '妈妈称赞弟弟是全家起得最早的人。', en: 'Mom praised my little brother as the earliest riser in the family.' }] },
   { t: 'pick', from: '奶奶说：“你是个小画家。”', a: '奶奶称赞我是个小画家。', no: ['奶奶是我称赞个小画家。', '奶奶称赞是我个小画家。'], en: 'Grandma praised me as a little artist.' },
-  { t: 'build', tiles: ['邻居们', '都称赞', '哥哥', '是个', '热心人'], ok: ['邻居们都称赞哥哥是个热心人。'], en: 'The neighbors all praise my big brother as a kind, helpful person.' },
-  { t: 'pick', from: '老师说：“他是个爱读书的孩子。”', a: '老师称赞他是个爱读书的孩子。', no: ['老师是他称赞个爱读书的孩子。', '老师称赞他个爱读书的孩子是。'], en: 'The teacher praised him as a child who loves reading.' },
+  { t: 'build', tiles: ['邻居们', '称赞', '哥哥', '是个', '热心人'], ok: ['邻居们称赞哥哥是个热心人。'], en: 'The neighbors praise my big brother as a kind, helpful person.' },
+  { t: 'pick', from: '老师说：“你的字是全班写得最好的。”', a: '老师称赞我的字是全班写得最好的。', no: ['老师是我的字称赞全班写得最好的。', '老师称赞我的字全班写得最好的是。'], en: 'The teacher praised my handwriting as the best in the class.' },
   { t: 'build', tiles: ['客人们', '称赞', '妈妈', '是个', '做菜高手'], ok: ['客人们称赞妈妈是个做菜高手。'], en: 'The guests praised Mom as a great cook.' },
   { t: 'build', tiles: ['教练', '称赞', '他', '是个', '好队长'], ok: ['教练称赞他是个好队长。'], en: 'The coach praised him as a good team captain.' }
 ];
 /* level 4: our own letter to Grandma about seeing a baby elephant weighed at the zoo, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的奶奶：" */
 var SENTENCES = [
   { s: '星期天，我们去动物园看＿。', a: '大象', no: ['主意', '称赞'], en: 'On Sunday we went to the zoo to see the elephants.' },
-  { s: '饲养员叔叔说，今天要给小象＿。', a: '称重', no: ['墙上', '下沉'], en: 'The zookeeper said they were going to weigh the baby elephant today.' },
-  { s: '小象走到一个很大的＿上，一动也不动。', a: '电子秤', no: ['主人', '官员'], en: 'The baby elephant walked onto a huge electronic scale and stood very still.' },
-  { s: '它的＿有好几百公斤呢！', a: '重量', no: ['摇头', '切菜'], en: 'It weighed several hundred kilograms!' },
-  { s: '小象抬起一条＿，好像在跟我们打招呼。', a: '前腿', no: ['墙上', '主意'], en: 'The baby elephant lifted a front leg, as if it was saying hello to us.' },
-  { s: '动物园的＿画着很多大象。', a: '墙上', no: ['重要', '称赞'], en: 'There were lots of elephants painted on the walls of the zoo.' },
-  { s: '饲养员把西瓜＿，一块一块地喂小象。', a: '切开', no: ['称赞', '官员'], en: 'The zookeeper cut a watermelon open and fed it to the baby elephant piece by piece.' },
-  { s: '在动物园里，爸爸给我讲了曹冲＿的故事。', a: '称象', no: ['墙上', '重量'], en: 'At the zoo, Dad told me the story of Cao Chong weighing the elephant.' },
-  { s: '很久以前，曹冲的爸爸是个＿。', a: '大官', no: ['电子秤', '下沉'], en: 'Long ago, Cao Chong\'s father was a high official.' },
-  { s: '那时候，人们都＿这个孩子很聪明。', a: '称赞', no: ['切开', '下沉'], en: 'Back then, people all praised this boy for being so clever.' },
-  { s: '饲养员叔叔问我累不累，我笑着＿，说我不累。', a: '摇头', no: ['电子秤', '官员'], en: 'The zookeeper asked if I was tired. I smiled, shook my head and said I was not tired.' },
-  { s: '回到家，我想出了一个好＿：自己也来试一试。', a: '主意', no: ['墙上', '重量'], en: 'At home I came up with a good idea: to try it myself.' },
-  { s: '我把玩具放进小船，船就慢慢＿了一点儿。', a: '下沉', no: ['摇头', '称赞'], en: 'I put some toys in a little boat, and it slowly sank down a bit.' },
-  { s: '妈妈说，多动脑筋很＿。奶奶，您说对吗？', a: '重要', no: ['下沉', '前腿'], en: 'Mom says using your brain is important. Grandma, don\'t you think so?' }
+  { s: '爸爸在动物园的＿上看到，那天要给小象称重。', a: '官网', no: ['主人', '切菜'], en: 'Dad saw on the zoo\'s website that they were weighing the baby elephant that day.' },
+  { s: '饲养员叔叔先把西瓜＿，给小象当奖励。', a: '切开', no: ['称赞', '官员'], en: 'First the zookeeper cut open a watermelon as a treat for the baby elephant.' },
+  { s: '小象吃的水果要洗干净，不能有＿药。', a: '杀虫', no: ['摇头', '墙上'], en: 'The baby elephant\'s fruit has to be washed clean, with no bug spray on it.' },
+  { s: '小象摇着尾巴，走上了墙边的＿。', a: '电子秤', no: ['主人', '官员'], en: 'The baby elephant swished its tail and stepped onto the electronic scale by the wall.' },
+  { s: '饲养员说，小象的＿比我的腰还粗！', a: '前腿', no: ['墙上', '主意'], en: 'The zookeeper said the baby elephant\'s front leg is thicker than my waist!' },
+  { s: '小象的＿有三百多公斤呢！', a: '体重', no: ['摇头', '切菜'], en: 'The baby elephant weighs over 300 kilograms!' },
+  { s: '爸爸说，常常给小象称体重很＿。', a: '重要', no: ['下沉', '前腿'], en: 'Dad says it is important to weigh the baby elephant often.' },
+  { s: '游客们常常＿小象是这里最可爱的明星。', a: '称赞', no: ['切开', '下沉'], en: 'Visitors often praise the baby elephant as the cutest star here.' },
+  { s: '奶奶，我想出了一个好＿：回家也给我们的小狗称一称！', a: '主意', no: ['墙上', '重量'], en: 'Grandma, I came up with a good idea: to weigh our puppy at home too!' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
    s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '动物园称小象', en: 'Weighing a baby elephant at the zoo', lines: [
-  { who: '🧑‍🌾 饲养员', s: '今天我们要给小象称一称，看看它有多重。', py: 'Jīntiān wǒmen yào gěi xiǎoxiàng chēng yi chēng, kànkan tā yǒu duō zhòng.', en: 'Today we\'re going to weigh the baby elephant and see how heavy it is.' },
-  { who: '🧒 我', s: '哇，墙边的这个秤好大！小象站上去，一动也不动。', py: 'Wā, qiáng biān de zhège chèng hǎo dà! Xiǎoxiàng zhàn shangqu, yí dòng yě bú dòng.', en: 'Wow, the scale by the wall is huge! The baby elephant steps onto it and stands very still.' },
-  { who: '🧑‍🌾 饲养员', s: '你看它的四条腿，又粗又壮。称完了，我们就把西瓜切开喂它。', py: 'Nǐ kàn tā de sì tiáo tuǐ, yòu cū yòu zhuàng. Chēngwánle, wǒmen jiù bǎ xīguā qiēkāi wèi tā.', en: 'Look at its four legs, so thick and strong. When it\'s weighed, we\'ll cut open a watermelon for it.' },
-  { who: '👨 爸爸', s: '很久以前，大官曹操也想给一头大象称一称，可是没有这样的秤。', py: 'Hěn jiǔ yǐqián, dàguān Cáo Cāo yě xiǎng gěi yì tóu dàxiàng chēng yi chēng, kěshì méiyǒu zhèyàng de chèng.', en: 'Long ago, a high official called Cao Cao wanted to weigh an elephant too, but there was no scale like this.' },
-  { who: '👨 爸爸', s: '有人说要把大象杀了再称，曹操连连摇头：不行！', py: 'Yǒu rén shuō yào bǎ dàxiàng shāle zài chēng, Cáo Cāo liánlián yáotóu: bùxíng!', en: 'Someone said to kill the elephant first and then weigh it. Cao Cao kept shaking his head: no way!' },
-  { who: '🧒 我', s: '我知道！曹冲出了个好主意：让大象上船，在船沉下去的地方画一条线。', py: 'Wǒ zhīdào! Cáo Chōng chūle ge hǎo zhǔyi: ràng dàxiàng shàng chuán, zài chuán chén xiàqu de dìfang huà yì tiáo xiàn.', en: 'I know! Cao Chong had a great idea: put the elephant on a boat and draw a line where the boat sank down to.' },
-  { who: '🧒 我', s: '再换上石头，等船沉到那条线，称一称石头就行了。', py: 'Zài huànshang shítou, děng chuán chéndào nà tiáo xiàn, chēng yi chēng shítou jiù xíng le.', en: 'Then swap in stones until the boat sinks to that line, and just weigh the stones.' },
-  { who: '👨 爸爸', s: '连饲养员叔叔都称赞你是个讲故事的小能手呢！', py: 'Lián sìyǎngyuán shūshu dōu chēngzàn nǐ shì ge jiǎng gùshi de xiǎo néngshǒu ne!', en: 'Even the zookeeper praised you as a great little storyteller!', pat: true }
+  { who: '👨 爸爸', s: '动物园的官网上说，今天上午要给小象称体重。', py: 'Dòngwùyuán de guānwǎng shang shuō, jīntiān shàngwǔ yào gěi xiǎoxiàng chēng tǐzhòng.', en: 'The zoo\'s website says they\'re weighing the baby elephant this morning.' },
+  { who: '🧑‍🌾 饲养员', s: '我先把西瓜切开，等一会儿给小象当奖励。', py: 'Wǒ xiān bǎ xīguā qiēkāi, děng yíhuìr gěi xiǎoxiàng dāng jiǎnglì.', en: 'I\'ll cut the watermelon open first, as a treat for the baby elephant later.' },
+  { who: '🧒 我', s: '这块西瓜好沉啊！小象一口就能吃掉吗？', py: 'Zhè kuài xīguā hǎo chén a! Xiǎoxiàng yì kǒu jiù néng chīdiào ma?', en: 'This piece of watermelon is so heavy! Can the baby elephant eat it in one bite?' },
+  { who: '🧑‍🌾 饲养员', s: '能！它吃的水果都要洗干净，不能有杀虫药。', py: 'Néng! Tā chī de shuǐguǒ dōu yào xǐ gānjìng, bù néng yǒu shāchóngyào.', en: 'Yes! Its fruit is always washed clean, with no bug spray on it.' },
+  { who: '🧒 我', s: '快看！小象摇着尾巴，走上了墙边的电子秤。', py: 'Kuài kàn! Xiǎoxiàng yáozhe wěiba, zǒushangle qiáng biān de diànzǐchèng.', en: 'Look! The baby elephant is swishing its tail and stepping onto the electronic scale by the wall.' },
+  { who: '🧑‍🌾 饲养员', s: '它的前腿比你的腰还粗！它有三百多公斤重呢。', py: 'Tā de qiántuǐ bǐ nǐ de yāo hái cū! Tā yǒu sānbǎi duō gōngjīn zhòng ne.', en: 'Its front leg is thicker than your waist! It weighs over 300 kilograms.' },
+  { who: '👨 爸爸', s: '常常给小象称体重很重要，这样就知道它长得好不好。', py: 'Chángcháng gěi xiǎoxiàng chēng tǐzhòng hěn zhòngyào, zhèyàng jiù zhīdào tā zhǎng de hǎo bu hǎo.', en: 'Weighing the baby elephant often is important. That way they know if it\'s growing well.' },
+  { who: '🧑‍🌾 饲养员', s: '游客们常常称赞小象是这里最可爱的明星。', py: 'Yóukèmen chángcháng chēngzàn xiǎoxiàng shì zhèlǐ zuì kě\'ài de míngxīng.', en: 'Visitors often praise the baby elephant as the cutest star here.', pat: true },
+  { who: '🧒 我', s: '我有个好主意：回家也给我们的小狗称一称！', py: 'Wǒ yǒu ge hǎo zhǔyi: huí jiā yě gěi wǒmen de xiǎogǒu chēng yi chēng!', en: 'I have a good idea: let\'s weigh our puppy at home too!' }
 ] };
 
 /* ---------- this lesson's settings: the shared engine (../_engine/chinese-engine.js) reads them ---------- */
@@ -884,7 +881,7 @@ var LESSON = {
   levels: [
     { title: 'Meet the characters', zh: '认生字', text: 'Meet 13 new characters, then find each one among the elephant cards.' },
     { title: 'Build the words', zh: '组词', text: 'Each word is missing one character. Pick the right elephant card.' },
-    { title: 'Sentence pattern', zh: '句型 称赞……是……', text: 'Learn to praise someone with 称赞……是……, as in 同学们都称赞她是个好老师 (the students all praise her as a good teacher). Pick the right sentence, then build your own from word tiles.' },
+    { title: 'Sentence pattern', zh: '句型 称赞……是……', text: 'Learn to praise someone with 称赞……是……, as in 爷爷称赞我是他的好帮手 (Grandpa praises me as his good helper). Pick the right sentence, then build your own from word tiles.' },
     { title: 'Write the letter', zh: '写信', text: 'Finish our letter to Grandma about the baby elephant at the zoo: pick the missing word in each sentence, then send it.' },
     { title: 'Elephant Bingo', zh: '大象 Bingo', text: 'Listen, then mark what you hear on your card. Make a line, then two lines, then fill the card.' }
   ],

@@ -777,19 +777,19 @@ var CHARS = [
 /* level 1: how each character is built. parts = the pieces (r = which piece is the radical; rest = a piece described in words),
    rad = the radical (部首) with its name, what it usually means, and other characters where you can see it; how = the meaning */
 var PARTS = [
-  { c: '慈', parts: ['兹', '心'], r: 1, rad: '心', name: '心字底', npy: 'xīn zì dǐ', means: 'the heart. It is in characters about feelings and thinking.', see: '想 思 念 意', how: '兹 (zī), which helps with the sound, over the heart (心): a loving, kind heart. 慈母 = loving mother.' },
+  { c: '慈', parts: ['兹', '心'], r: 1, rad: '心', name: '心字底', npy: 'xīn zì dǐ', means: 'the heart. It is in characters about feelings and thinking.', see: '想 念 您 忘 感', how: '兹 (zī), which helps with the sound, over the heart (心): a loving, kind heart. 慈母 = loving mother.' },
   { c: '线', parts: ['纟', '戋'], r: 0, rad: '纟', name: '绞丝旁', npy: 'jiǎo sī páng', means: 'silk and thread.', see: '红 绿 纸 结 练', how: 'Thread (纟) and 戋, which helps with the sound: a thread. 毛线 = wool; 针线 = needle and thread.' },
   { c: '临', parts: ['临'], r: 0, rad: '丨', name: '竖', npy: 'shù', means: 'a down stroke. As a radical it does not add a meaning.', see: '中 串', how: '临 is one whole shape. The old form 臨 showed a person looking down at things: to come close to. 临走 = just before leaving.' },
   { c: '密', parts: ['宀', '必', '山'], r: 0, rad: '宀', name: '宝盖头', npy: 'bǎo gài tóu', means: 'a roof. It is in characters about houses.', see: '家 字 安 室 守', how: 'A roof (宀), 必 (bì) and a mountain (山). Long ago it was a mountain shaped like a house; later it came to mean close together, thick. 密密地缝 = sew with small, close stitches; 秘密 = secret.' },
   { c: '缝', parts: ['纟', '逢'], r: 0, rad: '纟', name: '绞丝旁', npy: 'jiǎo sī páng', means: 'silk and thread.', see: '红 绿 纸 结 练', how: 'Thread (纟) and 逢 (féng), which gives the sound: to sew. 缝衣服 = sew clothes.' },
-  { c: '恐', parts: ['巩', '心'], r: 1, rad: '心', name: '心字底', npy: 'xīn zì dǐ', means: 'the heart. It is in characters about feelings and thinking.', see: '想 思 念 意', how: '巩 (gǒng), which helps with the sound, over the heart (心): fear. 恐怕 = I\'m afraid that…' },
+  { c: '恐', parts: ['巩', '心'], r: 1, rad: '心', name: '心字底', npy: 'xīn zì dǐ', means: 'the heart. It is in characters about feelings and thinking.', see: '想 念 您 忘 感', how: '巩 (gǒng), which helps with the sound, over the heart (心): fear. 恐怕 = I\'m afraid that…' },
   { c: '迟', parts: ['辶', '尺'], r: 0, rad: '辶', name: '走之底', npy: 'zǒu zhī dǐ', means: 'walking or going somewhere.', see: '这 过 还 远 送', how: 'Going (辶) and 尺 (chǐ), which helps with the sound: slow, late. 迟到 = be late.' },
   { c: '归', parts: ['丨', '彐'], r: 1, rad: '彐', name: '横山', npy: 'héng shān', means: 'a hand. As a radical it often just marks the shape.', see: '寻 录', how: 'The old form 歸 showed a bride going to her new home. Now it means "go back, return". 回归 = return; 归还 = give back.' },
-  { c: '寸', parts: ['寸'], r: 0, rad: '寸', name: '寸字旁', npy: 'cùn zì páng', means: 'a hand; a short length.', see: '对 封 射 寺', how: '寸 is one whole shape: a hand with a dot just below the wrist, where you feel your pulse, a short distance. 一寸 = about three centimeters; 寸草 = a short blade of grass.' },
+  { c: '寸', parts: ['寸'], r: 0, rad: '寸', name: '寸字', npy: 'cùn zì', means: 'a hand; a short length.', see: '封 尊', how: '寸 is one whole shape: a hand with a dot just below the wrist, where you feel your pulse, a short distance. 一寸 = about three centimeters; 寸草 = a short blade of grass.' },
   { c: '绝', parts: ['纟', ''], rest: 'right: a part like 色', r: 0, rad: '纟', name: '绞丝旁', npy: 'jiǎo sī páng', means: 'silk and thread.', see: '红 绿 纸 结 练', how: 'Thread (纟) and a part like 色: long ago, cutting a thread. So it means "cut off" or "completely". 拒绝 = refuse; 鸟飞绝 = not a single bird flying.' },
-  { c: '灭', parts: ['一', '火'], r: 1, rad: '火', name: '火字底', npy: 'huǒ zì dǐ', means: 'fire.', see: '灾 灰 炎', how: 'A cover (一) over fire (火): the fire goes out. 灭火 = put out a fire.' },
-  { c: '翁', parts: ['公', '羽'], r: 1, rad: '羽', name: '羽字底', npy: 'yǔ zì dǐ', means: 'feathers.', see: '翅 翻', how: '公 (gōng), which helps with the sound, over feathers (羽). Long ago it meant the feathers on a bird\'s neck; now it means an old man. 老翁 = old man.' },
-  { c: '独', parts: ['犭', '虫'], r: 0, rad: '犭', name: '反犬旁', npy: 'fǎn quǎn páng', means: 'a dog or another animal.', see: '狗 猫 猜 狼 猴', how: 'An animal (犭) and 虫. Memory trick: some animals like to live on their own. 独自 = alone; 单独 = on your own.' },
+  { c: '灭', parts: ['一', '火'], r: 1, rad: '火', name: '火字底', npy: 'huǒ zì dǐ', means: 'fire.', see: '炎 灯 炒 烧 烤', how: 'A cover (一) over fire (火): the fire goes out. 灭火 = put out a fire.' },
+  { c: '翁', parts: ['公', '羽'], r: 1, rad: '羽', name: '羽字底', npy: 'yǔ zì dǐ', means: 'feathers.', see: '翻 翠 翼 羽', how: '公 (gōng), which helps with the sound, over feathers (羽). Long ago it meant the feathers on a bird\'s neck; now it means an old man. 老翁 = old man.' },
+  { c: '独', parts: ['犭', '虫'], r: 0, rad: '犭', name: '反犬旁', npy: 'fǎn quǎn páng', means: 'a dog or another animal.', see: '狗 猫 猜 狼 猴', how: 'An animal (犭) and 虫. A trick: some animals like to live on their own. 独自 = alone; 单独 = on your own.' },
   { c: '寒', parts: ['宀', ''], rest: 'below: a person with straw, and ice (as in the old form)', r: 0, rad: '宀', name: '宝盖头', npy: 'bǎo gài tóu', means: 'a roof. It is in characters about houses.', see: '家 字 安 室 守', how: 'Long ago 寒 showed a person inside a house (宀), covered with straw, with ice (冫) on the floor: very cold. 寒冷 = cold; 寒假 = winter vacation.' }
 ];
 /* level 1: each character long ago (public-domain drawings from Wikimedia Commons, Ancient Chinese characters project, in ancient/).
@@ -840,7 +840,7 @@ var MORE_WORDS = {
 var PATTERN = [
   { t: 'show', shape: '为＋人＋做……', keys: ['为'], end: '。', ask: 'Where does 为 go? Pick the right sentence.',
     what: '为 (wèi) means "for". Put 为 and the person right before the action: 妈妈为我做了一碗面 = Mom made a bowl of noodles for me.',
-    ex: [{ s: '妈妈为我做了一碗面。', en: 'Mom made a bowl of noodles for me.' }, { s: '我为奶奶画了一张画。', en: 'I drew a picture for Granny.' }, { s: '爸爸为我们讲了一个故事。', en: 'Dad told a story for us.' }] },
+    ex: [{ s: '妈妈为我做了一碗面。', en: 'Mom made a bowl of noodles for me.' }, { s: '我为奶奶画了一张画。', en: 'I drew a picture for Grandma.' }, { s: '爸爸为我们讲了一个故事。', en: 'Dad told a story for us.' }] },
   { t: 'pick', from: '我唱了一首歌，是唱给弟弟听的。', a: '我为弟弟唱了一首歌。', no: ['我唱了为弟弟一首歌。', '我为唱了弟弟一首歌。'], en: 'I sang a song for my little brother.' },
   { t: 'build', tiles: ['姐姐', '为', '我', '织了', '一条围巾'], ok: ['姐姐为我织了一条围巾。', '我为姐姐织了一条围巾。'], en: 'My big sister knitted a scarf for me.' },
   { t: 'pick', from: '大家在鼓掌，是给我鼓掌。', a: '大家为我鼓掌。', no: ['大家鼓掌为我。', '为大家我鼓掌。'], en: 'Everyone clapped for me.' },
@@ -851,10 +851,10 @@ var PATTERN = [
 var SENTENCES = [
   { s: '＿的时候，你在灯下给我缝扣子。', a: '临走', no: ['独自', '毛线'], en: 'Just before I left, you sewed a button on for me under the lamp.' },
   { s: '你拿出＿，给我把扣子缝得好好的。', a: '针线', no: ['寒冷', '拒绝'], en: 'You took out a needle and thread and sewed my button on firmly.' },
-  { s: '爷爷说，他小时候就学会了＿。', a: '缝衣服', no: ['老翁', '秘密'], en: 'Grandpa said he learned to sew clothes when he was little.' },
   { s: '你说：“＿夏令营那边会很冷，多带一件衣服。”', a: '恐怕', no: ['秘密', '老翁'], en: 'You said, "I\'m afraid it will be cold at summer camp. Take an extra layer."' },
+  { s: '爷爷说，从前的妈妈常常自己给孩子＿。', a: '缝衣服', no: ['老翁', '秘密'], en: 'Grandpa said that long ago, mothers often sewed clothes for their children themselves.' },
+  { s: '他还念了一首古诗，写的是一位＿和她要出远门的孩子。', a: '慈母', no: ['寒假', '拒绝'], en: 'He also recited an old poem about a loving mother and her child who was about to go far away.' },
   { s: '我每天早上都准时起床，一次也没有＿。', a: '迟到', no: ['慈母', '老翁'], en: 'I get up on time every morning, and I haven\'t been late once.' },
-  { s: '爷爷说，有一首古诗写的就是＿给孩子缝衣服。', a: '慈母', no: ['寒假', '拒绝'], en: 'Grandpa said there is an old poem about a loving mother sewing clothes for her child.' },
   { s: '借来的书，我已经＿给了老师。', a: '归还', no: ['灭火', '寒冷'], en: 'I have already given the books I borrowed back to the teacher.' },
   { s: '我的个子好像又长高了＿。', a: '一寸', no: ['老翁', '秘密'], en: 'I think I\'ve grown about a cun (3 cm) taller again.' },
   { s: '有个小朋友想抄我的作业，我＿了他。', a: '拒绝', no: ['慈母', '寒冷'], en: 'Someone wanted to copy my homework, and I said no.' },

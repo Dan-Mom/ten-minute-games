@@ -783,13 +783,13 @@ var PARTS = [
   { c: '因', parts: ['囗', '大'], r: 0, rad: '囗', name: '国字框', npy: 'guó zì kuāng', means: 'a frame around something.', see: '国 园 图 围', how: '大 inside a frame (囗). 因 means a reason. 因为 = because; 原因 = reason.' },
   { c: '所', parts: ['户', '斤'], r: 0, rad: '户', name: '户字旁', npy: 'hù zì páng', means: 'a door.', see: '房 扇 扁', how: '户 (a door), which helps with the sound, and an axe (斤). Long ago it meant the sound of chopping wood; later it meant a place. 所以 = so; 所有 = all.' },
   { c: '但', parts: ['亻', '旦'], r: 0, rad: '亻', name: '单人旁', npy: 'dān rén páng', means: 'a person.', see: '他 们 你 住', how: 'A person (亻) and 旦 (dàn), which gives the sound. 但是 = but.' },
-  { c: '改', parts: ['己', '攵'], r: 1, rad: '攵', name: '反文旁', npy: 'fǎn wén páng', means: 'a hand holding a stick: doing something.', see: '放 教 数 收', how: '己 and a hand doing something (攵): to change. 改正 = correct; 改错 = fix mistakes.' },
-  { c: '留', parts: ['', '田'], rest: 'top: a part that once gave the sound (卯 in older forms)', r: 1, rad: '田', name: '田字底', npy: 'tián zì dǐ', means: 'a field.', see: '男 界 甲 由', how: 'A field (田) under a part that once gave the sound: to stay. 留学 = study abroad; 留下来 = stay.' },
+  { c: '改', parts: ['己', '攵'], r: 1, rad: '攵', name: '反文旁', npy: 'fǎn wén páng', means: 'a hand holding a stick: doing something.', see: '教 数 收 故', how: '己 and a hand doing something (攵): to change. 改正 = correct; 改错 = fix mistakes.' },
+  { c: '留', parts: ['', '田'], rest: 'top: a part that once gave the sound (卯 in older forms)', r: 1, rad: '田', name: '田字底', npy: 'tián zì dǐ', means: 'a field.', see: '男 界 思 略', how: 'A field (田) under a part that once gave the sound: to stay. 留学 = study abroad; 留下来 = stay.' },
   { c: '暗', parts: ['日', '音'], r: 0, rad: '日', name: '日字旁', npy: 'rì zì páng', means: 'the sun.', see: '明 晴 晚 时', how: 'The sun (日) and 音 (yīn), which helps with the sound: no sunlight, so it is dark. 黑暗 = dark.' },
   { c: '合', parts: ['人', '一', '口'], r: 0, rad: '人', name: '人字头', npy: 'rén zì tóu', means: 'a person.', see: '会 个 全 今', how: 'Long ago 合 was a lid (the top part) on a pot (口): two things fitting together. 合适 = suitable; 合作 = work together.' },
   { c: '适', parts: ['舌', '辶'], r: 1, rad: '辶', name: '走之旁', npy: 'zǒu zhī páng', means: 'walking, going.', see: '过 还 进 远', how: 'Walking (辶) and 舌. The old form 適 meant going to a place. Now it means fit, suit. 合适 = suitable; 适合 = suit.' },
   { c: '误', parts: ['讠', '吴'], r: 0, rad: '讠', name: '言字旁', npy: 'yán zì páng', means: 'speaking and words.', see: '说 话 语 读', how: 'Words (讠) and 吴 (wú), which helps with the sound: wrong words, a mistake. 错误 = mistake.' },
-  { c: '检', parts: ['木', '佥'], r: 0, rad: '木', name: '木字旁', npy: 'mù zì páng', means: 'trees and wood.', see: '林 桥 树 桌', how: 'Wood (木) and 佥 (qiān), which helps with the sound. Long ago it was a wooden label on a box of letters; now it means check. 检查 = check.' },
+  { c: '检', parts: ['木', '佥'], r: 0, rad: '木', name: '木字旁', npy: 'mù zì páng', means: 'trees and wood.', see: '林 桥 树 村', how: 'Wood (木) and 佥 (qiān), which helps with the sound. Long ago it was a wooden label on a box of letters; now it means check. 检查 = check.' },
   { c: '性', parts: ['忄', '生'], r: 0, rad: '忄', name: '竖心旁', npy: 'shù xīn páng', means: 'the heart; feelings.', see: '快 怕 慢 忙', how: 'The heart (忄) and 生 (shēng, born): what you are like inside from birth, your nature. 性格 = personality.' },
   { c: '部', parts: ['', '阝'], rest: 'left: 咅 (pǒu), which helps with the sound', r: 1, rad: '阝', name: '右耳旁', npy: 'yòu ěr páng', means: 'a town (on the right, it comes from 邑).', see: '都 那 邮 邻', how: 'A town (阝) and a part that helps with the sound. 部分 = part; 一部书 = a (long) book.' },
   { c: '伟', parts: ['亻', '韦'], r: 0, rad: '亻', name: '单人旁', npy: 'dān rén páng', means: 'a person.', see: '体 休 位 信', how: 'A person (亻) and 韦 (wéi), which gives the sound: a great person. 伟大 = great; 伟人 = great person.' },
@@ -855,34 +855,35 @@ var PATTERN = [
   { t: 'build', tiles: ['因为', '我', '起晚了', '所以', '没吃早饭'], ok: ['因为我起晚了所以没吃早饭。', '我因为起晚了所以没吃早饭。'], en: 'Because I got up late, I didn\'t have breakfast.' },
   { t: 'build', tiles: ['因为', '花', '需要水', '所以', '我', '每天给它浇水'], ok: ['因为花需要水所以我每天给它浇水。', '我因为花需要水所以每天给它浇水。', '花因为需要水所以我每天给它浇水。'], en: 'Because the flower needs water, I water it every day.' }
 ];
-/* level 4: our own letter to Grandpa about a day at the library and a book about Li Shizhen, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的爷爷：" */
+/* level 4: our own letter to Grandpa about a day at the library, one missing word per sentence (a = the word, no = two words that do not fit). It starts after "亲爱的爷爷：" */
 var SENTENCES = [
   { s: '星期六，爸爸带我去图书馆。图书馆很大，分成好几个＿。', a: '部分', no: ['错误', '黑暗'], en: 'On Saturday Dad took me to the library. It is very big, with lots of different parts.' },
   { s: '我们先去了一个角落，那儿很＿，看书看不清楚。', a: '黑暗', no: ['合作', '伟大'], en: 'First we went to a corner, but it was very dark there and we could not see the words well.' },
+  { s: '＿那儿太暗了，所以我们换了个地方。', a: '因为', no: ['但是', '合适'], en: 'Because it was too dark there, we moved somewhere else.' },
   { s: '后来我们在窗边找到了一个＿的座位。', a: '合适', no: ['留学', '翻译'], en: 'Then we found a good seat by the window.' },
-  { s: '我借了一本书，讲的是一位＿的医学家，叫李时珍。', a: '伟大', no: ['部分', '检查'], en: 'I borrowed a book about a great doctor and scientist called Li Shizhen.' },
-  { s: '李时珍有一位当医生的＿。', a: '父亲', no: ['部分', '错误'], en: 'Li Shizhen\'s father was a doctor.' },
-  { s: '那时候，很多＿看不起病。', a: '穷人', no: ['性格', '翻译'], en: 'In those days, lots of poor people could not pay to see a doctor.' },
-  { s: '他发现旧书里写错了不少地方，就一次又一次地＿各种药材。', a: '检查', no: ['伟大', '黑暗'], en: 'He found that the old books had lots of things wrong, so he checked every medicine again and again.' },
-  { s: '后来，他把很多错的地方都＿过来了。', a: '改正', no: ['黑暗', '穷人'], en: 'Later he put lots of the wrong things right.' },
-  { s: '＿他非常认真，所以写出了一本了不起的书。', a: '因为', no: ['但是', '合适'], en: 'Because he was so careful, he wrote an amazing book.' },
-  { s: '写这本书很难，＿李时珍没有放弃，用了二十七年才写完。', a: '但是', no: ['伟大', '部分'], en: 'Writing this book was hard, but Li Shizhen did not give up; it took him 27 years.' },
-  { s: '现在这本书已经被＿成很多种文字了。', a: '翻译', no: ['留学', '性格'], en: 'Now the book has been translated into many languages.' },
-  { s: '我也想学好外语，长大以后去国外＿。', a: '留学', no: ['错误', '黑暗'], en: 'I want to learn other languages well too, and study abroad when I grow up.' },
-  { s: '爸爸说，我的＿跟他小时候一样，爱问问题。', a: '性格', no: ['黑暗', '翻译'], en: 'Dad says I am just like he was as a child: I love asking questions.' },
-  { s: '图书馆快关门了，＿我们就回家了。爷爷，下次您也一起去吧！', a: '所以', no: ['因为', '但是'], en: 'The library was about to close, so we went home. Grandpa, come with us next time!' }
+  { s: '我找到一本书，讲的是一位＿的科学家。', a: '伟大', no: ['部分', '检查'], en: 'I found a book about a great scientist.' },
+  { s: '这本书是从英文＿过来的。', a: '翻译', no: ['留学', '性格'], en: 'The book was translated from English.' },
+  { s: '我想买几本旧书，＿我的零花钱已经花完了。', a: '但是', no: ['伟大', '部分'], en: 'I wanted to buy some old books, but I had already spent all my pocket money.' },
+  { s: '我笑着说，我现在是个小＿！', a: '穷人', no: ['性格', '黑暗'], en: 'I laughed and said I was a poor little kid now!' },
+  { s: '我没有钱买书了，＿爸爸说我们可以借书。', a: '所以', no: ['因为', '伟大'], en: 'I had no money left for books, so Dad said we could borrow some.' },
+  { s: '填完借书卡，还要＿一遍。', a: '检查', no: ['伟大', '黑暗'], en: 'After filling in the library card form, you have to check it once.' },
+  { s: '我发现了一个＿：我把名字写错了！', a: '错误', no: ['合作', '部分'], en: 'I found a mistake: I had written my name wrong!' },
+  { s: '我马上把它＿过来了。', a: '改正', no: ['黑暗', '穷人'], en: 'I put it right at once.' },
+  { s: '爸爸说，我做事很认真，＿很像他。', a: '性格', no: ['黑暗', '翻译'], en: 'Dad said I am very careful, just like him.' },
+  { s: '他笑着说：“因为我是你的＿呀！”', a: '父亲', no: ['部分', '错误'], en: 'He laughed and said, "Because I\'m your father!"' },
+  { s: '图书馆快关门了，可是我还想＿，再看一会儿。爷爷，下次您也一起去吧！', a: '留下来', no: ['改正', '合适'], en: 'The library was about to close, but I wanted to stay and read a little longer. Grandpa, come with us next time!' }
 ];
 /* "Start here": a short talk that opens the lesson, before level 1. Our own lines (not the textbook's). who = who is speaking,
    s = the line (the lesson's characters in it are colored and can be tapped), py = its pinyin, en = what it means, pat = it uses the sentence pattern */
 var STORY = { title: '图书馆的一天', en: 'A day at the library', lines: [
   { who: '👨 爸爸', s: '这个图书馆分好几个部分，我们先去少儿部吧。', py: 'Zhège túshūguǎn fēn hǎo jǐ ge bùfen, wǒmen xiān qù shào\'ér bù ba.', en: 'This library has lots of parts. Let\'s go to the children\'s section first.' },
-  { who: '🧒 我', s: '这儿有点儿暗，我们换个合适的地方坐吧。', py: 'Zhèr yǒudiǎnr àn, wǒmen huàn ge héshì de dìfang zuò ba.', en: 'It\'s a bit dark here. Let\'s find a better place to sit.' },
+  { who: '🧒 我', s: '因为这儿太暗了，所以我们换个合适的地方坐吧。', py: 'Yīnwèi zhèr tài àn le, suǒyǐ wǒmen huàn ge héshì de dìfang zuò ba.', en: 'Because it\'s too dark here, let\'s find a better place to sit.', pat: true },
   { who: '👩 管理员', s: '你们可以坐窗边，那儿很亮。', py: 'Nǐmen kěyǐ zuò chuāng biān, nàr hěn liàng.', en: 'You can sit by the window. It\'s bright there.' },
-  { who: '🧒 我', s: '爸爸，这本书讲的是李时珍，他是一位伟大的医学家。', py: 'Bàba, zhè běn shū jiǎng de shì Lǐ Shízhēn, tā shì yí wèi wěidà de yīxuéjiā.', en: 'Dad, this book is about Li Shizhen. He was a great doctor and scientist.' },
-  { who: '👨 爸爸', s: '李时珍有一位当医生的父亲。穷人找他看病，他往往一分钱也不要。', py: 'Lǐ Shízhēn yǒu yí wèi dāng yīshēng de fùqīn. Qióngrén zhǎo tā kànbìng, tā wǎngwǎng yì fēn qián yě bú yào.', en: 'Li Shizhen\'s father was a doctor. When poor people came to him, he often didn\'t take a penny.' },
-  { who: '👨 爸爸', s: '因为旧医书里有不少错误，所以李时珍自己去山里检验药性。', py: 'Yīnwèi jiù yīshū li yǒu bù shǎo cuòwù, suǒyǐ Lǐ Shízhēn zìjǐ qù shān li jiǎnyàn yàoxìng.', en: 'Because the old medicine books had lots of mistakes, Li Shizhen went into the mountains himself to test what each plant could do.', pat: true },
-  { who: '🧒 我', s: '他改正了很多错的地方。这部书很难写，但是他没有放弃！', py: 'Tā gǎizhèngle hěn duō cuò de dìfang. Zhè bù shū hěn nán xiě, dànshì tā méiyǒu fàngqì!', en: 'He corrected lots of wrong things. The book was hard to write, but he never gave up!' },
-  { who: '👩 管理员', s: '这部书已经被翻译成很多国家的文字了。', py: 'Zhè bù shū yǐjīng bèi fānyì chéng hěn duō guójiā de wénzì le.', en: 'This book has been translated into the languages of many countries.' },
+  { who: '🧒 我', s: '爸爸，这本书讲的是一位伟大的科学家，是从英文翻译过来的！', py: 'Bàba, zhè běn shū jiǎng de shì yí wèi wěidà de kēxuéjiā, shì cóng Yīngwén fānyì guòlai de!', en: 'Dad, this book is about a great scientist, and it was translated from English!' },
+  { who: '🧒 我', s: '我也想买那边的旧书，但是零花钱花完了，我成了“小穷人”！', py: 'Wǒ yě xiǎng mǎi nàbian de jiù shū, dànshì línghuāqián huāwán le, wǒ chéngle "xiǎo qióngrén"!', en: 'I want to buy some of the old books over there too, but my pocket money is all gone. I\'m a "poor little kid" now!' },
+  { who: '👨 爸爸', s: '没关系，我们可以借书。填好借书卡，记得检查一下。', py: 'Méi guānxi, wǒmen kěyǐ jiè shū. Tiánhǎo jièshūkǎ, jìde jiǎnchá yíxià.', en: 'That\'s okay, we can borrow books. Fill in the library card form, and remember to check it.' },
+  { who: '🧒 我', s: '哎呀，我把名字写错了！我马上改正这个错误。', py: 'Āiyā, wǒ bǎ míngzi xiěcuò le! Wǒ mǎshàng gǎizhèng zhège cuòwù.', en: 'Oops, I wrote my name wrong! I\'ll fix this mistake right away.' },
+  { who: '👨 爸爸', s: '你做事这么认真，性格很像我——因为我是你的父亲呀！', py: 'Nǐ zuò shì zhème rènzhēn, xìnggé hěn xiàng wǒ — yīnwèi wǒ shì nǐ de fùqīn ya!', en: 'You\'re so careful, just like me. Because I\'m your father!' },
   { who: '🧒 我', s: '爸爸，我想留在这儿再看一会儿，可以吗？', py: 'Bàba, wǒ xiǎng liú zài zhèr zài kàn yíhuìr, kěyǐ ma?', en: 'Dad, I\'d like to stay and read a little longer. Is that OK?' }
 ] };
 
