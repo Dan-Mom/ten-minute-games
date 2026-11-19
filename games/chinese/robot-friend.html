@@ -588,6 +588,13 @@ button{font:inherit;cursor:pointer}
 .big .bline{min-height:91px;max-width:744px}
 .big .letter{max-width:624px;font-size:29px}
 }
+/* the owner, 2026-11-18: the pinyin and the English of a new-character card, and the English under a level-2 word, 100% bigger */
+.meetp>.py{font-size:60px}
+.meetp>.mean,.mean.wmean{font-size:40px}
+.meetp>.mean.m2,.mean.wmean.m2{font-size:30px}.meetp>.mean.m3,.mean.wmean.m3{font-size:26px}.meetp>.mean.m4{font-size:20px}
+@media (min-width:600px){.big .meetp>.py{font-size:72px}.big .meetp>.mean,.big .mean.wmean{font-size:48px}.big .meetp>.mean.m2,.big .mean.wmean.m2{font-size:36px}.big .meetp>.mean.m3,.big .mean.wmean.m3{font-size:30px}.big .meetp>.mean.m4{font-size:24px}}
+/* upright tablet (not the side-by-side layout): a little smaller so the Got it button stays on screen */
+@media (min-width:600px) and (max-aspect-ratio:5/4){.big .meetp>.py{font-size:52px}.big .meetp>.mean,.big .mean.wmean{font-size:34px}.big .meetp>.mean.m2,.big .mean.wmean.m2{font-size:26px}.big .meetp>.mean.m3,.big .mean.wmean.m3{font-size:22px}.big .meetp>.mean.m4{font-size:18px}}
 /* a new-character card on a sideways iPad: the character on the left, how it is built on the right, so "Got it" stays on screen */
 @media (min-width:900px) and (min-aspect-ratio:5/4){
 .big .panel.meetp{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.7fr);grid-template-rows:auto auto auto auto;column-gap:28px;align-content:center;align-items:center}
@@ -1314,19 +1321,19 @@ function menu() {
     b.appendChild(E('span', 'go', '▶'));
     b.onclick = function () { afterVoice(function () { open(L); }, b); };
     ls.appendChild(b);
-    if (HAS_WRITE && L.n === 1) {   // "Write it" comes right after level 1, where the characters are met (not 'lv': the level cards stay 1 to 5)
-      writeScore(); showTotal();   // ticks saved before Write it had a score (2026-11-07) count too
-      var wn = CHARS.filter(function (c) { return written(c.c); }).length, all = wn === CHARS.length;
-      var wb = E('button', 'lvs lvw' + (all ? ' done' : '')); wb.type = 'button';
-      wb.appendChild(E('span', 'n', all ? '✓' : '✍️'));
-      var wt = E('div'); wt.appendChild(E('h3', null, 'Write it <span class="han">写一写</span>'));
-      wt.appendChild(E('p', null, 'Watch how each character is written, then write it with your finger. No mistakes: 1' + UNIT + '; 1 mistake or hint: 0.5' + UNIT + '; 2: 0.25' + UNIT + '; 3: 0.1' + UNIT + '; more: 0' + UNIT + '.' + (wn ? ' ' + wn + ' of ' + CHARS.length + ' written.' : '')));
-      var wsc = save.score.write; if (wsc) wt.appendChild(E('p', 'sc', '💰 ' + levelScore(wsc) + UNIT + ' of ' + wsc.of + UNIT));
-      wb.appendChild(wt); wb.appendChild(E('span', 'go', '▶'));
-      wb.onclick = function () { afterVoice(openWrite, wb); };
-      ls.appendChild(wb);
-    }
   });
+  if (HAS_WRITE) {   // "Write it" comes last, after level 5 (the owner, 2026-11-18; not 'lv': the level cards stay 1 to 5)
+    writeScore(); showTotal();   // ticks saved before Write it had a score (2026-11-07) count too
+    var wn = CHARS.filter(function (c) { return written(c.c); }).length, all = wn === CHARS.length;
+    var wb = E('button', 'lvs lvw' + (all ? ' done' : '')); wb.type = 'button';
+    wb.appendChild(E('span', 'n', all ? '✓' : '✍️'));
+    var wt = E('div'); wt.appendChild(E('h3', null, 'Write it <span class="han">写一写</span>'));
+    wt.appendChild(E('p', null, 'Watch how each character is written, then write it with your finger. No mistakes: 1' + UNIT + '; 1 mistake or hint: 0.5' + UNIT + '; 2: 0.25' + UNIT + '; 3: 0.1' + UNIT + '; more: 0' + UNIT + '.' + (wn ? ' ' + wn + ' of ' + CHARS.length + ' written.' : '')));
+    var wsc = save.score.write; if (wsc) wt.appendChild(E('p', 'sc', '💰 ' + levelScore(wsc) + UNIT + ' of ' + wsc.of + UNIT));
+    wb.appendChild(wt); wb.appendChild(E('span', 'go', '▶'));
+    wb.onclick = function () { afterVoice(openWrite, wb); };
+    ls.appendChild(wb);
+  }
   app.appendChild(ls);
   // no source line under the levels (the owner, 2026-11-07: the lessons do not name their sources). The old drawings are public domain
   // (Wikimedia Commons, Ancient Chinese characters project; many redrawn from Richard Sears's Chinese Etymology).
@@ -1486,7 +1493,7 @@ var resizeAt = 0;
 window.addEventListener('resize', function () {   // turning the iPad: the boxes take the new size (what is half written stays)
   clearTimeout(resizeAt); resizeAt = setTimeout(function () { if (writeRedraw) writeRedraw(); }, 250);
 });
-/* like a level: with some characters written already, ask "carry on, start over, or skip to level 2?" (the owner, 2026-11-07; Skip 2026-11-12) */
+/* like a level: with some characters written already, ask "carry on, start over, or back to all levels?" (the owner, 2026-11-07; Skip 2026-11-12) */
 /* "Write it" scores like a level (the owner, 2026-11-07; ladder 2026-11-08): the first time a character is written in a round, 1¢ with no
    mistake and no hint, 0.5¢ with one, 0.25¢ with two, 0.1¢ with three, nothing with more (save.write[character] = the cents, or 'z'
    for written with nothing earned; save.wslip[character] = mistakes and hints so far). Writing it again later is practice. */
@@ -1502,11 +1509,11 @@ function openWrite() {
   var firstNew = 0; while (firstNew < CHARS.length - 1 && written(CHARS[firstNew].c)) firstNew++;
   var all = wn === CHARS.length;
   askBox(all ? 'Write it: all written!' : 'Write it: continue?',
-    (all ? 'You have written all ' + CHARS.length + '! Write them again for practice (ticks and score stay), start over (ticks and score go), or skip to level 2?'
-        : 'You have written ' + wn + ' of ' + CHARS.length + ' characters. Continue with the ones not written yet, start over from the first (the green ticks and the score go), or skip to level 2?')
+    (all ? 'You have written all ' + CHARS.length + '! Write them again for practice (ticks and score stay), start over (ticks and score go), or go back to all levels?'
+        : 'You have written ' + wn + ' of ' + CHARS.length + ' characters. Continue with the ones not written yet, start over from the first (the green ticks and the score go), or go back to all levels?')
       + (save.score.write ? ' Your score now: <b>' + levelScore(save.score.write) + UNIT + ' of ' + save.score.write.of + UNIT + '</b>.' : ''),
     [[all ? '▶ Write again 再写一遍' : '▶ Continue 继续', function () { writeIt(all ? 0 : firstNew); }],
-     ['↺ Start over 重新开始', function () { save.write = {}; save.wslip = {}; writeScore(); store(); showTotal(); writeIt(0); }, true], skipBtn(LEVELS[1])]);
+     ['↺ Start over 重新开始', function () { save.write = {}; save.wslip = {}; writeScore(); store(); showTotal(); writeIt(0); }, true], skipBtn(null)]);
 }
 function writeIt(at) {
   app.classList.remove('big', 'bwide', 'storyw');
@@ -1736,7 +1743,8 @@ function play(L, redo) {   // redo = { steps }: a second try at the questions mi
     if (typeof ANCIENT !== 'undefined' && ANCIENT[s.c.c]) cr.appendChild(oldForm(s.c.c, ANCIENT[s.c.c]));
     p.appendChild(cr);
     p.appendChild(E('div', 'py', s.c.py));
-    p.appendChild(E('div', 'mean', s.c.e + ' ' + s.c.en));
+    var mt = s.c.e + ' ' + s.c.en, ml = mt.length;   // the English is 100% bigger, a long meaning a little less so the card still fits an iPad (m2, m3, m4: smaller steps)
+    p.appendChild(E('div', 'mean' + (ml <= 15 ? '' : ml <= 24 ? ' m2' : ml <= 34 ? ' m3' : ' m4'), mt));
     var part = PARTS.filter(function (x) { return x.c === s.c.c; })[0];
     if (part) p.appendChild(built(part));
     var r = E('div', 'row'); r.appendChild(speakBtn(cardSay(s.c.c)));
@@ -1819,6 +1827,16 @@ function play(L, redo) {   // redo = { steps }: a second try at the questions mi
   }
   next();
 }
+function letterBlock(L, p) {   // the finished letter and its Send button: after the first play AND after every second try (the owner, 2026-11-18)
+  p.appendChild(E('p', 'say', LESSON.letter.ready));
+  var letter = E('div', 'letter'); letter.appendChild(E('span', 'st', LESSON.letter.stamp));
+  letter.appendChild(E('div', null, LESSON.letter.greeting));
+  SENTENCES.forEach(function (s, n) { var d = E('div', null, s.s.replace('＿', s.a)); if (LESSON.letter.signRight && n === SENTENCES.length - 1) d.style.textAlign = 'right'; letter.appendChild(d); });
+  p.appendChild(letter);
+  var r = E('div', 'row'); var send = E('button', 'btn', 'Send ✈️'); send.type = 'button';
+  send.onclick = function () { afterVoice(function () { letter.classList.add('fly'); beep(true); send.disabled = true; setTimeout(function () { if (letter.isConnected) { var nl = LEVELS[L.n]; if (nl) open(nl); else menu(); } }, 1700); }, send); };   // after the letter flies, go straight on to the next level (bingo)
+  r.appendChild(send); p.appendChild(r);
+}
 function finish(L, r, old) {   // r = this play's result; old = the score it replaces (bingo saves its score itself and passes the old one)
   if (arguments.length < 3) { old = save.score[L.n]; save.score[L.n] = { got: r.got, of: r.of, pts: r.got }; }
   if (save.at) delete save.at[L.n];
@@ -1837,20 +1855,14 @@ function finish(L, r, old) {   // r = this play's result; old = the score it rep
   p.appendChild(box);
   if (r.ids && r.ids.length) { p.appendChild(redoRow(L, r.ids, 2)); save.re = save.re || {}; save.re[L.n] = { ids: r.ids, round: 2 }; store(); }   // kept, so the missed ones can still be tried after leaving this page
   if (L.letter) {
-    p.appendChild(E('p', 'say', LESSON.letter.ready));
-    var letter = E('div', 'letter'); letter.appendChild(E('span', 'st', LESSON.letter.stamp));
-    letter.appendChild(E('div', null, LESSON.letter.greeting));
-    SENTENCES.forEach(function (s, n) { var d = E('div', null, s.s.replace('＿', s.a)); if (LESSON.letter.signRight && n === SENTENCES.length - 1) d.style.textAlign = 'right'; letter.appendChild(d); });
-    p.appendChild(letter);
-    var r = E('div', 'row'); var send = E('button', 'btn', 'Send ✈️'); send.type = 'button';
-    send.onclick = function () { afterVoice(function () { letter.classList.add('fly'); beep(true); send.disabled = true; setTimeout(function () { if (letter.isConnected) { var nl = LEVELS[L.n]; if (nl) open(nl); else menu(); } }, 1700); }, send); };   // after the letter flies, go straight on to the next level (bingo)
-    r.appendChild(send); p.appendChild(r);
+    letterBlock(L, p);
   } else {
     var nextL = LEVELS[L.n];
     if (nextL) p.appendChild(E('p', 'say', 'Ready for level ' + nextL.n + '?'));
     var r2 = E('div', 'row');
     if (nextL) { var nx = E('button', 'btn', 'Level ' + nextL.n + ' ▶'); nx.type = 'button'; nx.onclick = function () { afterVoice(function () { open(nextL); }, nx); }; r2.appendChild(nx); }
     else { var ag = E('button', 'btn', 'Play bingo again'); ag.type = 'button'; ag.onclick = function () { afterVoice(function () { open(L); }, ag); }; r2.appendChild(ag); }
+    if (!nextL && HAS_WRITE) { var wr = E('button', 'btn', 'Write it ✍️ <span class="han">写一写</span>'); wr.type = 'button'; wr.onclick = function () { afterVoice(openWrite, wr); }; r2.appendChild(wr); }   // Write it is the last card of the level list, so the last level points to it (the owner, 2026-11-18)
     var bk = E('button', 'btn ghost', 'All levels'); bk.type = 'button'; bk.onclick = function () { afterVoice(menu, bk); };
     r2.appendChild(bk); p.appendChild(r2);
   }
@@ -1900,8 +1912,9 @@ function redone(L, r, round) {   // the end of a second try: each one right this
   box.appendChild(E('div', null, 'Lesson total: ' + fmt(lessonTotal()) + UNIT));
   p.appendChild(box);
   if (r.ids.length) { p.appendChild(redoRow(L, r.ids, round + 1)); save.re = save.re || {}; save.re[L.n] = { ids: r.ids, round: round + 1 }; store(); }   // the ones still missed wait for another try, worth less
+  if (L.letter) letterBlock(L, p);   // the letter can be sent after every second try, not only after the first play
   var nextL = LEVELS[L.n], r2 = E('div', 'row');
-  if (nextL) { var nx = E('button', 'btn', 'Level ' + nextL.n + ' ▶'); nx.type = 'button'; nx.onclick = function () { afterVoice(function () { open(nextL); }, nx); }; r2.appendChild(nx); }
+  if (nextL && !L.letter) { var nx = E('button', 'btn', 'Level ' + nextL.n + ' ▶'); nx.type = 'button'; nx.onclick = function () { afterVoice(function () { open(nextL); }, nx); }; r2.appendChild(nx); }
   var bk = E('button', 'btn ghost', 'All levels'); bk.type = 'button'; bk.onclick = function () { afterVoice(menu, bk); }; r2.appendChild(bk);
   p.appendChild(r2); app.appendChild(p);
 }
@@ -2035,7 +2048,7 @@ function level2() {
   return shuffle(WORDS).map(function (w) {
     var miss = w.w.charAt(w.k), shown = w.w.split('').map(function (ch, i) { return i === w.k ? '<span class="slot">？</span>' : ch; }).join('');
     return { id: 'w' + w.w, label: w.w, prompt: 'Which character finishes the word?', answer: miss, opts: pick3(miss, w.no), sayAfter: w.w,
-      top: function () { var d = E('div'); d.appendChild(E('div', 'emoji', w.e)); d.appendChild(E('div', 'word han', shown)); d.appendChild(E('div', 'mean', w.py + ' · ' + w.en)); return d; },
+      top: function () { var d = E('div'); d.appendChild(E('div', 'emoji', w.e)); d.appendChild(E('div', 'word han', shown)); var wl = w.en.length; d.appendChild(E('div', 'mean wmean' + (wl <= 24 ? '' : wl <= 34 ? ' m2' : ' m3'), w.en)); return d; },
       after: function (p) { var el = p.querySelector('.slot'); if (el) { el.textContent = miss; el.style.color = 'var(--green)'; el.style.borderColor = 'var(--green)'; } } };
   });
 }
