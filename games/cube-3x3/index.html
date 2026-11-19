@@ -440,10 +440,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>三阶魔方闯关</title>
+<script>try { if (localStorage.getItem("cube3x3_quest_lang") === "en") { document.title = "3x3 Cube Quest"; document.documentElement.lang = "en"; } } catch (e) {}</script>
 <meta name="theme-color" content="#5b3fa8">
 <style>
 /* 3x3 Cube Quest: the seven-step layer method, one step per level, played on a cube on the screen; plus a printable step sheet.
-   Same method, moves and words as the Little Cube Quest day plan, so the two games never disagree. Chinese words for now. */
+   Same method, moves and words as the Little Cube Quest day plan, so the two games never disagree. Chinese or English, switched with the toggle at the top. */
 :root{
   color-scheme:light;
   --ink:#2a2140; --mute:#6b6385; --page:#f4f0ff; --card:#fff; --line:#e3dcf5;
@@ -460,6 +461,9 @@ button:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
 .wrap{max-width:1280px;margin:0 auto;padding:12px 16px 80px}
 .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .top h1{font-size:clamp(22px,4vw,30px);color:var(--brand);margin-right:auto}
+.langs{display:inline-flex;border:2px solid var(--line);border-radius:999px;overflow:hidden;background:#fff}
+.lang{border:0;background:transparent;min-height:44px;min-width:64px;padding:0 14px;font-weight:800;color:var(--mute)}
+.lang.on{background:var(--brand);color:#fff}
 .stars{font-weight:800;color:#8a6400;background:var(--gold-s);border-radius:999px;padding:6px 14px;white-space:nowrap}
 .btn{border:2px solid var(--line);background:#fff;border-radius:14px;min-height:48px;padding:8px 16px;font-weight:700}
 .btn:hover{border-color:var(--brand)}
@@ -605,25 +609,26 @@ button:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
 <body>
 <div class="wrap">
   <div class="top">
-    <h1>🧩 三阶魔方闯关</h1>
+    <h1 data-t="title"></h1>
+    <div class="langs" role="group" aria-label="Language 语言"><button class="lang" data-lang="zh">中文</button><button class="lang" data-lang="en">English</button></div>
     <span class="stars" id="starTotal">⭐ 0</span>
     <span class="pill-slot" data-pill-slot></span>
   </div>
 
   <section id="home">
     <div class="ways">
-      <button class="way" id="goLevels"><span class="em">🎮</span><div><b>在屏幕上闯关</b><span>十关，一关学一步。魔方在屏幕上，可以转、可以撤销、可以要提示。</span></div></button>
-      <button class="way" id="goPrint"><span class="em">🖨️</span><div><b>打印七步卡</b><span>拿着真魔方，一步一步照着做。七步、七个公式，都在两三页纸上。</span></div></button>
+      <button class="way" id="goLevels"><span class="em">🎮</span><div><b data-t="wayPlay"></b><span data-t="wayPlaySub"></span></div></button>
+      <button class="way" id="goPrint"><span class="em">🖨️</span><div><b data-t="wayPrint"></b><span data-t="wayPrintSub"></span></div></button>
     </div>
-    <p class="intro">两种学法用的是同一个方法、同一套公式，可以换着用。孩子已经会二阶的话，第 3 关的万能公式、第 7 关的小鱼公式、第 8 关的换角公式都是老朋友。</p>
+    <p class="intro" data-t="intro"></p>
     <div class="levels" id="levelList"></div>
   </section>
 
   <section id="play" hidden>
     <div class="play">
       <div class="card stagecard">
-        <div class="stage" id="stage" aria-label="屏幕上的魔方，用手指拖动可以转着看"><div class="scene" id="scene"></div></div>
-        <div class="stagebar"><span class="draghint">👆 拖动魔方可以转着看</span><button class="btn small" id="resetView">↺ 摆正</button></div>
+        <div class="stage" id="stage"><div class="scene" id="scene"></div></div>
+        <div class="stagebar"><span class="draghint" data-t="drag"></span><button class="btn small" id="resetView" data-t="resetView"></button></div>
         <div class="lights" id="lights"></div>
       </div>
       <div class="card panel" id="panel"></div>
@@ -1001,18 +1006,29 @@ if (typeof module !== "undefined") module.exports = { makeCube, applyTok, applyA
 </script>
 <script>
 /* Cube Quest 3x3: the seven steps (for the step cards and the printed page) and the ten levels.
-   The words are Chinese for now; an English set comes later. Loaded after engine.js. */
+   Every word a child sees is a pair "中文|English"; tr() picks the language that is switched on. Loaded after engine.js. */
 /*LEVELS-START*/
+const LANG = { cur: "zh" };
+function tr(s) {
+  if (s == null) return "";
+  s = String(s); const i = s.indexOf("|");
+  if (i < 0) return s;
+  return LANG.cur === "en" ? s.slice(i + 1) : s.slice(0, i);
+}
 const FACE12 = ["R", "R'", "L", "L'", "U", "U'", "D", "D'", "F", "F'", "B", "B'"];
 const TURNS = ["U", "U'", "y", "y'"];
-const FORMULA_NAME = { sexy: "万能公式", eR: "往右放", eL: "往左放", yc: "黄十字公式", sune: "小鱼公式", aperm: "换角公式", uperm: "换棱公式", flip: "翻过来" };
-const COLOR_ZH = { W: "白", Y: "黄", G: "绿", R: "红", B: "蓝", O: "橙" };
-/* what each button does, in words a child can check on a real cube (same directions as Little Cube Quest) */
-const MOVE_ZH = {
-  R: ["右边", "往上", "↑"], "R'": ["右边", "往下", "↓"], L: ["左边", "往下", "↓"], "L'": ["左边", "往上", "↑"],
-  U: ["顶层", "往左", "←"], "U'": ["顶层", "往右", "→"], D: ["底层", "往右", "→"], "D'": ["底层", "往左", "←"],
-  F: ["前面", "顺时针", "↻"], "F'": ["前面", "逆时针", "↺"], B: ["后面", "顶上往左", "←"], "B'": ["后面", "顶上往右", "→"],
-  y: ["整个魔方", "往左转", "←"], "y'": ["整个魔方", "往右转", "→"]
+const FORMULA_NAME = { sexy: "万能公式|Magic move", eR: "往右放|Edge to the right", eL: "往左放|Edge to the left", yc: "黄十字公式|Yellow cross move", sune: "小鱼公式|Sune", aperm: "换角公式|Corner swap", uperm: "换棱公式|Edge swap", flip: "翻过来|Flip over" };
+const COLOR_NAME = { W: "白|white", Y: "黄|yellow", G: "绿|green", R: "红|red", B: "蓝|blue", O: "橙|orange" };
+/* what each button does, in words a child can check on a real cube (same directions as Little Cube Quest):
+   [layer, which way, arrow, short layer word for under a letter] */
+const MOVE_TXT = {
+  R: ["右边|Right side", "往上|turns up", "↑", "右|right"], "R'": ["右边|Right side", "往下|turns down", "↓", "右|right"],
+  L: ["左边|Left side", "往下|turns down", "↓", "左|left"], "L'": ["左边|Left side", "往上|turns up", "↑", "左|left"],
+  U: ["顶层|Top layer", "往左|turns left", "←", "顶|top"], "U'": ["顶层|Top layer", "往右|turns right", "→", "顶|top"],
+  D: ["底层|Bottom layer", "往右|turns right", "→", "底|bottom"], "D'": ["底层|Bottom layer", "往左|turns left", "←", "底|bottom"],
+  F: ["前面|Front", "顺时针|turns clockwise", "↻", "前|front"], "F'": ["前面|Front", "逆时针|turns counter-clockwise", "↺", "前|front"],
+  B: ["后面|Back", "顶上往左|: top goes left", "←", "后|back"], "B'": ["后面|Back", "顶上往右|: top goes right", "→", "后|back"],
+  y: ["整个魔方|Whole cube", "往左转|turns left", "←", "整个|cube"], "y'": ["整个魔方|Whole cube", "往右转|turns right", "→", "整个|cube"]
 };
 
 /* which stickers go gray so a child sees only the pieces this step is about: (piece, sticker) => true means gray */
@@ -1029,139 +1045,160 @@ const DIM = {
 /* a picture: start from a solved cube (white down, green front), `pre` turns it, then `script` is undone, so doing `script` solves the picture.
    view: iso (three sides) or top (the top side, with the stickers round its edge). cap: the words under it. capFn: words worked out from the cube. */
 const STEPS = [
-  { n: 1, name: "白色十字", formulas: [],
-    look: ["找白色棱块：它有白色，还有另一种颜色。", "它的家在白色中心和另一种颜色的中心之间。", "一次放一块。放好的不要弄乱。侧面的颜色要对上中心块。", "十字做好以后，把魔方翻过来，白色朝下。"],
-    note: "白色棱块在最下面一层？先把它转到中间一层，再转上来。放好的块被转走了，要记得转回来。",
-    think: "先说出“这一块要去哪里”，再动手。",
-    pics: [{ view: "iso", pre: "z2", script: "", dim: "cross", cap: "白色十字：侧面颜色也对上中心块" }] },
-  { n: 2, name: "白色角块", formulas: ["sexy"],
-    look: ["白色朝下。找顶层的白色角块，看它另外两种颜色。", "转整个魔方，让它的家在右前方。家是那两种颜色的中心之间的底角。", "转顶层，把角块放到家的正上方。", "重复万能公式，直到角块回家。"],
-    note: "角块在底层放错了？把它放在右前下，做一遍万能公式，它就到顶层了。",
-    think: "万能公式做 6 遍，魔方回到原样。所以最多做 5 遍，角块一定回家。",
+  { n: 1, name: "白色十字|White cross", formulas: [],
+    look: ["找白色棱块：它有白色，还有另一种颜色。|Find a white edge: it has white and one other color.",
+           "它的家在白色中心和另一种颜色的中心之间。|Its home is between the white center and the center of its other color.",
+           "一次放一块。放好的不要弄乱。侧面的颜色要对上中心块。|Place one at a time, without breaking the ones already placed. The side color must match its center too.",
+           "十字做好以后，把魔方翻过来，白色朝下。|When the cross is done, flip the cube over so white is on the bottom."],
+    note: "白色棱块在最下面一层？先把它转到中间一层，再转上来。放好的块被转走了，要记得转回来。|A white edge in the bottom layer? Turn it into the middle layer first, then up. If a placed edge gets turned away, turn it back.",
+    think: "先说出“这一块要去哪里”，再动手。|Say where the piece is going before you turn anything.",
+    pics: [{ view: "iso", pre: "z2", script: "", dim: "cross", cap: "白色十字：侧面颜色也对上中心块|White cross: the side colors match their centers too" }] },
+  { n: 2, name: "白色角块|White corners", formulas: ["sexy"],
+    look: ["白色朝下。找顶层的白色角块，看它另外两种颜色。|White on the bottom. Find a white corner on the top layer and look at its other two colors.",
+           "转整个魔方，让它的家在右前方。家是那两种颜色的中心之间的底角。|Turn the whole cube so its home is at the front right. Its home is the bottom corner between the centers of those two colors.",
+           "转顶层，把角块放到家的正上方。|Turn the top layer to put the corner right above its home.",
+           "重复万能公式，直到角块回家。|Repeat the magic move until the corner is home."],
+    note: "角块在底层放错了？把它放在右前下，做一遍万能公式，它就到顶层了。|A corner in the wrong place on the bottom? Hold it at the bottom front right and do the magic move once. It pops up to the top layer.",
+    think: "万能公式做 6 遍，魔方回到原样。所以最多做 5 遍，角块一定回家。|Six magic moves bring the cube back to where it started. So doing it 5 times or fewer always gets the corner home.",
     pics: [{ view: "iso", script: "sexy", dim: "corners", capFn: "corner" }, { view: "iso", script: "sexy sexy sexy", dim: "corners", capFn: "corner" }, { view: "iso", script: "sexy sexy sexy sexy sexy", dim: "corners", capFn: "corner" }] },
-  { n: 3, name: "第二层棱块", formulas: ["eR", "eL"],
-    look: ["找顶层没有黄色的棱块。", "转顶层，让它侧面的颜色对上同色的中心块。再转整个魔方，让这一面朝着你。", "看棱块顶上的颜色。和右边中心一样：往右放。和左边中心一样：往左放。"],
-    note: "棱块卡在中层？把它放在右前，做一遍“往右放”，它就到顶层了。",
-    think: "“往左放”是“往右放”的镜子：左手和右手对换，动作一样。",
-    pics: [{ view: "iso", script: "eR", dim: "mid", cap: "顶上是右边的颜色：往右放" }, { view: "iso", script: "eL", dim: "mid", cap: "顶上是左边的颜色（左边在背面，这里看不到）：往左放" }] },
-  { n: 4, name: "黄色十字", formulas: ["yc"],
-    look: ["只看顶面的 4 个黄色棱块。角块先不管。", "一个点：直接做公式。", "拐角：转顶层，把拐角放到左后。", "一条线：转顶层，让它横着。", "做公式，再看样子，再做。最多 3 遍。"],
-    think: "中间四下 R U R' U' 就是万能公式。前面加 F，后面加 F'，像三明治。",
-    pics: [{ view: "top", script: "yc yc U yc", dim: "ycross", cap: "点" }, { view: "top", script: "yc yc", dim: "ycross", cap: "拐角在左后" }, { view: "top", script: "yc", dim: "ycross", cap: "线横着" }] },
-  { n: 5, name: "黄色顶面", formulas: ["sune"],
-    look: ["数一数：有几个角块黄色朝上？", "1 个：转顶层，把它放到左前。", "0 个：转顶层，让左前角块的黄色朝左。", "2 个：转顶层，让左前角块的黄色朝前。", "做小鱼公式。再数，再摆，再做，直到顶面全黄。"],
-    think: "小鱼公式只弄乱顶层。下面两层出去转一圈，又原样回来。",
-    pics: [{ view: "top", script: "sune", dim: "yface", cap: "1 个朝上：放左前" }, { view: "top", script: "sune sune", dim: "yface", cap: "0 个朝上：左前的黄色朝左" }, { view: "top", script: "sune sune U2 sune", dim: "yface", cap: "2 个朝上：左前的黄色朝前" }] },
-  { n: 6, name: "顶层角块回家", formulas: ["aperm"],
-    look: ["找车灯：一个侧面上，左右两个角块颜色一样。", "有车灯：转顶层，把车灯放到后面，做换角公式。", "没有车灯：先做一遍公式，车灯就出现了。", "最后转顶层，让角块对上中心块。"],
-    think: "这个公式让 3 个角块轮流换位置，还有 1 个角块不动。做 3 遍回到原样。",
-    pics: [{ view: "top", script: "aperm", dim: "ycorners", cap: "车灯在后面（上边那两个同色的角）" }] },
-  { n: 7, name: "顶层棱块回家", formulas: ["uperm"],
-    look: ["看一看：有没有一个侧面，整面都是一种颜色？", "有：转整个魔方，把这一面放到后面，做换棱公式。没好就再做一遍。", "没有：先做一遍公式，就会出现一面。"],
-    think: "这个公式让 3 条棱轮流换位置，后面那条不动。做 3 遍回到原样。",
-    pics: [{ view: "top", script: "uperm", dim: "none", cap: "做好的一面放后面（上边）" }] }
+  { n: 3, name: "第二层棱块|Middle-layer edges", formulas: ["eR", "eL"],
+    look: ["找顶层没有黄色的棱块。|Find an edge on the top layer with no yellow on it.",
+           "转顶层，让它侧面的颜色对上同色的中心块。再转整个魔方，让这一面朝着你。|Turn the top layer until its side color matches the center of that color. Then turn the whole cube so that side faces you.",
+           "看棱块顶上的颜色。和右边中心一样：往右放。和左边中心一样：往左放。|Look at the edge's top color. Same as the right center: edge to the right. Same as the left center: edge to the left."],
+    note: "棱块卡在中层？把它放在右前，做一遍“往右放”，它就到顶层了。|An edge stuck in the middle layer? Hold it at the front right and do “edge to the right” once. It goes up to the top layer.",
+    think: "“往左放”是“往右放”的镜子：左手和右手对换，动作一样。|“Edge to the left” is the mirror of “edge to the right”: swap left and right, and the moves are the same.",
+    pics: [{ view: "iso", script: "eR", dim: "mid", cap: "顶上是右边的颜色：往右放|Top color matches the right: edge to the right" }, { view: "iso", script: "eL", dim: "mid", cap: "顶上是左边的颜色（左边在背面，这里看不到）：往左放|Top color matches the left (the left side is hidden here): edge to the left" }] },
+  { n: 4, name: "黄色十字|Yellow cross", formulas: ["yc"],
+    look: ["只看顶面的 4 个黄色棱块。角块先不管。|Look only at the 4 yellow edges on top. Ignore the corners for now.",
+           "一个点：直接做公式。|A dot: just do the move.",
+           "拐角：转顶层，把拐角放到左后。|An L: turn the top layer so the L is at the back left.",
+           "一条线：转顶层，让它横着。|A line: turn the top layer so it goes left to right.",
+           "做公式，再看样子，再做。最多 3 遍。|Do the move, look at the shape, and do it again. At most 3 times."],
+    think: "中间四下 R U R' U' 就是万能公式。前面加 F，后面加 F'，像三明治。|The middle four turns, R U R' U', are the magic move. F before and F' after, like a sandwich.",
+    pics: [{ view: "top", script: "yc yc U yc", dim: "ycross", cap: "点|Dot" }, { view: "top", script: "yc yc", dim: "ycross", cap: "拐角在左后|L at the back left" }, { view: "top", script: "yc", dim: "ycross", cap: "线横着|Line left to right" }] },
+  { n: 5, name: "黄色顶面|Yellow top", formulas: ["sune"],
+    look: ["数一数：有几个角块黄色朝上？|Count: how many corners have yellow facing up?",
+           "1 个：转顶层，把它放到左前。|One: turn the top layer to put it at the front left.",
+           "0 个：转顶层，让左前角块的黄色朝左。|None: turn the top layer until the front-left corner's yellow faces left.",
+           "2 个：转顶层，让左前角块的黄色朝前。|Two: turn the top layer until the front-left corner's yellow faces you.",
+           "做小鱼公式。再数，再摆，再做，直到顶面全黄。|Do the Sune. Count, set up and do it again until the whole top is yellow."],
+    think: "小鱼公式只弄乱顶层。下面两层出去转一圈，又原样回来。|The Sune only changes the top layer. The two bottom layers go for a ride and come back the same.",
+    pics: [{ view: "top", script: "sune", dim: "yface", cap: "1 个朝上：放左前|One up: at the front left" }, { view: "top", script: "sune sune", dim: "yface", cap: "0 个朝上：左前的黄色朝左|None up: front-left yellow faces left" }, { view: "top", script: "sune sune U2 sune", dim: "yface", cap: "2 个朝上：左前的黄色朝前|Two up: front-left yellow faces you" }] },
+  { n: 6, name: "顶层角块回家|Top corners home", formulas: ["aperm"],
+    look: ["找车灯：一个侧面上，左右两个角块颜色一样。|Find the headlights: two corners on one side with the same color.",
+           "有车灯：转顶层，把车灯放到后面，做换角公式。|Headlights: turn the top layer to put them at the back, then do the corner swap.",
+           "没有车灯：先做一遍公式，车灯就出现了。|No headlights: do the move once first, and headlights appear.",
+           "最后转顶层，让角块对上中心块。|At the end, turn the top layer so the corners match the centers."],
+    think: "这个公式让 3 个角块轮流换位置，还有 1 个角块不动。做 3 遍回到原样。|This move takes 3 corners around in a circle and leaves 1 corner alone. Three times brings the cube back.",
+    pics: [{ view: "top", script: "aperm", dim: "ycorners", cap: "车灯在后面（上边那两个同色的角）|Headlights at the back (the two same-color corners at the top)" }] },
+  { n: 7, name: "顶层棱块回家|Top edges home", formulas: ["uperm"],
+    look: ["看一看：有没有一个侧面，整面都是一种颜色？|Look: is there a side that is all one color?",
+           "有：转整个魔方，把这一面放到后面，做换棱公式。没好就再做一遍。|Yes: turn the whole cube so that side is at the back, then do the edge swap. Not done yet? Do it again.",
+           "没有：先做一遍公式，就会出现一面。|No: do the move once, and a finished side appears."],
+    think: "这个公式让 3 条棱轮流换位置，后面那条不动。做 3 遍回到原样。|This move takes 3 edges around in a circle and leaves the back one alone. Three times brings the cube back.",
+    pics: [{ view: "top", script: "uperm", dim: "none", cap: "做好的一面放后面（上边）|The finished side at the back (top of the picture)" }] }
 ];
 
 const ALL_FORMULAS = ["sexy", "eR", "eL", "yc", "sune", "aperm", "uperm"];
 /* task kinds: info (read), tap (tap a kind of piece), find (find a piece by its colors), ask (pick an answer),
    guided (tap the moves of a formula in order), puz (free play to a goal), undo (turn a solved cube back). */
 const LEVELS = [
-  { id: 1, name: "认识三阶魔方", sub: "三种小块，中心块是地图", step: 0, goal: 0, dim: "none", buttons: FACE12, tasks: [
-    { k: "info", t: "三阶魔方有三种小块。<b>中心块</b>只有 1 种颜色，一共 6 个。它们永远不会换位置。所以中心块就是地图：这一面该是什么颜色，看中心块。<br>用手指拖动魔方，可以从别的方向看。" },
-    { k: "tap", want: 1, t: "点一个<b>中心块</b>。它只有 1 种颜色，在每一面的正中间。" },
-    { k: "tap", want: 2, t: "点一个<b>棱块</b>。它有 2 种颜色，在两个面的中间。一共有 12 个。" },
-    { k: "tap", want: 3, t: "点一个<b>角块</b>。它有 3 种颜色，在角上。一共有 8 个。" },
-    { k: "ask", t: "有没有一个小块，是<b>白色和黄色</b>的？", opts: ["有", "没有"], ans: 1, why: "没有。白色和黄色是对面，永远碰不到一起。红色对橙色、蓝色对绿色也一样。" },
-    { k: "find", colors: "WG", t: "魔方打乱了。找出<b>白·绿</b>棱块，点它。看不到就拖动魔方转一转。" },
-    { k: "ask", t: "白·绿棱块的家在哪里？", opts: ["白色中心和绿色中心之间", "黄色中心旁边", "哪里都可以"], ans: 0, why: "对。每一块的家，都在和它同色的中心块之间。" },
-    { k: "find", colors: "WRB", t: "再找一个：<b>白·红·蓝</b>角块，点它。" },
-    { k: "undo", n: 1, t: "魔方只被转了<b>一下</b>。看一看是哪一层被转了，把它转回去。" },
-    { k: "undo", n: 1, t: "再来一次：又被转了<b>一下</b>。" },
-    { k: "undo", n: 2, t: "这次被转了<b>两下</b>。后转的那一下，要先转回去。" }
+  { id: 1, name: "认识三阶魔方|Meet the 3x3", sub: "三种小块，中心块是地图|Three kinds of pieces; the centers are the map", step: 0, goal: 0, dim: "none", buttons: FACE12, tasks: [
+    { k: "info", t: "三阶魔方有三种小块。<b>中心块</b>只有 1 种颜色，一共 6 个。它们永远不会换位置。所以中心块就是地图：这一面该是什么颜色，看中心块。<br>用手指拖动魔方，可以从别的方向看。|A 3x3 has three kinds of pieces. A <b>center</b> has 1 color, and there are 6 of them. They never change places, so the centers are your map: a side's color is the color of its center.<br>Drag the cube with your finger to look at it from other sides." },
+    { k: "tap", want: 1, t: "点一个<b>中心块</b>。它只有 1 种颜色，在每一面的正中间。|Tap a <b>center</b>. It has only 1 color and sits in the middle of a side." },
+    { k: "tap", want: 2, t: "点一个<b>棱块</b>。它有 2 种颜色，在两个面的中间。一共有 12 个。|Tap an <b>edge</b>. It has 2 colors and sits between two sides. There are 12." },
+    { k: "tap", want: 3, t: "点一个<b>角块</b>。它有 3 种颜色，在角上。一共有 8 个。|Tap a <b>corner</b>. It has 3 colors and sits on a corner. There are 8." },
+    { k: "ask", t: "有没有一个小块，是<b>白色和黄色</b>的？|Is there a piece that is <b>white and yellow</b>?", opts: ["有|Yes", "没有|No"], ans: 1, why: "没有。白色和黄色是对面，永远碰不到一起。红色对橙色、蓝色对绿色也一样。|No. White and yellow are on opposite sides, so they never meet. Red and orange, and blue and green, are opposites too." },
+    { k: "find", colors: "WG", t: "魔方打乱了。找出<b>白·绿</b>棱块，点它。看不到就拖动魔方转一转。|The cube is mixed up. Find the <b>white-green</b> edge and tap it. Can't see it? Drag the cube around." },
+    { k: "ask", t: "白·绿棱块的家在哪里？|Where is the white-green edge's home?", opts: ["白色中心和绿色中心之间|Between the white center and the green center", "黄色中心旁边|Next to the yellow center", "哪里都可以|Anywhere"], ans: 0, why: "对。每一块的家，都在和它同色的中心块之间。|Yes. Every piece's home is between the centers of its colors." },
+    { k: "find", colors: "WRB", t: "再找一个：<b>白·红·蓝</b>角块，点它。|One more: find the <b>white-red-blue</b> corner and tap it." },
+    { k: "undo", n: 1, t: "魔方只被转了<b>一下</b>。看一看是哪一层被转了，把它转回去。|The cube was turned <b>once</b>. Find which layer was turned and turn it back." },
+    { k: "undo", n: 1, t: "再来一次：又被转了<b>一下</b>。|Again: it was turned <b>once</b>." },
+    { k: "undo", n: 2, t: "这次被转了<b>两下</b>。后转的那一下，要先转回去。|This time it was turned <b>twice</b>. Undo the last turn first." }
   ] },
-  { id: 2, name: "白色十字", sub: "第 1 步：自己想，不用公式", step: 1, goal: 1, up: true, dim: "cross", buttons: FACE12, tasks: [
-    { k: "info", t: "第 1 步：<b>白色十字</b>。把 4 个白色棱块放到白色中心的四边。<b>侧面的颜色也要对上中心块</b>，才算回家。", pics: [{ view: "iso", pre: "z2", script: "", dim: "cross", cap: "做好的样子" }] },
-    { k: "info", t: "这一关白色朝上，看得清楚。十字做好以后，再把魔方翻过来，让白色朝下。<br>方法：<b>一次只放一块，放好的不要弄乱。</b>灰色的小块现在不用管。" },
-    { k: "puz", script: "F", focus: true, t: "有一块白色棱块离开了家。把它送回去。" },
-    { k: "puz", script: "U", focus: true, t: "十字看起来做好了？看看侧面：颜色和中心块对不上。想一想转哪一层。" },
-    { k: "puz", script: "F2 D' R2", focus: true, t: "这次有两块不在家。先想好每一块要去哪里，再动手。" },
-    { k: "puz", script: "F U' R U", focus: true, t: "这一块在家的位置，可是白色朝着侧面，它翻了。把它拿出来，换个方向再放回去。" },
-    { k: "puz", focus: true, t: "白色棱块都乱了。一块一块放。" },
-    { k: "puz", focus: false, flipEnd: true, t: "这是真魔方的样子，所有颜色都在。只看白色棱块，做好十字，再按<b>翻过来</b>。" }
+  { id: 2, name: "白色十字|White cross", sub: "第 1 步：自己想，不用公式|Step 1: think it out, no moves to learn", step: 1, goal: 1, up: true, dim: "cross", buttons: FACE12, tasks: [
+    { k: "info", t: "第 1 步：<b>白色十字</b>。把 4 个白色棱块放到白色中心的四边。<b>侧面的颜色也要对上中心块</b>，才算回家。|Step 1: the <b>white cross</b>. Put the 4 white edges around the white center. <b>The side colors must match their centers too</b>, or they are not home.", pics: [{ view: "iso", pre: "z2", script: "", dim: "cross", cap: "做好的样子|What it looks like done" }] },
+    { k: "info", t: "这一关白色朝上，看得清楚。十字做好以后，再把魔方翻过来，让白色朝下。<br>方法：<b>一次只放一块，放好的不要弄乱。</b>灰色的小块现在不用管。|In this level white is on top, so you can see it. When the cross is done, flip the cube so white is on the bottom.<br>The way: <b>place one edge at a time, and don't break the ones you placed.</b> Ignore the gray pieces for now." },
+    { k: "puz", script: "F", focus: true, t: "有一块白色棱块离开了家。把它送回去。|One white edge has left home. Send it back." },
+    { k: "puz", script: "U", focus: true, t: "十字看起来做好了？看看侧面：颜色和中心块对不上。想一想转哪一层。|The cross looks done? Look at the sides: the colors don't match the centers. Think about which layer to turn." },
+    { k: "puz", script: "F2 D' R2", focus: true, t: "这次有两块不在家。先想好每一块要去哪里，再动手。|Two edges are away this time. Decide where each one goes before you turn." },
+    { k: "puz", script: "F U' R U", focus: true, t: "这一块在家的位置，可是白色朝着侧面，它翻了。把它拿出来，换个方向再放回去。|This edge is in its home, but white faces the side: it is flipped. Take it out and put it back the other way round." },
+    { k: "puz", focus: true, t: "白色棱块都乱了。一块一块放。|The white edges are all mixed up. Place them one by one." },
+    { k: "puz", focus: false, flipEnd: true, t: "这是真魔方的样子，所有颜色都在。只看白色棱块，做好十字，再按<b>翻过来</b>。|This is how a real cube looks, with every color showing. Look only at the white edges, make the cross, then press <b>Flip over</b>." }
   ] },
-  { id: 3, name: "白色角块", sub: "第 2 步：万能公式", step: 2, goal: 2, dim: "corners", buttons: TURNS.concat(["sexy"]), tasks: [
-    { k: "info", t: "第 2 步：<b>白色角块</b>。现在白色朝下。每个白色角块有 3 种颜色。它的家在底层的角上，在另外两种颜色的中心块之间。" },
-    { k: "info", t: "方法：<br>① 转整个魔方，让角块的家在<b>右前方</b>。<br>② 转顶层，把角块放到家的<b>正上方</b>。<br>③ 重复<b>万能公式 R U R' U'</b>，直到它回家。", pics: [{ view: "iso", script: "sexy", dim: "corners", cap: "角块在家的正上方" }] },
-    { k: "guided", script: "sexy", t: "角块就在家的正上方。按顺序一下一下按：R U R' U'。" },
-    { k: "ask", t: "角块在家的正上方，白色朝<b>上</b>。要做几遍万能公式？", opts: ["1 遍", "3 遍", "5 遍"], ans: 1, why: "3 遍。白色朝右是 1 遍，朝上是 3 遍，朝前是 5 遍。不用背：重复做，放好就停。" },
-    { k: "puz", script: "sexy sexy sexy", focus: true, t: "试一试：白色朝上。数一数你做了几遍。" },
-    { k: "puz", script: "U sexy sexy sexy sexy sexy", focus: true, t: "角块不在家的上方。先转顶层。" },
-    { k: "puz", script: "y U' sexy", focus: true, t: "这次家不在右前方。先转整个魔方。" },
-    { k: "puz", script: "y' sexy sexy", focus: true, t: "顶层没有白色角块。有一个角块在底层，可是方向不对。把它转到右前，做一遍万能公式，它就到顶层了。" },
-    { k: "puz", focus: true, t: "白色角块都要放好。一个一个来。" },
-    { k: "puz", focus: false, t: "真魔方的样子。只看白色角块。" }
+  { id: 3, name: "白色角块|White corners", sub: "第 2 步：万能公式|Step 2: the magic move", step: 2, goal: 2, dim: "corners", buttons: TURNS.concat(["sexy"]), tasks: [
+    { k: "info", t: "第 2 步：<b>白色角块</b>。现在白色朝下。每个白色角块有 3 种颜色。它的家在底层的角上，在另外两种颜色的中心块之间。|Step 2: the <b>white corners</b>. White is on the bottom now. Each white corner has 3 colors. Its home is a bottom corner, between the centers of its other two colors." },
+    { k: "info", t: "方法：<br>① 转整个魔方，让角块的家在<b>右前方</b>。<br>② 转顶层，把角块放到家的<b>正上方</b>。<br>③ 重复<b>万能公式 R U R' U'</b>，直到它回家。|The way:<br>① Turn the whole cube so the corner's home is at the <b>front right</b>.<br>② Turn the top layer to put the corner <b>right above</b> its home.<br>③ Repeat the <b>magic move R U R' U'</b> until it is home.", pics: [{ view: "iso", script: "sexy", dim: "corners", cap: "角块在家的正上方|The corner is right above its home" }] },
+    { k: "guided", script: "sexy", t: "角块就在家的正上方。按顺序一下一下按：R U R' U'。|The corner is right above its home. Press the turns one by one: R U R' U'." },
+    { k: "ask", t: "角块在家的正上方，白色朝<b>上</b>。要做几遍万能公式？|The corner is right above its home with white facing <b>up</b>. How many magic moves?", opts: ["1 遍|1", "3 遍|3", "5 遍|5"], ans: 1, why: "3 遍。白色朝右是 1 遍，朝上是 3 遍，朝前是 5 遍。不用背：重复做，放好就停。|3. White facing right takes 1, up takes 3, front takes 5. No need to remember: repeat until it is in, then stop." },
+    { k: "puz", script: "sexy sexy sexy", focus: true, t: "试一试：白色朝上。数一数你做了几遍。|Try it: white faces up. Count how many times you do it." },
+    { k: "puz", script: "U sexy sexy sexy sexy sexy", focus: true, t: "角块不在家的上方。先转顶层。|The corner is not above its home. Turn the top layer first." },
+    { k: "puz", script: "y U' sexy", focus: true, t: "这次家不在右前方。先转整个魔方。|This time the home is not at the front right. Turn the whole cube first." },
+    { k: "puz", script: "y' sexy sexy", focus: true, t: "顶层没有白色角块。有一个角块在底层，可是方向不对。把它转到右前，做一遍万能公式，它就到顶层了。|There is no white corner on top. One corner is on the bottom but turned the wrong way. Bring it to the front right and do the magic move once: it goes up to the top." },
+    { k: "puz", focus: true, t: "白色角块都要放好。一个一个来。|Put all the white corners in, one at a time." },
+    { k: "puz", focus: false, t: "真魔方的样子。只看白色角块。|A real cube. Look only at the white corners." }
   ] },
-  { id: 4, name: "第二层：往右放", sub: "第 3 步的前一半", step: 3, goal: 3, dim: "mid", buttons: TURNS.concat(["eR"]), tasks: [
-    { k: "info", t: "第 3 步：<b>第二层的棱块</b>。找顶层<b>没有黄色</b>的棱块。它们的家在中间一层。" },
-    { k: "info", t: "方法：<br>① 转顶层，让棱块侧面的颜色对上同色的中心块。<br>② 转整个魔方，让这一面朝着你。<br>③ 看棱块顶上的颜色。和<b>右边</b>的中心一样，就往右放。", pics: [{ view: "iso", script: "eR", dim: "mid", cap: "顶上是右边的颜色：往右放" }] },
-    { k: "guided", script: "eR", t: "往右放：U R U' R' U' F' U F。按顺序一下一下按。" },
-    { k: "puz", script: "U eR", focus: true, t: "先转顶层，让侧面的颜色对上中心块，再往右放。" },
-    { k: "puz", script: "y U2 eR", focus: true, t: "对上颜色以后，还要把那一面转到前面。" },
-    { k: "puz", script: "eR y U eR", focus: true, t: "有两块棱块，都往右放。" },
-    { k: "puz", focus: false, noKick: true, t: "真魔方的样子：这几块都是往右放。" }
+  { id: 4, name: "第二层：往右放|Middle layer: to the right", sub: "第 3 步的前一半|Step 3, first half", step: 3, goal: 3, dim: "mid", buttons: TURNS.concat(["eR"]), tasks: [
+    { k: "info", t: "第 3 步：<b>第二层的棱块</b>。找顶层<b>没有黄色</b>的棱块。它们的家在中间一层。|Step 3: the <b>middle-layer edges</b>. Find the top-layer edges with <b>no yellow</b>. Their homes are in the middle layer." },
+    { k: "info", t: "方法：<br>① 转顶层，让棱块侧面的颜色对上同色的中心块。<br>② 转整个魔方，让这一面朝着你。<br>③ 看棱块顶上的颜色。和<b>右边</b>的中心一样，就往右放。|The way:<br>① Turn the top layer until the edge's side color matches the center of that color.<br>② Turn the whole cube so that side faces you.<br>③ Look at the edge's top color. If it matches the <b>right</b> center, send it to the right.", pics: [{ view: "iso", script: "eR", dim: "mid", cap: "顶上是右边的颜色：往右放|Top color matches the right: edge to the right" }] },
+    { k: "guided", script: "eR", t: "往右放：U R U' R' U' F' U F。按顺序一下一下按。|Edge to the right: U R U' R' U' F' U F. Press the turns one by one." },
+    { k: "puz", script: "U eR", focus: true, t: "先转顶层，让侧面的颜色对上中心块，再往右放。|First turn the top layer so the side color matches its center, then send it right." },
+    { k: "puz", script: "y U2 eR", focus: true, t: "对上颜色以后，还要把那一面转到前面。|After matching the color, turn that side to the front too." },
+    { k: "puz", script: "eR y U eR", focus: true, t: "有两块棱块，都往右放。|Two edges, both go to the right." },
+    { k: "puz", focus: false, noKick: true, t: "真魔方的样子：这几块都是往右放。|A real cube: these edges all go to the right." }
   ] },
-  { id: 5, name: "第二层：往左放", sub: "第 3 步的后一半", step: 3, goal: 3, dim: "mid", buttons: TURNS.concat(["eR", "eL"]), tasks: [
-    { k: "info", t: "棱块顶上的颜色和<b>左边</b>的中心一样，就往左放。<br>“往左放”是“往右放”的镜子：<b>U' L' U L U F U' F'</b>。", pics: [{ view: "iso", script: "eR", dim: "mid", cap: "往右放" }, { view: "iso", script: "eL", dim: "mid", cap: "往左放（左边在背面，拖动魔方看）" }] },
-    { k: "guided", script: "eL", t: "往左放：U' L' U L U F U' F'。按顺序一下一下按。" },
-    { k: "ask", t: "棱块已经对好前面。它顶上是红色，<b>左边</b>的中心是红色。用哪个公式？", opts: ["往右放", "往左放"], ans: 1, why: "往左放。顶上的颜色和哪一边的中心一样，就往哪一边放。" },
-    { k: "puz", script: "U' eL", focus: true, t: "先对上中心块，再决定往左还是往右。" },
-    { k: "puz", script: "eR y U2 eL", focus: true, t: "两块棱块。先说出“往左”还是“往右”，再动手。" },
-    { k: "info", t: "有时棱块<b>卡在中层</b>：位置不对，或者翻了。<br>办法：转整个魔方，让它在右前。做一遍“往右放”，它就被顶到顶层。然后再正常放。" },
-    { k: "puz", flipMid: true, focus: true, t: "这块棱块在自己家，可是翻了。先把它顶出来，再放回去。" },
-    { k: "puz", focus: true, t: "把整个第二层做好。" },
-    { k: "puz", focus: false, t: "真魔方的样子。做好以后，下面两层就全好了。" }
+  { id: 5, name: "第二层：往左放|Middle layer: to the left", sub: "第 3 步的后一半|Step 3, second half", step: 3, goal: 3, dim: "mid", buttons: TURNS.concat(["eR", "eL"]), tasks: [
+    { k: "info", t: "棱块顶上的颜色和<b>左边</b>的中心一样，就往左放。<br>“往左放”是“往右放”的镜子：<b>U' L' U L U F U' F'</b>。|If the edge's top color matches the <b>left</b> center, send it to the left.<br>“Edge to the left” is the mirror of “edge to the right”: <b>U' L' U L U F U' F'</b>.", pics: [{ view: "iso", script: "eR", dim: "mid", cap: "往右放|Edge to the right" }, { view: "iso", script: "eL", dim: "mid", cap: "往左放（左边在背面，拖动魔方看）|Edge to the left (the left side is hidden; drag the cube to see it)" }] },
+    { k: "guided", script: "eL", t: "往左放：U' L' U L U F U' F'。按顺序一下一下按。|Edge to the left: U' L' U L U F U' F'. Press the turns one by one." },
+    { k: "ask", t: "棱块已经对好前面。它顶上是红色，<b>左边</b>的中心是红色。用哪个公式？|The edge already matches the front. Its top is red, and the <b>left</b> center is red. Which move?", opts: ["往右放|Edge to the right", "往左放|Edge to the left"], ans: 1, why: "往左放。顶上的颜色和哪一边的中心一样，就往哪一边放。|Edge to the left. The edge goes toward the side whose center matches its top color." },
+    { k: "puz", script: "U' eL", focus: true, t: "先对上中心块，再决定往左还是往右。|Match the center first, then decide left or right." },
+    { k: "puz", script: "eR y U2 eL", focus: true, t: "两块棱块。先说出“往左”还是“往右”，再动手。|Two edges. Say “left” or “right” before you turn." },
+    { k: "info", t: "有时棱块<b>卡在中层</b>：位置不对，或者翻了。<br>办法：转整个魔方，让它在右前。做一遍“往右放”，它就被顶到顶层。然后再正常放。|Sometimes an edge is <b>stuck in the middle layer</b>: in the wrong place, or flipped.<br>The fix: turn the whole cube so it is at the front right. Do “edge to the right” once and it is pushed up to the top. Then place it the normal way." },
+    { k: "puz", flipMid: true, focus: true, t: "这块棱块在自己家，可是翻了。先把它顶出来，再放回去。|This edge is in its home but flipped. Push it out first, then put it back." },
+    { k: "puz", focus: true, t: "把整个第二层做好。|Finish the whole middle layer." },
+    { k: "puz", focus: false, t: "真魔方的样子。做好以后，下面两层就全好了。|A real cube. When this is done, the bottom two layers are finished." }
   ] },
-  { id: 6, name: "黄色十字", sub: "第 4 步：点、拐角、线", step: 4, goal: 4, dim: "ycross", buttons: ["U", "U'", "yc"], tasks: [
-    { k: "info", t: "下面两层做好了，只剩黄色这一层。<br>第 4 步：<b>黄色十字</b>。只看顶面的 4 个黄色<b>棱块</b>。角块先不管。" },
-    { k: "info", t: "顶面的黄色有 3 种样子：点、拐角、一条线。公式只有一个：<b>F R U R' U' F'</b>。<br>点：直接做。拐角：放到左后。线：横着放。", pics: [{ view: "top", script: "yc yc U yc", dim: "ycross", cap: "点" }, { view: "top", script: "yc yc", dim: "ycross", cap: "拐角在左后" }, { view: "top", script: "yc", dim: "ycross", cap: "线横着" }] },
-    { k: "guided", script: "yc", t: "黄色是一条横线。做黄十字公式：F R U R' U' F'。" },
-    { k: "puz", script: "U yc", focus: true, t: "线是竖着的。先转顶层，把它变成横的。" },
-    { k: "puz", shape: "L", focus: true, t: "这是拐角。先转顶层，把拐角放到左后：一块在后面，一块在左边。" },
-    { k: "ask", t: "顶面只有一个黄点。要做几遍公式，才能变成十字？", opts: ["1 遍", "2 遍", "3 遍"], ans: 2, why: "3 遍。点变拐角，拐角变线，线变十字。每做一遍变一个样子。" },
-    { k: "puz", shape: "dot", focus: true, t: "一个点。做一遍，看看变成了什么，摆好，再做。" },
-    { k: "puz", focus: false, t: "真魔方的样子。先认出是哪一种，再动手。" }
+  { id: 6, name: "黄色十字|Yellow cross", sub: "第 4 步：点、拐角、线|Step 4: dot, L, line", step: 4, goal: 4, dim: "ycross", buttons: ["U", "U'", "yc"], tasks: [
+    { k: "info", t: "下面两层做好了，只剩黄色这一层。<br>第 4 步：<b>黄色十字</b>。只看顶面的 4 个黄色<b>棱块</b>。角块先不管。|The bottom two layers are done. Only the yellow layer is left.<br>Step 4: the <b>yellow cross</b>. Look only at the 4 yellow <b>edges</b> on top. Ignore the corners for now." },
+    { k: "info", t: "顶面的黄色有 3 种样子：点、拐角、一条线。公式只有一个：<b>F R U R' U' F'</b>。<br>点：直接做。拐角：放到左后。线：横着放。|The yellow on top has 3 shapes: a dot, an L, and a line. There is just one move: <b>F R U R' U' F'</b>.<br>Dot: just do it. L: put it at the back left. Line: make it go left to right.", pics: [{ view: "top", script: "yc yc U yc", dim: "ycross", cap: "点|Dot" }, { view: "top", script: "yc yc", dim: "ycross", cap: "拐角在左后|L at the back left" }, { view: "top", script: "yc", dim: "ycross", cap: "线横着|Line left to right" }] },
+    { k: "guided", script: "yc", t: "黄色是一条横线。做黄十字公式：F R U R' U' F'。|The yellow is a line going left to right. Do the yellow cross move: F R U R' U' F'." },
+    { k: "puz", script: "U yc", focus: true, t: "线是竖着的。先转顶层，把它变成横的。|The line goes front to back. Turn the top layer first so it goes left to right." },
+    { k: "puz", shape: "L", focus: true, t: "这是拐角。先转顶层，把拐角放到左后：一块在后面，一块在左边。|This is an L. Turn the top layer first to put it at the back left: one edge at the back, one on the left." },
+    { k: "ask", t: "顶面只有一个黄点。要做几遍公式，才能变成十字？|There is only a yellow dot on top. How many times do you do the move to get a cross?", opts: ["1 遍|1", "2 遍|2", "3 遍|3"], ans: 2, why: "3 遍。点变拐角，拐角变线，线变十字。每做一遍变一个样子。|3. Dot to L, L to line, line to cross. Each move changes the shape once." },
+    { k: "puz", shape: "dot", focus: true, t: "一个点。做一遍，看看变成了什么，摆好，再做。|A dot. Do the move once, see what it becomes, set it up, and do it again." },
+    { k: "puz", focus: false, t: "真魔方的样子。先认出是哪一种，再动手。|A real cube. Name the shape first, then turn." }
   ] },
-  { id: 7, name: "黄色顶面", sub: "第 5 步：小鱼公式", step: 5, goal: 5, dim: "yface", buttons: ["U", "U'", "sune"], tasks: [
-    { k: "info", t: "第 5 步：把<b>整个顶面</b>变成黄色。<br>先数一数：有几个<b>角块</b>黄色朝上？" },
-    { k: "info", t: "1 个：把它放到左前。<br>0 个：让左前角块的黄色朝左。<br>2 个：让左前角块的黄色朝前。<br>然后做<b>小鱼公式 R U R' U R U2 R'</b>。再数，再摆，再做。", pics: [{ view: "top", script: "sune", dim: "yface", cap: "1 个：放左前" }, { view: "top", script: "sune sune", dim: "yface", cap: "0 个：黄色朝左" }, { view: "top", script: "sune sune U2 sune", dim: "yface", cap: "2 个：黄色朝前" }] },
-    { k: "guided", script: "sune", t: "只有 1 个角块黄色朝上，它在左前。做小鱼公式：R U R' U R U2 R'。" },
-    { k: "puz", script: "U2 sune", focus: true, t: "有 1 个角块黄色朝上，可是不在左前。先转顶层。" },
-    { k: "puz", ups: 1, sunes: 2, focus: true, t: "做完一遍还没有全黄？再数一数，再摆好，再做。" },
-    { k: "puz", ups: 2, focus: true, t: "有 2 个角块黄色朝上。看左前的角块：让它的黄色朝着你。" },
-    { k: "puz", ups: 0, focus: true, t: "没有角块黄色朝上。看左前的角块：让它的黄色朝左。左边在背面，拖动魔方看一看。" },
-    { k: "puz", focus: false, t: "真魔方的样子。先数，再摆，再做。" }
+  { id: 7, name: "黄色顶面|Yellow top", sub: "第 5 步：小鱼公式|Step 5: the Sune", step: 5, goal: 5, dim: "yface", buttons: ["U", "U'", "sune"], tasks: [
+    { k: "info", t: "第 5 步：把<b>整个顶面</b>变成黄色。<br>先数一数：有几个<b>角块</b>黄色朝上？|Step 5: make the <b>whole top</b> yellow.<br>First count: how many <b>corners</b> have yellow facing up?" },
+    { k: "info", t: "1 个：把它放到左前。<br>0 个：让左前角块的黄色朝左。<br>2 个：让左前角块的黄色朝前。<br>然后做<b>小鱼公式 R U R' U R U2 R'</b>。再数，再摆，再做。|One: put it at the front left.<br>None: make the front-left corner's yellow face left.<br>Two: make the front-left corner's yellow face you.<br>Then do the <b>Sune R U R' U R U2 R'</b>. Count, set up and do it again.", pics: [{ view: "top", script: "sune", dim: "yface", cap: "1 个：放左前|One: at the front left" }, { view: "top", script: "sune sune", dim: "yface", cap: "0 个：黄色朝左|None: yellow faces left" }, { view: "top", script: "sune sune U2 sune", dim: "yface", cap: "2 个：黄色朝前|Two: yellow faces you" }] },
+    { k: "guided", script: "sune", t: "只有 1 个角块黄色朝上，它在左前。做小鱼公式：R U R' U R U2 R'。|Only 1 corner has yellow up, and it is at the front left. Do the Sune: R U R' U R U2 R'." },
+    { k: "puz", script: "U2 sune", focus: true, t: "有 1 个角块黄色朝上，可是不在左前。先转顶层。|One corner has yellow up, but it is not at the front left. Turn the top layer first." },
+    { k: "puz", ups: 1, sunes: 2, focus: true, t: "做完一遍还没有全黄？再数一数，再摆好，再做。|Not all yellow after one Sune? Count again, set up again, and do it again." },
+    { k: "puz", ups: 2, focus: true, t: "有 2 个角块黄色朝上。看左前的角块：让它的黄色朝着你。|Two corners have yellow up. Look at the front-left corner: make its yellow face you." },
+    { k: "puz", ups: 0, focus: true, t: "没有角块黄色朝上。看左前的角块：让它的黄色朝左。左边在背面，拖动魔方看一看。|No corner has yellow up. Look at the front-left corner: make its yellow face left. The left side is hidden, so drag the cube to look." },
+    { k: "puz", focus: false, t: "真魔方的样子。先数，再摆，再做。|A real cube. Count, set up, then do it." }
   ] },
-  { id: 8, name: "顶层角块回家", sub: "第 6 步：找车灯", step: 6, goal: 6, dim: "ycorners", buttons: ["U", "U'", "aperm"], tasks: [
-    { k: "info", t: "第 6 步：让顶层的 4 个<b>角块</b>回家。<br>先找<b>车灯</b>：一个侧面上，左右两个角块的颜色一样，像一对车灯。", pics: [{ view: "top", script: "aperm", dim: "ycorners", cap: "车灯在后面（图的上边）" }] },
-    { k: "info", t: "有车灯：转顶层，把车灯放到<b>后面</b>，做<b>换角公式</b>。<br>没有车灯：先做一遍公式，车灯就出现了。<br>最后转顶层，让角块对上中心块。" },
-    { k: "guided", script: "aperm", t: "车灯在后面。做换角公式：R' F R' B2 R F' R' B2 R2。B2 就是后面转两下。" },
-    { k: "puz", script: "U aperm", focus: true, t: "先找到车灯在哪一面，把它转到后面。拖动魔方可以看后面。" },
-    { k: "puz", script: "U", focus: true, t: "四面都有车灯：角块的顺序已经对了。只要转顶层，让它们对上中心块。" },
-    { k: "puz", lights: 0, focus: true, t: "四面都找不到车灯。先做一遍公式，再找。" },
-    { k: "puz", focus: false, t: "真魔方的样子。找车灯，放后面，做公式，最后对上中心块。" }
+  { id: 8, name: "顶层角块回家|Top corners home", sub: "第 6 步：找车灯|Step 6: find the headlights", step: 6, goal: 6, dim: "ycorners", buttons: ["U", "U'", "aperm"], tasks: [
+    { k: "info", t: "第 6 步：让顶层的 4 个<b>角块</b>回家。<br>先找<b>车灯</b>：一个侧面上，左右两个角块的颜色一样，像一对车灯。|Step 6: get the 4 top <b>corners</b> home.<br>First find the <b>headlights</b>: two corners on one side with the same color, like a car's two headlights.", pics: [{ view: "top", script: "aperm", dim: "ycorners", cap: "车灯在后面（图的上边）|Headlights at the back (top of the picture)" }] },
+    { k: "info", t: "有车灯：转顶层，把车灯放到<b>后面</b>，做<b>换角公式</b>。<br>没有车灯：先做一遍公式，车灯就出现了。<br>最后转顶层，让角块对上中心块。|Headlights: turn the top layer to put them at the <b>back</b>, then do the <b>corner swap</b>.<br>No headlights: do the move once first, and they appear.<br>At the end, turn the top layer so the corners match the centers." },
+    { k: "guided", script: "aperm", t: "车灯在后面。做换角公式：R' F R' B2 R F' R' B2 R2。B2 就是后面转两下。|The headlights are at the back. Do the corner swap: R' F R' B2 R F' R' B2 R2. B2 means turn the back twice." },
+    { k: "puz", script: "U aperm", focus: true, t: "先找到车灯在哪一面，把它转到后面。拖动魔方可以看后面。|Find which side has the headlights and turn them to the back. Drag the cube to see the back." },
+    { k: "puz", script: "U", focus: true, t: "四面都有车灯：角块的顺序已经对了。只要转顶层，让它们对上中心块。|Every side has headlights: the corners are already in order. Just turn the top layer to match them to the centers." },
+    { k: "puz", lights: 0, focus: true, t: "四面都找不到车灯。先做一遍公式，再找。|No side has headlights. Do the move once, then look again." },
+    { k: "puz", focus: false, t: "真魔方的样子。找车灯，放后面，做公式，最后对上中心块。|A real cube. Find the headlights, put them at the back, do the move, then match the centers." }
   ] },
-  { id: 9, name: "最后的棱块", sub: "第 7 步：换棱公式", step: 7, goal: 7, dim: "none", buttons: ["y", "y'", "uperm"], tasks: [
-    { k: "info", t: "最后一步！只剩顶层的几个<b>棱块</b>。<br>看一看：有没有一个侧面，整面都是一种颜色？", pics: [{ view: "top", script: "uperm", dim: "none", cap: "做好的一面在后面（图的上边）" }] },
-    { k: "info", t: "有：转<b>整个魔方</b>，把这一面放到后面，做<b>换棱公式</b>。没好就再做一遍。<br>没有：先做一遍公式，就会出现一面。<br>这一步不要单独转顶层。" },
-    { k: "guided", script: "uperm", t: "做好的一面在后面。做换棱公式：R U' R U R U R U' R' U' R2。" },
-    { k: "puz", script: "y uperm", focus: false, t: "先找到做好的那一面，转整个魔方，把它放到后面。" },
-    { k: "puz", script: "uperm uperm", focus: false, t: "做好的一面已经在后面。做一遍还没好？不用转，再做一遍。" },
-    { k: "puz", homes: 0, focus: false, t: "没有一面是做好的。先做一遍公式，再找。" },
-    { k: "puz", focus: false, t: "最后一题：把魔方拼好！" }
+  { id: 9, name: "最后的棱块|The last edges", sub: "第 7 步：换棱公式|Step 7: the edge swap", step: 7, goal: 7, dim: "none", buttons: ["y", "y'", "uperm"], tasks: [
+    { k: "info", t: "最后一步！只剩顶层的几个<b>棱块</b>。<br>看一看：有没有一个侧面，整面都是一种颜色？|The last step! Only some top <b>edges</b> are left.<br>Look: is there a side that is all one color?", pics: [{ view: "top", script: "uperm", dim: "none", cap: "做好的一面在后面（图的上边）|The finished side at the back (top of the picture)" }] },
+    { k: "info", t: "有：转<b>整个魔方</b>，把这一面放到后面，做<b>换棱公式</b>。没好就再做一遍。<br>没有：先做一遍公式，就会出现一面。<br>这一步不要单独转顶层。|Yes: turn the <b>whole cube</b> so that side is at the back, then do the <b>edge swap</b>. Not done? Do it again.<br>No: do the move once, and a finished side appears.<br>In this step, don't turn the top layer on its own." },
+    { k: "guided", script: "uperm", t: "做好的一面在后面。做换棱公式：R U' R U R U R U' R' U' R2。|The finished side is at the back. Do the edge swap: R U' R U R U R U' R' U' R2." },
+    { k: "puz", script: "y uperm", focus: false, t: "先找到做好的那一面，转整个魔方，把它放到后面。|Find the finished side, then turn the whole cube to put it at the back." },
+    { k: "puz", script: "uperm uperm", focus: false, t: "做好的一面已经在后面。做一遍还没好？不用转，再做一遍。|The finished side is already at the back. Not done after one? Don't turn, just do it again." },
+    { k: "puz", homes: 0, focus: false, t: "没有一面是做好的。先做一遍公式，再找。|No side is finished. Do the move once, then look again." },
+    { k: "puz", focus: false, t: "最后一题：把魔方拼好！|Last one: solve the cube!" }
   ] },
-  { id: 10, name: "从头到尾", sub: "七步连起来，自己决定", step: 0, goal: 7, up: true, dim: "none", buttons: FACE12.concat(["y", "y'", "flip"], ALL_FORMULAS), tasks: [
-    { k: "info", t: "现在从头到尾自己来。魔方是打乱的，七步都由你决定：现在是第几步？该怎么摆？用哪个公式？<br>魔方下面的 7 个小灯，会告诉你做好了几步。先白色朝上做十字，再按<b>翻过来</b>。" },
-    { k: "puz", full: true, focus: false, flipEnd: true, t: "把整个魔方拼好。卡住了可以看 📖 步骤卡，或者按 💡 提示。" }
+  { id: 10, name: "从头到尾|Start to finish", sub: "七步连起来，自己决定|All seven steps, your own choices", step: 0, goal: 7, up: true, dim: "none", buttons: FACE12.concat(["y", "y'", "flip"], ALL_FORMULAS), tasks: [
+    { k: "info", t: "现在从头到尾自己来。魔方是打乱的，七步都由你决定：现在是第几步？该怎么摆？用哪个公式？<br>魔方下面的 7 个小灯，会告诉你做好了几步。先白色朝上做十字，再按<b>翻过来</b>。|Now do it all yourself. The cube is mixed up, and every choice is yours: which step is it now? How do you set it up? Which move?<br>The 7 lights under the cube show how many steps are done. Make the cross with white on top first, then press <b>Flip over</b>." },
+    { k: "puz", full: true, focus: false, flipEnd: true, t: "把整个魔方拼好。卡住了可以看 📖 步骤卡，或者按 💡 提示。|Solve the whole cube. Stuck? Look at the 📖 step cards or press 💡 Hint." }
   ] }
 ];
 /* the hint codes the method goes through from here to `goal` steps */
@@ -1179,11 +1216,53 @@ function puzzleSpec(level, task) {
   return spec;
 }
 /*LEVELS-END*/
-if (typeof module !== "undefined") module.exports = Object.assign(module.exports || {}, { FACE12, TURNS, FORMULA_NAME, COLOR_ZH, MOVE_ZH, DIM, STEPS, ALL_FORMULAS, LEVELS, puzzleSpec, methodCodes });
+if (typeof module !== "undefined") module.exports = Object.assign(module.exports || {}, { LANG, tr, FACE12, TURNS, FORMULA_NAME, COLOR_NAME, MOVE_TXT, DIM, STEPS, ALL_FORMULAS, LEVELS, puzzleSpec, methodCodes });
 </script>
 <script>
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+const T = (zh, en) => (LANG.cur === "en" ? en : zh);       /* for words built from parts */
+
+/* ---------- language: Chinese or English, one at a time; the choice is remembered on this device ---------- */
+const LANG_KEY = "cube3x3_quest_lang";
+try { const l = localStorage.getItem(LANG_KEY); if (l === "en" || l === "zh") LANG.cur = l; } catch (e) {}
+const UI = {
+  title: "三阶魔方闯关|3x3 Cube Quest",
+  wayPlay: "在屏幕上闯关|Play on the screen",
+  wayPlaySub: "十关，一关学一步。魔方在屏幕上，可以转、可以撤销、可以要提示。|Ten levels, one step each. The cube is on the screen: turn it, undo, and ask for hints.",
+  wayPrint: "打印七步卡|Print the 7-step sheet",
+  wayPrintSub: "拿着真魔方，一步一步照着做。七步、七个公式，打印出来几页纸。|Hold a real cube and follow along. Seven steps and seven moves on a few printed pages.",
+  intro: "两种学法用的是同一个方法、同一套公式，可以换着用。孩子已经会二阶的话，第 3 关的万能公式、第 7 关的小鱼公式、第 8 关的换角公式都是老朋友。|Both ways use the same method and the same moves, so you can switch between them. If your child already solves the 2x2, the magic move (level 3), the Sune (level 7) and the corner swap (level 8) are old friends.",
+  drag: "👆 拖动魔方可以转着看|👆 Drag the cube to look around",
+  resetView: "↺ 摆正|↺ Reset view",
+  stageLabel: "屏幕上的魔方，用手指拖动可以转着看|The cube on the screen. Drag it to look around.",
+  levels: "← 关卡|← Levels", cards: "📖 步骤卡|📖 Step cards", restart: "⟲ 重来|⟲ Start over", undo: "↶ 撤销|↶ Undo", hint: "💡 提示|💡 Hint",
+  next: "下一题 ▶|Next ▶", finish: "过关 🎉|Finish 🎉", again: "再玩一次|Play again", start: "开始|Start",
+  doneSoFar: "已经做了：|Done so far: ", flip: "翻过来|Flip over", flipSub: "白色朝下|White to the bottom",
+  close: "关上|Close", front: "前面|front", backLevels: "回到关卡|Back to levels", print: "🖨️ 打印|🖨️ Print",
+  stars: "星星看的是自己想出来的：少按 💡 提示，星星就多。|Stars are for working it out yourself: fewer 💡 hints, more stars.",
+  thinkAgain: "再想一想。|Think again.",
+  broken: "小心：前面做好的被弄乱了。可以按 ↶ 撤销。|Careful: an earlier step got broken. You can press ↶ Undo."
+};
+const LIGHT = ["白色十字|White cross", "白色角块|White corners", "第二层棱块|Middle layer", "黄色十字|Yellow cross", "黄色顶面|Yellow top", "角块|Top corners", "棱块|Top edges"];
+function applyStatic() {
+  document.documentElement.lang = LANG.cur === "en" ? "en" : "zh-CN";
+  document.title = tr(UI.title);
+  document.querySelectorAll("[data-t]").forEach(el => { el.textContent = tr(UI[el.dataset.t]); });
+  $("h1[data-t]").textContent = "🧩 " + tr(UI.title);
+  $("#stage").setAttribute("aria-label", tr(UI.stageLabel));
+  $(".langs").setAttribute("aria-label", T("语言", "Language"));
+  document.querySelectorAll(".lang").forEach(b => { const on = b.dataset.lang === LANG.cur; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); });
+}
+function setLang(l) {
+  if (l === LANG.cur) return;
+  LANG.cur = l; try { localStorage.setItem(LANG_KEY, l); } catch (e) {}
+  applyStatic(); renderPrint();
+  if (!$("#home").hidden) renderHome();
+  if (!$("#play").hidden && P.L) { drawLights(); renderPanel(); }
+  if (!$("#modal").hidden) { if (modalKind === "cards") openCards(cardsAt); else if (modalKind === "win") showWin(); }
+}
+document.querySelector(".langs").addEventListener("click", e => { const b = e.target.closest("[data-lang]"); if (b) setLang(b.dataset.lang); });
 
 /* ---------- saved progress (this browser only; the site's account script syncs it when a parent signs in) ---------- */
 const KEY = "cube3x3_quest_v1";
@@ -1196,25 +1275,26 @@ const totalStars = () => LEVELS.reduce((n, L) => n + Math.min(3, Math.max(0, +((
 /* ---------- words for moves ---------- */
 const COLOR_HEX = { W: "#F6F6F0", Y: "#FFD500", G: "#009B48", R: "#C41E3A", B: "#0046AD", O: "#FF5800" };
 const PLASTIC = "#1d1b22", DIMHEX = "#cfcbd8";
-function tokWords(t) {           /* "右↑", for under a letter */
-  const b = t.replace(/2$/, ""), m = MOVE_ZH[b];
-  if (!m) return t === "z2" ? "翻过来" : "";
-  return /2$/.test(t) ? m[0].charAt(0) + "×2" : m[0].charAt(0) + m[2];
+function tokWords(t) {           /* "右↑" / "right ↑", for under a letter */
+  const b = t.replace(/2$/, ""), m = MOVE_TXT[b];
+  if (!m) return t === "z2" ? tr(UI.flip) : "";
+  return /2$/.test(t) ? T(tr(m[3]) + "×2", tr(m[3]) + " ×2") : T(tr(m[3]) + m[2], tr(m[3]) + " " + m[2]);
 }
-function tokLong(t) {            /* "右边往上" */
-  const b = t.replace(/2$/, ""), m = MOVE_ZH[b];
+function tokLong(t) {            /* "右边往上" / "Right side turns up" */
+  const b = t.replace(/2$/, ""), m = MOVE_TXT[b];
   if (!m) return t;
-  return /2$/.test(t) ? m[0] + "转两下" : m[0] + m[1];
-}
-function actName(a) {
-  if (FORMULA_NAME[a]) return a === "flip" ? "翻过来" : FORMULA_NAME[a];
-  return a;
+  if (/2$/.test(t)) return T(tr(m[0]) + "转两下", tr(m[0]) + " turns twice");
+  const d = tr(m[1]);
+  return T(tr(m[0]) + d, tr(m[0]) + (d.charAt(0) === ":" ? "" : " ") + d);
 }
 function sayAct(s) {             /* the second hint: which button */
   if (!s || !s.act) return "";
-  if (FORMULA[s.act]) return "按 <b>" + esc(actName(s.act)) + "</b>。";
-  if (/2$/.test(s.act)) { const b = s.act.slice(0, -1); return "按 <b>" + b + "</b> 两下（" + esc(tokLong(b)) + "）。"; }
-  return "按 <b>" + esc(s.act) + "</b>" + (s.twice ? " 两下" : "") + "（" + esc(tokLong(s.act)) + "）。";
+  if (FORMULA[s.act]) {
+    const n = (s.code === "corner-in" || s.code === "corner-again") && s.reps > 1 ? s.reps : 0;
+    return T("按 <b>", "Press the <b>") + esc(tr(FORMULA_NAME[s.act])) + T("</b>" + (n ? "，这一块要做 " + n + " 遍。" : "。"), "</b> button" + (n ? " " + n + " times for this one." : "."));
+  }
+  if (/2$/.test(s.act)) { const b = s.act.slice(0, -1); return T("按 <b>" + b + "</b> 两下（", "Press <b>" + b + "</b> twice (") + esc(tokLong(b)) + T("）。", ")."); }
+  return T("按 <b>", "Press <b>") + esc(s.act) + "</b>" + (s.twice ? T(" 两下", " twice") : "") + T("（", " (") + esc(tokLong(s.act)) + T("）。", ").");
 }
 
 /* ---------- pictures: an SVG drawn from the cube model, for the step cards and the printed sheet ---------- */
@@ -1224,14 +1304,14 @@ function cubeSVG(cube, view, dimFn, hlId) {
   if (view === "top") {
     const U = 34, P = 12, G = 3, o = 16;         /* cell, strip depth, gap, margin */
     const W = 3 * U + 2 * (P + G) + 2 * o;
-    out.push(`<svg viewBox="0 0 ${W} ${W}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="从上往下看的顶面">`);
+    out.push(`<svg viewBox="0 0 ${W} ${W}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(T("从上往下看的顶面", "The top seen from above"))}">`);
     const x0 = o + P + G, y0 = o + P + G;
     out.push(`<rect x="${x0 - 2}" y="${y0 - 2}" width="${3 * U + 4}" height="${3 * U + 4}" rx="5" fill="${PLASTIC}"/>`);
     for (const cb of cube.c) {
       if (cb.p[1] !== 1) continue;
       const cx = x0 + (cb.p[0] + 1) * U, cy = y0 + (cb.p[2] + 1) * U;
       for (const s of cb.st) {
-        const n = s.n, f = col(cb, s), stroke = cb.id === hlId ? ` stroke="${"#f2b705"}" stroke-width="4"` : "";
+        const n = s.n, f = col(cb, s), stroke = cb.id === hlId ? ` stroke="#f2b705" stroke-width="4"` : "";
         if (n[1] === 1) out.push(`<rect x="${cx + 2}" y="${cy + 2}" width="${U - 4}" height="${U - 4}" rx="5" fill="${f}"${stroke}/>`);
         else if (n[2] === 1) out.push(`<rect x="${cx + 3}" y="${y0 + 3 * U + G}" width="${U - 6}" height="${P}" rx="3" fill="${f}" stroke="${PLASTIC}" stroke-width="1.5"/>`);
         else if (n[2] === -1) out.push(`<rect x="${cx + 3}" y="${y0 - G - P}" width="${U - 6}" height="${P}" rx="3" fill="${f}" stroke="${PLASTIC}" stroke-width="1.5"/>`);
@@ -1239,7 +1319,7 @@ function cubeSVG(cube, view, dimFn, hlId) {
         else if (n[0] === -1) out.push(`<rect x="${x0 - G - P}" y="${cy + 3}" width="${P}" height="${U - 6}" rx="3" fill="${f}" stroke="${PLASTIC}" stroke-width="1.5"/>`);
       }
     }
-    out.push(`<text x="${W / 2}" y="${W - 2}" text-anchor="middle" font-size="10" fill="#6b6385">前面</text>`);
+    out.push(`<text x="${W / 2}" y="${W - 2}" text-anchor="middle" font-size="10" fill="#6b6385">${esc(tr(UI.front))}</text>`);
     out.push("</svg>");
     return out.join("");
   }
@@ -1263,15 +1343,15 @@ function cubeSVG(cube, view, dimFn, hlId) {
   }
   const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]), m = 6;
   const minX = Math.min(...xs) - m, minY = Math.min(...ys) - m, w = Math.max(...xs) - minX + m, h = Math.max(...ys) - minY + m;
-  return `<svg viewBox="${minX.toFixed(1)} ${minY.toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="魔方的上面、前面和右面">${body.join("")}${st.join("")}</svg>`;
+  return `<svg viewBox="${minX.toFixed(1)} ${minY.toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(T("魔方的上面、前面和右面", "The top, front and right of the cube"))}">${body.join("")}${st.join("")}</svg>`;
 }
 function picCube(p) { const c = makeCube(3); if (p.pre) run(c, p.pre); applyAlg(c, invertSeq(expand(p.script))); return c; }
 function picCaption(p, cube) {
-  if (p.cap) return p.cap;
+  if (p.cap) return tr(p.cap);
   if (p.capFn === "corner") {
     const cb = pieceAt(cube, [1, 1, 1]), d = facing(cb, "W"), s = nextStep(cube);
-    const where = d[0] === 1 ? "朝右" : d[1] === 1 ? "朝上" : "朝前";
-    return "白色" + where + "：做 " + s.reps + " 遍";
+    const where = d[0] === 1 ? T("朝右", "right") : d[1] === 1 ? T("朝上", "up") : T("朝前", "front");
+    return T("白色" + where + "：做 " + s.reps + " 遍", "White faces " + where + ": " + s.reps + (s.reps === 1 ? " time" : " times"));
   }
   return "";
 }
@@ -1281,31 +1361,35 @@ function picHTML(p) {
 }
 function formulaHTML(f) {
   const toks = parseAlg(FORMULA[f]);
-  return `<div class="formula"><span class="fn">${esc(FORMULA_NAME[f])}</span>${toks.map(t => `<span class="t"><span class="l">${esc(t)}</span><span class="w">${esc(tokWords(t))}</span></span>`).join("")}</div>`;
+  return `<div class="formula"><span class="fn">${esc(tr(FORMULA_NAME[f]))}</span>${toks.map(t => `<span class="t"><span class="l">${esc(t)}</span><span class="w">${esc(tokWords(t))}</span></span>`).join("")}</div>`;
 }
 function stepCardHTML(st) {
-  return `<div class="stepcard"><h3>第 ${st.n} 步 · ${esc(st.name)}<small>${st.formulas.length ? "公式：" + st.formulas.map(f => esc(FORMULA_NAME[f])).join("、") : "不用公式"}</small></h3>
+  const moves = st.formulas.length ? T("公式：", "Moves: ") + st.formulas.map(f => esc(tr(FORMULA_NAME[f]))).join(T("、", ", ")) : T("不用公式", "No moves to learn");
+  return `<div class="stepcard"><h3>${T("第 " + st.n + " 步", "Step " + st.n)} · ${esc(tr(st.name))}<small>${moves}</small></h3>
     <div class="pics">${st.pics.map(picHTML).join("")}</div>
-    <ol>${st.look.map(x => `<li>${esc(x)}</li>`).join("")}</ol>
+    <ol>${st.look.map(x => `<li>${esc(tr(x))}</li>`).join("")}</ol>
     ${st.formulas.map(formulaHTML).join("")}
-    ${st.note ? `<div class="note">🧩 卡住了：${esc(st.note)}</div>` : ""}
-    <div class="think">💭 想一想：${esc(st.think)}</div></div>`;
+    ${st.note ? `<div class="note">${T("🧩 卡住了：", "🧩 Stuck: ")}${esc(tr(st.note))}</div>` : ""}
+    <div class="think">${T("💭 想一想：", "💭 Think: ")}${esc(tr(st.think))}</div></div>`;
 }
 const KEY_TOKS = ["R", "R'", "L", "L'", "U", "U'", "F", "F'", "B", "B'", "D", "D'", "y", "y'"];
 function keyHTML() {
-  return `<div class="keytable">${KEY_TOKS.map(t => `<div class="key"><span class="l">${esc(t)}</span><span>${esc(tokLong(t))} ${MOVE_ZH[t][2]}</span></div>`).join("")}</div>`;
+  return `<div class="keytable">${KEY_TOKS.map(t => `<div class="key"><span class="l">${esc(t)}</span><span>${esc(tokLong(t))} ${MOVE_TXT[t][2]}</span></div>`).join("")}</div>`;
 }
 function renderPrint() {
   $("#print").innerHTML = `<div class="sheetpage">
-    <div class="printbar noprint"><button class="btn" id="printBack">← 回到关卡</button><button class="btn main" id="printNow">🖨️ 打印</button><span class="draghint">建议用 A4 纸，大约三页。</span></div>
-    <div class="card"><h2 style="color:var(--brand);margin-bottom:6px">三阶魔方 · 七步还原卡</h2>
-      <p style="margin:4px 0">拿法：第 1 步白色朝上，看得清楚。十字做好以后，翻过来，<b>白色朝下</b>，一直朝下。绿色朝前时，右边是橙色、左边是红色。</p>
-      <p style="margin:4px 0">字母口令：字母说的是转哪一层。不带 ' 就按下面的方向转，带 ' 就反过来。字母后面有 2，就转两下。</p>
+    <div class="printbar noprint"><button class="btn" id="printBack">${esc(T("← 回到关卡", "← Back to levels"))}</button><button class="btn main" id="printNow">${esc(tr(UI.print))}</button><span class="draghint">${esc(T("用 A4 纸打印，大约五页。", "Prints on about six sheets of A4 or Letter paper."))}</span></div>
+    <div class="card"><h2 style="color:var(--brand);margin-bottom:6px">${esc(T("三阶魔方 · 七步还原卡", "3x3 Cube · The 7-Step Sheet"))}</h2>
+      <p style="margin:4px 0">${T("拿法：第 1 步白色朝上，看得清楚。十字做好以后，翻过来，<b>白色朝下</b>，一直朝下。绿色朝前时，右边是橙色、左边是红色。",
+        "How to hold it: in step 1, white is on top so you can see it. When the cross is done, flip the cube so <b>white is on the bottom</b>, and keep it there. With green in front, orange is on the right and red on the left.")}</p>
+      <p style="margin:4px 0">${esc(T("字母口令：字母说的是转哪一层。不带 ' 就按下面的方向转，带 ' 就反过来。字母后面有 2，就转两下。",
+        "The letters say which layer to turn. A letter on its own means turn it the way shown below. With ' after it, turn the other way. With 2 after it, turn it twice."))}</p>
       ${keyHTML()}
-      <p style="margin:8px 0 0">七步：① 白色十字 → ② 白色角块 → ③ 第二层 → ④ 黄色十字 → ⑤ 黄色顶面 → ⑥ 顶层角块回家 → ⑦ 顶层棱块回家。</p>
+      <p style="margin:8px 0 0">${esc(T("七步：", "The 7 steps: ") + STEPS.map(s => "①②③④⑤⑥⑦".charAt(s.n - 1) + " " + tr(s.name)).join(" → ") + T("。", "."))}</p>
     </div>
     ${STEPS.map(stepCardHTML).join("")}
-    <p class="draghint">图上灰色的小块，这一步先不用管。从上往下看的图，四边的小条是侧面最上面一排的颜色，“前面”在下边。</p>
+    <p class="draghint">${esc(T("图上灰色的小块，这一步先不用管。从上往下看的图，四边的小条是侧面最上面一排的颜色，“前面”在下边。",
+      "Gray pieces in a picture can be ignored in that step. In the top-down pictures, the little strips around the edge are the top row of each side, and the front is at the bottom."))}</p>
   </div>`;
   $("#printBack").onclick = () => show("home");
   $("#printNow").onclick = () => window.print();
@@ -1314,7 +1398,12 @@ function renderPrint() {
 /* ---------- the 3D cube on the screen ---------- */
 const V = { cube: makeCube(3), rx: -26, ry: -36, S: 50, els: [], dim: null, hl: null, run: 0, busy: false };
 const FACE_TF = { "1,0,0": "rotateY(90deg)", "-1,0,0": "rotateY(-90deg)", "0,1,0": "rotateX(90deg)", "0,-1,0": "rotateX(-90deg)", "0,0,1": "", "0,0,-1": "rotateY(180deg)" };
-function sizeCube() { const st = $("#stage"), w = st.clientWidth || 320, h = st.clientHeight || 300; V.S = Math.max(26, Math.floor(Math.min(w, h) * 0.5 / 3)); }
+/* The camera distance grows with the cube (about 8 cube-widths away), so a big cube on an iPad is not stretched by a close-up perspective. */
+function sizeCube() {
+  const st = $("#stage"), w = st.clientWidth || 320, h = st.clientHeight || 300;
+  V.S = Math.max(26, Math.floor(Math.min(w, h) * 0.5 / 3));
+  st.style.perspective = Math.round(V.S * 3 * 8) + "px";
+}
 const baseTf = cb => `translate3d(${cb.p[0] * V.S}px, ${-cb.p[1] * V.S}px, ${cb.p[2] * V.S}px)`;
 function draw() {
   sizeCube();
@@ -1375,7 +1464,7 @@ function drawLights() {
   if (!P.L || P.L.id === 1) { box.hidden = true; return; }
   box.hidden = false;
   const k = stage(V.cube);
-  box.innerHTML = STEPS.map((s, i) => `<div class="light ${i < k ? "on" : ""}"><b>${i < k ? "✓" : s.n}</b>${esc(s.name.replace("顶层", "").replace("回家", ""))}</div>`).join("");
+  box.innerHTML = STEPS.map((s, i) => `<div class="light ${i < k ? "on" : ""}"><b>${i < k ? "✓" : s.n}</b>${esc(tr(LIGHT[i]))}</div>`).join("");
 }
 
 /* ---------- play ---------- */
@@ -1387,8 +1476,8 @@ function renderHome() {
   const next = (LEVELS.find(L => !(SAVE.lv[L.id] || {}).done) || {}).id;
   $("#levelList").innerHTML = LEVELS.map(L => {
     const s = SAVE.lv[L.id] || {}, stars = Math.min(3, +s.stars || 0);
-    const label = s.done ? "⭐".repeat(stars) + "☆".repeat(3 - stars) + " 再玩一次" : (s.at > 0 ? "接着玩（第 " + (s.at + 1) + " 题）" : "开始");
-    return `<button class="lv ${s.done ? "done" : ""} ${L.id === next ? "next" : ""}" data-lv="${L.id}"><span class="num">${s.done ? "✓" : L.id}</span><b>${esc(L.name)}</b><span>${esc(L.sub)}</span><span class="st">${label}</span></button>`;
+    const label = s.done ? "⭐".repeat(stars) + "☆".repeat(3 - stars) + " " + tr(UI.again) : (s.at > 0 ? T("接着玩（第 " + (s.at + 1) + " 题）", "Continue (question " + (s.at + 1) + ")") : tr(UI.start));
+    return `<button class="lv ${s.done ? "done" : ""} ${L.id === next ? "next" : ""}" data-lv="${L.id}"><span class="num">${s.done ? "✓" : L.id}</span><b>${esc(tr(L.name))}</b><span>${esc(tr(L.sub))}</span><span class="st">${esc(label)}</span></button>`;
   }).join("");
 }
 $("#levelList").addEventListener("click", e => { const b = e.target.closest("[data-lv]"); if (b) openLevel(+b.dataset.lv); });
@@ -1446,39 +1535,42 @@ function buttonsFor() {
   return b;
 }
 function mvButton(a) {
-  if (a === "flip") return `<button class="mv flip" data-act="flip"><span class="l" style="font:800 18px/1.2 var(--font)">翻过来</span><span class="w">白色朝下</span></button>`;
-  if (FORMULA[a]) return `<button class="mv f" data-act="${a}"><span class="l">${esc(FORMULA_NAME[a])}</span><span class="w">${esc(FORMULA[a])}</span></button>`;
-  return `<button class="mv" data-act="${esc(a)}"><span class="l">${esc(a)}</span><span class="w">${esc(tokLong(a))} ${MOVE_ZH[a] ? MOVE_ZH[a][2] : ""}</span></button>`;
+  if (a === "flip") return `<button class="mv flip" data-act="flip"><span class="l" style="font:800 18px/1.2 var(--font)">${esc(tr(UI.flip))}</span><span class="w">${esc(tr(UI.flipSub))}</span></button>`;
+  if (FORMULA[a]) return `<button class="mv f" data-act="${a}"><span class="l">${esc(tr(FORMULA_NAME[a]))}</span><span class="w">${esc(FORMULA[a])}</span></button>`;
+  return `<button class="mv" data-act="${esc(a)}"><span class="l">${esc(a)}</span><span class="w">${esc(tokLong(a))} ${MOVE_TXT[a] ? MOVE_TXT[a][2] : ""}</span></button>`;
 }
-function dotsHTML() { return `<div class="dots" aria-label="第 ${P.ti + 1} 题，共 ${P.L.tasks.length} 题">${P.L.tasks.map((_, i) => `<span class="dot ${i < P.ti ? "done" : i === P.ti ? "cur" : ""}"></span>`).join("")}</div>`; }
+function dotsHTML() { return `<div class="dots" aria-label="${esc(T("第 " + (P.ti + 1) + " 题，共 " + P.L.tasks.length + " 题", "Question " + (P.ti + 1) + " of " + P.L.tasks.length))}">${P.L.tasks.map((_, i) => `<span class="dot ${i < P.ti ? "done" : i === P.ti ? "cur" : ""}"></span>`).join("")}</div>`; }
+/* feedback is kept as a pair or a function, so it can be shown again in the other language */
+const fbText = () => (typeof P.fb === "function" ? P.fb() : tr(P.fb));
 function renderPanel() {
   const L = P.L, t = P.task, done = P.state === "done";
-  let h = `<div class="phead"><button class="btn small" id="back">← 关卡</button><h2>第 ${L.id} 关 · ${esc(L.name)}</h2>${L.id > 1 ? `<button class="btn small" id="cards">📖 步骤卡</button>` : ""}</div>${dotsHTML()}`;
-  h += `<div class="say">${t.t}</div>`;
+  let h = `<div class="phead"><button class="btn small" id="back">${esc(tr(UI.levels))}</button><h2>${esc(T("第 " + L.id + " 关", "Level " + L.id))} · ${esc(tr(L.name))}</h2>${L.id > 1 ? `<button class="btn small" id="cards">${esc(tr(UI.cards))}</button>` : ""}</div>${dotsHTML()}`;
+  h += `<div class="say">${tr(t.t)}</div>`;
   if (t.pics) h += `<div class="pics">${t.pics.map(picHTML).join("")}</div>`;
-  if (t.k === "ask") h += `<div class="opts">${t.opts.map((o, i) => `<button class="opt ${P.wrong[i] ? "no" : ""} ${done && i === t.ans ? "yes" : ""}" data-opt="${i}" ${done ? "disabled" : ""}>${esc(o)}</button>`).join("")}</div>`;
+  if (t.k === "ask") h += `<div class="opts">${t.opts.map((o, i) => `<button class="opt ${P.wrong[i] ? "no" : ""} ${done && i === t.ans ? "yes" : ""}" data-opt="${i}" ${done ? "disabled" : ""}>${esc(tr(o))}</button>`).join("")}</div>`;
   if (t.k === "guided") {
     h += `<div class="seq">${P.seq.map((tok, i) => `<button class="sq ${i < P.gi ? "past" : i === P.gi && !done ? "now" : ""}" data-sq="${i}" ${i !== P.gi || done ? "disabled" : ""}><span class="l">${esc(tok)}</span><span class="w">${esc(tokWords(tok))}</span></button>`).join("")}</div>`;
-    if (!done) h += `<div class="ctrl"><button class="btn small" id="restart">⟲ 重来</button></div>`;
+    if (!done) h += `<div class="ctrl"><button class="btn small" id="restart">${esc(tr(UI.restart))}</button></div>`;
   }
   const btns = buttonsFor();
   if (btns.length && !done) {
     h += `<div class="moves">${btns.map(mvButton).join("")}</div>`;
-    h += `<div class="ctrl"><button class="btn small" id="undo" ${P.hist.length ? "" : "disabled"}>↶ 撤销</button><button class="btn small" id="restart">⟲ 重来</button><button class="btn small" id="hint">💡 提示</button></div>`;
+    h += `<div class="ctrl"><button class="btn small" id="undo" ${P.hist.length ? "" : "disabled"}>${esc(tr(UI.undo))}</button><button class="btn small" id="restart">${esc(tr(UI.restart))}</button><button class="btn small" id="hint">${esc(tr(UI.hint))}</button></div>`;
   }
   const used = {}; for (const a of P.hist) if (FORMULA[a] && a !== "flip") used[a] = (used[a] || 0) + 1;
-  if (t.k === "puz" && Object.keys(used).length) h += `<div class="draghint">已经做了：${Object.keys(used).map(a => esc(FORMULA_NAME[a]) + " × " + used[a]).join("，")}</div>`;
-  if (P.fb) h += `<div class="fb ${P.fbKind || "hint"}">${P.fb}</div>`;
-  if (t.k === "info" || done) h += `<div class="ctrl"><button class="btn main" id="next">${P.ti + 1 >= L.tasks.length ? "过关 🎉" : "下一题 ▶"}</button></div>`;
+  if (t.k === "puz" && Object.keys(used).length) h += `<div class="draghint">${esc(tr(UI.doneSoFar))}${Object.keys(used).map(a => esc(tr(FORMULA_NAME[a])) + " × " + used[a]).join(T("，", ", "))}</div>`;
+  const fb = fbText();
+  if (fb) h += `<div class="fb ${P.fbKind || "hint"}">${fb}</div>`;
+  if (t.k === "info" || done) h += `<div class="ctrl"><button class="btn main" id="next">${esc(tr(P.ti + 1 >= L.tasks.length ? UI.finish : UI.next))}</button></div>`;
   $("#panel").innerHTML = h;
   if (P.pulse) { const b = $("#panel").querySelector(`[data-act="${CSS.escape(P.pulse)}"]`); if (b) b.classList.add("pulse"); }
   setButtons(!V.busy);
 }
 function setButtons(on) { document.querySelectorAll("#panel .mv, #panel #undo, #panel #restart, #panel #hint").forEach(b => { if (b.id === "undo") b.disabled = !on || !P.hist.length; else b.disabled = !on; }); document.querySelectorAll("#panel .sq.now").forEach(b => { b.disabled = !on; }); }
-function say(html, kind) { P.fb = html; P.fbKind = kind; }
+function say(msg, kind) { P.fb = msg; P.fbKind = kind; }
 function succeed(msg) {
   P.state = "done"; P.pulse = null; V.hl = null; draw();
-  say(msg || "做到了！", "good"); renderPanel();
+  say(msg || "做到了！|You did it!", "good"); renderPanel();
 }
 $("#panel").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b || b.disabled) return;
@@ -1490,7 +1582,7 @@ $("#panel").addEventListener("click", e => {
   if (b.id === "restart") { V.cube = cloneCube(P.start); P.hist = []; P.gi = 0; P.pulse = null; P.hint = 0; V.hl = null; say(""); draw(); renderPanel(); return; }
   if (b.id === "hint") { giveHint(); return; }
   if (b.dataset.act) { doAct(b.dataset.act); return; }
-  if (b.dataset.sq != null) { const i = +b.dataset.sq; if (i !== P.gi) return; P.gi++; renderPanel(); playToks([P.seq[i]], () => { if (P.gi >= P.seq.length) { succeed(goalNow() ? "做到了！公式做完，这一块就回家了。" : "公式做完了。"); } else renderPanel(); }); return; }
+  if (b.dataset.sq != null) { const i = +b.dataset.sq; if (i !== P.gi) return; P.gi++; renderPanel(); playToks([P.seq[i]], () => { if (P.gi >= P.seq.length) { succeed(goalNow() ? "做到了！公式做完，这一块就回家了。|You did it! The move is done and the piece is home." : "公式做完了。|The move is done."); } else renderPanel(); }); return; }
   if (b.dataset.opt != null) { answer(+b.dataset.opt); return; }
 });
 function doAct(a) {
@@ -1501,69 +1593,75 @@ function afterAct() {
   const t = P.task;
   if (goalNow()) {
     const k = stage(V.cube);
-    const msg = t.k === "undo" ? "对！魔方回到原样了。" : t.full ? "🎉 整个魔方拼好了！你自己做完了七步。" : P.L.goal === 1 && !t.flipEnd ? "十字做好了！侧面的颜色也对上了。" : "做到了！" + (P.L.id > 1 ? "现在做好了 " + k + " 步。" : "");
+    const msg = t.k === "undo" ? "对！魔方回到原样了。|Yes! The cube is back to how it was."
+      : t.full ? "🎉 整个魔方拼好了！你自己做完了七步。|🎉 The whole cube is solved! You did all seven steps yourself."
+      : P.L.goal === 1 && !t.flipEnd ? "十字做好了！侧面的颜色也对上了。|The cross is done, and the side colors match too!"
+      : P.L.goal === 1 ? "十字做好了，白色也朝下了！|The cross is done, and white is on the bottom!"
+      : P.L.id > 1 ? () => T("做到了！现在做好了 " + k + " 步。", "You did it! " + k + (k === 1 ? " step is" : " steps are") + " done now.") : "做到了！|You did it!";
     succeed(msg); return;
   }
-  if (P.task.k === "puz" && P.L.goal >= 2 && stage(V.cube) < Math.min(P.L.goal - 1, stageAtStart())) say("小心：前面做好的被弄乱了。可以按 ↶ 撤销。", "bad");
+  if (P.task.k === "puz" && P.L.goal >= 2 && stage(V.cube) < Math.min(P.L.goal - 1, stage(P.start))) say(UI.broken, "bad");
   renderPanel();
 }
-function stageAtStart() { return stage(P.start); }
 function answer(i) {
   const t = P.task;
-  if (i === t.ans) { P.state = "done"; say("✓ " + esc(t.why), "good"); }
-  else { P.wrong[i] = 1; say("再想一想。", "bad"); }
+  if (i === t.ans) { P.state = "done"; say(() => "✓ " + esc(tr(t.why)), "good"); }
+  else { P.wrong[i] = 1; say(UI.thinkAgain, "bad"); }
   renderPanel();
 }
+const KIND = ["", "中心块|center", "棱块|edge", "角块|corner"], A_KIND = ["", "a center", "an edge", "a corner"];
+const COLOR_ORDER = "WYGRBO";      /* white first, as the task words say it ("white-green edge") */
+const colsOf = cb => cb.st.map(s => s.c).sort((a, b) => COLOR_ORDER.indexOf(a) - COLOR_ORDER.indexOf(b)).map(c => tr(COLOR_NAME[c])).join(T("·", "-"));
 function tapAt(el) {
   const t = P.task; if (!t || P.state === "done" || (t.k !== "tap" && t.k !== "find")) return;
   const cel = el && el.closest ? el.closest(".cubie") : null; if (!cel) return;
   const cb = pieceById(V.cube, +cel.dataset.cid); if (!cb) return;
-  const kind = ["", "中心块", "棱块", "角块"][cb.st.length], cols = cb.st.map(s => COLOR_ZH[s.c]).join("·");
+  const n = cb.st.length;
   V.hl = cb.id; draw();
   if (t.k === "tap") {
-    if (cb.st.length === t.want) { succeed("对！这是" + kind + "，它有 " + cb.st.length + " 种颜色：" + esc(cols) + "。"); }
-    else { say("这是" + kind + "，它有 " + cb.st.length + " 种颜色。再找一找。", "bad"); renderPanel(); }
+    if (n === t.want) succeed(() => T("对！这是" + tr(KIND[n]) + "，它有 " + n + " 种颜色：" + esc(colsOf(cb)) + "。", "Yes! This is " + A_KIND[n] + ". It has " + n + (n === 1 ? " color: " : " colors: ") + esc(colsOf(cb)) + "."));
+    else { say(() => T("这是" + tr(KIND[n]) + "，它有 " + n + " 种颜色。再找一找。", "This is " + A_KIND[n] + " with " + n + (n === 1 ? " color" : " colors") + ". Keep looking."), "bad"); renderPanel(); }
   } else {
     const want = t.colors.split("").sort().join(""), got = cb.st.map(s => s.c).sort().join("");
-    if (want === got) succeed("找到了！这就是 " + esc(cols) + " " + kind + "。");
-    else { say("这是 " + esc(cols) + " " + kind + "。再找一找。", "bad"); renderPanel(); }
+    if (want === got) succeed(() => T("找到了！这就是 " + esc(colsOf(cb)) + " " + tr(KIND[n]) + "。", "Found it! This is the " + esc(colsOf(cb)) + " " + tr(KIND[n]) + "."));
+    else { say(() => T("这是 " + esc(colsOf(cb)) + " " + tr(KIND[n]) + "。再找一找。", "This is the " + esc(colsOf(cb)) + " " + tr(KIND[n]) + ". Keep looking."), "bad"); renderPanel(); }
   }
 }
 
 /* ---------- hints: first what to look at, then which button ---------- */
 const HINT = {
-  cross: "发光的白色棱块还没回家。它的家在白色中心和它另一种颜色的中心之间。想一想：转哪一层能把它送过去？放好的块如果被转走了，要再转回来。",
-  flip: "十字做好了！按“翻过来”，让白色朝下。",
-  "corner-hold": "看发光的角块。它的家在哪里？先转整个魔方，让家到右前方。",
-  "corner-above": "家已经在右前方了。转顶层，把发光的角块放到家的正上方。",
-  "corner-in": "角块在家的正上方了。重复万能公式，直到它回家。",
-  "corner-again": "角块到家了，可是方向不对。继续做万能公式。",
-  "corner-pop-hold": "顶层没有白色角块了，可是底层有一个放错了（发光的那块）。转整个魔方，让它到右前下。",
-  "corner-pop": "放错的角块在右前下。做一遍万能公式，它就到顶层了。",
-  "edge-match": "看发光的棱块：它侧面是什么颜色？转顶层，让它对上同色的中心块。",
-  "edge-front": "颜色对上了。转整个魔方，让这一面朝着你。",
-  "edge-right": "棱块已经对好前面了。看它顶上的颜色：和哪一边的中心一样？",
-  "edge-left": "棱块已经对好前面了。看它顶上的颜色：和哪一边的中心一样？",
-  "edge-kick-hold": "顶层没有能放的棱块了。中层有一块放错了（发光的那块）。转整个魔方，让它到右前。",
-  "edge-kick": "放错的棱块在右前。做一遍“往右放”，把它顶到顶层。",
-  "yc-dot": "只有一个点。直接做黄十字公式。",
-  "yc-L-turn": "这是拐角。转顶层，把拐角放到左后：一块在后面，一块在左边。",
-  "yc-L": "拐角在左后了。做黄十字公式。",
-  "yc-line-turn": "这是一条线。转顶层，让它横着（左右方向）。",
-  "yc-line": "线是横的。做黄十字公式。",
-  "sune-turn-one": "数一数：1 个角块黄色朝上。转顶层，把它放到左前。",
-  "sune-one": "黄色朝上的角块在左前了。做小鱼公式。",
-  "sune-turn-none": "数一数：没有角块黄色朝上。转顶层，让左前角块的黄色朝左。",
-  "sune-none": "左前角块的黄色朝左了。做小鱼公式。",
-  "sune-turn-two": "数一数：2 个角块黄色朝上。转顶层，让左前角块的黄色朝着你。",
-  "sune-two": "左前角块的黄色朝着你了。做小鱼公式。",
-  "ap-line-up": "四面都有车灯：顺序已经对了。只要转顶层，让角块对上中心块。",
-  "ap-none": "找不到车灯。先做一遍换角公式。",
-  "ap-turn": "车灯在别的面。转顶层，把车灯放到后面。",
-  "ap-back": "车灯在后面了。做换角公式。",
-  "up-none": "没有一面是做好的。先做一遍换棱公式。",
-  "up-turn": "找到做好的那一面（发光的棱块）。转整个魔方，把它放到后面。",
-  "up-back": "做好的一面在后面了。做换棱公式。"
+  cross: "发光的白色棱块还没回家。它的家在白色中心和它另一种颜色的中心之间。想一想：转哪一层能把它送过去？放好的块如果被转走了，要再转回来。|The glowing white edge is not home yet. Its home is between the white center and the center of its other color. Think: which layer takes it there? If a placed edge gets turned away, turn it back.",
+  flip: "十字做好了！按“翻过来”，让白色朝下。|The cross is done! Press “Flip over” so white is on the bottom.",
+  "corner-hold": "看发光的角块。它的家在哪里？先转整个魔方，让家到右前方。|Look at the glowing corner. Where is its home? Turn the whole cube first so the home is at the front right.",
+  "corner-above": "家已经在右前方了。转顶层，把发光的角块放到家的正上方。|The home is at the front right. Turn the top layer to put the glowing corner right above it.",
+  "corner-in": "角块在家的正上方了。重复万能公式，直到它回家。|The corner is right above its home. Repeat the magic move until it is in.",
+  "corner-again": "角块到家了，可是方向不对。继续做万能公式。|The corner is home but turned the wrong way. Keep doing the magic move.",
+  "corner-pop-hold": "顶层没有白色角块了，可是底层有一个放错了（发光的那块）。转整个魔方，让它到右前下。|No white corner is on top, but one on the bottom is wrong (the glowing one). Turn the whole cube so it is at the bottom front right.",
+  "corner-pop": "放错的角块在右前下。做一遍万能公式，它就到顶层了。|The wrong corner is at the bottom front right. Do the magic move once to bring it up to the top.",
+  "edge-match": "看发光的棱块：它侧面是什么颜色？转顶层，让它对上同色的中心块。|Look at the glowing edge: what is its side color? Turn the top layer to match it with that center.",
+  "edge-front": "颜色对上了。转整个魔方，让这一面朝着你。|The color matches. Turn the whole cube so that side faces you.",
+  "edge-right": "棱块已经对好前面了。看它顶上的颜色：和哪一边的中心一样？|The edge matches the front. Look at its top color: which side's center is the same?",
+  "edge-left": "棱块已经对好前面了。看它顶上的颜色：和哪一边的中心一样？|The edge matches the front. Look at its top color: which side's center is the same?",
+  "edge-kick-hold": "顶层没有能放的棱块了。中层有一块放错了（发光的那块）。转整个魔方，让它到右前。|No top edge can go in. One middle edge is wrong (the glowing one). Turn the whole cube so it is at the front right.",
+  "edge-kick": "放错的棱块在右前。做一遍“往右放”，把它顶到顶层。|The wrong edge is at the front right. Do “edge to the right” once to push it up to the top.",
+  "yc-dot": "只有一个点。直接做黄十字公式。|Just a dot. Do the yellow cross move.",
+  "yc-L-turn": "这是拐角。转顶层，把拐角放到左后：一块在后面，一块在左边。|It's an L. Turn the top layer to put it at the back left: one edge at the back, one on the left.",
+  "yc-L": "拐角在左后了。做黄十字公式。|The L is at the back left. Do the yellow cross move.",
+  "yc-line-turn": "这是一条线。转顶层，让它横着（左右方向）。|It's a line. Turn the top layer so it goes left to right.",
+  "yc-line": "线是横的。做黄十字公式。|The line goes left to right. Do the yellow cross move.",
+  "sune-turn-one": "数一数：1 个角块黄色朝上。转顶层，把它放到左前。|Count: 1 corner has yellow up. Turn the top layer to put it at the front left.",
+  "sune-one": "黄色朝上的角块在左前了。做小鱼公式。|The yellow-up corner is at the front left. Do the Sune.",
+  "sune-turn-none": "数一数：没有角块黄色朝上。转顶层，让左前角块的黄色朝左。|Count: no corner has yellow up. Turn the top layer until the front-left corner's yellow faces left.",
+  "sune-none": "左前角块的黄色朝左了。做小鱼公式。|The front-left corner's yellow faces left. Do the Sune.",
+  "sune-turn-two": "数一数：2 个角块黄色朝上。转顶层，让左前角块的黄色朝着你。|Count: 2 corners have yellow up. Turn the top layer until the front-left corner's yellow faces you.",
+  "sune-two": "左前角块的黄色朝着你了。做小鱼公式。|The front-left corner's yellow faces you. Do the Sune.",
+  "ap-line-up": "四面都有车灯：顺序已经对了。只要转顶层，让角块对上中心块。|Every side has headlights, so the order is right. Just turn the top layer to match the centers.",
+  "ap-none": "找不到车灯。先做一遍换角公式。|No headlights. Do the corner swap once first.",
+  "ap-turn": "车灯在别的面。转顶层，把车灯放到后面。|The headlights are on another side. Turn the top layer to put them at the back.",
+  "ap-back": "车灯在后面了。做换角公式。|The headlights are at the back. Do the corner swap.",
+  "up-none": "没有一面是做好的。先做一遍换棱公式。|No side is finished. Do the edge swap once first.",
+  "up-turn": "找到做好的那一面（发光的棱块）。转整个魔方，把它放到后面。|Find the finished side (the glowing edge). Turn the whole cube to put it at the back.",
+  "up-back": "做好的一面在后面了。做换棱公式。|The finished side is at the back. Do the edge swap."
 };
 function solveFacesWithin(cube, n) {      /* the undo tasks: a turn that brings the cube back within n turns */
   let layer = [[]];
@@ -1578,48 +1676,58 @@ function giveHint() {
   const t = P.task;
   if (t.k === "undo") {
     const s = solveFacesWithin(V.cube, 3);
-    if (!s) { say("走远了。按 ⟲ 重来，再试一次。", "hint"); renderPanel(); return; }
+    if (!s) { say("走远了。按 ⟲ 重来，再试一次。|That went too far. Press ⟲ Start over and try again.", "hint"); renderPanel(); return; }
     P.reveals++;
-    if (P.hint === 0) { P.hint = 1; say("看一看：哪一层的颜色和旁边的不一样？那一层被转过。", "hint"); }
-    else { P.pulse = s[0]; say("按 <b>" + esc(s[0]) + "</b>（" + esc(tokLong(s[0])) + "）。", "hint"); }
+    if (P.hint === 0) { P.hint = 1; say("看一看：哪一层的颜色和旁边的不一样？那一层被转过。|Look: which layer's colors don't match the rest? That layer was turned.", "hint"); }
+    else { P.pulse = s[0]; say(() => T("按 <b>", "Press <b>") + esc(s[0]) + T("</b>（", "</b> (") + esc(tokLong(s[0])) + T("）。", ")."), "hint"); }
     renderPanel(); return;
   }
   const s = nextStep(V.cube);
   if (s.done) return;
-  if (!s.act) { say("先按 ⟲ 重来。", "hint"); renderPanel(); return; }
-  const text = HINT[s.code] || "";
+  if (!s.act) { say("先按 ⟲ 重来。|Press ⟲ Start over first.", "hint"); renderPanel(); return; }
   const avail = buttonsFor();
-  if (s.step < P.L.step && P.L.id !== 10) { say("前面做好的被弄乱了。按 ↶ 撤销，或者按 ⟲ 重来。", "bad"); renderPanel(); return; }
+  if (s.step < P.L.step && P.L.id !== 10) { say("前面做好的被弄乱了。按 ↶ 撤销，或者按 ⟲ 重来。|An earlier step got broken. Press ↶ Undo or ⟲ Start over.", "bad"); renderPanel(); return; }
   let btn = s.act; if (/2$/.test(btn) && !FORMULA[btn]) btn = btn.slice(0, -1);
-  if (avail.indexOf(btn) < 0) {      /* the method needs a button this level does not have (e.g. 往左放 in level 4) */
+  if (avail.indexOf(btn) < 0) {      /* the method needs a button this level does not have (e.g. edge to the left in level 4) */
     V.hl = s.piece != null ? s.piece : null; draw();
-    say(btn === "eL" ? "这一块要往左放，下一关才学。按 ↶ 撤销，或者按 ⟲ 重来，换一块往右放的。" : "这一步这一关做不了。按 ⟲ 重来。", "hint"); renderPanel(); return;
+    say(btn === "eL" ? "这一块要往左放，下一关才学。按 ↶ 撤销，或者按 ⟲ 重来，换一块往右放的。|This edge needs to go left, which comes in the next level. Press ↶ Undo or ⟲ Start over, and pick an edge that goes right."
+      : "这一步这一关做不了。按 ⟲ 重来。|This level can't do that step. Press ⟲ Start over.", "hint");
+    renderPanel(); return;
   }
   if (s.code !== "flip") P.reveals++;      /* every press counts for the stars, except the reminder to flip */
-  if (P.hint === 0 && s.code !== "flip") { P.hint = 1; V.hl = s.piece != null ? s.piece : null; say("第 " + s.step + " 步。" + text + "<br><small>再按一次 💡，告诉你按哪个。</small>", "hint"); draw(); }
-  else {
-    V.hl = s.piece != null ? s.piece : null; P.pulse = btn;
-    const reps = (s.code === "corner-in" || s.code === "corner-again") && s.reps > 1 ? "（这一块要做 " + s.reps + " 遍）" : "";
-    say((s.code === "flip" ? text + "<br>" : "") + sayAct(s) + reps, "hint"); draw();
+  V.hl = s.piece != null ? s.piece : null;
+  if (P.hint === 0 && s.code !== "flip") {
+    P.hint = 1;
+    say(() => T("第 " + s.step + " 步。", "Step " + s.step + ". ") + tr(HINT[s.code]) + "<br><small>" + T("再按一次 💡，告诉你按哪个。", "Press 💡 again to see which button.") + "</small>", "hint");
+  } else {
+    P.pulse = btn;
+    say(() => (s.code === "flip" ? tr(HINT.flip) + "<br>" : "") + sayAct(s), "hint");
   }
-  renderPanel();
+  draw(); renderPanel();
 }
 
+/* ---------- level done, step cards ---------- */
+let modalKind = "", cardsAt = 1, winInfo = null;
 function nextTask() {
   if (P.ti + 1 < P.L.tasks.length) { P.ti++; startTask(); return; }
   const s = lvSave(P.L.id), stars = P.reveals <= 1 ? 3 : P.reveals <= 6 ? 2 : 1;
   s.done = true; s.at = 0; s.stars = Math.max(+s.stars || 0, stars); save();
   $("#starTotal").textContent = "⭐ " + totalStars();
   burst();
-  const nextL = LEVELS.find(L => L.id === P.L.id + 1);
-  const learned = P.L.step >= 1 ? "你学会了第 " + P.L.step + " 步：" + STEPS[P.L.step - 1].name + "。拿真魔方试一试！" : P.L.id === 10 ? "七步你都会了。现在可以拿真魔方，从头到尾自己拼。" : "你认识了魔方的三种小块。";
-  openModal(`<div class="win"><div class="big">🎉</div><h2>第 ${P.L.id} 关过关！</h2><div style="font-size:32px">${"⭐".repeat(stars)}${"☆".repeat(3 - stars)}</div>
-    <p>${esc(learned)}</p><p class="draghint">星星看的是自己想出来的：少按 💡 提示，星星就多。</p>
-    <div class="ctrl" style="justify-content:center">${nextL ? `<button class="btn main" data-goto="${nextL.id}">下一关：${esc(nextL.name)} ▶</button>` : ""}<button class="btn" data-home>回到关卡</button></div></div>`);
+  winInfo = { L: P.L, stars }; showWin();
+}
+function showWin() {
+  const L = winInfo.L, stars = winInfo.stars, nextL = LEVELS.find(x => x.id === L.id + 1);
+  const learned = L.step >= 1 ? T("你学会了第 " + L.step + " 步：" + tr(STEPS[L.step - 1].name) + "。拿真魔方试一试！", "You learned step " + L.step + ": " + tr(STEPS[L.step - 1].name) + ". Try it on a real cube!")
+    : L.id === 10 ? T("七步你都会了。现在可以拿真魔方，从头到尾自己拼。", "You know all seven steps. Now take a real cube and solve it from start to finish.")
+    : T("你认识了魔方的三种小块。", "You know the three kinds of pieces now.");
+  openModal(`<div class="win"><div class="big">🎉</div><h2>${esc(T("第 " + L.id + " 关过关！", "Level " + L.id + " done!"))}</h2><div style="font-size:32px">${"⭐".repeat(stars)}${"☆".repeat(3 - stars)}</div>
+    <p>${esc(learned)}</p><p class="draghint">${esc(tr(UI.stars))}</p>
+    <div class="ctrl" style="justify-content:center">${nextL ? `<button class="btn main" data-goto="${nextL.id}">${esc(T("下一关：", "Next level: ") + tr(nextL.name))} ▶</button>` : ""}<button class="btn" data-home>${esc(tr(UI.backLevels))}</button></div></div>`, "win");
 }
 function burst() { if (reduceMotion) return; const em = ["⭐", "🎉", "✨", "🟨", "🟩", "🟥", "🟦"]; for (let i = 0; i < 26; i++) { const s = document.createElement("span"); s.className = "burst"; s.textContent = em[i % em.length]; s.style.left = 50 + (Math.random() - .5) * 20 + "vw"; s.style.top = "40vh"; s.style.setProperty("--dx", (Math.random() - .5) * 90 + "vw"); s.style.setProperty("--dy", (Math.random() - .7) * 70 + "vh"); document.body.appendChild(s); setTimeout(() => s.remove(), 1500); } }
-function openModal(html) { $("#sheet").innerHTML = html; $("#modal").hidden = false; }
-function closeModal() { $("#modal").hidden = true; }
+function openModal(html, kind) { modalKind = kind || ""; $("#sheet").innerHTML = html; $("#modal").hidden = false; }
+function closeModal() { $("#modal").hidden = true; modalKind = ""; }
 $("#modal").addEventListener("click", e => {
   if (e.target.id === "modal" || e.target.closest("[data-close]")) { closeModal(); return; }
   const g = e.target.closest("[data-goto]"); if (g) { closeModal(); openLevel(+g.dataset.goto); return; }
@@ -1628,12 +1736,13 @@ $("#modal").addEventListener("click", e => {
 });
 document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#modal").hidden) closeModal(); });
 function openCards(n) {
-  n = n || Math.max(1, P.L.step || 1);
-  openModal(`<button class="btn small x" data-close aria-label="关上">✕</button>
+  n = n || Math.max(1, P.L.step || 1); cardsAt = n;
+  openModal(`<button class="btn small x" data-close aria-label="${esc(tr(UI.close))}">✕</button>
     <div class="ctrl" style="margin-bottom:10px">${STEPS.map(s => `<button class="btn small ${s.n === n ? "main" : ""}" data-step="${s.n}">${s.n}</button>`).join("")}</div>
-    ${stepCardHTML(STEPS[n - 1])}`);
+    ${stepCardHTML(STEPS[n - 1])}`, "cards");
 }
 
+applyStatic();
 renderPrint();      /* filled in from the start, so printing from any screen prints the step sheet */
 show("home");
 </script>
