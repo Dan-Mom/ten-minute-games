@@ -1,0 +1,1486 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><script>/* Ten-Minute Games accounts: a parent signs in with Google, adds children by nickname, and each child's game progress follows them
+   to any computer or iPad. Signing in is optional; without it every game works exactly as before (progress stays on this device).
+
+   How progress is kept: every game already saves its progress in this browser (localStorage) under its own names. This script,
+   which build.cjs puts at the very top of every page, keeps one copy of those values per player ("guest" = not signed in, or a
+   child). When the player changes, the values in the browser are swapped before the game reads them. When a child is playing,
+   their copy is also saved to Firebase (Firestore: families/<parent uid>/kids/<child id>), and loaded back on other devices.
+   Only values written by these game pages are kept; nothing else in the browser is read or sent.
+
+   Public Firebase web config: allowed on the public site by PRIVACY-RULE.md exception five. Access is guarded by the Firestore
+   rules (each parent can only read and write their own family), not by hiding this. */
+(function () {
+  'use strict';
+  if (window.TMG) return;
+  var CONFIG = {
+    apiKey: 'AIzaSyDC-kbJIExCfhIsUkkShVIO8VtBTe3D7WI',
+    authDomain: 'ten-minute-games.firebaseapp.com',
+    projectId: 'ten-minute-games',
+    storageBucket: 'ten-minute-games.firebasestorage.app',
+    messagingSenderId: '448551703283',
+    appId: '1:448551703283:web:7f0c2b75a166f1fcbb1d86'
+  };
+  var SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
+  var P = 'tmg.', GUEST = 'guest', MAX_VALUE = 200000;
+  var LS; try { LS = window.localStorage; LS.getItem(P + 'x'); } catch (e) { LS = null; }
+  if (!LS) { window.TMG = { kid: GUEST, ready: Promise.resolve(), mountHome: function () {} }; return; }
+  var rawSet = Storage.prototype.setItem, rawRemove = Storage.prototype.removeItem, rawGet = Storage.prototype.getItem;
+  function get(k) { return rawGet.call(LS, k); }
+  function put(k, v) { try { rawSet.call(LS, k, v); } catch (e) {} }
+  function del(k) { rawRemove.call(LS, k); }
+  function has(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
+  function J(k, d) { try { var v = get(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
+  function W(k, o) { put(k, JSON.stringify(o)); }
+  function ours(k) { return typeof k === 'string' && (k.indexOf(P) === 0 || k.indexOf('firebase') === 0); }
+
+  function current() { return get(P + 'current') || GUEST; }
+  function store(id) { return J(P + 'kid.' + id, { data: {}, updated: 0 }); }
+  function saveStore(id, s) { W(P + 'kid.' + id, s); }
+  function known() { return J(P + 'known', []); }
+
+  /* Put player `id`'s values into the browser. The values sitting there now belong to `owner`: keep them first. */
+  function swap() {
+    var id = current(), owner = get(P + 'owner') || GUEST;
+    if (owner === id) return false;
+    var ks = known(), from = store(owner), to = store(id), changed = false;
+    ks.forEach(function (k) { var v = get(k); if (v === null) delete from.data[k]; else from.data[k] = v; });
+    saveStore(owner, from);
+    ks.forEach(function (k) {
+      var want = Object.prototype.hasOwnProperty.call(to.data, k) ? to.data[k] : null;
+      if (get(k) !== want) { changed = true; if (want === null) del(k); else put(k, want); }
+    });
+    put(P + 'owner', id);
+    return changed;
+  }
+  swap();
+  /* The player this page was opened for. Another tab (or the home page, before Back brings this page out of memory) can switch the
+     player; from then on this page shows the wrong child, so its saves are kept for its own player and it reloads (see strayWrite). */
+  var pageKid = current();
+  function setCurrent(id) { put(P + 'current', id); pageKid = id; if (window.TMG) window.TMG.kid = id; }
+
+  /* Every write a game makes is copied into the current player's store. For a child, the name is also listed under `changed` until it has reached the cloud.
+     Until this page has heard from the cloud, writes only wait: a game saving as it opens must not make an out-of-date device look newest. */
+  var dirtyTimer = 0, syncing = false, waiting = {}, onHome = !!document.querySelector('meta[name="tmg-home"]');
+  if (get(P + 'dirty') === '1') {          // left by an older version of this script: everything this child has here may be unsent
+    if (current() !== GUEST) { var old = store(current()); old.changed = {}; Object.keys(old.data).forEach(function (k) { old.changed[k] = 1; }); saveStore(current(), old); }
+    del(P + 'dirty');
+  }
+  function onDevice(id, uid) { return !!uid && get(P + 'uid') === uid && J(P + 'family', { kids: [] }).kids.some(function (k) { return k.id === id; }); }
+  function bytes(s) { try { return new Blob([s]).size; } catch (e) { return unescape(encodeURIComponent(s)).length; } }   // Firestore counts UTF-8 bytes (a Chinese character is 3)
+  function bump(s) { s.seq = (s.seq || 0) + 1; s.updated = Date.now(); }   // seq counts saves, so two saves in the same millisecond are still told apart
+  function later() { clearTimeout(dirtyTimer); dirtyTimer = setTimeout(function () { cloud.push(pageKid); }, 3000); }
+  /* A save from a page whose player is no longer the current one (two tabs, or a page brought back by Back after the parent switched
+     child). The browser's values now belong to `cur`: put this key back the way `cur` had it, keep the save for the page's own player
+     (and send it), then reload so the page shows the right child. */
+  function strayWrite(k, v, cur) {
+    var other = store(cur), want = has(other.data, k) ? other.data[k] : null;
+    if (want === null) del(k); else put(k, want);
+    var nv = v === null ? null : String(v);
+    // signed out, or the child was removed, in another tab: this device was cleared on purpose, so nothing is kept for them
+    if ((pageKid !== GUEST && !onDevice(pageKid, get(P + 'uid'))) || (nv !== null && nv.length > MAX_VALUE)) { stale(); return; }
+    var s = store(pageKid), had = has(s.data, k) ? s.data[k] : null;
+    if (had !== nv) {
+      if (nv === null) delete s.data[k]; else s.data[k] = nv;
+      bump(s);
+      if (pageKid !== GUEST) (s.changed = s.changed || {})[k] = 1;
+      saveStore(pageKid, s);
+      if (pageKid !== GUEST) {   // send it before reloading (at most 3 s); if that fails, the next page that opens sends it (sendOthers)
+        var go = function () { clearTimeout(t); stale(); }, t = setTimeout(go, 3000);
+        cloud.push(pageKid).then(go, go);
+        return;
+      }
+    }
+    stale();
+  }
+  var reloading = false;
+  function stale() { if (!reloading && document.visibilityState !== 'hidden') { reloading = true; location.reload(); } }
+  function checkPlayer() { if (current() !== pageKid) stale(); }
+  window.addEventListener('pageshow', function (e) { if (e.persisted) checkPlayer(); });
+  window.addEventListener('storage', function (e) { if (e.key === P + 'current' || e.key === null) checkPlayer(); });
+  function noteWrite(k, v) {
+    if (ours(k)) return;
+    var id = current();
+    if (id !== pageKid) { strayWrite(k, v, id); return; }   // before the size check: a big save from a stale page must not stay on the wrong child
+    if (v !== null && String(v).length > MAX_VALUE) return;
+    var ks = known(); if (ks.indexOf(k) < 0) { ks.push(k); W(P + 'known', ks); }
+    var s = store(id), had = has(s.data, k) ? s.data[k] : null;
+    if (had === (v === null ? null : String(v))) return;   // nothing new
+    if (v === null) delete s.data[k]; else s.data[k] = String(v);
+    if (id === GUEST) { bump(s); saveStore(id, s); return; }
+    if (syncing) { waiting[k] = 1; s.seq = (s.seq || 0) + 1; saveStore(id, s); return; }
+    (s.changed = s.changed || {})[k] = 1; bump(s); saveStore(id, s);
+    later();
+  }
+  Storage.prototype.setItem = function (k, v) { rawSet.call(this, k, v); if (this === LS) noteWrite(String(k), String(v)); };
+  Storage.prototype.removeItem = function (k) { rawRemove.call(this, k); if (this === LS) noteWrite(String(k), null); };
+  /* the writes that were waiting now count as this child's changes */
+  function settle() {
+    syncing = false;
+    var ks = Object.keys(waiting), id = pageKid; waiting = {};   // the waiting saves were made by this page, for its own child
+    if (!ks.length || id === GUEST) return;
+    var s = store(id); s.changed = s.changed || {};
+    ks.forEach(function (k) { s.changed[k] = 1; });
+    bump(s); saveStore(id, s); later();
+  }
+  function reloadPage() {
+    try {
+      var flag = 'tmg.reloaded.' + location.pathname, last = Number(sessionStorage.getItem(flag)) || 0;
+      if (Date.now() - last > 30000) { sessionStorage.setItem(flag, String(Date.now())); location.reload(); }
+    } catch (e) {}
+  }
+  /* A child's copies on this device: progress and the reward words. */
+  function dropKid(id) {
+    del(P + 'kid.' + id);
+    var end = '.rewards.' + id;
+    Object.keys(LS).forEach(function (k) { if (k.indexOf(P) === 0 && k.slice(-end.length) === end) del(k); });
+  }
+  /* The child was removed on another device: this device lets go too, and never writes them back. */
+  function childGone(id) {
+    if (current() === id) { setCurrent(GUEST); swap(); }
+    dropKid(id);
+    var fam = J(P + 'family', null);
+    if (fam && fam.kids) { fam.kids = fam.kids.filter(function (k) { return k.id !== id; }); W(P + 'family', fam); }
+  }
+
+  /* ---------- Firebase (loaded only when it is needed) ---------- */
+  var fb = null;
+  function loadScript(src) { return new Promise(function (ok, no) { var s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); }
+  function firebaseReady() {
+    if (fb) return fb;
+    fb = loadScript(SDK + 'firebase-app-compat.js')
+      .then(function () { return Promise.all([loadScript(SDK + 'firebase-auth-compat.js'), loadScript(SDK + 'firebase-firestore-compat.js')]); })
+      .then(function () {
+        var app = window.firebase.apps.length ? window.firebase.app() : window.firebase.initializeApp(CONFIG);
+        return { auth: app.auth(), db: app.firestore() };
+      });
+    return fb;
+  }
+  function userNow(f) { return new Promise(function (ok) { var off = f.auth.onAuthStateChanged(function (u) { off(); ok(u); }); }); }
+  function kidsRef(f, uid) { return f.db.collection('families').doc(uid).collection('kids'); }
+
+  /* After an upload, the browser takes the cloud's values for games this device did not change. A key is only replaced when the browser
+     still holds what this device last knew (`before`), so nothing the browser holds that the store never saw (for example a value too big
+     to sync) is overwritten. `skip` = keys with changes not sent yet: they stay as they are. */
+  function applyToBrowser(id, before, after, skip) {
+    var ks = known(), grew = false;
+    Object.keys(after).forEach(function (k) { if (ks.indexOf(k) < 0) { ks.push(k); grew = true; } });
+    if (grew) W(P + 'known', ks);
+    if ((get(P + 'owner') || GUEST) !== id) return;
+    ks.forEach(function (k) {
+      if (has(skip, k)) return;
+      var was = has(before, k) ? before[k] : null, want = has(after, k) ? after[k] : null;
+      if (want === was || get(k) !== was) return;
+      if (want === null) del(k); else put(k, want);
+    });
+  }
+
+  var cloud = {
+    /* Upload a child's changes. true = nothing is left unsent.
+       Only the games this device changed are written: in one transaction the cloud copy is read, this device's changed keys are put into
+       it, and it is written back. So a device that has been open for a long time never puts its old copy of a game over newer progress
+       made on another device. The transaction fails on a child who has been removed (`not-found`), so they are never brought back. */
+    push: function (id) {
+      id = id || current();
+      var uid = get(P + 'uid');
+      if (id === GUEST || !uid) return Promise.resolve(true);
+      if (syncing && id === current()) return ready.then(function () { return cloud.push(id); });
+      var s = store(id), keys = Object.keys(s.changed || {});
+      if (!keys.length) return Promise.resolve(true);
+      var name = (J(P + 'family', { kids: [] }).kids.filter(function (k) { return k.id === id; })[0] || {}).name || 'Player';
+      var sent = null;
+      return firebaseReady().then(function (f) {
+        var ref = kidsRef(f, uid).doc(id);
+        return f.db.runTransaction(function (tx) {
+          return tx.get(ref).then(function (doc) {
+            if (!doc.exists) { var gone = new Error('removed'); gone.code = 'not-found'; throw gone; }
+            var c = doc.data() || {}, data = JSON.parse(JSON.stringify(c.data || {})), up = Math.max(Date.now(), (c.updated || 0) + 1);
+            keys.forEach(function (k) { if (has(s.data, k)) data[k] = s.data[k]; else delete data[k]; });
+            if (bytes(JSON.stringify(data)) > 900000) { var big = new Error('too big'); big.code = 'too-big'; throw big; }   // a Firestore document holds at most 1 MB: keep it on this device only
+            tx.update(ref, { name: name, data: data, updated: up });
+            sent = { data: data, updated: up };
+          });
+        });
+      }).then(function () {
+        if (!onDevice(id, uid)) return true;   // signed out or removed while this upload ran: do not bring the copy back to this device
+        var now = store(id), during = (now.seq || 0) !== (s.seq || 0) || now.updated !== s.updated, still = during ? (now.changed || {}) : {};
+        var data = JSON.parse(JSON.stringify(sent.data));
+        Object.keys(still).forEach(function (k) { if (has(now.data, k)) data[k] = now.data[k]; else delete data[k]; });   // saved while this upload ran: kept, sent next time
+        saveStore(id, { data: data, updated: Math.max(sent.updated, now.updated || 0), changed: still, base: sent.updated, seq: now.seq || 0 });   // base: the version the cloud now holds
+        applyToBrowser(id, now.data, data, still);
+        return true;
+      }, function (e) {
+        if (e && e.code === 'not-found') { childGone(id); if (!onHome && id === pageKid) reloadPage(); return true; }
+        return false;
+      });
+    },
+    /* compare with the cloud; returns true when the values in the browser changed */
+    pull: function () {
+      var id = current(), uid = get(P + 'uid');
+      if (id === GUEST || !uid) return Promise.resolve(false);
+      return firebaseReady().then(function (f) { return kidsRef(f, uid).doc(id).get(); }).then(function (doc) {
+        if (!doc.exists) { childGone(id); return true; }
+        var c = doc.data(), s = store(id), cu = c.updated || 0, mine = s.changed || {};
+        var news = s.base != null ? cu !== s.base : cu > (s.updated || 0);   // has the cloud changed since this device last synced?
+        if (!news) {
+          if (cu < (s.updated || 0) && !Object.keys(mine).length) { s.changed = {}; Object.keys(s.data).forEach(function (k) { s.changed[k] = 1; }); saveStore(id, s); }
+          return false;
+        }
+        /* the cloud is newer: take it, keeping only what this device changed and has not sent yet */
+        var data = JSON.parse(JSON.stringify(c.data || {})), mineKeys = Object.keys(mine);
+        mineKeys.forEach(function (k) { if (Object.prototype.hasOwnProperty.call(s.data, k)) data[k] = s.data[k]; else delete data[k]; });
+        saveStore(id, { data: data, updated: mineKeys.length ? Math.max(Date.now(), cu + 1) : cu, changed: mine, base: cu, seq: (s.seq || 0) + 1 });   // seq moves on, so an upload running now keeps its own unsent marks
+        waiting = {};
+        var ks = known(); Object.keys(data).forEach(function (k) { if (ks.indexOf(k) < 0) ks.push(k); }); W(P + 'known', ks);
+        var changed = false;
+        if ((get(P + 'owner') || GUEST) === id) ks.forEach(function (k) {
+          var want = Object.prototype.hasOwnProperty.call(data, k) ? data[k] : null;
+          if (get(k) !== want) { changed = true; if (want === null) del(k); else put(k, want); }
+        });
+        return changed;
+      }, function () { return false; });
+    }
+  };
+  /* hear from the cloud, then send whatever is left to send */
+  function syncNow() {
+    syncing = true;
+    setTimeout(function () { if (syncing) settle(); }, 20000);   // no answer for this long: what the child has been doing counts
+    return cloud.pull().then(function (changed) { settle(); cloud.push(); return changed; });
+  }
+  window.addEventListener('pagehide', function () { cloud.push(pageKid); });
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') cloud.push(pageKid); else checkPlayer(); });
+
+  /* On a game page with a child playing: fetch their newest progress; if it differs from what the game already read, reload. */
+  var ready = Promise.resolve();
+  if (get(P + 'uid') && current() !== GUEST) {
+    ready = syncNow().then(function (changed) { if (changed && !onHome) reloadPage(); });
+  }
+  /* other children on this device with changes not sent yet (for example a save kept by strayWrite just before a reload): send them too */
+  function sendOthers() {
+    if (!get(P + 'uid')) return;
+    J(P + 'family', { kids: [] }).kids.forEach(function (k) { if (k.id !== current() && Object.keys(store(k.id).changed || {}).length) cloud.push(k.id); });
+  }
+  ready.then(function () { setTimeout(sendOthers, 1500); });
+
+  /* ---------- the parent panel on the home page ---------- */
+  function E(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function newId() { var a = new Uint8Array(9); crypto.getRandomValues(a); return Array.prototype.map.call(a, function (b) { return ('0' + b.toString(16)).slice(-2); }).join(''); }
+  function cleanName(s) { return String(s || '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 20); }
+
+  function mountHome(box) {
+    var msg = '', askDelete = null, deleting = false;   // askDelete: the loaded Firebase while the parent is asked to confirm with Google; deleting: Google window open or deletion running
+    function render() {
+      box.replaceChildren();
+      var uid = get(P + 'uid'), fam = J(P + 'family', { kids: [] }), cur = current();
+      if (!uid) askDelete = null;
+      if (deleting) {   // nothing else to tap until the deletion has finished or stopped
+      } else if (!uid) {
+        var b = E('button', 'acct-btn', 'Parent sign-in'); b.type = 'button'; b.onclick = signIn;
+        box.appendChild(b);
+        box.appendChild(E('span', 'acct-note', 'Optional: keep each child’s progress on every device.'));
+      } else {
+        /* a box that says plainly who is playing now, with big name buttons: a child should notice at once when the wrong name is on */
+        var who = E('div', 'acct-who'), me = fam.kids.filter(function (k) { return k.id === cur; })[0];
+        var now = E('p', 'acct-now', 'Playing now: '); now.appendChild(E('b', null, me ? '▶ ' + me.name : 'Just looking (saved on this device only)'));
+        who.appendChild(now);
+        var row = E('div', 'acct-kids');
+        fam.kids.forEach(function (k) {
+          var chip = E('button', 'acct-kid' + (k.id === cur ? ' on' : ''), (k.id === cur ? '▶ ' : '') + k.name); chip.type = 'button';
+          chip.setAttribute('aria-pressed', k.id === cur ? 'true' : 'false');
+          chip.onclick = function () { choose(k.id); };
+          row.appendChild(chip);
+        });
+        var g = E('button', 'acct-kid' + (cur === GUEST ? ' on' : ''), 'Just looking'); g.type = 'button'; g.onclick = function () { choose(GUEST); };
+        row.appendChild(g);
+        var add = E('button', 'acct-btn small', '+ Add child'); add.type = 'button'; add.onclick = addKid;
+        row.appendChild(add);
+        who.appendChild(row);
+        who.appendChild(E('span', 'acct-ask', fam.kids.length > 1 ? 'Not you? Tap your own name before you play.' : fam.kids.length ? 'Tap + Add child for a brother or sister.' : 'Add a child to keep their progress.'));
+        box.appendChild(who);
+        var tools = E('span', 'acct-tools');   // grown-up links, small, at the bottom of the box
+        var so = E('button', 'acct-link', 'Sign out'); so.type = 'button'; so.onclick = signOut; tools.appendChild(so);
+        var rm = E('button', 'acct-link', 'Remove a child'); rm.type = 'button'; rm.onclick = removeKid; tools.appendChild(rm);
+        var dl = E('button', 'acct-link danger', 'Delete account and all data'); dl.type = 'button'; dl.onclick = deleteAll; tools.appendChild(dl);
+        var pv = E('a', 'acct-link', 'Privacy'); pv.href = 'privacy.html'; tools.appendChild(pv);
+        who.appendChild(tools);
+      }
+      if (msg) box.appendChild(E('div', 'acct-msg', msg));
+      if (askDelete && uid) {
+        var cf = E('div', 'acct-confirm');
+        cf.appendChild(E('div', 'acct-msg', 'Last step: confirm with Google that it is you. Then the account, all children and all progress are deleted.'));
+        var yes = E('button', 'acct-btn danger', 'Confirm with Google and delete'); yes.type = 'button'; yes.onclick = reallyDelete; cf.appendChild(yes);
+        var no = E('button', 'acct-link', 'Cancel'); no.type = 'button'; no.onclick = function () { askDelete = null; say('Nothing was deleted.'); }; cf.appendChild(no);
+        box.appendChild(cf);
+      }
+    }
+    function say(t) { msg = t; render(); }
+    function loadFamily(f, uid) {
+      return kidsRef(f, uid).get().then(function (q) {
+        var kids = []; q.forEach(function (d) { kids.push({ id: d.id, name: cleanName(d.data().name) || 'Player' }); });
+        kids.sort(function (a, b) { return a.name.localeCompare(b.name); });
+        var before = J(P + 'family', { kids: [] }).kids;
+        W(P + 'family', { kids: kids });
+        if (current() !== GUEST && !kids.some(function (k) { return k.id === current(); })) { setCurrent(GUEST); swap(); }
+        before.forEach(function (o) { if (!kids.some(function (k) { return k.id === o.id; })) dropKid(o.id); });
+        return kids;
+      });
+    }
+    function signIn() {
+      if (deleting) return; askDelete = null;
+      say('Opening Google sign-in…');
+      firebaseReady().then(function (f) {
+        var p = new window.firebase.auth.GoogleAuthProvider();
+        return f.auth.signInWithPopup(p).then(function (r) { put(P + 'uid', r.user.uid); return loadFamily(f, r.user.uid); });
+      }).then(function (kids) { msg = kids.length ? 'Signed in. Pick who is playing.' : 'Signed in. Add your first child (a nickname is enough).'; render(); },
+        function (e) { say(e && e.code === 'auth/popup-closed-by-user' ? '' : 'Sign-in did not work' + (e && e.code ? ' (' + e.code + ')' : '') + '. Please try again.'); });
+    }
+    function addKid() {
+      if (deleting) return; askDelete = null;
+      var name = cleanName(window.prompt('Child’s nickname (not their full name):', ''));
+      if (!name) return;
+      var uid = get(P + 'uid'), id = newId(), fam = J(P + 'family', { kids: [] });
+      var guest = store(GUEST), first = fam.kids.length === 0 && Object.keys(guest.data).length > 0;
+      var start = { data: {}, updated: Date.now() };
+      if (first && window.confirm('Move the progress already on this device to ' + name + '?')) {
+        swap(); start = { data: JSON.parse(JSON.stringify(store(GUEST).data)), updated: Date.now() };
+      }
+      say('Adding ' + name + '…');
+      firebaseReady().then(function (f) {
+        return kidsRef(f, uid).doc(id).set({ name: name, data: start.data, updated: start.updated }).then(function () { return loadFamily(f, uid); });
+      }).then(function () { start.base = start.updated; saveStore(id, start); choose(id); }, function () { say('Could not add ' + name + '. Please try again.'); });
+    }
+    function choose(id) {
+      if (deleting) return; askDelete = null;
+      cloud.push().then(function () {
+        setCurrent(id); swap();
+        msg = id === GUEST ? 'Just looking: progress stays on this device.' : 'Now playing: ' + ((J(P + 'family', { kids: [] }).kids.filter(function (k) { return k.id === id; })[0] || {}).name || '');
+        render();
+        if (id !== GUEST) ready = syncNow();
+      });
+    }
+    function removeKid() {
+      if (deleting) return; askDelete = null;
+      var fam = J(P + 'family', { kids: [] }); if (!fam.kids.length) return;
+      var name = window.prompt('Type the nickname of the child to remove. Their progress is deleted everywhere.\n\n' + fam.kids.map(function (k) { return k.name; }).join(', '), '');
+      var k = fam.kids.filter(function (x) { return x.name === cleanName(name); })[0]; if (!k) return;
+      var uid = get(P + 'uid');
+      firebaseReady().then(function (f) { return kidsRef(f, uid).doc(k.id).delete().then(function () { return loadFamily(f, uid); }); })
+        .then(function () { dropKid(k.id); say(k.name + ' was removed.'); }, function () { say('Could not remove ' + k.name + '. Please try again.'); });
+    }
+    /* leave this device as a guest device: the children's copies are taken off it. keepUnsent keeps any copy that has not reached the cloud yet. */
+    function forgetDevice(keepUnsent) {
+      setCurrent(GUEST); swap();
+      J(P + 'family', { kids: [] }).kids.forEach(function (k) {
+        if (keepUnsent && Object.keys(store(k.id).changed || {}).length) return;
+        del(P + 'kid.' + k.id);
+      });
+      if (!keepUnsent) del(P + 'family');
+      del(P + 'uid');
+    }
+    /* never sign out while something has not reached the cloud: signing out takes the only copy off this device */
+    function signOut() {
+      if (deleting) return; askDelete = null;
+      var ids = J(P + 'family', { kids: [] }).kids.map(function (k) { return k.id; });
+      say('Saving…');
+      ready.then(function () { return Promise.all(ids.map(function (id) { return cloud.push(id); })); }).then(function (done) {
+        if (done.indexOf(false) >= 0) { say('Not signed out: some progress has not been saved yet. Check the internet and try again.'); return; }
+        return firebaseReady().then(function (f) { return f.auth.signOut(); }).then(function () { forgetDevice(); say('Signed out. This device is back to guest play.'); },
+          function () { forgetDevice(); say('Signed out on this device.'); });
+      });
+    }
+    /* Deleting a Google sign-in needs a recent sign-in. Safari only opens the Google window straight from a tap,
+       so: first tap asks, Firebase is loaded, then a second button opens the Google window inside its own tap,
+       and only after Google says yes is anything deleted. */
+    function deleteAll() {
+      if (deleting) return;
+      if (!window.confirm('Delete your account, all your children and all their progress? This cannot be undone.')) return;
+      askDelete = null; say('One moment…');
+      firebaseReady().then(function (f) { return userNow(f).then(function (u) {
+        if (!u || u.uid !== get(P + 'uid')) { forgetDevice(true); say('This device is no longer signed in. Sign in again, then delete.'); return; }
+        askDelete = f; say('');
+      }); }, function () { say('Could not reach Google. Check the internet and try again. Nothing was deleted.'); });
+    }
+    function reallyDelete() {
+      var f = askDelete, u = f && f.auth.currentUser, stage = 'confirm';
+      askDelete = null;
+      if (deleting) return;
+      if (!u || u.uid !== get(P + 'uid')) { say('This device is no longer signed in. Sign in again, then delete.'); return; }
+      var uid = u.uid;
+      deleting = true;
+      say('Waiting for Google… (close the Google window to cancel)');
+      function gone() { deleting = false; var ids = J(P + 'family', { kids: [] }).kids.map(function (k) { return k.id; }); forgetDevice(); ids.forEach(dropKid); say('Your account and all its data were deleted.'); }
+      u.reauthenticateWithPopup(new window.firebase.auth.GoogleAuthProvider())   // opened inside this tap, so Safari lets it open
+        .then(function () { stage = 'delete'; say('Deleting…'); return kidsRef(f, uid).get(); })
+        .then(function (q) { var jobs = []; q.forEach(function (d) { jobs.push(d.ref.delete()); }); return Promise.all(jobs); })
+        .then(function () { return u.delete(); })
+        .then(gone, function (e) {
+          var c = e && e.code;
+          deleting = false;
+          if (c === 'auth/user-not-found') { gone(); return; }   // the sign-in record is already gone (an earlier try finished but its answer was lost)
+          if (stage === 'confirm') {
+            if (c === 'auth/user-mismatch') say('That was a different Google account. Nothing was deleted. Tap "Delete account and all data" again and pick the account you signed in with.');
+            else if (c === 'auth/popup-closed-by-user' || c === 'auth/cancelled-popup-request') say('Nothing was deleted.');
+            else if (c === 'auth/popup-blocked') say('The Google window did not open. Nothing was deleted. Wait a moment and tap "Delete account and all data" again.');
+            else say('Google did not confirm' + (c ? ' (' + c + ')' : '') + '. Nothing was deleted. Please try again.');
+          } else say('Not finished: some data may already be deleted. Check the internet and tap "Delete account and all data" again to finish.');
+        });
+    }
+    /* check the sign-in is still valid (it can end on another device) */
+    if (get(P + 'uid')) firebaseReady().then(function (f) { return userNow(f).then(function (u) {
+      if (!u) { forgetDevice(true); render(); return; }
+      return loadFamily(f, u.uid).then(render);
+    }); }, function () {});
+    render();
+  }
+
+  window.TMG = { kid: current(), ready: ready, mountHome: mountHome, _swap: swap, _cloud: cloud };
+})();
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>枫叶魔方闯关</title>
+<script>try { if (localStorage.getItem("ivy_quest_lang") === "en") { document.title = "Maple Leaf Cube Quest"; document.documentElement.lang = "en"; } } catch (e) {}</script>
+<meta name="theme-color" content="#b8461b">
+<style>
+/* Maple Leaf (Ivy) Cube Quest: two steps (corners, then leaves with the little dance), on a cube on the screen, plus a printable step sheet.
+   Same look and controls as 3x3 Cube Quest. Chinese or English, switched with the toggle at the top. */
+:root{
+  color-scheme:light;
+  --ink:#2a2140; --mute:#6b6385; --page:#f4f0ff; --card:#fff; --line:#e3dcf5;
+  --brand:#5b3fa8; --brand-s:#ece6ff; --good:#1f8f45; --good-s:#e3f6e9; --bad:#c43a3a; --bad-s:#fde8e8; --gold:#f2b705; --gold-s:#fff5cc;
+  --plastic:#1d1b22; --dim:#cfcbd8;
+  --st-W:#F6F6F0; --st-Y:#FFD500; --st-G:#009B48; --st-R:#C41E3A; --st-B:#0046AD; --st-O:#FF5800;
+  --font:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC","Source Han Sans SC",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font:500 18px/1.55 var(--font);min-height:100vh}
+h1,h2,h3{margin:0;line-height:1.25}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
+button:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.wrap{max-width:1280px;margin:0 auto;padding:12px 16px 80px}
+.top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.top h1{font-size:clamp(22px,4vw,30px);color:var(--brand);margin-right:auto}
+.langs{display:inline-flex;border:2px solid var(--line);border-radius:999px;overflow:hidden;background:#fff}
+.lang{border:0;background:transparent;min-height:44px;min-width:64px;padding:0 14px;font-weight:800;color:var(--mute)}
+.lang.on{background:var(--brand);color:#fff}
+.stars{font-weight:800;color:#8a6400;background:var(--gold-s);border-radius:999px;padding:6px 14px;white-space:nowrap}
+.btn{border:2px solid var(--line);background:#fff;border-radius:14px;min-height:48px;padding:8px 16px;font-weight:700}
+.btn:hover{border-color:var(--brand)}
+.btn.main{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.small{min-height:44px;padding:6px 12px;font-size:16px}
+.btn:disabled{opacity:.45;cursor:default}
+.card{background:var(--card);border-radius:18px;box-shadow:0 2px 0 var(--line);padding:16px}
+[hidden]{display:none!important}
+
+/* home */
+.ways{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-bottom:16px}
+.way{display:flex;gap:14px;align-items:center;text-align:left;border:2px solid var(--line);background:#fff;border-radius:18px;padding:14px 16px}
+.way:hover{border-color:var(--brand)}
+.way .em{font-size:40px;line-height:1}
+.way b{display:block;font-size:20px}
+.way span{color:var(--mute);font-size:16px}
+.intro{color:var(--mute);margin:0 0 12px}
+.levels{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.lv{display:grid;grid-template-columns:52px 1fr;gap:4px 12px;align-items:center;text-align:left;border:2px solid var(--line);background:#fff;border-radius:18px;padding:12px 14px}
+.lv:hover{border-color:var(--brand)}
+.lv.next{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-s)}
+.lv .num{grid-row:span 2;width:52px;height:52px;border-radius:14px;background:var(--brand-s);color:var(--brand);font-size:24px;font-weight:800;display:grid;place-items:center}
+.lv.done .num{background:var(--good-s);color:var(--good)}
+.lv b{font-size:19px}
+.lv span{color:var(--mute);font-size:15px}
+.lv .st{grid-column:2;font-size:15px;color:#8a6400}
+
+/* play */
+.play{display:grid;gap:14px}
+@media (min-width:900px){.play{grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);align-items:start}.stagecard{position:sticky;top:10px}}
+.stagecard{padding:10px}
+.stage{position:relative;width:100%;aspect-ratio:1/0.92;perspective:1100px;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;border-radius:14px;background:radial-gradient(circle at 50% 40%,#fff 0%,#e9e4f7 100%);overflow:hidden}
+.stage:active{cursor:grabbing}
+.scene{position:absolute;left:50%;top:50%;width:0;height:0;transform-style:preserve-3d}
+.cubie{position:absolute;left:0;top:0;width:0;height:0;transform-style:preserve-3d}
+.fc{position:absolute;background:var(--plastic);backface-visibility:hidden}
+.fc>i{position:absolute;inset:6%;border-radius:12%}
+.st-W{background:var(--st-W)}.st-Y{background:var(--st-Y)}.st-G{background:var(--st-G)}.st-R{background:var(--st-R)}.st-B{background:var(--st-B)}.st-O{background:var(--st-O)}
+.fc>i.dim{background:var(--dim)}
+.cubie.hl .fc>i{box-shadow:0 0 0 4px #fff,0 0 0 8px var(--gold),0 0 18px 8px var(--gold)}
+.stagebar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:8px}
+.draghint{color:var(--mute);font-size:15px}
+.lights{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.light{flex:1 1 0;min-width:40px;text-align:center;border-radius:10px;background:#eee9f8;color:var(--mute);font-size:13px;line-height:1.2;padding:5px 2px}
+.light b{display:block;font-size:17px}
+.light.on{background:var(--good);color:#fff}
+.panel{display:grid;gap:12px}
+.phead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.phead h2{font-size:22px;margin-right:auto}
+.dots{display:flex;gap:5px;flex-wrap:wrap}
+.dot{width:12px;height:12px;border-radius:50%;background:#ddd6ef}
+.dot.done{background:var(--good)}.dot.cur{background:var(--brand);box-shadow:0 0 0 3px var(--brand-s)}
+.say{font-size:20px;line-height:1.6}
+.say b{color:var(--brand)}
+.pics{display:flex;gap:10px;flex-wrap:wrap}
+.pic{flex:1 1 140px;max-width:220px;text-align:center;font-size:15px;color:var(--mute)}
+.pic svg{width:100%;height:auto;display:block}
+.moves{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px}
+.mv{border:2px solid var(--line);background:#fff;border-radius:14px;min-height:64px;padding:6px 8px;display:grid;place-items:center;text-align:center;line-height:1.2}
+.mv:hover{border-color:var(--brand)}
+.mv .l{font:800 24px/1 ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
+.mv .w{font-size:14px;color:var(--mute)}
+.mv.f{background:var(--brand-s);border-color:#cfc2f5}
+.mv.f .l{font:800 18px/1.2 var(--font);color:var(--brand)}
+.mv.f .w{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+.mv.flip{background:#fff6e0;border-color:#f1d9a0}
+.mv.pulse{border-color:var(--gold);box-shadow:0 0 0 4px var(--gold-s);animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 8px var(--gold-s)}}
+.mv:disabled{opacity:.5;cursor:default}
+.seq{display:flex;gap:8px;flex-wrap:wrap}
+.sq{border:2px solid var(--line);background:#fff;border-radius:12px;min-width:74px;min-height:70px;padding:4px 6px;display:grid;place-items:center;text-align:center;line-height:1.15}
+.sq .l{font:800 24px/1 ui-monospace,Menlo,Consolas,monospace}
+.sq .w{font-size:13px;color:var(--mute)}
+.sq.now{border-color:var(--brand);background:var(--brand-s);box-shadow:0 0 0 3px var(--brand-s)}
+.sq.past{opacity:.4}
+.sq:disabled{cursor:default}
+.ctrl{display:flex;gap:8px;flex-wrap:wrap}
+.fb{border-radius:14px;padding:10px 14px;font-size:18px}
+.fb.good{background:var(--good-s);color:#135c2c}
+.fb.bad{background:var(--bad-s);color:#8a2424}
+.fb.hint{background:var(--gold-s);color:#5e4500}
+.opts{display:grid;gap:8px}
+.opt{border:2px solid var(--line);background:#fff;border-radius:14px;min-height:52px;padding:8px 14px;text-align:left;font-size:19px}
+.opt:hover{border-color:var(--brand)}
+.opt.no{border-color:var(--bad);background:var(--bad-s)}
+.opt.yes{border-color:var(--good);background:var(--good-s)}
+
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(30,20,60,.45);display:grid;place-items:center;padding:16px;z-index:50}
+.sheet{background:#fff;border-radius:20px;max-width:760px;width:100%;max-height:92vh;overflow:auto;padding:18px}
+.sheet .x{float:right}
+.win{text-align:center;display:grid;gap:12px;justify-items:center}
+.win .big{font-size:56px;line-height:1}
+
+/* step cards (in the game and on the printed sheet) */
+.stepcard{border:2px solid var(--line);border-radius:16px;padding:14px;background:#fff;break-inside:avoid;page-break-inside:avoid}
+.stepcard h3{font-size:22px;color:var(--brand);margin-bottom:8px}
+.stepcard h3 small{font-size:15px;color:var(--mute);font-weight:600;margin-left:6px}
+.stepcard ol{margin:6px 0 8px;padding-left:24px}
+.stepcard li{margin:3px 0}
+.formula{display:flex;flex-wrap:wrap;align-items:flex-end;gap:4px 8px;margin:8px 0;padding:8px 10px;background:var(--brand-s);border-radius:12px}
+.formula .fn{font-weight:800;color:var(--brand);margin-right:8px;align-self:center}
+.formula .t{display:grid;text-align:center;line-height:1.1}
+.formula .t .l{font:800 22px/1.1 ui-monospace,Menlo,Consolas,monospace}
+.formula .t .w{font-size:12px;color:var(--mute)}
+.note{font-size:16px;color:#5e4500;background:var(--gold-s);border-radius:10px;padding:6px 10px;margin:6px 0}
+.think{font-size:16px;color:#135c2c;background:var(--good-s);border-radius:10px;padding:6px 10px;margin:6px 0}
+.sheetpage{display:grid;gap:12px}
+.keytable{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.sheet .ctrl .btn.small{min-width:44px}
+.sheet .x{min-width:44px}
+.key{display:flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:4px 8px;font-size:15px}
+.key .l{font:800 20px/1 ui-monospace,Menlo,Consolas,monospace;min-width:30px}
+.printbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+@media print{
+  @page{margin:10mm}
+  body{background:#fff;font-size:14px}
+  .noprint,.top,#home,#play,.modal{display:none!important}
+  #print{display:block!important}
+  .wrap{padding:0;max-width:none}
+  .card{box-shadow:none;padding:0}
+  .stepcard{border:1.5px solid #bbb;padding:10px;margin-bottom:8px}
+  .stepcard h3{font-size:18px}
+  .pic{max-width:150px;flex-basis:120px;font-size:12px}
+  .formula .t .l{font-size:18px}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+@media (max-width:899px){
+  .stagecard{position:sticky;top:0;z-index:5}
+  .stage{aspect-ratio:auto;height:min(34vh,80vw)}
+  .lights{margin-top:4px}.light{padding:3px 2px;font-size:12px}.light b{font-size:15px}
+  .stagebar{margin-top:4px}
+  .moves{grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:6px}
+  .mv{min-height:56px;padding:4px}
+  .mv .l{font-size:21px}.mv .w{font-size:12px}
+  .say{font-size:18px}
+}
+.burst{position:fixed;pointer-events:none;font-size:28px;z-index:60;animation:fly 1.4s ease-out forwards}
+@keyframes fly{to{transform:translate(var(--dx),var(--dy)) rotate(260deg);opacity:0}}
+@media (prefers-reduced-motion:reduce){.mv.pulse{animation:none}.burst{display:none}}
+
+/* the maple leaf cube */
+.ivf{position:absolute;backface-visibility:hidden;-webkit-backface-visibility:hidden;pointer-events:none}
+.ivf svg{width:100%;height:100%;display:block;overflow:visible}
+.ivf.st path{stroke:var(--plastic);stroke-width:.075;stroke-linejoin:round;pointer-events:visiblePainted;cursor:pointer}
+.ivf.st path.hl{stroke:#f2b705;stroke-width:.085}
+.clabel{position:absolute;left:-15px;top:-15px;width:30px;height:30px;border-radius:50%;background:#2a2140;color:#fff;font:800 17px/30px var(--font);text-align:center;pointer-events:none;box-shadow:0 0 0 2px #fff}
+.mv .l{font:800 22px/1.1 var(--font)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1 data-t="title"></h1>
+    <div class="langs" role="group"><button class="lang" data-lang="zh">中文</button><button class="lang" data-lang="en">English</button></div>
+    <span class="stars" id="starTotal">⭐ 0</span>
+    <span class="pill-slot" data-pill-slot></span>
+  </div>
+
+  <section id="home">
+    <div class="ways">
+      <button class="way" id="goLevels"><span class="em">🎮</span><div><b data-t="wayPlay"></b><span data-t="wayPlaySub"></span></div></button>
+      <button class="way" id="goPrint"><span class="em">🖨️</span><div><b data-t="wayPrint"></b><span data-t="wayPrintSub"></span></div></button>
+    </div>
+    <p class="intro" data-t="intro"></p>
+    <div class="levels" id="levelList"></div>
+  </section>
+
+  <section id="play" hidden>
+    <div class="play">
+      <div class="card stagecard">
+        <div class="stage" id="stage"><div class="scene" id="scene"></div></div>
+        <div class="stagebar"><span class="draghint" data-t="drag"></span><button class="btn small" id="resetView" data-t="resetView"></button></div>
+        <div class="lights" id="lights"></div>
+      </div>
+      <div class="card panel" id="panel"></div>
+    </div>
+  </section>
+
+  <section id="print" hidden></section>
+</div>
+
+<div class="modal" id="modal" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+
+<script>
+/* Maple Leaf (Ivy) Cube engine: the puzzle model and the beginner method as code. No screen code here.
+   The puzzle: a cube that turns around 4 of its 8 corners (every other corner). Each turn is a third of a full turn.
+   Pieces: 4 corner pieces (3 colors each) that only spin in their own place, and 6 leaves (1 color each) that travel
+   from face to face. The other 4 corners are not pieces: they are where the tips of three leaves meet.
+   Each face, when solved, is one color: its leaf plus the two corner pieces on that face. */
+/*IVY-START*/
+const IVY_CORNERS = [[1, 1, 1], [1, -1, -1], [-1, 1, -1], [-1, -1, 1]];   /* the corners that turn */
+const IVY_FACES = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+/* same colors and the same way round as the 3x3 game: white down, green front, orange right */
+const IVY_COLOR = { "1,0,0": "O", "-1,0,0": "R", "0,1,0": "Y", "0,-1,0": "W", "0,0,1": "G", "0,0,-1": "B" };
+const vk = v => v[0] + "," + v[1] + "," + v[2];
+const dot3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const cross3 = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const faceIdx = v => IVY_FACES.findIndex(f => f[0] === v[0] && f[1] === v[1] && f[2] === v[2]);
+/* faces that touch corner c */
+const cornerFaces = ci => IVY_FACES.map((f, i) => i).filter(i => dot3(IVY_FACES[i], IVY_CORNERS[ci]) === 1);
+/* the two turning corners on face f */
+const faceCorners = fi => IVY_CORNERS.map((k, i) => i).filter(i => dot3(IVY_FACES[fi], IVY_CORNERS[i]) === 1);
+/* a third of a turn around corner k. cw: clockwise as you look straight at that corner from outside.
+   Rodrigues for 120 degrees about k/sqrt(3):  +120 -> (-v + k x v + (k.v) k) / 2;  -120 (clockwise) -> (-v - k x v + (k.v) k) / 2 */
+function turnVec(v, k, cw) {
+  const c = cross3(k, v), d = dot3(k, v), s = cw ? -1 : 1;
+  return [0, 1, 2].map(i => Math.round((-v[i] + s * c[i] + d * k[i]) / 2) + 0);
+}
+/* state: leaf[f] = color of the leaf on face f; corner[c][f] = color of corner c's sticker on face f (only its 3 faces) */
+function ivySolved() {
+  const leaf = IVY_FACES.map(f => IVY_COLOR[vk(f)]);
+  const corner = IVY_CORNERS.map((k, ci) => { const o = {}; for (const fi of cornerFaces(ci)) o[fi] = IVY_COLOR[vk(IVY_FACES[fi])]; return o; });
+  return { leaf, corner };
+}
+const ivyClone = s => ({ leaf: s.leaf.slice(), corner: s.corner.map(o => Object.assign({}, o)) });
+/* moves are written "1", "1'", ... "4", "4'": the corner number (1-4) and ' for the other way (counter-clockwise) */
+function ivyTok(t) { const m = /^([1-4])('?)$/.exec(String(t).replace(/[’′`´]/g, "'")); return m ? { ci: +m[1] - 1, cw: !m[2] } : null; }
+const ivyInv = t => (t.endsWith("'") ? t.slice(0, -1) : t + "'");
+function ivyTurn(s, t) {
+  const m = ivyTok(t); if (!m) throw new Error("Bad move: " + t);
+  const k = IVY_CORNERS[m.ci], leaf = s.leaf.slice(), cf = {};
+  for (const fi of cornerFaces(m.ci)) {
+    const to = faceIdx(turnVec(IVY_FACES[fi], k, m.cw));
+    leaf[to] = s.leaf[fi];
+    cf[to] = s.corner[m.ci][fi];
+  }
+  s.leaf = leaf; s.corner[m.ci] = cf;
+  return s;
+}
+const ivySeq = str => (Array.isArray(str) ? str : String(str).trim().split(/\s+/).filter(Boolean));
+function ivyRun(s, seq) { for (const t of ivySeq(seq)) ivyTurn(s, t); return s; }
+const ivyInvSeq = seq => ivySeq(seq).slice().reverse().map(ivyInv);
+
+/* the color a face must end up: the one color both of its corner pieces have (the corners never leave their places) */
+const IVY_HOME = (function () {
+  const s = ivySolved();
+  return IVY_FACES.map((f, fi) => { const [a, b] = faceCorners(fi); const ca = Object.values(s.corner[a]), cb = Object.values(s.corner[b]); return ca.find(c => cb.includes(c)); });
+})();
+const cornerRight = (s, ci) => cornerFaces(ci).every(fi => s.corner[ci][fi] === IVY_HOME[fi]);
+const cornersDone = s => [0, 1, 2, 3].every(ci => cornerRight(s, ci));
+const leafHome = (s, fi) => s.leaf[fi] === IVY_HOME[fi];
+const leavesHome = s => IVY_FACES.filter((f, fi) => leafHome(s, fi)).length;
+const ivyIsSolved = s => cornersDone(s) && leavesHome(s) === 6;
+/* how many of the 2 steps are done: 0, 1 (corners right), 2 (solved) */
+const ivyStage = s => (!cornersDone(s) ? 0 : ivyIsSolved(s) ? 2 : 1);
+/* turns (clockwise) a corner needs to be right: 0, 1 or 2 */
+function cornerNeeds(s, ci) { const t = ivyClone(s); for (let k = 0; k < 3; k++) { if (cornerRight(t, ci)) return k; ivyTurn(t, String(ci + 1)); } return -1; }
+/* the face two corners share, and the color they both have (that color goes on that face) */
+function sharedFace(a, b) { return cornerFaces(a).find(fi => cornerFaces(b).includes(fi)); }
+
+/* the little dance: A B A' B' (turn A, turn B, A back, B back). The corners all end where they started; 3 leaves swap round. */
+const DANCES = [];
+for (let a = 0; a < 4; a++) for (let b = 0; b < 4; b++) if (a !== b) for (const da of ["", "'"]) for (const db of ["", "'"]) {
+  const A = (a + 1) + da, B = (b + 1) + db;
+  DANCES.push([A, B, ivyInv(A), ivyInv(B)]);
+}
+/* With the corners right, only the order of the 6 leaves is left (360 orders can happen). For every order, the fewest dances to finish,
+   found once by walking outwards from the solved cube. A hint names the first dance of a shortest way, so every dance helps. */
+const leafKey = s => s.leaf.join("");
+const DANCE_DIST = (function () {
+  const dist = new Map(), start = ivySolved(); dist.set(leafKey(start), 0);
+  let fr = [start];
+  for (let d = 1; fr.length; d++) {
+    const nx = [];
+    for (const st of fr) for (const dn of DANCES) { const t = ivyRun(ivyClone(st), dn), k = leafKey(t); if (!dist.has(k)) { dist.set(k, d); nx.push(t); } }
+    fr = nx;
+  }
+  return dist;
+})();
+function bestDance(s) {
+  const here = DANCE_DIST.get(leafKey(s));
+  let best = null;
+  for (const d of DANCES) {
+    const t = ivyRun(ivyClone(s), d), dd = DANCE_DIST.get(leafKey(t)), n = leavesHome(t);
+    if (dd !== here - 1) continue;
+    if (!best || n > best.n) best = { d, n, left: dd };   /* among the shortest ways, the one that puts the most leaves home now */
+  }
+  return best;
+}
+/* what the method says to do next.
+   Step 1 (corners): turn a wrong corner the short way until it is right.
+   Step 2 (leaves): a little dance that puts the most leaves home. `plan` is the rest of a dance already started, if the child is following one. */
+function ivyNext(s, plan) {
+  if (ivyIsSolved(s)) return { done: true, step: 2 };
+  if (plan && plan.length && cornersDone(ivyRun(ivyClone(s), plan)) ) return { step: 2, act: plan[0], dance: plan.slice(), code: "dance-go" };
+  if (!cornersDone(s)) {
+    for (let ci = 0; ci < 4; ci++) {
+      const n = cornerNeeds(s, ci);
+      if (n) return { step: 1, act: (ci + 1) + (n === 2 ? "'" : ""), corner: ci, code: "corner", n };
+    }
+  }
+  const b = bestDance(s);
+  return { step: 2, act: b.d[0], dance: b.d.slice(), code: "dance", gain: b.n - leavesHome(s) };
+}
+/* follow the method to the end; returns the moves, or null */
+function ivySolve(s, goal) {
+  const t = ivyClone(s), moves = []; let plan = null;
+  for (let g = 0; g < 200; g++) {
+    if (ivyStage(t) >= goal) return moves;
+    const n = ivyNext(t, plan);
+    if (n.done) return moves;
+    plan = n.dance ? n.dance.slice(1) : null;
+    ivyTurn(t, n.act); moves.push(n.act);
+  }
+  return null;
+}
+
+/* ---- practice positions ---- */
+function ivyRng(seed) { let a = seed >>> 0; return function () { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+const IVY_MOVES = ["1", "1'", "2", "2'", "3", "3'", "4", "4'"];
+function ivyScramble(rng, n) {
+  const s = ivySolved(); let last = -1;
+  for (let i = 0; i < (n || 14); i++) { let m; do { m = Math.floor(rng() * 8); } while ((m >> 1) === last); last = m >> 1; ivyTurn(s, IVY_MOVES[m]); }
+  return s;
+}
+/* corners right, leaves mixed by `k` random dances */
+function ivyDances(rng, k) { const s = ivySolved(); for (let i = 0; i < k; i++) ivyRun(s, DANCES[Math.floor(rng() * DANCES.length)]); return s; }
+/*IVY-END*/
+if (typeof module !== "undefined") module.exports = { IVY_CORNERS, IVY_FACES, IVY_COLOR, IVY_HOME, vk, dot3, faceIdx, cornerFaces, faceCorners, turnVec, ivySolved, ivyClone, ivyTok, ivyInv, ivyTurn, ivySeq, ivyRun, ivyInvSeq, cornerRight, cornersDone, leafHome, leavesHome, ivyIsSolved, ivyStage, cornerNeeds, sharedFace, DANCES, DANCE_DIST, leafKey, bestDance, ivyNext, ivySolve, ivyRng, IVY_MOVES, ivyScramble, ivyDances };
+</script>
+<script>
+/* Maple Leaf Cube Quest: the two steps (for the step cards and the printed page) and the levels.
+   Every word a child sees is a pair "中文|English"; tr() picks the language that is switched on. Loaded after engine.js. */
+/*LEVELS-START*/
+const LANG = { cur: "zh" };
+function tr(s) {
+  if (s == null) return "";
+  s = String(s); const i = s.indexOf("|");
+  if (i < 0) return s;
+  return LANG.cur === "en" ? s.slice(i + 1) : s.slice(0, i);
+}
+const COLOR_NAME = { W: "白|white", Y: "黄|yellow", G: "绿|green", R: "红|red", B: "蓝|blue", O: "橙|orange" };
+const TURN_BTNS = ["1", "1'", "2", "2'", "3", "3'", "4", "4'"];
+
+/* pictures: a solved cube with `script` undone, so doing `script` solves it (a dance picture shows the leaves before the dance).
+   dim: "leaves" grays the leaves, so only the corners show. hl: corner numbers to circle. */
+const STEPS = [
+  { n: 1, name: "角块|Corners", moves: false,
+    look: ["任意拿两个角块。它们总有一种颜色是一样的。|Pick any two corners. They always have exactly one color in common.",
+           "这个一样的颜色，要在它们中间的那个面上。|That shared color belongs on the face between them.",
+           "拿起一个角块：它的每一面上，都有另一个角块。这两个角块都有的那种颜色，就是这一面的颜色。转这个角块，让它三个面都放对颜色。再做下一个。|Take one corner. Each of its three faces also has another corner on it. The color those two corners both have is that face's color. Turn the corner so all three of its faces show the right color. Then do the next one.",
+           "四个角块都对好以后，每一面的两个角块颜色一样。叶子先不管。|When all four corners are right, the two corners on every face match. Don't worry about the leaves yet."],
+    think: "角块只会在原地转，不会跑到别的地方。所以每一面应该是什么颜色，看角块就知道。|Corners only spin in place; they never move away. So the corners tell you what color each face should be.",
+    pics: [{ script: "", dim: "leaves", cap: "角块都对好：每一面的两个角块颜色一样|Corners done: the two corners on each face match" }] },
+  { n: 2, name: "叶子|Leaves", moves: true,
+    look: ["角块对好以后，只剩叶子。每片叶子要回到和它同色的面上。|With the corners right, only the leaves are left. Each leaf goes to the face of its own color.",
+           "用小舞步：拧一个角块（A），再拧另一个角块（B），然后 A 拧回来，B 拧回来。A 和 B 都可以顺时针，也可以逆时针，只要后两下把它们转回去。|Use the little dance: turn one corner (A), turn another corner (B), then turn A back and B back. A and B can each turn either way, as long as the last two turns undo them.",
+           "跳完以后角块还是对的，只有三片叶子换了位置。|After the dance the corners are still right. Only three leaves have swapped places.",
+           "看看换得对不对。不对就倒着跳回去：先拧 B，再拧 A，B 拧回来，A 拧回来。然后换两个角块，或者换个方向再试。|Check whether that helped. If not, dance it backwards to undo it: turn B, turn A, turn B back, turn A back. Then try two other corners, or the other way round.",
+           "三片不在家的叶子都挨着同一个会转的角块？那跳哪个舞步都不会马上变好。先随便跳一个舞步，换走其中一片，再接着做。|Are the three leaves that are away all next to the same corner piece (one of the 4 that turn)? Then no single dance makes it better right away. Do any dance that moves one of them first, then carry on."],
+    think: "做一个动作，做第二个动作，再把两个都撤销：大部分都回到原样，只有一点点变了。这是解魔方最有用的想法之一。|Do a move, do a second move, then undo both: almost everything comes back, and only a little has changed. This is one of the most useful ideas for solving puzzles.",
+    pics: [{ script: "1 2 1' 2'", dim: "none", cap: "跳之前：三片叶子不在家（有一片在底面，这里看不到）|Before the dance: three leaves are away (one is on the bottom, hidden here)" }, { script: "", dim: "none", cap: "跳 1 2 1' 2' 之后：都回家了|After 1 2 1' 2': all home" }] }
+];
+
+/* task kinds: info (read), tap (tap a leaf or a corner), ask (pick an answer), try (turn freely, then Next),
+   undo (turn a solved cube back), guided (tap the 4 turns of a dance in order), puz (free play to a goal). */
+const LEVELS = [
+  { id: 1, name: "认识枫叶魔方|Meet the maple leaf cube", sub: "角块和叶子|Corners and leaves", step: 0, goal: 2, dim: "none", tasks: [
+    { k: "info", t: "枫叶魔方有两种块。<b>角块</b>有 3 种颜色，一共 4 个，只会在原地转。<b>叶子</b>只有 1 种颜色，一共 6 片，会从一面跑到另一面。<br>用手指拖动魔方，可以从别的方向看。|The maple leaf cube has two kinds of pieces. A <b>corner</b> has 3 colors. There are 4, and they only spin in place. A <b>leaf</b> has 1 color. There are 6, and they travel from face to face.<br>Drag the cube with your finger to look at it from other sides." },
+    { k: "tap", want: "leaf", t: "点一片<b>叶子</b>。它在每一面的中间，像一片叶子。|Tap a <b>leaf</b>. It runs across the middle of a face, shaped like a leaf." },
+    { k: "tap", want: "corner", t: "点一个<b>角块</b>。它在角上，有 3 种颜色。|Tap a <b>corner</b>. It sits on a corner and has 3 colors." },
+    { k: "info", t: "4 个角块上有号码：1、2、3、4。按 <b>1 ↻</b>，1 号角块就顺时针转三分之一圈。按 <b>1 ↺</b> 就反过来转。在魔方上直接点一个角块，也会顺时针转。|The 4 corners have numbers: 1, 2, 3 and 4. Press <b>1 ↻</b> and corner 1 turns a third of the way round, clockwise. Press <b>1 ↺</b> to turn it back. You can also tap a corner on the cube to turn it clockwise." },
+    { k: "try", t: "试一试：按 <b>1 ↻</b>，看看有哪些块跟着动。想转回去就按 <b>1 ↺</b>。|Try it: press <b>1 ↻</b> and watch which pieces move. To turn it back, press <b>1 ↺</b>." },
+    { k: "ask", t: "转一下 1 号角块，一共有几块在动（算上角块自己）？|When corner 1 turns once, how many pieces move, counting the corner itself?", opts: ["3 块|3", "4 块|4", "6 块|6"], ans: 1, why: "4 块：角块自己，还有它旁边的 3 片叶子。|4: the corner itself and the 3 leaves next to it." },
+    { k: "ask", t: "同一个角块，往同一个方向一直转，转几下会回到原样？|If you keep turning the same corner the same way, how many turns until it comes back?", opts: ["2 下|2", "3 下|3", "4 下|4"], ans: 1, why: "3 下。每一下转三分之一圈，三下正好一整圈。|3. Each turn is a third of the way round, so three turns make a whole circle." },
+    { k: "undo", n: 1, t: "魔方被转了<b>一下</b>。哪个角块被转了？把它转回去。|The cube was turned <b>once</b>. Which corner was turned? Turn it back." },
+    { k: "undo", n: 1, t: "再来一次：又被转了<b>一下</b>。|Again: it was turned <b>once</b>." },
+    { k: "undo", n: 2, same: true, t: "这次<b>同一个角块</b>被转了两下。想一想：最少转几下能转回去？|This time <b>the same corner</b> was turned twice. Think: what is the fewest turns to get it back?" }
+  ] },
+  { id: 2, name: "角块的秘密|The corner secret", sub: "第 1 步：两个角块一样的颜色|Step 1: the color two corners share", step: 1, goal: 1, dim: "leaves", tasks: [
+    { k: "info", t: "第 1 步：<b>角块</b>。叶子先变成灰色，我们只看角块。<br>秘密：<b>任意两个角块，总有一种颜色是一样的。这个颜色要在它们中间的那个面上。</b>|Step 1: the <b>corners</b>. The leaves are gray for now, so we only look at the corners.<br>The secret: <b>any two corners have exactly one color in common. That color belongs on the face between them.</b>", pics: [{ script: "", dim: "leaves", cap: "角块都对好的样子|What it looks like with the corners done" }] },
+    { k: "ask", t: "1 号角块是<b>橙·黄·绿</b>，2 号角块是<b>橙·白·蓝</b>。它们中间的那个面，应该是什么颜色？|Corner 1 is <b>orange-yellow-green</b> and corner 2 is <b>orange-white-blue</b>. What color should the face between them be?", opts: ["橙色|Orange", "黄色|Yellow", "蓝色|Blue"], ans: 0, why: "橙色。橙色是它们都有的颜色，所以橙色在它们中间的面上。|Orange. It's the color they both have, so orange goes on the face between them." },
+    { k: "puz", kind: "oneCorner", focus: true, t: "有一个角块转歪了。找一个面：上面两个角块颜色不一样。再想一想，是哪一个歪了？|One corner is turned the wrong way. Look for a face whose two corners don't match. Then think: which one is wrong?" },
+    { k: "puz", kind: "oneCorner", focus: true, t: "再来一个。先看哪一面的两个角块颜色不一样。|One more. First look for a face whose two corners don't match." },
+    { k: "puz", kind: "twoCorners", focus: true, t: "这次有两个角块歪了。一个一个转对。|This time two corners are wrong. Fix them one at a time." }
+  ] },
+  { id: 3, name: "四个角块|All four corners", sub: "第 1 步：把角块都对好|Step 1: get every corner right", step: 1, goal: 1, dim: "leaves", tasks: [
+    { k: "info", t: "现在魔方全乱了，可能 4 个角块都是歪的。先只管角块：一个一个来。对每个角块，它的每一面要放“它和那一面另一个角块都有的颜色”。叶子乱跑没关系。|Now the cube is all mixed up, and all 4 corners may be wrong. Think only about the corners, one at a time. Each face of a corner gets the color that corner shares with the other corner on that face. It's fine if the leaves move around." },
+    { k: "puz", kind: "corners", focus: true, t: "把 4 个角块都转对。|Get all 4 corners right." },
+    { k: "puz", kind: "corners", focus: true, t: "再来一次。|Once more." },
+    { k: "puz", kind: "corners", focus: false, t: "这次叶子也有颜色了，像真的魔方一样。还是只看角块。|This time the leaves have their colors, like a real cube. Still look only at the corners." }
+  ] },
+  { id: 4, name: "小舞步|The little dance", sub: "第 2 步：只换叶子，不动角块|Step 2: move leaves, keep the corners", step: 2, goal: 2, dim: "none", tasks: [
+    { k: "info", t: "第 2 步：<b>叶子</b>。角块已经对了，可是每转一下，角块就会歪。怎么办？<br>用<b>小舞步</b>：拧一个角块，再拧另一个，然后第一个拧回来，第二个拧回来。|Step 2: the <b>leaves</b>. The corners are right, but every turn twists a corner. What can we do?<br>Use the <b>little dance</b>: turn one corner, turn another one, then turn the first back, and the second back.", pics: [{ script: "1 2 1' 2'", dim: "none", cap: "跳之前（有一片不在家的叶子在底面，这里看不到）|Before the dance (one leaf that is away is on the bottom, hidden here)" }, { script: "", dim: "none", cap: "跳 1 2 1' 2' 之后|After 1 2 1' 2'" }] },
+    { k: "guided", dance: "1 2 1' 2'", t: "跳小舞步：1 ↻，2 ↻，1 ↺，2 ↺。按顺序一下一下按。|Do the little dance: 1 ↻, 2 ↻, 1 ↺, 2 ↺. Press the turns one by one." },
+    { k: "ask", t: "跳完小舞步，4 个角块还是对的吗？|After the little dance, are the 4 corners still right?", opts: ["还是对的|Yes", "歪了|No, they are twisted"], ans: 0, why: "还是对的。每个角块转过去又转回来了。|Yes. Every corner that turned was turned back." },
+    { k: "ask", t: "小舞步让几片叶子换了位置？|How many leaves swap places in one little dance?", opts: ["2 片|2", "3 片|3", "6 片|6"], ans: 1, why: "3 片。它们轮流换位置，就像三个小朋友换座位。|3. They take each other's places in a circle, like three friends swapping seats." },
+    { k: "guided", dance: "3 1' 3' 1", t: "换一个小舞步：3 ↻，1 ↺，3 ↺，1 ↻。还是“拧、拧、回、回”。|A different little dance: 3 ↻, 1 ↺, 3 ↺, 1 ↻. It's still turn, turn, back, back." }
+  ] },
+  { id: 5, name: "一次舞步|One dance", sub: "第 2 步：选对两个角块|Step 2: pick the right two corners", step: 2, goal: 2, dim: "none", tasks: [
+    { k: "info", t: "角块都对了，有三片叶子不在家。只要跳一次对的小舞步就好。<br>先想：哪三片叶子要换位置？试一个舞步；不对就倒着跳回去（先拧 B，再拧 A，B 回，A 回），再换两个角块或者换个方向。|The corners are right, and three leaves are away from home. One right little dance will finish it.<br>Think first: which three leaves need to move? Try a dance. If it's wrong, dance it backwards (turn B, turn A, B back, A back), then try two other corners or the other way round." },
+    { k: "puz", kind: "dance1", t: "跳一次小舞步，让叶子都回家。|Do one little dance to bring every leaf home." },
+    { k: "puz", kind: "dance1", t: "再来一次。|Once more." },
+    { k: "puz", kind: "dance1", t: "最后一个。|Last one." }
+  ] },
+  { id: 6, name: "两次、三次舞步|Two or three dances", sub: "第 2 步：一步一步来|Step 2: a bit at a time", step: 2, goal: 2, dim: "none", tasks: [
+    { k: "info", t: "这次一次小舞步不够。最多跳三次就能全部回家。如果三片不在家的叶子都挨着同一个会转的角块，跳哪个舞步都不会马上变好：先随便跳一个，换走其中一片，再接着做。|This time one dance isn't enough. Three dances or fewer always gets every leaf home. If the three leaves that are away are all next to the same corner piece (one of the 4 that turn), no single dance makes it better right away: do any dance that moves one of them, then carry on." },
+    { k: "puz", kind: "dance2", t: "要跳两次小舞步。|This one takes two dances." },
+    { k: "puz", kind: "dance2", t: "再来一个。|Another one." },
+    { k: "puz", kind: "dance3", t: "要跳三次小舞步。|This one takes three dances." }
+  ] },
+  { id: 7, name: "从头到尾|Start to finish", sub: "两步连起来，自己决定|Both steps, your own choices", step: 0, goal: 2, dim: "none", tasks: [
+    { k: "info", t: "现在从头到尾自己来：先把 4 个角块转对，再用小舞步让叶子回家。魔方下面的 2 个小灯，会告诉你做好了几步。|Now do it all yourself: first get the 4 corners right, then use little dances to bring the leaves home. The 2 lights under the cube show how many steps are done." },
+    { k: "puz", kind: "full", t: "把整个魔方拼好。|Solve the whole cube." },
+    { k: "puz", kind: "full", t: "再拼一个！卡住了可以看 📖 步骤卡，或者按 💡 提示。|Solve another! Stuck? Look at the 📖 step cards or press 💡 Hint." }
+  ] }
+];
+/* a practice position for a puz or guided task: never already finished, and always one the method finishes */
+function ivyPuzzle(task, seed) {
+  const rng = ivyRng(seed);
+  for (let tries = 0; tries < 400; tries++) {
+    let s;
+    if (task.k === "guided") { s = ivySolved(); ivyRun(s, ivyInvSeq(task.dance)); return s; }
+    switch (task.kind) {
+      case "oneCorner": { s = ivyDances(rng, 0); const c = String(1 + Math.floor(rng() * 4)); ivyTurn(s, rng() < 0.5 ? c : c + "'"); break; }
+      case "twoCorners": { s = ivySolved(); const a = Math.floor(rng() * 4); let b; do { b = Math.floor(rng() * 4); } while (b === a); ivyTurn(s, String(a + 1) + (rng() < 0.5 ? "" : "'")); ivyTurn(s, String(b + 1) + (rng() < 0.5 ? "" : "'")); if ([0, 1, 2, 3].filter(ci => !cornerRight(s, ci)).length !== 2) continue; break; }
+      case "corners": s = ivyScramble(rng, 14); if ([0, 1, 2, 3].filter(ci => !cornerRight(s, ci)).length < 3) continue; break;
+      case "dance1": case "dance2": case "dance3": { const want = +task.kind.slice(-1); s = ivyDances(rng, want + 1); if (DANCE_DIST.get(leafKey(s)) !== want) continue; break; }
+      default: s = ivyScramble(rng, 16); if (cornersDone(s)) continue;
+    }
+    const goal = task.kind === "oneCorner" || task.kind === "twoCorners" || task.kind === "corners" ? 1 : 2;
+    if (ivyStage(s) >= goal) continue;
+    const m = ivySolve(s, goal); if (!m) continue;
+    return s;
+  }
+  return null;
+}
+const taskGoal = (L, task) => (task.kind === "oneCorner" || task.kind === "twoCorners" || task.kind === "corners" ? 1 : 2);
+/*LEVELS-END*/
+if (typeof module !== "undefined") module.exports = Object.assign(module.exports || {}, { LANG, tr, COLOR_NAME, TURN_BTNS, STEPS, LEVELS, ivyPuzzle, taskGoal });
+</script>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+const T = (zh, en) => (LANG.cur === "en" ? en : zh);
+
+/* ---------- language: Chinese or English, one at a time; remembered on this device ---------- */
+const LANG_KEY = "ivy_quest_lang";
+try { const l = localStorage.getItem(LANG_KEY); if (l === "en" || l === "zh") LANG.cur = l; } catch (e) {}
+const UI = {
+  title: "枫叶魔方闯关|Maple Leaf Cube Quest",
+  wayPlay: "在屏幕上闯关|Play on the screen",
+  wayPlaySub: "七关，两步学会。魔方在屏幕上，可以转、可以撤销、可以要提示。|Seven levels, two steps to learn. The cube is on the screen: turn it, undo, and ask for hints.",
+  wayPrint: "打印步骤卡|Print the step sheet",
+  wayPrintSub: "拿着真的枫叶魔方，照着两步做。|Hold a real maple leaf cube and follow the two steps.",
+  intro: "枫叶魔方是最容易的魔方，不用背公式：先把角块转对，再用“小舞步”让叶子回家。两种学法用的是同一个方法，可以换着用。|The maple leaf cube is the easiest puzzle cube, and there are no moves to memorize: first turn the corners right, then use the “little dance” to bring the leaves home. Both ways use the same method, so you can switch between them.",
+  drag: "👆 拖动魔方可以转着看|👆 Drag the cube to look around",
+  resetView: "↺ 摆正|↺ Reset view",
+  stageLabel: "屏幕上的枫叶魔方，用手指拖动可以转着看，点角块会转它|The maple leaf cube on the screen. Drag it to look around; tap a corner to turn it.",
+  levels: "← 关卡|← Levels", cards: "📖 步骤卡|📖 Step cards", restart: "⟲ 重来|⟲ Start over", undo: "↶ 撤销|↶ Undo", hint: "💡 提示|💡 Hint",
+  next: "下一题 ▶|Next ▶", finish: "过关 🎉|Finish 🎉", again: "再玩一次|Play again", start: "开始|Start",
+  close: "关上|Close", backLevels: "回到关卡|Back to levels", print: "🖨️ 打印|🖨️ Print",
+  stars: "星星看的是自己想出来的：少按 💡 提示，星星就多。|Stars are for working it out yourself: fewer 💡 hints, more stars.",
+  thinkAgain: "再想一想。|Think again.",
+  broken: "小心：转对的角块又歪了。可以按 ↶ 撤销。|Careful: a corner that was right got twisted. You can press ↶ Undo.",
+  langLabel: "语言|Language"
+};
+const LIGHT = ["角块|Corners", "叶子|Leaves"];
+function applyStatic() {
+  document.documentElement.lang = LANG.cur === "en" ? "en" : "zh-CN";
+  document.title = tr(UI.title);
+  document.querySelectorAll("[data-t]").forEach(el => { el.textContent = tr(UI[el.dataset.t]); });
+  $("h1[data-t]").textContent = "🍁 " + tr(UI.title);
+  $("#stage").setAttribute("aria-label", tr(UI.stageLabel));
+  $(".langs").setAttribute("aria-label", tr(UI.langLabel));
+  document.querySelectorAll(".lang").forEach(b => { const on = b.dataset.lang === LANG.cur; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); });
+}
+function setLang(l) {
+  if (l === LANG.cur) return;
+  LANG.cur = l; try { localStorage.setItem(LANG_KEY, l); } catch (e) {}
+  applyStatic(); renderPrint();
+  if (!$("#home").hidden) renderHome();
+  if (!$("#play").hidden && P.L) { if (!V.busy) draw(); else drawLights(); renderPanel(); }
+  if (!$("#modal").hidden) { if (modalKind === "cards") openCards(cardsAt); else if (modalKind === "win") showWin(); }
+}
+document.querySelector(".langs").addEventListener("click", e => { const b = e.target.closest("[data-lang]"); if (b) setLang(b.dataset.lang); });
+
+/* ---------- saved progress (this browser only; the site's account script syncs it when a parent signs in) ---------- */
+const KEY = "ivy_quest_v1";
+function load() { try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && typeof s === "object" && s.lv && typeof s.lv === "object") return s; } catch (e) {} return { lv: {} }; }
+let SAVE = load();
+function save() { try { localStorage.setItem(KEY, JSON.stringify(SAVE)); } catch (e) {} }
+const lvSave = id => (SAVE.lv[id] = SAVE.lv[id] && typeof SAVE.lv[id] === "object" ? SAVE.lv[id] : { at: 0, done: false, stars: 0 });
+const totalStars = () => LEVELS.reduce((n, L) => n + Math.min(3, Math.max(0, +((SAVE.lv[L.id] || {}).stars) || 0)), 0);
+
+/* ---------- words for turns ---------- */
+const COLOR_HEX = { W: "#F6F6F0", Y: "#FFD500", G: "#009B48", R: "#C41E3A", B: "#0046AD", O: "#FF5800" };
+const PLASTIC = "#1d1b22", DIMHEX = "#cfcbd8";
+const arrow = t => (t.endsWith("'") ? "↺" : "↻");
+const turnShort = t => t.charAt(0) + " " + arrow(t);
+const turnLong = t => T(t.charAt(0) + " 号角块" + (t.endsWith("'") ? "逆时针" : "顺时针"), "corner " + t.charAt(0) + (t.endsWith("'") ? " counter-clockwise" : " clockwise"));
+
+/* ---------- shapes: each face is a square from -1 to 1. A corner piece's sticker is the part of the face within 2 of that corner
+   but farther than 2 from the face's other turning corner; the leaf is the lens within 2 of both. ---------- */
+const FACE_TF = { "1,0,0": "rotateY(90deg)", "-1,0,0": "rotateY(-90deg)", "0,1,0": "rotateX(90deg)", "0,-1,0": "rotateX(-90deg)", "0,0,1": "", "0,0,-1": "rotateY(180deg)" };
+/* the model directions of a face div's own right (x) and down (y), worked out from its CSS turn (CSS y points down, model y up) */
+function faceAxes(key) {
+  const tf = FACE_TF[key], m = /rotate([XY])\((-?\d+)deg\)/.exec(tf), deg = m ? +m[2] : 0, r = deg * Math.PI / 180, c = Math.round(Math.cos(r)), s = Math.round(Math.sin(r));
+  const rot = v => !m ? v : m[1] === "Y" ? [v[0] * c + v[2] * s, v[1], -v[0] * s + v[2] * c] : [v[0], v[1] * c - v[2] * s, v[1] * s + v[2] * c];
+  const toModel = v => [v[0], -v[1], v[2]];
+  return { ax: toModel(rot([1, 0, 0])), ay: toModel(rot([0, 1, 0])) };
+}
+const AXES = IVY_FACES.map(f => faceAxes(vk(f)));
+const uvOf = (fi, p) => [dot3(p, AXES[fi].ax), dot3(p, AXES[fi].ay)];
+function arcPts(c, a, b, n) {      /* points along the circle of radius 2 round c, from a to b (the short way) */
+  let a0 = Math.atan2(a[1] - c[1], a[0] - c[0]), a1 = Math.atan2(b[1] - c[1], b[0] - c[0]);
+  while (a1 - a0 > Math.PI) a1 -= 2 * Math.PI; while (a0 - a1 > Math.PI) a1 += 2 * Math.PI;
+  const out = []; for (let i = 0; i <= n; i++) { const t = a0 + (a1 - a0) * i / n; out.push([c[0] + 2 * Math.cos(t), c[1] + 2 * Math.sin(t)]); }
+  return out;
+}
+/* for face fi: { leaf: [pts], corners: { ci: [pts] } } in that face's (u, v) */
+const SHAPES = IVY_FACES.map((f, fi) => {
+  const [c1, c2] = faceCorners(fi), p1 = uvOf(fi, IVY_CORNERS[c1]), p2 = uvOf(fi, IVY_CORNERS[c2]);
+  const fixed = [[p1[0], p2[1]], [p2[0], p1[1]]];          /* the two corners of the square that do not turn */
+  const corner = (p, q) => [fixed[0], p, fixed[1]].concat(arcPts(q, fixed[1], fixed[0], 14).slice(1, -1));
+  return { leaf: arcPts(p1, fixed[0], fixed[1], 14).concat(arcPts(p2, fixed[1], fixed[0], 14).slice(1, -1)), corners: { [c1]: corner(p1, p2), [c2]: corner(p2, p1) } };
+});
+const pathD = pts => "M" + pts.map(p => p[0].toFixed(3) + " " + p[1].toFixed(3)).join("L") + "Z";
+
+/* ---------- pictures for the step cards and the printed sheet: the top, front and right faces ---------- */
+function ivySVG(s, dimKey, hl) {
+  const c30 = Math.cos(Math.PI / 6), K = 40, pr = v => [(v[0] - v[2]) * c30 * K, (-v[1] + (v[0] + v[2]) * 0.5) * K];
+  const parts = [], pts = [];
+  for (const fi of [2, 4, 0]) {               /* top, front, right */
+    const n = IVY_FACES[fi], ax = AXES[fi].ax, ay = AXES[fi].ay;
+    const to3 = uv => [n[0] + uv[0] * ax[0] + uv[1] * ay[0], n[1] + uv[0] * ax[1] + uv[1] * ay[1], n[2] + uv[0] * ax[2] + uv[1] * ay[2]];
+    const poly = (uvs, fill, extra) => { const q = uvs.map(to3).map(pr); pts.push(...q); parts.push(`<polygon points="${q.map(p => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ")}" fill="${fill}" stroke="${PLASTIC}" stroke-width="2.6" stroke-linejoin="round"${extra || ""}/>`); };
+    poly([[-1.04, -1.04], [1.04, -1.04], [1.04, 1.04], [-1.04, 1.04]], PLASTIC);
+    for (const ci of Object.keys(SHAPES[fi].corners)) poly(SHAPES[fi].corners[ci], COLOR_HEX[s.corner[ci][fi]], hl && hl.includes(+ci) ? ' stroke="#f2b705" stroke-width="5"' : "");
+    poly(SHAPES[fi].leaf, dimKey === "leaves" ? DIMHEX : COLOR_HEX[s.leaf[fi]]);
+  }
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]), m = 6, minX = Math.min(...xs) - m, minY = Math.min(...ys) - m;
+  return `<svg viewBox="${minX.toFixed(1)} ${minY.toFixed(1)} ${(Math.max(...xs) - minX + m).toFixed(1)} ${(Math.max(...ys) - minY + m).toFixed(1)}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(T("枫叶魔方的上面、前面和右面", "The top, front and right of the maple leaf cube"))}">${parts.join("")}</svg>`;
+}
+function picHTML(p) {
+  const s = ivyRun(ivySolved(), ivyInvSeq(p.script || ""));
+  return `<figure class="pic" style="margin:0">${ivySVG(s, p.dim)}<figcaption>${esc(tr(p.cap))}</figcaption></figure>`;
+}
+function stepCardHTML(st) {
+  return `<div class="stepcard"><h3>${T("第 " + st.n + " 步", "Step " + st.n)} · ${esc(tr(st.name))}<small>${st.moves ? T("小舞步", "The little dance") : T("不用公式", "No moves to learn")}</small></h3>
+    <div class="pics">${st.pics.map(picHTML).join("")}</div>
+    <ol>${st.look.map(x => `<li>${esc(tr(x))}</li>`).join("")}</ol>
+    ${st.moves ? `<div class="formula"><span class="fn">${esc(T("小舞步", "Little dance"))}</span>${["A", "B", "A", "B"].map((x, i) => `<span class="t"><span class="l">${x}</span><span class="w">${esc([T("拧", "turn"), T("拧", "turn"), T("拧回来", "back"), T("拧回来", "back")][i])}</span></span>`).join("")}<span class="w" style="align-self:center;margin-left:6px">${esc(T("A、B 是任意两个角块，往哪边转都可以", "A and B are any two corners, turned either way"))}</span></div>` : ""}
+    <div class="think">${T("💭 想一想：", "💭 Think: ")}${esc(tr(st.think))}</div></div>`;
+}
+function renderPrint() {
+  $("#print").innerHTML = `<div class="sheetpage">
+    <div class="printbar noprint"><button class="btn" id="printBack">${esc(T("← 回到关卡", "← Back to levels"))}</button><button class="btn main" id="printNow">${esc(tr(UI.print))}</button><span class="draghint">${esc(T("用 A4 纸打印，大约两页。", "Prints on about two sheets of A4 or Letter paper."))}</span></div>
+    <div class="card"><h2 style="color:var(--brand);margin-bottom:6px">${esc(T("枫叶魔方 · 两步还原卡", "Maple Leaf Cube · The 2-Step Sheet"))}</h2>
+      <p style="margin:4px 0">${esc(T("枫叶魔方有 4 个角块（3 种颜色，只会在原地转）和 6 片叶子（1 种颜色，会跑到别的面）。每一下都是转一个角块，转三分之一圈。拼好的时候，每一面都是一种颜色。",
+        "The maple leaf cube has 4 corners (3 colors each, they only spin in place) and 6 leaves (1 color each, they move to other faces). Every turn spins one corner a third of the way round. When it's solved, every face is one color."))}</p>
+      <p style="margin:4px 0">${esc(T("“↻”是看着那个角块顺时针转，“↺”是逆时针转。真的魔方上角块没有号码，随便选就好。",
+        "“↻” means turn the corner clockwise as you look straight at it; “↺” means counter-clockwise. A real cube has no numbers on its corners, so pick any you like."))}</p>
+    </div>
+    ${STEPS.map(stepCardHTML).join("")}
+  </div>`;
+  $("#printBack").onclick = () => show("home");
+  $("#printNow").onclick = () => window.print();
+}
+
+/* ---------- the 3D cube on the screen ---------- */
+const V = { s: ivySolved(), rx: -26, ry: -36, H: 80, els: [], dim: null, hl: [], run: 0, busy: false };
+function sizeCube() {
+  const st = $("#stage"), w = st.clientWidth || 320, h = st.clientHeight || 300;
+  V.H = Math.max(40, Math.floor(Math.min(w, h) * 0.24));      /* half the cube's side */
+  st.style.perspective = Math.round(V.H * 2 * 8) + "px";       /* about 8 cube widths away, so a big cube is not stretched */
+}
+function viewTf() { return `rotateX(${V.rx}deg) rotateY(${V.ry}deg)`; }
+function labelTf(k) { return `translate3d(${k[0] * V.H * 1.22}px, ${-k[1] * V.H * 1.22}px, ${k[2] * V.H * 1.22}px) rotateY(${-V.ry}deg) rotateX(${-V.rx}deg)`; }
+function draw() {
+  sizeCube();
+  const H = V.H, L = 2 * H, scene = $("#scene"); scene.style.transform = viewTf();
+  const frag = document.createDocumentFragment(); V.els = [];
+  const faceDiv = (fi, cls, inner, mv, z) => {
+    const el = document.createElement("div"); el.className = "ivf " + cls;
+    el.style.cssText = `width:${L}px;height:${L}px;left:${-H}px;top:${-H}px`;
+    el.dataset.base = `${FACE_TF[vk(IVY_FACES[fi])]} translateZ(${H + (z || 0)}px)`; el.style.transform = el.dataset.base;
+    if (mv) el.dataset.mv = mv;
+    el.innerHTML = inner; frag.appendChild(el); V.els.push(el); return el;
+  };
+  IVY_FACES.forEach((f, fi) => {
+    faceDiv(fi, "base", `<svg viewBox="-1 -1 2 2"><rect x="-1" y="-1" width="2" height="2" fill="${PLASTIC}"/></svg>`, "", -0.5);
+    const lc = V.dim === "leaves" ? DIMHEX : COLOR_HEX[V.s.leaf[fi]];
+    faceDiv(fi, "st", `<svg viewBox="-1 -1 2 2"><path data-pc="L${fi}" class="${V.hl.includes("L" + fi) ? "hl" : ""}" d="${pathD(SHAPES[fi].leaf)}" fill="${lc}"/></svg>`, faceCorners(fi).join(" "));
+    for (const ci of faceCorners(fi)) faceDiv(fi, "st", `<svg viewBox="-1 -1 2 2"><path data-pc="C${ci}" class="${V.hl.includes("C" + ci) ? "hl" : ""}" d="${pathD(SHAPES[fi].corners[ci])}" fill="${COLOR_HEX[V.s.corner[ci][fi]]}"/></svg>`, "c" + ci);
+  });
+  IVY_CORNERS.forEach((k, ci) => { const el = document.createElement("div"); el.className = "clabel"; el.textContent = ci + 1; el.style.transform = labelTf(k); el.dataset.k = ci; frag.appendChild(el); });
+  scene.replaceChildren(frag);
+  drawLights();
+}
+function setView() { $("#scene").style.transform = viewTf(); document.querySelectorAll(".clabel").forEach(el => { el.style.transform = labelTf(IVY_CORNERS[+el.dataset.k]); }); }
+const reduceMotion = (() => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } })();
+function animateTurn(t, done) {
+  const m = ivyTok(t), k = IVY_CORNERS[m.ci], dur = reduceMotion ? 80 : 380, ang = m.cw ? 120 : -120;   /* CSS turns the other way round from the model */
+  const movers = V.els.filter(el => el.dataset.mv && (el.dataset.mv === "c" + m.ci || el.dataset.mv.split(" ").includes(String(m.ci))));
+  const t0 = performance.now(), run = V.run;
+  const step = now => {
+    if (V.run !== run) return;
+    const p = Math.min(1, (now - t0) / dur), e = p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+    for (const el of movers) el.style.transform = `rotate3d(${k[0]}, ${-k[1]}, ${k[2]}, ${ang * e}deg) ${el.dataset.base}`;
+    if (p < 1) requestAnimationFrame(step); else { ivyTurn(V.s, t); draw(); done && done(); }
+  };
+  requestAnimationFrame(step);
+}
+function playTurns(ts, done) {
+  V.busy = true; setButtons(false);
+  const run = V.run; let i = 0;
+  const next = () => { if (V.run !== run) return; if (i >= ts.length) { V.busy = false; setButtons(true); done && done(); return; } animateTurn(ts[i++], next); };
+  next();
+}
+(function attachDrag() {
+  const st = $("#stage"); let d = null;
+  st.addEventListener("pointerdown", e => { d = { x: e.clientX, y: e.clientY, rx: V.rx, ry: V.ry, moved: false }; try { st.setPointerCapture(e.pointerId); } catch (_) {} });
+  st.addEventListener("pointermove", e => {
+    if (!d) return;
+    if (Math.abs(e.clientX - d.x) + Math.abs(e.clientY - d.y) > 6) d.moved = true;
+    V.ry = d.ry + (e.clientX - d.x) * 0.5; V.rx = Math.max(-85, Math.min(85, d.rx - (e.clientY - d.y) * 0.5));
+    setView();
+  });
+  st.addEventListener("pointerup", e => { const was = d; d = null; if (was && !was.moved) { try { tapAt(document.elementFromPoint(e.clientX, e.clientY)); } catch (_) {} } });
+  st.addEventListener("pointercancel", () => { d = null; });
+})();
+$("#resetView").onclick = () => { V.rx = -26; V.ry = -36; setView(); };
+let resizeT; window.addEventListener("resize", () => { clearTimeout(resizeT); resizeT = setTimeout(() => { if (!V.busy && !$("#play").hidden) draw(); }, 150); });
+function drawLights() {
+  const box = $("#lights");
+  if (!P.L || P.L.id === 1) { box.hidden = true; return; }
+  box.hidden = false;
+  const k = ivyStage(V.s);
+  box.innerHTML = LIGHT.map((x, i) => `<div class="light ${i < k ? "on" : ""}"><b>${i < k ? "✓" : i + 1}</b>${esc(tr(x))}</div>`).join("");
+}
+
+/* ---------- play ---------- */
+const P = { L: null, ti: 0, task: null, start: null, hist: [], state: "", hint: 0, reveals: 0, fb: "", pulse: null, wrong: {}, plan: null, goal: 2 };
+const randSeed = () => (Math.random() * 1e9) >>> 0;
+function show(name) { for (const id of ["home", "play", "print"]) $("#" + id).hidden = id !== name; if (name === "home") renderHome(); if (name === "print") renderPrint(); window.scrollTo(0, 0); }
+function renderHome() {
+  $("#starTotal").textContent = "⭐ " + totalStars();
+  const next = (LEVELS.find(L => !(SAVE.lv[L.id] || {}).done) || {}).id;
+  $("#levelList").innerHTML = LEVELS.map(L => {
+    const s = SAVE.lv[L.id] || {}, stars = Math.min(3, +s.stars || 0);
+    const label = s.done ? "⭐".repeat(stars) + "☆".repeat(3 - stars) + " " + tr(UI.again) : (s.at > 0 ? T("接着玩（第 " + (s.at + 1) + " 题）", "Continue (question " + (s.at + 1) + ")") : tr(UI.start));
+    return `<button class="lv ${s.done ? "done" : ""} ${L.id === next ? "next" : ""}" data-lv="${L.id}"><span class="num">${s.done ? "✓" : L.id}</span><b>${esc(tr(L.name))}</b><span>${esc(tr(L.sub))}</span><span class="st">${esc(label)}</span></button>`;
+  }).join("");
+}
+$("#levelList").addEventListener("click", e => { const b = e.target.closest("[data-lv]"); if (b) openLevel(+b.dataset.lv); });
+$("#goLevels").onclick = () => { $("#levelList").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" }); };
+$("#goPrint").onclick = () => show("print");
+
+function openLevel(id) {
+  P.L = LEVELS.find(L => L.id === id); const s = lvSave(id);
+  P.ti = s.done || !(s.at >= 0 && s.at < P.L.tasks.length) ? 0 : s.at;
+  if (s.done) s.at = 0;
+  P.reveals = 0; P.wrong = {};
+  show("play"); startTask();
+}
+function startTask() {
+  V.run++; V.busy = false; V.hl = []; P.wrong = {};
+  const L = P.L, task = (P.task = L.tasks[P.ti]);
+  P.hist = []; P.hint = 0; P.fb = ""; P.pulse = null; P.state = "go"; P.gi = 0; P.plan = null;
+  V.dim = null; P.goal = 2;
+  if (task.k === "guided" || task.k === "puz") {
+    let s = null; for (let i = 0; i < 20 && !s; i++) s = ivyPuzzle(task, randSeed());
+    P.start = s || ivySolved();
+    P.goal = task.k === "guided" ? 2 : taskGoal(L, task);
+    if (task.k === "guided") P.seq = ivySeq(task.dance);
+    V.dim = task.focus ? L.dim : null;
+  } else if (task.k === "undo") {
+    const s = ivySolved(); let last = -1; P.scr = [];
+    if (task.same) { const m = IVY_MOVES[Math.floor(Math.random() * 8)]; P.scr = [m, m]; }
+    else while (P.scr.length < task.n) { const m = Math.floor(Math.random() * 8); if ((m >> 1) === last) continue; last = m >> 1; P.scr.push(IVY_MOVES[m]); }
+    ivyRun(s, P.scr); P.start = s;
+  } else {
+    P.start = ivySolved();
+    if (task.k === "info" || task.k === "ask") V.dim = L.dim === "leaves" ? "leaves" : null;
+  }
+  V.s = ivyClone(P.start);
+  draw(); renderPanel();
+  const s = lvSave(L.id); if (!s.done) { s.at = P.ti; save(); }
+}
+function goalNow() {
+  const t = P.task;
+  if (t.k === "undo") return ivyIsSolved(V.s);
+  if (t.k === "guided" || t.k === "puz") return ivyStage(V.s) >= P.goal;
+  return false;
+}
+const canTurn = () => ["puz", "undo", "try"].includes(P.task.k) && P.state !== "done";
+function mvButton(t) { return `<button class="mv" data-act="${t}"><span class="l">${esc(turnShort(t))}</span><span class="w">${esc(turnLong(t))}</span></button>`; }
+function dotsHTML() { return `<div class="dots" aria-label="${esc(T("第 " + (P.ti + 1) + " 题，共 " + P.L.tasks.length + " 题", "Question " + (P.ti + 1) + " of " + P.L.tasks.length))}">${P.L.tasks.map((_, i) => `<span class="dot ${i < P.ti ? "done" : i === P.ti ? "cur" : ""}"></span>`).join("")}</div>`; }
+const fbText = () => (typeof P.fb === "function" ? P.fb() : tr(P.fb));
+function renderPanel() {
+  const L = P.L, t = P.task, done = P.state === "done";
+  let h = `<div class="phead"><button class="btn small" id="back">${esc(tr(UI.levels))}</button><h2>${esc(T("第 " + L.id + " 关", "Level " + L.id))} · ${esc(tr(L.name))}</h2>${L.id > 1 ? `<button class="btn small" id="cards">${esc(tr(UI.cards))}</button>` : ""}</div>${dotsHTML()}`;
+  h += `<div class="say">${tr(t.t)}</div>`;
+  if (t.pics) h += `<div class="pics">${t.pics.map(picHTML).join("")}</div>`;
+  if (t.k === "ask") h += `<div class="opts">${t.opts.map((o, i) => `<button class="opt ${P.wrong[i] ? "no" : ""} ${done && i === t.ans ? "yes" : ""}" data-opt="${i}" ${done ? "disabled" : ""}>${esc(tr(o))}</button>`).join("")}</div>`;
+  if (t.k === "guided") {
+    h += `<div class="seq">${P.seq.map((tok, i) => `<button class="sq ${i < P.gi ? "past" : i === P.gi && !done ? "now" : ""}" data-sq="${i}" ${i !== P.gi || done ? "disabled" : ""}><span class="l">${esc(turnShort(tok))}</span><span class="w">${esc([T("拧", "turn"), T("拧", "turn"), T("回", "back"), T("回", "back")][i] || "")}</span></button>`).join("")}</div>`;
+    if (!done) h += `<div class="ctrl"><button class="btn small" id="restart">${esc(tr(UI.restart))}</button></div>`;
+  }
+  if (canTurn()) {
+    h += `<div class="moves">${TURN_BTNS.map(mvButton).join("")}</div>`;
+    h += `<div class="ctrl"><button class="btn small" id="undo" ${P.hist.length ? "" : "disabled"}>${esc(tr(UI.undo))}</button><button class="btn small" id="restart">${esc(tr(UI.restart))}</button>${t.k === "try" ? "" : `<button class="btn small" id="hint">${esc(tr(UI.hint))}</button>`}</div>`;
+  }
+  const fb = fbText();
+  if (fb) h += `<div class="fb ${P.fbKind || "hint"}">${fb}</div>`;
+  if (t.k === "info" || t.k === "try" || done) h += `<div class="ctrl"><button class="btn main" id="next">${esc(tr(P.ti + 1 >= L.tasks.length ? UI.finish : UI.next))}</button></div>`;
+  $("#panel").innerHTML = h;
+  if (P.pulse) { const b = $("#panel").querySelector(`[data-act="${CSS.escape(P.pulse)}"]`); if (b) b.classList.add("pulse"); }
+  setButtons(!V.busy);
+}
+function setButtons(on) { document.querySelectorAll("#panel .mv, #panel #undo, #panel #restart, #panel #hint").forEach(b => { if (b.id === "undo") b.disabled = !on || !P.hist.length; else b.disabled = !on; }); document.querySelectorAll("#panel .sq.now").forEach(b => { b.disabled = !on; }); }
+function say(msg, kind) { P.fb = msg; P.fbKind = kind; }
+function succeed(msg) { P.state = "done"; P.pulse = null; V.hl = []; draw(); say(msg || "做到了！|You did it!", "good"); renderPanel(); }
+$("#panel").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b || b.disabled) return;
+  if (b.id === "back") { V.run++; show("home"); return; }
+  if (b.id === "cards") { openCards(); return; }
+  if (b.id === "next") { nextTask(); return; }
+  if (V.busy) return;
+  if (b.id === "undo") { const a = P.hist.pop(); if (a) { ivyTurn(V.s, ivyInv(a)); P.pulse = null; P.hint = 0; P.plan = null; V.hl = []; say(""); draw(); renderPanel(); } return; }
+  if (b.id === "restart") { V.s = ivyClone(P.start); P.hist = []; P.gi = 0; P.pulse = null; P.hint = 0; P.plan = null; V.hl = []; say(""); draw(); renderPanel(); return; }
+  if (b.id === "hint") { giveHint(); return; }
+  if (b.dataset.act) { doTurn(b.dataset.act); return; }
+  if (b.dataset.sq != null) { const i = +b.dataset.sq; if (i !== P.gi) return; P.gi++; renderPanel(); playTurns([P.seq[i]], () => { if (P.gi >= P.seq.length) succeed(goalNow() ? "做到了！角块还是对的，叶子都回家了。|You did it! The corners are still right, and the leaves are all home." : "跳完了。|Dance done."); else renderPanel(); }); return; }
+  if (b.dataset.opt != null) { answer(+b.dataset.opt); return; }
+});
+/* the turns since the corners were last all right: a little dance the child is in the middle of (or -1: never right yet) */
+function okAt() { const s = ivyClone(P.start); let at = cornersDone(s) ? 0 : -1; P.hist.forEach((t, i) => { ivyTurn(s, t); if (cornersDone(s)) at = i + 1; }); return at; }
+function danceInProgress() {
+  const at = okAt(); if (at < 0 || cornersDone(V.s)) return null;
+  const done = P.hist.slice(at); if (done.length < 1 || done.length > 3) return { bad: true };
+  let best = null;
+  for (const d of DANCES) {
+    if (!done.every((x, i) => d[i] === x)) continue;
+    const after = ivyRun(ivyClone(V.s), d.slice(done.length)), dd = DANCE_DIST.get(leafKey(after));
+    if (!best || dd < best.dd || (dd === best.dd && leavesHome(after) > best.n)) best = { rest: d.slice(done.length), dd, n: leavesHome(after) };
+  }
+  return best || { bad: true };
+}
+function doTurn(t) {
+  if (P.plan && P.plan[0] === t) P.plan = P.plan.slice(1); else P.plan = null;
+  P.hist.push(t); P.pulse = null; V.hl = []; P.hint = 0; say(""); renderPanel();
+  playTurns([t], afterTurn);
+}
+function afterTurn() {
+  const t = P.task;
+  if (t.k !== "try" && goalNow()) {
+    const msg = t.k === "undo" ? "对！魔方回到原样了。|Yes! The cube is back to how it was."
+      : P.goal === 1 ? "4 个角块都对了！每一面的两个角块颜色一样。|All 4 corners are right! The two corners on every face match."
+      : t.kind === "full" ? "🎉 整个枫叶魔方拼好了！|🎉 The whole maple leaf cube is solved!"
+      : "做到了！叶子都回家了。|You did it! Every leaf is home.";
+    succeed(msg); return;
+  }
+  if (t.k === "puz" && P.goal === 2) { const d = danceInProgress(); if (d && d.bad) say(UI.broken, "bad"); }   /* in the middle of a little dance the corners are twisted on purpose: no warning */
+  renderPanel();
+}
+function answer(i) {
+  const t = P.task;
+  if (i === t.ans) { P.state = "done"; say(() => "✓ " + esc(tr(t.why)), "good"); }
+  else { P.wrong[i] = 1; say(UI.thinkAgain, "bad"); }
+  renderPanel();
+}
+function tapAt(el) {
+  const pc = el && el.closest ? el.closest("[data-pc]") : null; if (!pc) return;
+  const id = pc.dataset.pc, t = P.task; if (!t || V.busy) return;
+  if (t.k === "tap" && P.state !== "done") {
+    const isLeaf = id.charAt(0) === "L";
+    V.hl = [id]; draw();
+    if ((t.want === "leaf") === isLeaf) succeed(isLeaf ? "对！这是一片叶子，只有 1 种颜色。|Yes! That's a leaf. It has 1 color." : "对！这是一个角块，有 3 种颜色。|Yes! That's a corner. It has 3 colors.");
+    else { say(isLeaf ? "这是一片叶子。再找一找。|That's a leaf. Keep looking." : "这是一个角块。再找一找。|That's a corner. Keep looking.", "bad"); renderPanel(); }
+    return;
+  }
+  if (id.charAt(0) === "C" && canTurn()) doTurn(String(+id.slice(1) + 1));     /* tap a corner: it turns clockwise */
+}
+
+/* ---------- hints: first what to look at, then which button ---------- */
+function solveUndo(s) {
+  let layer = [[]];
+  for (let d = 1; d <= 3; d++) { const nx = []; for (const seq of layer) for (const m of IVY_MOVES) { const q = seq.concat([m]); if (ivyIsSolved(ivyRun(ivyClone(s), q))) return q; nx.push(q); } layer = nx; }
+  return null;
+}
+function danceLeaves(s, d) { const t = ivyRun(ivyClone(s), d); return IVY_FACES.map((f, fi) => fi).filter(fi => t.leaf[fi] !== s.leaf[fi]).map(fi => "L" + fi); }
+function giveHint() {
+  const t = P.task;
+  if (t.k === "undo") {
+    const q = solveUndo(V.s);
+    if (!q) { say("走远了。按 ⟲ 重来，再试一次。|That went too far. Press ⟲ Start over and try again.", "hint"); renderPanel(); return; }
+    P.reveals++;
+    if (P.hint === 0) { P.hint = 1; say("看一看：哪一个角块和旁边的颜色对不上？它被转过。|Look: which corner doesn't match the colors next to it? That one was turned.", "hint"); }
+    else { P.pulse = q[0]; V.hl = ["C" + (+q[0][0] - 1)]; draw(); say(() => T("按 <b>", "Press <b>") + esc(turnShort(q[0])) + T("</b>（", "</b> (") + esc(turnLong(q[0])) + T("）。", ")."), "hint"); }
+    renderPanel(); return;
+  }
+  if (P.goal === 2) {
+    const d = danceInProgress();
+    if (d && d.bad) { say("这几下不是小舞步，转对的角块歪了。按 ↶ 撤销，回到角块都对的时候。|Those turns aren't a little dance, and the corners got twisted. Press ↶ Undo until the corners are right again.", "bad"); renderPanel(); return; }
+    if (d) P.plan = d.rest.slice();       /* finish the dance the child started */
+  }
+  const n = ivyNext(V.s, P.plan);
+  if (n.done) return;
+  P.reveals++;
+  if (n.code === "corner") {
+    if (P.hint === 0) { P.hint = 1; V.hl = []; say(() => T("第 1 步。找一个面：上面两个角块颜色不一样，那里至少有一个角块歪了。两个角块都有的那种颜色，才是这一面的颜色。", "Step 1. Find a face whose two corners don't match: at least one of them is wrong. The color both corners have is that face's color.") + "<br><small>" + T("再按一次 💡，告诉你按哪个。", "Press 💡 again to see which button.") + "</small>", "hint"); }
+    else { V.hl = ["C" + n.corner]; P.pulse = n.act; say(() => T("按 <b>", "Press <b>") + esc(turnShort(n.act)) + T("</b>（", "</b> (") + esc(turnLong(n.act)) + T("）。", ")."), "hint"); }
+  } else if (n.code === "dance") {
+    if (P.hint === 0) { P.hint = 1; V.hl = danceLeaves(V.s, n.dance); say(() => T("第 2 步。角块都对了，用小舞步换叶子。发光的三片叶子要换位置。想一想：用哪两个角块跳？", "Step 2. The corners are right, so use a little dance to move leaves. The three glowing leaves need to swap. Think: which two corners will you dance with?") + "<br><small>" + T("再按一次 💡，告诉你怎么跳。", "Press 💡 again to see the dance.") + "</small>", "hint"); }
+    else { V.hl = danceLeaves(V.s, n.dance).concat(["C" + (+n.dance[0][0] - 1), "C" + (+n.dance[1][0] - 1)]); P.plan = n.dance.slice(); P.pulse = n.act; say(() => T("跳这个小舞步：", "Do this little dance: ") + n.dance.map(x => "<b>" + esc(turnShort(x)) + "</b>").join(T("，", ", ")) + T("。", "."), "hint"); }
+  } else {      /* dance-go: the next turn of the dance already started */
+    P.pulse = n.act; V.hl = ["C" + (+n.act[0] - 1)];
+    say(() => T("你在跳小舞步，角块歪是正常的。接着跳：按 <b>", "You're in the middle of a little dance, so twisted corners are fine. Keep going: press <b>") + esc(turnShort(n.act)) + T("</b>。", "</b>."), "hint");
+  }
+  draw(); renderPanel();
+}
+
+/* ---------- level done, step cards ---------- */
+let modalKind = "", cardsAt = 1, winInfo = null;
+function nextTask() {
+  if (P.ti + 1 < P.L.tasks.length) { P.ti++; startTask(); return; }
+  const s = lvSave(P.L.id), stars = P.reveals <= 1 ? 3 : P.reveals <= 6 ? 2 : 1;
+  s.done = true; s.at = 0; s.stars = Math.max(+s.stars || 0, stars); save();
+  $("#starTotal").textContent = "⭐ " + totalStars();
+  burst(); winInfo = { L: P.L, stars }; showWin();
+}
+function showWin() {
+  const L = winInfo.L, stars = winInfo.stars, nextL = LEVELS.find(x => x.id === L.id + 1);
+  const learned = L.id === 1 ? T("你认识了角块和叶子。", "You know the corners and the leaves now.")
+    : L.id === 7 ? T("两步你都会了。拿真的枫叶魔方，自己从头拼一遍！", "You know both steps. Take a real maple leaf cube and solve it yourself!")
+    : L.step === 1 ? T("你会把角块转对了。拿真魔方试一试！", "You can get the corners right. Try it on a real cube!")
+    : T("你会用小舞步了。拿真魔方试一试！", "You can use the little dance. Try it on a real cube!");
+  openModal(`<div class="win"><div class="big">🎉</div><h2>${esc(T("第 " + L.id + " 关过关！", "Level " + L.id + " done!"))}</h2><div style="font-size:32px">${"⭐".repeat(stars)}${"☆".repeat(3 - stars)}</div>
+    <p>${esc(learned)}</p><p class="draghint">${esc(tr(UI.stars))}</p>
+    <div class="ctrl" style="justify-content:center">${nextL ? `<button class="btn main" data-goto="${nextL.id}">${esc(T("下一关：", "Next level: ") + tr(nextL.name))} ▶</button>` : ""}<button class="btn" data-home>${esc(tr(UI.backLevels))}</button></div></div>`, "win");
+}
+function burst() { if (reduceMotion) return; const em = ["⭐", "🎉", "🍁", "✨"]; for (let i = 0; i < 24; i++) { const s = document.createElement("span"); s.className = "burst"; s.textContent = em[i % em.length]; s.style.left = 50 + (Math.random() - .5) * 20 + "vw"; s.style.top = "40vh"; s.style.setProperty("--dx", (Math.random() - .5) * 90 + "vw"); s.style.setProperty("--dy", (Math.random() - .7) * 70 + "vh"); document.body.appendChild(s); setTimeout(() => s.remove(), 1500); } }
+function openModal(html, kind) { modalKind = kind || ""; $("#sheet").innerHTML = html; $("#modal").hidden = false; }
+function closeModal() { $("#modal").hidden = true; modalKind = ""; $("#sheet").innerHTML = ""; }
+$("#modal").addEventListener("click", e => {
+  if (e.target.id === "modal" || e.target.closest("[data-close]")) { closeModal(); return; }
+  const g = e.target.closest("[data-goto]"); if (g) { closeModal(); openLevel(+g.dataset.goto); return; }
+  if (e.target.closest("[data-home]")) { closeModal(); show("home"); return; }
+  const t = e.target.closest("[data-step]"); if (t) openCards(+t.dataset.step);
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#modal").hidden) closeModal(); });
+function openCards(n) {
+  n = n || Math.max(1, P.L && P.L.step || 1); cardsAt = n;
+  openModal(`<button class="btn small x" data-close aria-label="${esc(tr(UI.close))}">✕</button>
+    <div class="ctrl" style="margin-bottom:10px">${STEPS.map(s => `<button class="btn small ${s.n === n ? "main" : ""}" data-step="${s.n}">${s.n}</button>`).join("")}</div>
+    ${stepCardHTML(STEPS[n - 1])}`, "cards");
+}
+
+applyStatic();
+renderPrint();      /* filled in from the start, so printing from any screen prints the step sheet */
+show("home");
+</script>
+<script>(function backPill() {
+  try { if (window.parent !== window) return; } catch (e) { return; }
+  var h = '', m = /[?&]home=([^&]*)/.exec(location.search || '');
+  if (m) { try { h = decodeURIComponent(m[1]); } catch (e) { h = ''; } }
+  if (h && (!/^[A-Za-z0-9._%~/-]+$/.test(h) || h.indexOf('//') >= 0)) h = '';
+  var a = document.createElement('div');
+  a.setAttribute('style', 'position:fixed;z-index:2147483647;box-sizing:border-box;display:inline-flex;align-items:center;gap:8px');
+  if (h) {
+    var back = document.createElement('a'); back.href = h; back.textContent = '🏠 Home';
+    back.setAttribute('style', 'box-sizing:border-box;display:inline-flex;align-items:center;min-height:56px;padding:0 22px;border:3px solid #fff;background:#1f5f99;color:#fff;font:800 20px system-ui,sans-serif;border-radius:999px;white-space:nowrap;text-decoration:none;box-shadow:0 2px 10px rgba(0,0,0,.45)');
+    a.appendChild(back);
+  }
+  var upd = document.createElement('button'); upd.type = 'button';
+  upd.setAttribute('style', 'box-sizing:border-box;min-height:56px;padding:0 22px;border:3px solid #fff;background:#E8590C;color:#fff;font:800 20px system-ui,sans-serif;border-radius:999px;cursor:pointer;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,.45)');
+  a.appendChild(upd);
+  /* A page with a top bar keeps a spot for the buttons in it (<span data-pill-slot>): there they sit in the bar's own row, a little smaller,
+     and can never cover the title. Every other page gets the floating pill below. */
+  var slot = document.querySelector('[data-pill-slot]');
+  if (slot) {
+    a.setAttribute('style', 'box-sizing:border-box;display:inline-flex;align-items:center;flex-wrap:wrap;gap:6px');
+    [back, upd].forEach(function (el) { if (el) { el.style.minHeight = '44px'; el.style.padding = '0 14px'; el.style.fontSize = '17px'; el.style.borderWidth = '2px'; el.style.boxShadow = 'none'; } });
+  }
+  (slot || document.body).appendChild(a);
+  /* Update: get the newest copy of the site from the internet. With no internet nothing is touched, so offline games keep working.
+     Progress lives in localStorage and is never touched. Only this site's offline games are asked for their newest version (nothing is deleted); other apps on this web address are never touched. */
+  var LABEL = '🔄 Update', busy = false, KEY = 'tmg.justUpdated', small = false;
+  upd.textContent = LABEL;
+  function label() { return small && !busy ? '🔄' : LABEL; }
+  var showing = false;   // a short message (Updated ✓, No internet) is on the button
+  function say(t) { showing = true; upd.textContent = t; upd.setAttribute('aria-label', t); setTimeout(function () { showing = false; upd.textContent = label(); upd.setAttribute('aria-label', 'Update'); if (!slot) later(); }, 2500); }
+  /* No offline copy is ever deleted any more. Every offline worker of this site is asked for its newest version; a new version only
+     takes over once it has completely downloaded the game, so with bad Wi-Fi the old copy simply stays and the game keeps opening with
+     no internet. (Before 2026-11-07 Update deleted every offline copy, and those games then needed the internet until each was opened
+     online again.) For the offline game this page belongs to, wait until its new version is in charge (at most 20 s) before reloading,
+     so the child sees the newest version at once. Other workers carry on downloading after the reload. */
+  function wait(ms) { return new Promise(function (ok) { setTimeout(ok, ms); }); }
+  function inCharge(r) {   // 'ok', or 'failed' when the new version could not install (bad Wi-Fi): the old copy stays in charge
+    return new Promise(function (ok) {
+      var w = r.installing || r.waiting; if (!w) { ok('ok'); return; }
+      w.addEventListener('statechange', function () { if (w.state === 'activated') ok('ok'); else if (w.state === 'redundant') ok('failed'); });
+    });
+  }
+  function cap(p, ms) { return Promise.race([p, wait(ms).then(function () { throw new Error('too slow'); })]); }
+  function clearOffline(base) {
+    if (!navigator.serviceWorker || !navigator.serviceWorker.getRegistrations) return Promise.resolve();
+    var site = location.origin + base;
+    return navigator.serviceWorker.getRegistrations().then(function (rs) {
+      return Promise.all(rs.filter(function (r) { return r.scope.indexOf(site) === 0; }).map(function (r) {
+        var mine = r.scope !== site && location.href.indexOf(r.scope) === 0;   // this page's own offline game (not the site-wide Chinese worker)
+        var job = r.update().then(function () { return mine ? inCharge(r) : 'ok'; }, function () { return mine ? 'failed' : 'ok'; });
+        return Promise.race([job, wait(mine ? 20000 : 4000).then(function () { return mine ? 'failed' : 'ok'; })]);
+      }));
+    }).then(function (res) { return res.indexOf('failed') < 0; });   // false: this game's newest version did not arrive in time
+  }
+  upd.addEventListener('click', function () {
+    if (busy) return; busy = true; upd.textContent = 'Updating…'; upd.setAttribute('aria-label', 'Updating…'); if (!slot) later();
+    var ROOT = '/ten-minute-games/', p = location.pathname, i = p.indexOf(ROOT), base = i >= 0 ? p.slice(0, i + ROOT.length) : '/';
+    function fresh(u) { return cap(fetch(u, { cache: 'reload' }), 8000).catch(function () {}); }
+    var done = true;   // every step has a time limit, so "Updating…" never hangs on a Wi-Fi with no real internet
+    cap(fetch(base + 'version.json?t=' + Date.now(), { cache: 'no-store' }), 8000).then(function (r) { if (!r.ok) throw new Error('no copy'); })
+      .then(function () { return clearOffline(base).then(function (ok) { done = ok; }); })
+      .then(function () { return Promise.all([fresh(location.href), fresh(base + 'index.html')]); })
+      .then(function () {
+              try { sessionStorage.setItem(KEY, done ? '1' : 'retry'); sessionStorage.setItem(SPOT, JSON.stringify({ p: location.pathname + location.search, y: Math.round(window.scrollY || 0) })); } catch (e) {}
+              location.reload(); },
+            function () { busy = false; say('No internet'); });
+  });
+  /* After Update, come back to the same spot on the same page. Without this an iPad jumped to the "#section" left in the address by the
+     last category tile tapped. The spot is put back once at once and again while the page
+     finishes building (fonts, the sign-in panel), unless the child has started scrolling by then. */
+  var SPOT = 'tmg.updSpot';
+  try {
+    var sp = JSON.parse(sessionStorage.getItem(SPOT) || 'null'); sessionStorage.removeItem(SPOT);
+    if (sp && sp.p === location.pathname + location.search && sp.y >= 0) {
+      try { history.scrollRestoration = 'manual'; } catch (e) {}
+      // only the home and book pages: there a "#section" is just a place to scroll to (a game may use its "#..." to pick a tab)
+      if (location.hash && document.querySelector('meta[name="tmg-home"]')) try { history.replaceState(history.state, '', location.pathname + location.search); } catch (e) {}
+      var moved = false, auto = function () { try { history.scrollRestoration = 'auto'; } catch (e) {} }, stop = function () { moved = true; auto(); };   // Back from a game keeps its usual spot
+      ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(function (t) { window.addEventListener(t, stop, { passive: true, once: true }); });
+      var back2 = function () {
+        if (moved) return;
+        var root = document.documentElement, was = root.style.scrollBehavior; root.style.scrollBehavior = 'auto';   // no smooth glide
+        window.scrollTo(0, sp.y); root.style.scrollBehavior = was;
+      };
+      back2(); window.addEventListener('load', back2); [150, 600, 1500].forEach(function (ms) { setTimeout(back2, ms); }); setTimeout(auto, 1600);
+    }
+  } catch (e) {}
+  try { var was = sessionStorage.getItem(KEY); if (was) { sessionStorage.removeItem(KEY); say(was === 'retry' ? 'Try again later' : 'Updated ✓'); } } catch (e) {}
+  if (slot) return;   // in a top bar: nothing to move around
+  /* The lessons keep their own buttons along the screen edges (Previous / Next in a footer, controls in a header), so a pill nailed to
+     one corner always sat on top of something. Keep the pill 44px tall (easy to tap) and, whenever the page layout changes, put it in
+     whichever of six edge spots does not cover a button, link or field (spots tried in this order: bottom-centre, bottom-left,
+     bottom-right, top-centre, top-left, top-right). Buttons that are always on screen (fixed or sticky) count much more than ones
+     that scroll away. It does not move during scrolling; once scrolling stops it moves only if its spot now covers something. */
+  var SPOTS = ['bc', 'bl', 'br', 'tc', 'tl', 'tr'], cur = '', timer = 0, room = false;
+  /* On a phone the two wide pills (about 300px) covered something in every spot, for example "Begin" on a lesson's first screen.
+     Below 560px wide they become two round 48px buttons (🏠 and 🔄, still easy to tap; the words stay for screen readers),
+     and the page gets room at the bottom so it can always scroll clear of them. */
+  if (back) { back.setAttribute('aria-label', 'Home'); back.title = 'Home'; }
+  if (!showing) upd.setAttribute('aria-label', 'Update'); upd.title = 'Update';
+  function sizeUp() {
+    var want = document.documentElement.clientWidth < 560;
+    if (want !== small) {
+      small = want;
+      [back, upd].forEach(function (el) { if (!el) return;
+        el.style.minHeight = small ? '48px' : '56px'; el.style.minWidth = small ? '48px' : '';
+        el.style.padding = small ? '0 10px' : '0 22px'; el.style.justifyContent = 'center'; });
+      if (back) back.textContent = small ? '🏠' : '🏠 Home';
+      if (!busy && !showing) upd.textContent = label();
+    }
+    if (small && !room) { room = true; document.body.style.paddingBottom = 'calc(' + (getComputedStyle(document.body).paddingBottom || '0px') + ' + 72px)'; }
+  }
+  var SEL = 'button,a[href],input,select,textarea,summary,label,[role=button],[role=tab],[tabindex]:not([tabindex="-1"])';
+  function put(s) {
+    var st = a.style, v = s.charAt(0) === 'b' ? 'bottom' : 'top', side = s.charAt(1);
+    st.top = st.bottom = st.left = st.right = 'auto'; st.transform = 'none';
+    st[v] = '10px'; st[v] = 'calc(10px + env(safe-area-inset-' + v + ', 0px))';
+    if (side === 'c') { st.left = '50%'; st.transform = 'translateX(-50%)'; }
+    else { var d = side === 'l' ? 'left' : 'right'; st[d] = '10px'; st[d] = 'calc(10px + env(safe-area-inset-' + d + ', 0px))'; }
+  }
+  function fixedish(e) {
+    for (var n = e; n && n.nodeType === 1; n = n.parentElement) { var p = getComputedStyle(n).position; if (p === 'fixed' || p === 'sticky') return true; }
+    return false;
+  }
+  function place() {
+    try {
+      sizeUp();
+      var W = document.documentElement.clientWidth, H = window.innerHeight, items = [], all, i, j;
+      a.style.pointerEvents = 'none'; all = document.querySelectorAll(SEL);   /* (while measuring, the pill itself must not count as covering anything) */
+      for (i = 0; i < all.length; i++) {
+        var e = all[i]; if (e === a || a.contains(e) || e.querySelector(SEL)) continue;
+        var cs = getComputedStyle(e); if (cs.display === 'none' || cs.visibility === 'hidden' || cs.pointerEvents === 'none') continue;
+        var r = e.getBoundingClientRect(); if (r.width < 2 || r.height < 2 || r.bottom <= 0 || r.top >= H || r.right <= 0 || r.left >= W) continue;
+        var t = document.elementFromPoint(Math.min(Math.max(r.left + r.width / 2, 0), W - 1), Math.min(Math.max(r.top + r.height / 2, 0), H - 1));
+        if (t && !e.contains(t)) continue;   /* hidden behind something else right now (for example scrolled under the footer): not a button the pill can cover */
+        items.push({ r: r, hard: fixedish(e) });
+      }
+      var res = {};
+      SPOTS.forEach(function (s) {
+        put(s); var b = a.getBoundingClientRect(), hard = 0, soft = 0;
+        items.forEach(function (it) { var q = it.r; if (q.left < b.right - 1 && q.right > b.left + 1 && q.top < b.bottom - 1 && q.bottom > b.top + 1) { if (it.hard) hard++; else soft++; } });
+        res[s] = { hard: hard, soft: soft };
+      });
+      var best = '', c = res[cur];
+      for (j = 0; j < SPOTS.length; j++) { var x = res[SPOTS[j]]; if (!best || x.hard < res[best].hard || (x.hard === res[best].hard && x.soft < res[best].soft)) best = SPOTS[j]; }
+      if (!(c && c.hard === 0 && (c.soft === 0 || res[best].hard > 0 || res[best].soft > 0))) cur = best;
+      put(cur); a.style.pointerEvents = '';
+    } catch (e) { put(cur || 'bl'); a.style.pointerEvents = ''; }
+  }
+  function later() { clearTimeout(timer); timer = setTimeout(function () { place(); timer = setTimeout(place, 500); }, 120); }
+  put('bc'); cur = 'bc'; place();
+  window.addEventListener('resize', later); window.addEventListener('orientationchange', later); window.addEventListener('load', later);
+  /* once scrolling has stopped, move only if the buttons now sit on top of something (place() keeps a free spot) */
+  var scrollTimer = 0; window.addEventListener('scroll', function () { clearTimeout(scrollTimer); scrollTimer = setTimeout(place, 400); }, { passive: true });
+  try { new MutationObserver(function (ms) { for (var i = 0; i < ms.length; i++) if (!a.contains(ms[i].target)) { later(); return; } }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden', 'disabled', 'aria-hidden', 'open'] }); } catch (e) { /* no observer: the spot is only worked out at load and on resize */ }
+})()</script><script>(function noZoom() {
+  var st = document.createElement('style');
+  // text-size-adjust: Safari enlarges text after a turn to landscape; manipulation: no double-tap zoom (rules that set their own touch-action, such as drag areas, still win)
+  st.textContent = 'html{-webkit-text-size-adjust:100%;text-size-adjust:100%}*{touch-action:manipulation}';
+  (document.head || document.documentElement).appendChild(st);
+  var stop = function (e) { e.preventDefault(); };
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (t) { document.addEventListener(t, stop, { passive: false }); });   // Safari's pinch
+  document.addEventListener('touchmove', function (e) { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });   // two fingers: no pinch
+})()</script></body>
+</html>

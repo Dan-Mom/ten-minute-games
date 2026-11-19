@@ -1,0 +1,1674 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><script>/* Ten-Minute Games accounts: a parent signs in with Google, adds children by nickname, and each child's game progress follows them
+   to any computer or iPad. Signing in is optional; without it every game works exactly as before (progress stays on this device).
+
+   How progress is kept: every game already saves its progress in this browser (localStorage) under its own names. This script,
+   which build.cjs puts at the very top of every page, keeps one copy of those values per player ("guest" = not signed in, or a
+   child). When the player changes, the values in the browser are swapped before the game reads them. When a child is playing,
+   their copy is also saved to Firebase (Firestore: families/<parent uid>/kids/<child id>), and loaded back on other devices.
+   Only values written by these game pages are kept; nothing else in the browser is read or sent.
+
+   Public Firebase web config: allowed on the public site by PRIVACY-RULE.md exception five. Access is guarded by the Firestore
+   rules (each parent can only read and write their own family), not by hiding this. */
+(function () {
+  'use strict';
+  if (window.TMG) return;
+  var CONFIG = {
+    apiKey: 'AIzaSyDC-kbJIExCfhIsUkkShVIO8VtBTe3D7WI',
+    authDomain: 'ten-minute-games.firebaseapp.com',
+    projectId: 'ten-minute-games',
+    storageBucket: 'ten-minute-games.firebasestorage.app',
+    messagingSenderId: '448551703283',
+    appId: '1:448551703283:web:7f0c2b75a166f1fcbb1d86'
+  };
+  var SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
+  var P = 'tmg.', GUEST = 'guest', MAX_VALUE = 200000;
+  var LS; try { LS = window.localStorage; LS.getItem(P + 'x'); } catch (e) { LS = null; }
+  if (!LS) { window.TMG = { kid: GUEST, ready: Promise.resolve(), mountHome: function () {} }; return; }
+  var rawSet = Storage.prototype.setItem, rawRemove = Storage.prototype.removeItem, rawGet = Storage.prototype.getItem;
+  function get(k) { return rawGet.call(LS, k); }
+  function put(k, v) { try { rawSet.call(LS, k, v); } catch (e) {} }
+  function del(k) { rawRemove.call(LS, k); }
+  function has(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
+  function J(k, d) { try { var v = get(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
+  function W(k, o) { put(k, JSON.stringify(o)); }
+  function ours(k) { return typeof k === 'string' && (k.indexOf(P) === 0 || k.indexOf('firebase') === 0); }
+
+  function current() { return get(P + 'current') || GUEST; }
+  function store(id) { return J(P + 'kid.' + id, { data: {}, updated: 0 }); }
+  function saveStore(id, s) { W(P + 'kid.' + id, s); }
+  function known() { return J(P + 'known', []); }
+
+  /* Put player `id`'s values into the browser. The values sitting there now belong to `owner`: keep them first. */
+  function swap() {
+    var id = current(), owner = get(P + 'owner') || GUEST;
+    if (owner === id) return false;
+    var ks = known(), from = store(owner), to = store(id), changed = false;
+    ks.forEach(function (k) { var v = get(k); if (v === null) delete from.data[k]; else from.data[k] = v; });
+    saveStore(owner, from);
+    ks.forEach(function (k) {
+      var want = Object.prototype.hasOwnProperty.call(to.data, k) ? to.data[k] : null;
+      if (get(k) !== want) { changed = true; if (want === null) del(k); else put(k, want); }
+    });
+    put(P + 'owner', id);
+    return changed;
+  }
+  swap();
+  /* The player this page was opened for. Another tab (or the home page, before Back brings this page out of memory) can switch the
+     player; from then on this page shows the wrong child, so its saves are kept for its own player and it reloads (see strayWrite). */
+  var pageKid = current();
+  function setCurrent(id) { put(P + 'current', id); pageKid = id; if (window.TMG) window.TMG.kid = id; }
+
+  /* Every write a game makes is copied into the current player's store. For a child, the name is also listed under `changed` until it has reached the cloud.
+     Until this page has heard from the cloud, writes only wait: a game saving as it opens must not make an out-of-date device look newest. */
+  var dirtyTimer = 0, syncing = false, waiting = {}, onHome = !!document.querySelector('meta[name="tmg-home"]');
+  if (get(P + 'dirty') === '1') {          // left by an older version of this script: everything this child has here may be unsent
+    if (current() !== GUEST) { var old = store(current()); old.changed = {}; Object.keys(old.data).forEach(function (k) { old.changed[k] = 1; }); saveStore(current(), old); }
+    del(P + 'dirty');
+  }
+  function onDevice(id, uid) { return !!uid && get(P + 'uid') === uid && J(P + 'family', { kids: [] }).kids.some(function (k) { return k.id === id; }); }
+  function bytes(s) { try { return new Blob([s]).size; } catch (e) { return unescape(encodeURIComponent(s)).length; } }   // Firestore counts UTF-8 bytes (a Chinese character is 3)
+  function bump(s) { s.seq = (s.seq || 0) + 1; s.updated = Date.now(); }   // seq counts saves, so two saves in the same millisecond are still told apart
+  function later() { clearTimeout(dirtyTimer); dirtyTimer = setTimeout(function () { cloud.push(pageKid); }, 3000); }
+  /* A save from a page whose player is no longer the current one (two tabs, or a page brought back by Back after the parent switched
+     child). The browser's values now belong to `cur`: put this key back the way `cur` had it, keep the save for the page's own player
+     (and send it), then reload so the page shows the right child. */
+  function strayWrite(k, v, cur) {
+    var other = store(cur), want = has(other.data, k) ? other.data[k] : null;
+    if (want === null) del(k); else put(k, want);
+    var nv = v === null ? null : String(v);
+    // signed out, or the child was removed, in another tab: this device was cleared on purpose, so nothing is kept for them
+    if ((pageKid !== GUEST && !onDevice(pageKid, get(P + 'uid'))) || (nv !== null && nv.length > MAX_VALUE)) { stale(); return; }
+    var s = store(pageKid), had = has(s.data, k) ? s.data[k] : null;
+    if (had !== nv) {
+      if (nv === null) delete s.data[k]; else s.data[k] = nv;
+      bump(s);
+      if (pageKid !== GUEST) (s.changed = s.changed || {})[k] = 1;
+      saveStore(pageKid, s);
+      if (pageKid !== GUEST) {   // send it before reloading (at most 3 s); if that fails, the next page that opens sends it (sendOthers)
+        var go = function () { clearTimeout(t); stale(); }, t = setTimeout(go, 3000);
+        cloud.push(pageKid).then(go, go);
+        return;
+      }
+    }
+    stale();
+  }
+  var reloading = false;
+  function stale() { if (!reloading && document.visibilityState !== 'hidden') { reloading = true; location.reload(); } }
+  function checkPlayer() { if (current() !== pageKid) stale(); }
+  window.addEventListener('pageshow', function (e) { if (e.persisted) checkPlayer(); });
+  window.addEventListener('storage', function (e) { if (e.key === P + 'current' || e.key === null) checkPlayer(); });
+  function noteWrite(k, v) {
+    if (ours(k)) return;
+    var id = current();
+    if (id !== pageKid) { strayWrite(k, v, id); return; }   // before the size check: a big save from a stale page must not stay on the wrong child
+    if (v !== null && String(v).length > MAX_VALUE) return;
+    var ks = known(); if (ks.indexOf(k) < 0) { ks.push(k); W(P + 'known', ks); }
+    var s = store(id), had = has(s.data, k) ? s.data[k] : null;
+    if (had === (v === null ? null : String(v))) return;   // nothing new
+    if (v === null) delete s.data[k]; else s.data[k] = String(v);
+    if (id === GUEST) { bump(s); saveStore(id, s); return; }
+    if (syncing) { waiting[k] = 1; s.seq = (s.seq || 0) + 1; saveStore(id, s); return; }
+    (s.changed = s.changed || {})[k] = 1; bump(s); saveStore(id, s);
+    later();
+  }
+  Storage.prototype.setItem = function (k, v) { rawSet.call(this, k, v); if (this === LS) noteWrite(String(k), String(v)); };
+  Storage.prototype.removeItem = function (k) { rawRemove.call(this, k); if (this === LS) noteWrite(String(k), null); };
+  /* the writes that were waiting now count as this child's changes */
+  function settle() {
+    syncing = false;
+    var ks = Object.keys(waiting), id = pageKid; waiting = {};   // the waiting saves were made by this page, for its own child
+    if (!ks.length || id === GUEST) return;
+    var s = store(id); s.changed = s.changed || {};
+    ks.forEach(function (k) { s.changed[k] = 1; });
+    bump(s); saveStore(id, s); later();
+  }
+  function reloadPage() {
+    try {
+      var flag = 'tmg.reloaded.' + location.pathname, last = Number(sessionStorage.getItem(flag)) || 0;
+      if (Date.now() - last > 30000) { sessionStorage.setItem(flag, String(Date.now())); location.reload(); }
+    } catch (e) {}
+  }
+  /* A child's copies on this device: progress and the reward words. */
+  function dropKid(id) {
+    del(P + 'kid.' + id);
+    var end = '.rewards.' + id;
+    Object.keys(LS).forEach(function (k) { if (k.indexOf(P) === 0 && k.slice(-end.length) === end) del(k); });
+  }
+  /* The child was removed on another device: this device lets go too, and never writes them back. */
+  function childGone(id) {
+    if (current() === id) { setCurrent(GUEST); swap(); }
+    dropKid(id);
+    var fam = J(P + 'family', null);
+    if (fam && fam.kids) { fam.kids = fam.kids.filter(function (k) { return k.id !== id; }); W(P + 'family', fam); }
+  }
+
+  /* ---------- Firebase (loaded only when it is needed) ---------- */
+  var fb = null;
+  function loadScript(src) { return new Promise(function (ok, no) { var s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); }
+  function firebaseReady() {
+    if (fb) return fb;
+    fb = loadScript(SDK + 'firebase-app-compat.js')
+      .then(function () { return Promise.all([loadScript(SDK + 'firebase-auth-compat.js'), loadScript(SDK + 'firebase-firestore-compat.js')]); })
+      .then(function () {
+        var app = window.firebase.apps.length ? window.firebase.app() : window.firebase.initializeApp(CONFIG);
+        return { auth: app.auth(), db: app.firestore() };
+      });
+    return fb;
+  }
+  function userNow(f) { return new Promise(function (ok) { var off = f.auth.onAuthStateChanged(function (u) { off(); ok(u); }); }); }
+  function kidsRef(f, uid) { return f.db.collection('families').doc(uid).collection('kids'); }
+
+  /* After an upload, the browser takes the cloud's values for games this device did not change. A key is only replaced when the browser
+     still holds what this device last knew (`before`), so nothing the browser holds that the store never saw (for example a value too big
+     to sync) is overwritten. `skip` = keys with changes not sent yet: they stay as they are. */
+  function applyToBrowser(id, before, after, skip) {
+    var ks = known(), grew = false;
+    Object.keys(after).forEach(function (k) { if (ks.indexOf(k) < 0) { ks.push(k); grew = true; } });
+    if (grew) W(P + 'known', ks);
+    if ((get(P + 'owner') || GUEST) !== id) return;
+    ks.forEach(function (k) {
+      if (has(skip, k)) return;
+      var was = has(before, k) ? before[k] : null, want = has(after, k) ? after[k] : null;
+      if (want === was || get(k) !== was) return;
+      if (want === null) del(k); else put(k, want);
+    });
+  }
+
+  var cloud = {
+    /* Upload a child's changes. true = nothing is left unsent.
+       Only the games this device changed are written: in one transaction the cloud copy is read, this device's changed keys are put into
+       it, and it is written back. So a device that has been open for a long time never puts its old copy of a game over newer progress
+       made on another device. The transaction fails on a child who has been removed (`not-found`), so they are never brought back. */
+    push: function (id) {
+      id = id || current();
+      var uid = get(P + 'uid');
+      if (id === GUEST || !uid) return Promise.resolve(true);
+      if (syncing && id === current()) return ready.then(function () { return cloud.push(id); });
+      var s = store(id), keys = Object.keys(s.changed || {});
+      if (!keys.length) return Promise.resolve(true);
+      var name = (J(P + 'family', { kids: [] }).kids.filter(function (k) { return k.id === id; })[0] || {}).name || 'Player';
+      var sent = null;
+      return firebaseReady().then(function (f) {
+        var ref = kidsRef(f, uid).doc(id);
+        return f.db.runTransaction(function (tx) {
+          return tx.get(ref).then(function (doc) {
+            if (!doc.exists) { var gone = new Error('removed'); gone.code = 'not-found'; throw gone; }
+            var c = doc.data() || {}, data = JSON.parse(JSON.stringify(c.data || {})), up = Math.max(Date.now(), (c.updated || 0) + 1);
+            keys.forEach(function (k) { if (has(s.data, k)) data[k] = s.data[k]; else delete data[k]; });
+            if (bytes(JSON.stringify(data)) > 900000) { var big = new Error('too big'); big.code = 'too-big'; throw big; }   // a Firestore document holds at most 1 MB: keep it on this device only
+            tx.update(ref, { name: name, data: data, updated: up });
+            sent = { data: data, updated: up };
+          });
+        });
+      }).then(function () {
+        if (!onDevice(id, uid)) return true;   // signed out or removed while this upload ran: do not bring the copy back to this device
+        var now = store(id), during = (now.seq || 0) !== (s.seq || 0) || now.updated !== s.updated, still = during ? (now.changed || {}) : {};
+        var data = JSON.parse(JSON.stringify(sent.data));
+        Object.keys(still).forEach(function (k) { if (has(now.data, k)) data[k] = now.data[k]; else delete data[k]; });   // saved while this upload ran: kept, sent next time
+        saveStore(id, { data: data, updated: Math.max(sent.updated, now.updated || 0), changed: still, base: sent.updated, seq: now.seq || 0 });   // base: the version the cloud now holds
+        applyToBrowser(id, now.data, data, still);
+        return true;
+      }, function (e) {
+        if (e && e.code === 'not-found') { childGone(id); if (!onHome && id === pageKid) reloadPage(); return true; }
+        return false;
+      });
+    },
+    /* compare with the cloud; returns true when the values in the browser changed */
+    pull: function () {
+      var id = current(), uid = get(P + 'uid');
+      if (id === GUEST || !uid) return Promise.resolve(false);
+      return firebaseReady().then(function (f) { return kidsRef(f, uid).doc(id).get(); }).then(function (doc) {
+        if (!doc.exists) { childGone(id); return true; }
+        var c = doc.data(), s = store(id), cu = c.updated || 0, mine = s.changed || {};
+        var news = s.base != null ? cu !== s.base : cu > (s.updated || 0);   // has the cloud changed since this device last synced?
+        if (!news) {
+          if (cu < (s.updated || 0) && !Object.keys(mine).length) { s.changed = {}; Object.keys(s.data).forEach(function (k) { s.changed[k] = 1; }); saveStore(id, s); }
+          return false;
+        }
+        /* the cloud is newer: take it, keeping only what this device changed and has not sent yet */
+        var data = JSON.parse(JSON.stringify(c.data || {})), mineKeys = Object.keys(mine);
+        mineKeys.forEach(function (k) { if (Object.prototype.hasOwnProperty.call(s.data, k)) data[k] = s.data[k]; else delete data[k]; });
+        saveStore(id, { data: data, updated: mineKeys.length ? Math.max(Date.now(), cu + 1) : cu, changed: mine, base: cu, seq: (s.seq || 0) + 1 });   // seq moves on, so an upload running now keeps its own unsent marks
+        waiting = {};
+        var ks = known(); Object.keys(data).forEach(function (k) { if (ks.indexOf(k) < 0) ks.push(k); }); W(P + 'known', ks);
+        var changed = false;
+        if ((get(P + 'owner') || GUEST) === id) ks.forEach(function (k) {
+          var want = Object.prototype.hasOwnProperty.call(data, k) ? data[k] : null;
+          if (get(k) !== want) { changed = true; if (want === null) del(k); else put(k, want); }
+        });
+        return changed;
+      }, function () { return false; });
+    }
+  };
+  /* hear from the cloud, then send whatever is left to send */
+  function syncNow() {
+    syncing = true;
+    setTimeout(function () { if (syncing) settle(); }, 20000);   // no answer for this long: what the child has been doing counts
+    return cloud.pull().then(function (changed) { settle(); cloud.push(); return changed; });
+  }
+  window.addEventListener('pagehide', function () { cloud.push(pageKid); });
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') cloud.push(pageKid); else checkPlayer(); });
+
+  /* On a game page with a child playing: fetch their newest progress; if it differs from what the game already read, reload. */
+  var ready = Promise.resolve();
+  if (get(P + 'uid') && current() !== GUEST) {
+    ready = syncNow().then(function (changed) { if (changed && !onHome) reloadPage(); });
+  }
+  /* other children on this device with changes not sent yet (for example a save kept by strayWrite just before a reload): send them too */
+  function sendOthers() {
+    if (!get(P + 'uid')) return;
+    J(P + 'family', { kids: [] }).kids.forEach(function (k) { if (k.id !== current() && Object.keys(store(k.id).changed || {}).length) cloud.push(k.id); });
+  }
+  ready.then(function () { setTimeout(sendOthers, 1500); });
+
+  /* ---------- the parent panel on the home page ---------- */
+  function E(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function newId() { var a = new Uint8Array(9); crypto.getRandomValues(a); return Array.prototype.map.call(a, function (b) { return ('0' + b.toString(16)).slice(-2); }).join(''); }
+  function cleanName(s) { return String(s || '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 20); }
+
+  function mountHome(box) {
+    var msg = '', askDelete = null, deleting = false;   // askDelete: the loaded Firebase while the parent is asked to confirm with Google; deleting: Google window open or deletion running
+    function render() {
+      box.replaceChildren();
+      var uid = get(P + 'uid'), fam = J(P + 'family', { kids: [] }), cur = current();
+      if (!uid) askDelete = null;
+      if (deleting) {   // nothing else to tap until the deletion has finished or stopped
+      } else if (!uid) {
+        var b = E('button', 'acct-btn', 'Parent sign-in'); b.type = 'button'; b.onclick = signIn;
+        box.appendChild(b);
+        box.appendChild(E('span', 'acct-note', 'Optional: keep each child’s progress on every device.'));
+      } else {
+        /* a box that says plainly who is playing now, with big name buttons: a child should notice at once when the wrong name is on */
+        var who = E('div', 'acct-who'), me = fam.kids.filter(function (k) { return k.id === cur; })[0];
+        var now = E('p', 'acct-now', 'Playing now: '); now.appendChild(E('b', null, me ? '▶ ' + me.name : 'Just looking (saved on this device only)'));
+        who.appendChild(now);
+        var row = E('div', 'acct-kids');
+        fam.kids.forEach(function (k) {
+          var chip = E('button', 'acct-kid' + (k.id === cur ? ' on' : ''), (k.id === cur ? '▶ ' : '') + k.name); chip.type = 'button';
+          chip.setAttribute('aria-pressed', k.id === cur ? 'true' : 'false');
+          chip.onclick = function () { choose(k.id); };
+          row.appendChild(chip);
+        });
+        var g = E('button', 'acct-kid' + (cur === GUEST ? ' on' : ''), 'Just looking'); g.type = 'button'; g.onclick = function () { choose(GUEST); };
+        row.appendChild(g);
+        var add = E('button', 'acct-btn small', '+ Add child'); add.type = 'button'; add.onclick = addKid;
+        row.appendChild(add);
+        who.appendChild(row);
+        who.appendChild(E('span', 'acct-ask', fam.kids.length > 1 ? 'Not you? Tap your own name before you play.' : fam.kids.length ? 'Tap + Add child for a brother or sister.' : 'Add a child to keep their progress.'));
+        box.appendChild(who);
+        var tools = E('span', 'acct-tools');   // grown-up links, small, at the bottom of the box
+        var so = E('button', 'acct-link', 'Sign out'); so.type = 'button'; so.onclick = signOut; tools.appendChild(so);
+        var rm = E('button', 'acct-link', 'Remove a child'); rm.type = 'button'; rm.onclick = removeKid; tools.appendChild(rm);
+        var dl = E('button', 'acct-link danger', 'Delete account and all data'); dl.type = 'button'; dl.onclick = deleteAll; tools.appendChild(dl);
+        var pv = E('a', 'acct-link', 'Privacy'); pv.href = 'privacy.html'; tools.appendChild(pv);
+        who.appendChild(tools);
+      }
+      if (msg) box.appendChild(E('div', 'acct-msg', msg));
+      if (askDelete && uid) {
+        var cf = E('div', 'acct-confirm');
+        cf.appendChild(E('div', 'acct-msg', 'Last step: confirm with Google that it is you. Then the account, all children and all progress are deleted.'));
+        var yes = E('button', 'acct-btn danger', 'Confirm with Google and delete'); yes.type = 'button'; yes.onclick = reallyDelete; cf.appendChild(yes);
+        var no = E('button', 'acct-link', 'Cancel'); no.type = 'button'; no.onclick = function () { askDelete = null; say('Nothing was deleted.'); }; cf.appendChild(no);
+        box.appendChild(cf);
+      }
+    }
+    function say(t) { msg = t; render(); }
+    function loadFamily(f, uid) {
+      return kidsRef(f, uid).get().then(function (q) {
+        var kids = []; q.forEach(function (d) { kids.push({ id: d.id, name: cleanName(d.data().name) || 'Player' }); });
+        kids.sort(function (a, b) { return a.name.localeCompare(b.name); });
+        var before = J(P + 'family', { kids: [] }).kids;
+        W(P + 'family', { kids: kids });
+        if (current() !== GUEST && !kids.some(function (k) { return k.id === current(); })) { setCurrent(GUEST); swap(); }
+        before.forEach(function (o) { if (!kids.some(function (k) { return k.id === o.id; })) dropKid(o.id); });
+        return kids;
+      });
+    }
+    function signIn() {
+      if (deleting) return; askDelete = null;
+      say('Opening Google sign-in…');
+      firebaseReady().then(function (f) {
+        var p = new window.firebase.auth.GoogleAuthProvider();
+        return f.auth.signInWithPopup(p).then(function (r) { put(P + 'uid', r.user.uid); return loadFamily(f, r.user.uid); });
+      }).then(function (kids) { msg = kids.length ? 'Signed in. Pick who is playing.' : 'Signed in. Add your first child (a nickname is enough).'; render(); },
+        function (e) { say(e && e.code === 'auth/popup-closed-by-user' ? '' : 'Sign-in did not work' + (e && e.code ? ' (' + e.code + ')' : '') + '. Please try again.'); });
+    }
+    function addKid() {
+      if (deleting) return; askDelete = null;
+      var name = cleanName(window.prompt('Child’s nickname (not their full name):', ''));
+      if (!name) return;
+      var uid = get(P + 'uid'), id = newId(), fam = J(P + 'family', { kids: [] });
+      var guest = store(GUEST), first = fam.kids.length === 0 && Object.keys(guest.data).length > 0;
+      var start = { data: {}, updated: Date.now() };
+      if (first && window.confirm('Move the progress already on this device to ' + name + '?')) {
+        swap(); start = { data: JSON.parse(JSON.stringify(store(GUEST).data)), updated: Date.now() };
+      }
+      say('Adding ' + name + '…');
+      firebaseReady().then(function (f) {
+        return kidsRef(f, uid).doc(id).set({ name: name, data: start.data, updated: start.updated }).then(function () { return loadFamily(f, uid); });
+      }).then(function () { start.base = start.updated; saveStore(id, start); choose(id); }, function () { say('Could not add ' + name + '. Please try again.'); });
+    }
+    function choose(id) {
+      if (deleting) return; askDelete = null;
+      cloud.push().then(function () {
+        setCurrent(id); swap();
+        msg = id === GUEST ? 'Just looking: progress stays on this device.' : 'Now playing: ' + ((J(P + 'family', { kids: [] }).kids.filter(function (k) { return k.id === id; })[0] || {}).name || '');
+        render();
+        if (id !== GUEST) ready = syncNow();
+      });
+    }
+    function removeKid() {
+      if (deleting) return; askDelete = null;
+      var fam = J(P + 'family', { kids: [] }); if (!fam.kids.length) return;
+      var name = window.prompt('Type the nickname of the child to remove. Their progress is deleted everywhere.\n\n' + fam.kids.map(function (k) { return k.name; }).join(', '), '');
+      var k = fam.kids.filter(function (x) { return x.name === cleanName(name); })[0]; if (!k) return;
+      var uid = get(P + 'uid');
+      firebaseReady().then(function (f) { return kidsRef(f, uid).doc(k.id).delete().then(function () { return loadFamily(f, uid); }); })
+        .then(function () { dropKid(k.id); say(k.name + ' was removed.'); }, function () { say('Could not remove ' + k.name + '. Please try again.'); });
+    }
+    /* leave this device as a guest device: the children's copies are taken off it. keepUnsent keeps any copy that has not reached the cloud yet. */
+    function forgetDevice(keepUnsent) {
+      setCurrent(GUEST); swap();
+      J(P + 'family', { kids: [] }).kids.forEach(function (k) {
+        if (keepUnsent && Object.keys(store(k.id).changed || {}).length) return;
+        del(P + 'kid.' + k.id);
+      });
+      if (!keepUnsent) del(P + 'family');
+      del(P + 'uid');
+    }
+    /* never sign out while something has not reached the cloud: signing out takes the only copy off this device */
+    function signOut() {
+      if (deleting) return; askDelete = null;
+      var ids = J(P + 'family', { kids: [] }).kids.map(function (k) { return k.id; });
+      say('Saving…');
+      ready.then(function () { return Promise.all(ids.map(function (id) { return cloud.push(id); })); }).then(function (done) {
+        if (done.indexOf(false) >= 0) { say('Not signed out: some progress has not been saved yet. Check the internet and try again.'); return; }
+        return firebaseReady().then(function (f) { return f.auth.signOut(); }).then(function () { forgetDevice(); say('Signed out. This device is back to guest play.'); },
+          function () { forgetDevice(); say('Signed out on this device.'); });
+      });
+    }
+    /* Deleting a Google sign-in needs a recent sign-in. Safari only opens the Google window straight from a tap,
+       so: first tap asks, Firebase is loaded, then a second button opens the Google window inside its own tap,
+       and only after Google says yes is anything deleted. */
+    function deleteAll() {
+      if (deleting) return;
+      if (!window.confirm('Delete your account, all your children and all their progress? This cannot be undone.')) return;
+      askDelete = null; say('One moment…');
+      firebaseReady().then(function (f) { return userNow(f).then(function (u) {
+        if (!u || u.uid !== get(P + 'uid')) { forgetDevice(true); say('This device is no longer signed in. Sign in again, then delete.'); return; }
+        askDelete = f; say('');
+      }); }, function () { say('Could not reach Google. Check the internet and try again. Nothing was deleted.'); });
+    }
+    function reallyDelete() {
+      var f = askDelete, u = f && f.auth.currentUser, stage = 'confirm';
+      askDelete = null;
+      if (deleting) return;
+      if (!u || u.uid !== get(P + 'uid')) { say('This device is no longer signed in. Sign in again, then delete.'); return; }
+      var uid = u.uid;
+      deleting = true;
+      say('Waiting for Google… (close the Google window to cancel)');
+      function gone() { deleting = false; var ids = J(P + 'family', { kids: [] }).kids.map(function (k) { return k.id; }); forgetDevice(); ids.forEach(dropKid); say('Your account and all its data were deleted.'); }
+      u.reauthenticateWithPopup(new window.firebase.auth.GoogleAuthProvider())   // opened inside this tap, so Safari lets it open
+        .then(function () { stage = 'delete'; say('Deleting…'); return kidsRef(f, uid).get(); })
+        .then(function (q) { var jobs = []; q.forEach(function (d) { jobs.push(d.ref.delete()); }); return Promise.all(jobs); })
+        .then(function () { return u.delete(); })
+        .then(gone, function (e) {
+          var c = e && e.code;
+          deleting = false;
+          if (c === 'auth/user-not-found') { gone(); return; }   // the sign-in record is already gone (an earlier try finished but its answer was lost)
+          if (stage === 'confirm') {
+            if (c === 'auth/user-mismatch') say('That was a different Google account. Nothing was deleted. Tap "Delete account and all data" again and pick the account you signed in with.');
+            else if (c === 'auth/popup-closed-by-user' || c === 'auth/cancelled-popup-request') say('Nothing was deleted.');
+            else if (c === 'auth/popup-blocked') say('The Google window did not open. Nothing was deleted. Wait a moment and tap "Delete account and all data" again.');
+            else say('Google did not confirm' + (c ? ' (' + c + ')' : '') + '. Nothing was deleted. Please try again.');
+          } else say('Not finished: some data may already be deleted. Check the internet and tap "Delete account and all data" again to finish.');
+        });
+    }
+    /* check the sign-in is still valid (it can end on another device) */
+    if (get(P + 'uid')) firebaseReady().then(function (f) { return userNow(f).then(function (u) {
+      if (!u) { forgetDevice(true); render(); return; }
+      return loadFamily(f, u.uid).then(render);
+    }); }, function () {});
+    render();
+  }
+
+  window.TMG = { kid: current(), ready: ready, mountHome: mountHome, _swap: swap, _cloud: cloud };
+})();
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>二阶魔方闯关</title>
+<script>try { if (localStorage.getItem("cube2x2_quest_lang") === "en") { document.title = "2x2 Cube Quest"; document.documentElement.lang = "en"; } } catch (e) {}</script>
+<meta name="theme-color" content="#5b3fa8">
+<style>
+/* 2x2 Cube Quest: the three-step 2x2 method (white layer, yellow top, top corners home), one step per level, played on a cube on the screen;
+   plus a printable step sheet. Same look, moves and words as 3x3 Cube Quest. Chinese or English, switched with the toggle at the top. */
+:root{
+  color-scheme:light;
+  --ink:#2a2140; --mute:#6b6385; --page:#f4f0ff; --card:#fff; --line:#e3dcf5;
+  --brand:#5b3fa8; --brand-s:#ece6ff; --good:#1f8f45; --good-s:#e3f6e9; --bad:#c43a3a; --bad-s:#fde8e8; --gold:#f2b705; --gold-s:#fff5cc;
+  --plastic:#1d1b22; --dim:#cfcbd8;
+  --st-W:#F6F6F0; --st-Y:#FFD500; --st-G:#009B48; --st-R:#C41E3A; --st-B:#0046AD; --st-O:#FF5800;
+  --font:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC","Source Han Sans SC",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font:500 18px/1.55 var(--font);min-height:100vh}
+h1,h2,h3{margin:0;line-height:1.25}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
+button:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.wrap{max-width:1280px;margin:0 auto;padding:12px 16px 80px}
+.top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.top h1{font-size:clamp(22px,4vw,30px);color:var(--brand);margin-right:auto}
+.langs{display:inline-flex;border:2px solid var(--line);border-radius:999px;overflow:hidden;background:#fff}
+.lang{border:0;background:transparent;min-height:44px;min-width:64px;padding:0 14px;font-weight:800;color:var(--mute)}
+.lang.on{background:var(--brand);color:#fff}
+.stars{font-weight:800;color:#8a6400;background:var(--gold-s);border-radius:999px;padding:6px 14px;white-space:nowrap}
+.btn{border:2px solid var(--line);background:#fff;border-radius:14px;min-height:48px;padding:8px 16px;font-weight:700}
+.btn:hover{border-color:var(--brand)}
+.btn.main{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.small{min-height:44px;padding:6px 12px;font-size:16px}
+.btn:disabled{opacity:.45;cursor:default}
+.card{background:var(--card);border-radius:18px;box-shadow:0 2px 0 var(--line);padding:16px}
+[hidden]{display:none!important}
+
+/* home */
+.ways{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-bottom:16px}
+.way{display:flex;gap:14px;align-items:center;text-align:left;border:2px solid var(--line);background:#fff;border-radius:18px;padding:14px 16px}
+.way:hover{border-color:var(--brand)}
+.way .em{font-size:40px;line-height:1}
+.way b{display:block;font-size:20px}
+.way span{color:var(--mute);font-size:16px}
+.intro{color:var(--mute);margin:0 0 12px}
+.levels{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.lv{display:grid;grid-template-columns:52px 1fr;gap:4px 12px;align-items:center;text-align:left;border:2px solid var(--line);background:#fff;border-radius:18px;padding:12px 14px}
+.lv:hover{border-color:var(--brand)}
+.lv.next{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-s)}
+.lv .num{grid-row:span 2;width:52px;height:52px;border-radius:14px;background:var(--brand-s);color:var(--brand);font-size:24px;font-weight:800;display:grid;place-items:center}
+.lv.done .num{background:var(--good-s);color:var(--good)}
+.lv b{font-size:19px}
+.lv span{color:var(--mute);font-size:15px}
+.lv .st{grid-column:2;font-size:15px;color:#8a6400}
+
+/* play */
+.play{display:grid;gap:14px}
+@media (min-width:900px){.play{grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);align-items:start}.stagecard{position:sticky;top:10px}}
+.stagecard{padding:10px}
+.stage{position:relative;width:100%;aspect-ratio:1/0.92;perspective:1100px;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;border-radius:14px;background:radial-gradient(circle at 50% 40%,#fff 0%,#e9e4f7 100%);overflow:hidden}
+.stage:active{cursor:grabbing}
+.scene{position:absolute;left:50%;top:50%;width:0;height:0;transform-style:preserve-3d}
+.cubie{position:absolute;left:0;top:0;width:0;height:0;transform-style:preserve-3d}
+.fc{position:absolute;background:var(--plastic);backface-visibility:hidden}
+.fc>i{position:absolute;inset:6%;border-radius:12%}
+.st-W{background:var(--st-W)}.st-Y{background:var(--st-Y)}.st-G{background:var(--st-G)}.st-R{background:var(--st-R)}.st-B{background:var(--st-B)}.st-O{background:var(--st-O)}
+.fc>i.dim{background:var(--dim)}
+.cubie.hl .fc>i{box-shadow:0 0 0 4px #fff,0 0 0 8px var(--gold),0 0 18px 8px var(--gold)}
+.stagebar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:8px}
+.draghint{color:var(--mute);font-size:15px}
+.lights{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.light{flex:1 1 0;min-width:40px;text-align:center;border-radius:10px;background:#eee9f8;color:var(--mute);font-size:13px;line-height:1.2;padding:5px 2px}
+.light b{display:block;font-size:17px}
+.light.on{background:var(--good);color:#fff}
+.panel{display:grid;gap:12px}
+.phead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.phead h2{font-size:22px;margin-right:auto}
+.dots{display:flex;gap:5px;flex-wrap:wrap}
+.dot{width:12px;height:12px;border-radius:50%;background:#ddd6ef}
+.dot.done{background:var(--good)}.dot.cur{background:var(--brand);box-shadow:0 0 0 3px var(--brand-s)}
+.say{font-size:20px;line-height:1.6}
+.say b{color:var(--brand)}
+.pics{display:flex;gap:10px;flex-wrap:wrap}
+.pic{flex:1 1 140px;max-width:220px;text-align:center;font-size:15px;color:var(--mute)}
+.pic svg{width:100%;height:auto;display:block}
+.moves{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px}
+.mv{border:2px solid var(--line);background:#fff;border-radius:14px;min-height:64px;padding:6px 8px;display:grid;place-items:center;text-align:center;line-height:1.2}
+.mv:hover{border-color:var(--brand)}
+.mv .l{font:800 24px/1 ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
+.mv .w{font-size:14px;color:var(--mute)}
+.mv.f{background:var(--brand-s);border-color:#cfc2f5}
+.mv.f .l{font:800 18px/1.2 var(--font);color:var(--brand)}
+.mv.f .w{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+.mv.flip{background:#fff6e0;border-color:#f1d9a0}
+.mv.pulse{border-color:var(--gold);box-shadow:0 0 0 4px var(--gold-s);animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 8px var(--gold-s)}}
+.mv:disabled{opacity:.5;cursor:default}
+.seq{display:flex;gap:8px;flex-wrap:wrap}
+.sq{border:2px solid var(--line);background:#fff;border-radius:12px;min-width:74px;min-height:70px;padding:4px 6px;display:grid;place-items:center;text-align:center;line-height:1.15}
+.sq .l{font:800 24px/1 ui-monospace,Menlo,Consolas,monospace}
+.sq .w{font-size:13px;color:var(--mute)}
+.sq.now{border-color:var(--brand);background:var(--brand-s);box-shadow:0 0 0 3px var(--brand-s)}
+.sq.past{opacity:.4}
+.sq:disabled{cursor:default}
+.ctrl{display:flex;gap:8px;flex-wrap:wrap}
+.fb{border-radius:14px;padding:10px 14px;font-size:18px}
+.fb.good{background:var(--good-s);color:#135c2c}
+.fb.bad{background:var(--bad-s);color:#8a2424}
+.fb.hint{background:var(--gold-s);color:#5e4500}
+.opts{display:grid;gap:8px}
+.opt{border:2px solid var(--line);background:#fff;border-radius:14px;min-height:52px;padding:8px 14px;text-align:left;font-size:19px}
+.opt:hover{border-color:var(--brand)}
+.opt.no{border-color:var(--bad);background:var(--bad-s)}
+.opt.yes{border-color:var(--good);background:var(--good-s)}
+
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(30,20,60,.45);display:grid;place-items:center;padding:16px;z-index:50}
+.sheet{background:#fff;border-radius:20px;max-width:760px;width:100%;max-height:92vh;overflow:auto;padding:18px}
+.sheet .x{float:right}
+.win{text-align:center;display:grid;gap:12px;justify-items:center}
+.win .big{font-size:56px;line-height:1}
+
+/* step cards (in the game and on the printed sheet) */
+.stepcard{border:2px solid var(--line);border-radius:16px;padding:14px;background:#fff;break-inside:avoid;page-break-inside:avoid}
+.stepcard h3{font-size:22px;color:var(--brand);margin-bottom:8px}
+.stepcard h3 small{font-size:15px;color:var(--mute);font-weight:600;margin-left:6px}
+.stepcard ol{margin:6px 0 8px;padding-left:24px}
+.stepcard li{margin:3px 0}
+.formula{display:flex;flex-wrap:wrap;align-items:flex-end;gap:4px 8px;margin:8px 0;padding:8px 10px;background:var(--brand-s);border-radius:12px}
+.formula .fn{font-weight:800;color:var(--brand);margin-right:8px;align-self:center}
+.formula .t{display:grid;text-align:center;line-height:1.1}
+.formula .t .l{font:800 22px/1.1 ui-monospace,Menlo,Consolas,monospace}
+.formula .t .w{font-size:12px;color:var(--mute)}
+.note{font-size:16px;color:#5e4500;background:var(--gold-s);border-radius:10px;padding:6px 10px;margin:6px 0}
+.think{font-size:16px;color:#135c2c;background:var(--good-s);border-radius:10px;padding:6px 10px;margin:6px 0}
+.sheetpage{display:grid;gap:12px}
+.keytable{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.sheet .ctrl .btn.small{min-width:44px}
+.sheet .x{min-width:44px}
+.key{display:flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:4px 8px;font-size:15px}
+.key .l{font:800 20px/1 ui-monospace,Menlo,Consolas,monospace;min-width:30px}
+.printbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+@media print{
+  @page{margin:10mm}
+  body{background:#fff;font-size:14px}
+  .noprint,.top,#home,#play,.modal{display:none!important}
+  #print{display:block!important}
+  .wrap{padding:0;max-width:none}
+  .card{box-shadow:none;padding:0}
+  .stepcard{border:1.5px solid #bbb;padding:10px;margin-bottom:8px}
+  .stepcard h3{font-size:18px}
+  .pic{max-width:150px;flex-basis:120px;font-size:12px}
+  .formula .t .l{font-size:18px}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+@media (max-width:899px){
+  .stagecard{position:sticky;top:0;z-index:5}
+  .stage{aspect-ratio:auto;height:min(34vh,80vw)}
+  .lights{margin-top:4px}.light{padding:3px 2px;font-size:12px}.light b{font-size:15px}
+  .stagebar{margin-top:4px}
+  .moves{grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:6px}
+  .mv{min-height:56px;padding:4px}
+  .mv .l{font-size:21px}.mv .w{font-size:12px}
+  .say{font-size:18px}
+}
+.burst{position:fixed;pointer-events:none;font-size:28px;z-index:60;animation:fly 1.4s ease-out forwards}
+@keyframes fly{to{transform:translate(var(--dx),var(--dy)) rotate(260deg);opacity:0}}
+@media (prefers-reduced-motion:reduce){.mv.pulse{animation:none}.burst{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1 data-t="title"></h1>
+    <div class="langs" role="group" aria-label="Language 语言"><button class="lang" data-lang="zh">中文</button><button class="lang" data-lang="en">English</button></div>
+    <span class="stars" id="starTotal">⭐ 0</span>
+    <span class="pill-slot" data-pill-slot></span>
+  </div>
+
+  <section id="home">
+    <div class="ways">
+      <button class="way" id="goLevels"><span class="em">🎮</span><div><b data-t="wayPlay"></b><span data-t="wayPlaySub"></span></div></button>
+      <button class="way" id="goPrint"><span class="em">🖨️</span><div><b data-t="wayPrint"></b><span data-t="wayPrintSub"></span></div></button>
+    </div>
+    <p class="intro" data-t="intro"></p>
+    <div class="levels" id="levelList"></div>
+  </section>
+
+  <section id="play" hidden>
+    <div class="play">
+      <div class="card stagecard">
+        <div class="stage" id="stage"><div class="scene" id="scene"></div></div>
+        <div class="stagebar"><span class="draghint" data-t="drag"></span><button class="btn small" id="resetView" data-t="resetView"></button></div>
+        <div class="lights" id="lights"></div>
+      </div>
+      <div class="card panel" id="panel"></div>
+    </div>
+  </section>
+
+  <section id="print" hidden></section>
+</div>
+
+<div class="modal" id="modal" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+
+<script>
+/* 2x2 Cube Quest engine: the cube model (the same one as the 3x3 game) and the 2x2 layer method as code. No screen code here. */
+/*MODEL-START*/
+const FACE_AXIS = { R: [0, 1], L: [0, -1], U: [1, 1], D: [1, -1], F: [2, 1], B: [2, -1], x: [0, 1], y: [1, 1], z: [2, 1] };
+/* Real cube, white opposite yellow, green opposite blue, red opposite orange. Held white-down with green in front, ORANGE is on the right and RED on the left
+   (white-up/green-front puts red on the right; flipping to yellow-up turns it half a turn around the front-back axis). The old table had these two swapped, a mirror-image cube. */
+const COLOR_OF = { '0,1': 'O', '0,-1': 'R', '1,1': 'Y', '1,-1': 'W', '2,1': 'G', '2,-1': 'B' };
+function makeCube(n) {
+  const h = (n - 1) / 2, c = [];
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) for (let k = 0; k < n; k++) {
+    const p = [i - h, j - h, k - h];
+    if (Math.max(Math.abs(p[0]), Math.abs(p[1]), Math.abs(p[2])) < h) continue;
+    const st = [];
+    for (let a = 0; a < 3; a++) for (const s of [1, -1]) if (p[a] * s === h) {
+      const nv = [0, 0, 0]; nv[a] = s; st.push({ n: nv, c: COLOR_OF[a + ',' + s] });
+    }
+    c.push({ p, st, id: c.length });
+  }
+  return { n, h, c };
+}
+function rot1(v, a) {
+  let r;
+  if (a === 0) r = [v[0], -v[2], v[1]];
+  else if (a === 1) r = [v[2], v[1], -v[0]];
+  else r = [-v[1], v[0], v[2]];
+  return [r[0] + 0, r[1] + 0, r[2] + 0];
+}
+function normTok(t) { return String(t).replace(/[’′`´]/g, "'").replace(/^([A-Za-z])2'$/, '$12'); }
+function tokInfo(t) {
+  const m = /^([RLUDFBxyz])(2|')?$/.exec(normTok(t));
+  if (!m) return null;
+  const [a, s] = FACE_AXIS[m[1]];
+  const mult = m[2] === '2' ? 2 : m[2] === "'" ? -1 : 1;
+  return { face: m[1], axis: a, sign: s, q: -s * mult, whole: /[xyz]/.test(m[1]) };
+}
+function parseAlg(alg) {
+  const toks = String(alg).replace(/[’′`´]/g, "'").replace(/[()]/g, ' ').trim().split(/\s+/).filter(Boolean).map(normTok);
+  for (const t of toks) if (!tokInfo(t)) throw new Error('Bad move: ' + t);
+  return toks;
+}
+function inLayer(cubie, info) { return info.whole || cubie.p[info.axis] * info.sign > 0; }
+function applyTok(cube, t) {
+  const info = tokInfo(t); if (!info) throw new Error('Bad move: ' + t);
+  const k = ((info.q % 4) + 4) % 4;
+  for (const cb of cube.c) {
+    if (!inLayer(cb, info)) continue;
+    for (let i = 0; i < k; i++) {
+      cb.p = rot1(cb.p, info.axis);
+      for (const s of cb.st) s.n = rot1(s.n, info.axis);
+    }
+  }
+  return cube;
+}
+function applyAlg(cube, alg) { const toks = Array.isArray(alg) ? alg : parseAlg(alg); for (const t of toks) applyTok(cube, t); return cube; }
+function invertTok(t) { t = normTok(t); return t.endsWith('2') ? t : t.endsWith("'") ? t.slice(0, -1) : t + "'"; }
+function invertSeq(toks) { return toks.slice().reverse().map(invertTok); }
+function isSolved(cube) {
+  const m = {};
+  for (const cb of cube.c) for (const s of cb.st) { const k = s.n.join(','); (m[k] = m[k] || new Set()).add(s.c); }
+  return Object.values(m).every(set => set.size === 1);
+}
+/*MODEL-END*/
+
+/*METHOD-START*/
+/* The 2x2 beginner method as code: white layer (magic move), yellow top (Sune), corners home (corner swap, headlights at the back).
+   Same moves and words as the 3x3 game, whose steps 2, 5 and 6 are exactly these.
+   A 2x2 has no centers, so the color each face should be is worked out from a white corner that already sits in the bottom
+   layer with white facing down (the "anchor"). With none yet, any place is fine for the first white corner. */
+const FORMULA = { sexy: "R U R' U'", sune: "R U R' U R U2 R'", aperm: "R' F R' B2 R F' R' B2 R2" };
+function expand(script) {
+  const out = [];
+  for (const t of String(script).trim().split(/\s+/).filter(Boolean)) {
+    if (Object.prototype.hasOwnProperty.call(FORMULA, t)) out.push(...parseAlg(FORMULA[t])); else out.push(...parseAlg(t));
+  }
+  return out;
+}
+function cloneCube(c) { return { n: c.n, h: c.h, c: c.c.map(cb => ({ p: cb.p.slice(), id: cb.id, st: cb.st.map(s => ({ n: s.n.slice(), c: s.c })) })) }; }
+function run(cube, script) { return applyAlg(cube, expand(script)); }
+const vkey = v => v[0] + "," + v[1] + "," + v[2];
+const veq = (a, b) => a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
+const has = (cb, c) => cb.st.some(s => s.c === c);
+const facing = (cb, c) => { const s = cb.st.find(s => s.c === c); return s ? s.n : null; };
+const pieceById = (cube, id) => cube.c.find(cb => cb.id === id);
+const pieceAt = (cube, p) => cube.c.find(cb => veq(cb.p, p));
+const UP = [0, 1, 0], DOWN = [0, -1, 0];
+const OPP = { W: "Y", Y: "W", G: "B", B: "G", O: "R", R: "O" };
+const RING = ["G", "O", "B", "R"];          /* white down: front, right, back, left of a solved cube, going round */
+const whiteCorners = cube => cube.c.filter(cb => has(cb, "W"));
+const sideOf = (cb, axis) => cb.st.find(s => s.n[axis] !== 0);
+/* the anchor: the first white corner (in a fixed order, so hints never jump about) in the bottom layer with white facing down */
+const ORDER = ["BOW", "BRW", "GOW", "GRW"];
+const pieceName = cb => cb.st.map(s => s.c).sort().join("");
+function frame(cube) {
+  const ws = whiteCorners(cube).slice().sort((a, b) => ORDER.indexOf(pieceName(a)) - ORDER.indexOf(pieceName(b)));
+  /* when several white corners sit white-down at the bottom, use the one that the most of them agree with, so corners already
+     placed together keep counting as home even if another white corner drops in somewhere wrong */
+  const downs = ws.filter(cb => cb.p[1] < 0 && veq(facing(cb, "W"), DOWN));
+  let anchor = null, bestAgree = -1;
+  for (const a of downs) { const fa = frameFrom(a), agree = downs.filter(cb => cb.st.every(s => fa[vkey(s.n)] === s.c)).length; if (agree > bestAgree) { bestAgree = agree; anchor = a; } }
+  const f = {};
+  if (anchor) {
+    const sx = sideOf(anchor, 0), sz = sideOf(anchor, 2);
+    f[vkey(sx.n)] = sx.c; f[vkey(sx.n.map(v => -v || 0))] = OPP[sx.c];
+    f[vkey(sz.n)] = sz.c; f[vkey(sz.n.map(v => -v || 0))] = OPP[sz.c];
+  } else {
+    /* no anchor yet: the first white corner to place is the "starter"; its home is simply the front right */
+    const st = starter(cube), cols = st.st.map(s => s.c).filter(c => c !== "W");
+    const x = RING[(RING.indexOf(cols[0]) + 1) % 4] === cols[1] ? cols[0] : cols[1], y = x === cols[0] ? cols[1] : cols[0];
+    f["0,0,1"] = x; f["1,0,0"] = y; f["0,0,-1"] = OPP[x]; f["-1,0,0"] = OPP[y];
+  }
+  f["0,-1,0"] = "W"; f["0,1,0"] = "Y";
+  return { f, anchor: anchor ? anchor.id : null };
+}
+function frameFrom(a) {
+  const f = {}, sx = sideOf(a, 0), sz = sideOf(a, 2);
+  f[vkey(sx.n)] = sx.c; f[vkey(sx.n.map(v => -v || 0))] = OPP[sx.c]; f[vkey(sz.n)] = sz.c; f[vkey(sz.n.map(v => -v || 0))] = OPP[sz.c];
+  f["0,-1,0"] = "W"; f["0,1,0"] = "Y"; return f;
+}
+function starter(cube) {
+  const ws = whiteCorners(cube).slice().sort((a, b) => ORDER.indexOf(pieceName(a)) - ORDER.indexOf(pieceName(b)));
+  return ws.find(cb => cb.p[1] > 0) || ws[0];
+}
+const faceOfColor = (f, c) => { const k = Object.keys(f).find(k => f[k] === c); return k.split(",").map(Number); };
+function isHome(cube, cb, fr) { fr = fr || frame(cube); return cb.st.every(s => fr.f[vkey(s.n)] === s.c); }
+/* the bottom slot where a white corner belongs */
+function homeSlot(cube, id, fr) {
+  fr = fr || frame(cube); const cb = pieceById(cube, id), h = cube.h;
+  const vs = cb.st.filter(s => s.c !== "W").map(s => faceOfColor(fr.f, s.c));
+  return [(vs[0][0] + vs[1][0]) * h, -h, (vs[0][2] + vs[1][2]) * h];
+}
+const yellowUp = cube => cube.c.filter(cb => cb.p[1] > 0 && veq(facing(cb, "Y") || [9, 9, 9], UP)).length;
+/* how many of the 3 steps are done (0..3) */
+function stage2(cube) {
+  const fr = frame(cube);
+  if (!whiteCorners(cube).every(cb => isHome(cube, cb, fr))) return 0;
+  if (yellowUp(cube) < 4) return 1;
+  if (!isSolved(cube)) return 2;
+  return 3;
+}
+function countTurns(cube, tok, test) { const c = cloneCube(cube); for (let k = 0; k < 4; k++) { if (test(c)) return k; applyTok(c, tok); } return -1; }
+const turnTok = (tok, k) => (k === 3 ? tok + "'" : tok);
+const topCorners = cube => cube.c.filter(cb => cb.p[1] > 0);
+const SIDES = [[0, 0, 1], [1, 0, 0], [0, 0, -1], [-1, 0, 0]];
+function headlightSides(cube) {
+  const h = cube.h;
+  return SIDES.filter(v => {
+    const two = topCorners(cube).filter(cb => (cb.p[0] * v[0] + cb.p[2] * v[2]) === h).map(cb => (cb.st.find(s => veq(s.n, v)) || {}).c);
+    return two.length === 2 && two[0] === two[1];
+  });
+}
+
+/* what the method says to do next: { done } or { step (1..3), act, code, piece, reps, twice } */
+function nextStep2(cube) {
+  const st = stage2(cube), h = cube.h, FRD = [h, -h, h], FRU = [h, h, h], FLU = [-h, h, h];
+  if (st === 3) return { done: true, step: 3 };
+  if (st === 0) {
+    const fr = frame(cube);
+    const todo = whiteCorners(cube).filter(cb => !isHome(cube, cb, fr));
+    const fd = pieceAt(cube, FRD);        /* in its own home at the front right but turned the wrong way: keep going */
+    if (fd && has(fd, "W") && !isHome(cube, fd, fr) && veq(homeSlot(cube, fd.id, fr), FRD)) {
+      const t = cloneCube(cube); let reps = 0; while (reps < 6 && !isHome(t, pieceById(t, fd.id))) { run(t, "sexy"); reps++; }
+      return { step: 1, act: "sexy", code: "corner-again", piece: fd.id, reps };
+    }
+    const top = todo.filter(cb => cb.p[1] > 0);
+    if (top.length) {
+      let best = null;
+      for (const cb of top) {
+        const ky = countTurns(cube, "y", c => veq(homeSlot(c, cb.id), FRD));
+        const held = cloneCube(cube); for (let i = 0; i < ky; i++) applyTok(held, "y");
+        const ku = countTurns(held, "U", c => veq(pieceById(c, cb.id).p, FRU));
+        const cost = (ky ? 10 : 0) + (ku ? 10 : 0) + ky + ku;
+        if (!best || cost < best.cost) best = { cb, ky, ku, cost };
+      }
+      if (best.ky) return { step: 1, act: turnTok("y", best.ky), code: "corner-hold", piece: best.cb.id, twice: best.ky === 2 };
+      if (best.ku) return { step: 1, act: turnTok("U", best.ku), code: "corner-above", piece: best.cb.id, twice: best.ku === 2 };
+      const t = cloneCube(cube); let reps = 0; while (reps < 6 && !isHome(t, pieceById(t, best.cb.id))) { run(t, "sexy"); reps++; }
+      return { step: 1, act: "sexy", code: fr.anchor === null ? "corner-first" : "corner-in", piece: best.cb.id, reps };
+    }
+    const low = todo[0];
+    const ky = countTurns(cube, "y", c => veq(pieceById(c, low.id).p, FRD));
+    if (ky) return { step: 1, act: turnTok("y", ky), code: "corner-pop-hold", piece: low.id, twice: ky === 2 };
+    return { step: 1, act: "sexy", code: "corner-pop", piece: low.id, reps: 1 };
+  }
+  if (st === 1) {
+    const n = yellowUp(cube), fl = c => pieceAt(c, FLU);
+    const want = n === 1 ? c => veq(facing(fl(c), "Y"), UP) : n === 0 ? c => veq(facing(fl(c), "Y"), [-1, 0, 0]) : c => veq(facing(fl(c), "Y"), [0, 0, 1]);
+    const ku = countTurns(cube, "U", want), kind = n === 1 ? "one" : n === 0 ? "none" : "two";
+    if (ku) return { step: 2, act: turnTok("U", ku), code: "sune-turn-" + kind, twice: ku === 2, n };
+    return { step: 2, act: "sune", code: "sune-" + kind, piece: fl(cube).id, n };
+  }
+  const hs = headlightSides(cube);
+  if (hs.length === 4) { const ku = countTurns(cube, "U", c => isSolved(c)); return { step: 3, act: turnTok("U", ku), code: "ap-line-up", twice: ku === 2 }; }
+  if (hs.length === 0) return { step: 3, act: "aperm", code: "ap-none" };
+  const ku = countTurns(cube, "U", c => headlightSides(c).some(v => veq(v, [0, 0, -1])));
+  return ku ? { step: 3, act: turnTok("U", ku), code: "ap-turn", twice: ku === 2 } : { step: 3, act: "aperm", code: "ap-back" };
+}
+function solveTo2(cube, k, allowed) {
+  const acts = [];
+  for (let guard = 0; guard < 300; guard++) {
+    if (stage2(cube) >= k) return acts;
+    const s = nextStep2(cube);
+    if (s.done || !s.act) return null;
+    if (allowed && allowed.indexOf(s.act.replace(/2$/, "")) < 0) return null;
+    run(cube, s.act); acts.push(s.act);
+  }
+  return null;
+}
+/* ---- practice positions ---- */
+function rng32(seed) { let a = seed >>> 0; return function () { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function scrambled2(rng) {
+  const c = makeCube(2), faces = ["R", "L", "U", "D", "F", "B"], sfx = ["", "'", "2"]; let last = "";
+  for (let i = 0; i < 20; i++) { let f; do { f = faces[Math.floor(rng() * 6)]; } while (f === last); last = f; applyTok(c, f + sfx[Math.floor(rng() * 3)]); }
+  return c;
+}
+function baseState2(k, rng) {
+  const c = scrambled2(rng);
+  if (k > 0 && !solveTo2(c, k)) return null;
+  return c;
+}
+/* spec: { goal, script | want | full, allowed } (like the 3x3 game) */
+function makePuzzle2(spec, seed) {
+  const rng = rng32(seed);
+  for (let tries = 0; tries < 300; tries++) {
+    let c;
+    if (spec.script != null) { c = baseState2(spec.goal, rng); if (!c) continue; applyAlg(c, invertSeq(expand(spec.script))); }
+    else if (spec.full) c = scrambled2(rng);
+    else { c = baseState2(spec.goal - 1, rng); if (!c) continue; }
+    if (stage2(c) >= spec.goal) continue;
+    if (spec.want && !spec.want(c)) continue;
+    if (!solveTo2(cloneCube(c), spec.goal, spec.allowed)) continue;
+    return c;
+  }
+  return null;
+}
+/*METHOD-END*/
+if (typeof module !== "undefined") module.exports = { makeCube, applyTok, applyAlg, parseAlg, invertSeq, isSolved, tokInfo, FORMULA, expand, cloneCube, run, veq, vkey, has, facing, pieceById, pieceAt, frame, starter, isHome, homeSlot, yellowUp, stage2, countTurns, headlightSides, nextStep2, solveTo2, rng32, scrambled2, baseState2, makePuzzle2, whiteCorners };
+</script>
+<script>
+/* 2x2 Cube Quest: the three steps (for the step cards and the printed page) and the levels.
+   Every word a child sees is a pair "中文|English"; tr() picks the language that is switched on. Loaded after engine.js.
+   The moves, names and words are the same as the 3x3 game (its steps 2, 5 and 6), so what a child learns here carries straight over. */
+/*LEVELS-START*/
+const LANG = { cur: "zh" };
+function tr(s) {
+  if (s == null) return "";
+  s = String(s); const i = s.indexOf("|");
+  if (i < 0) return s;
+  return LANG.cur === "en" ? s.slice(i + 1) : s.slice(0, i);
+}
+const FACE12 = ["R", "R'", "L", "L'", "U", "U'", "D", "D'", "F", "F'", "B", "B'"];
+const TURNS = ["U", "U'", "y", "y'"];
+const FORMULA_NAME = { sexy: "万能公式|Magic move", sune: "小鱼公式|Sune", aperm: "换角公式|Corner swap" };
+const COLOR_NAME = { W: "白|white", Y: "黄|yellow", G: "绿|green", R: "红|red", B: "蓝|blue", O: "橙|orange" };
+const MOVE_TXT = {
+  R: ["右边|Right side", "往上|turns up", "↑", "右|right"], "R'": ["右边|Right side", "往下|turns down", "↓", "右|right"],
+  L: ["左边|Left side", "往下|turns down", "↓", "左|left"], "L'": ["左边|Left side", "往上|turns up", "↑", "左|left"],
+  U: ["顶层|Top layer", "往左|turns left", "←", "顶|top"], "U'": ["顶层|Top layer", "往右|turns right", "→", "顶|top"],
+  D: ["底层|Bottom layer", "往右|turns right", "→", "底|bottom"], "D'": ["底层|Bottom layer", "往左|turns left", "←", "底|bottom"],
+  F: ["前面|Front", "顺时针|turns clockwise", "↻", "前|front"], "F'": ["前面|Front", "逆时针|turns counter-clockwise", "↺", "前|front"],
+  B: ["后面|Back", "顶上往左|: top goes left", "←", "后|back"], "B'": ["后面|Back", "顶上往右|: top goes right", "→", "后|back"],
+  y: ["整个魔方|Whole cube", "往左转|turns left", "←", "整个|cube"], "y'": ["整个魔方|Whole cube", "往右转|turns right", "→", "整个|cube"]
+};
+/* which stickers go gray so a child sees only the pieces this step is about */
+const DIM = {
+  none: null,
+  white: (cb, s) => !has(cb, "W"),
+  yface: (cb, s) => has(cb, "Y") && s.c !== "Y",
+  ycorners: null
+};
+const STEPS = [
+  { n: 1, name: "白色一层|White layer", formulas: ["sexy"],
+    look: ["白色朝下。第一个白色角块放在哪里都可以，只要白色朝下。|White on the bottom. The first white corner can go anywhere, as long as white faces down.",
+           "后面的白色角块，看已经放好的：每个角块的家，是侧面颜色能和旁边对上的那个底角。|For the next white corners, look at the ones already placed: each corner's home is the bottom corner where its side colors match its neighbors.",
+           "转整个魔方，让家在右前方。转顶层，把角块放到家的正上方。|Turn the whole cube so the home is at the front right. Turn the top layer to put the corner right above its home.",
+           "重复万能公式，直到角块回家。|Repeat the magic move until the corner is home."],
+    note: "角块在底层放错了？把它放在右前下，做一遍万能公式，它就到顶层了。|A corner in the wrong place on the bottom? Hold it at the bottom front right and do the magic move once. It pops up to the top layer.",
+    think: "二阶魔方没有中心块。所以第一个角块就是“地图”：其他角块都跟着它找家。|A 2x2 has no centers. So the first corner becomes your map: every other corner finds its home from it.",
+    pics: [{ script: "sexy", dim: "white", capFn: "corner" }, { script: "sexy sexy sexy", dim: "white", capFn: "corner" }, { script: "sexy sexy sexy sexy sexy", dim: "white", capFn: "corner" }] },
+  { n: 2, name: "黄色顶面|Yellow top", formulas: ["sune"],
+    look: ["数一数：有几个角块黄色朝上？|Count: how many corners have yellow facing up?",
+           "1 个：转顶层，把它放到左前。|One: turn the top layer to put it at the front left.",
+           "0 个：转顶层，让左前角块的黄色朝左。|None: turn the top layer until the front-left corner's yellow faces left.",
+           "2 个：转顶层，让左前角块的黄色朝着你。|Two: turn the top layer until the front-left corner's yellow faces you.",
+           "做小鱼公式。再数，再摆，再做，直到顶面全黄。|Do the Sune. Count, set up and do it again until the whole top is yellow."],
+    think: "小鱼公式只弄乱顶层。下面一层出去转一圈，又原样回来。|The Sune only changes the top layer. The bottom layer goes for a ride and comes back the same.",
+    pics: [{ view: "top", script: "sune", dim: "yface", cap: "1 个朝上：放左前|One up: at the front left" }, { view: "top", script: "sune sune", dim: "yface", cap: "0 个朝上：左前的黄色朝左|None up: front-left yellow faces left" }, { view: "top", script: "sune sune U2 sune", dim: "yface", cap: "2 个朝上：左前的黄色朝着你|Two up: front-left yellow faces you" }] },
+  { n: 3, name: "顶层角块回家|Top corners home", formulas: ["aperm"],
+    look: ["找车灯：一个侧面上，上面两个角块颜色一样。|Find the headlights: two top corners on one side with the same color.",
+           "有车灯：转顶层，把车灯放到后面，做换角公式。|Headlights: turn the top layer to put them at the back, then do the corner swap.",
+           "没有车灯：先做一遍公式，车灯就出现了。|No headlights: do the move once first, and headlights appear.",
+           "最后转顶层，让上下两层对上。|At the end, turn the top layer until it lines up with the bottom."],
+    think: "这个公式让 3 个角块轮流换位置，还有 1 个角块不动。|This move takes 3 corners around in a circle and leaves 1 corner alone.",
+    pics: [{ view: "top", script: "aperm", dim: "none", cap: "车灯在后面（图的上边那两个同色的角）|Headlights at the back (the two same-color corners at the top of the picture)" }] }
+];
+const ALL_FORMULAS = ["sexy", "sune", "aperm"];
+const LEVELS = [
+  { id: 1, name: "认识二阶魔方|Meet the 2x2", sub: "8 个角块，没有中心块|8 corners and no centers", step: 0, goal: 0, dim: "none", buttons: FACE12, tasks: [
+    { k: "info", t: "二阶魔方只有一种小块：<b>角块</b>。一共 8 个，每个有 3 种颜色。它没有中心块，所以哪一面是什么颜色，要看角块自己。<br>用手指拖动魔方，可以从别的方向看。|A 2x2 has only one kind of piece: <b>corners</b>. There are 8, each with 3 colors. It has no centers, so the corners themselves tell you what color each side is.<br>Drag the cube with your finger to look at it from other sides." },
+    { k: "ask", t: "二阶魔方一共有几个小块？|How many pieces does a 2x2 have?", opts: ["6 个|6", "8 个|8", "12 个|12"], ans: 1, why: "8 个，全都是角块。|8, and they are all corners." },
+    { k: "find", colors: "WRB", t: "魔方打乱了。找出<b>白·红·蓝</b>角块，点它。看不到就拖动魔方转一转。|The cube is mixed up. Find the <b>white-red-blue</b> corner and tap it. Can't see it? Drag the cube around." },
+    { k: "find", colors: "YGO", t: "再找一个：<b>黄·绿·橙</b>角块。|One more: the <b>yellow-green-orange</b> corner." },
+    { k: "ask", t: "有没有一个角块是<b>白色和黄色</b>的？|Is there a corner that is <b>white and yellow</b>?", opts: ["有|Yes", "没有|No"], ans: 1, why: "没有。白色和黄色是对面，永远碰不到一起。|No. White and yellow are on opposite sides, so they never meet." },
+    { k: "undo", n: 1, t: "魔方被转了<b>一下</b>。看一看是哪一层被转了，把它转回去。|The cube was turned <b>once</b>. Find which layer was turned and turn it back." },
+    { k: "undo", n: 1, t: "再来一次：又被转了<b>一下</b>。|Again: it was turned <b>once</b>." },
+    { k: "undo", n: 2, t: "这次被转了<b>两下</b>。后转的那一下，要先转回去。|This time it was turned <b>twice</b>. Undo the last turn first." }
+  ] },
+  { id: 2, name: "万能公式|The magic move", sub: "第 1 步：放一个白色角块|Step 1: put in a white corner", step: 1, goal: 1, dim: "white", buttons: TURNS.concat(["sexy"]), tasks: [
+    { k: "info", t: "第 1 步：<b>白色一层</b>。白色朝下。白色角块的家在底层。<br>方法：转顶层，把角块放到家的<b>正上方</b>，再重复<b>万能公式 R U R' U'</b>，直到它回家。|Step 1: the <b>white layer</b>. White goes on the bottom. A white corner's home is in the bottom layer.<br>The way: turn the top layer to put the corner <b>right above</b> its home, then repeat the <b>magic move R U R' U'</b> until it is home.", pics: [{ script: "sexy", dim: "white", cap: "角块在家的正上方|The corner is right above its home" }] },
+    { k: "guided", script: "sexy", t: "角块就在家的正上方。按顺序一下一下按：R U R' U'。|The corner is right above its home. Press the turns one by one: R U R' U'." },
+    { k: "ask", t: "角块在家的正上方，白色朝<b>上</b>。要做几遍万能公式？|The corner is right above its home with white facing <b>up</b>. How many magic moves?", opts: ["1 遍|1", "3 遍|3", "5 遍|5"], ans: 1, why: "3 遍。白色朝右是 1 遍，朝上是 3 遍，朝前是 5 遍。不用背：重复做，放好就停。|3. White facing right takes 1, up takes 3, front takes 5. No need to remember: repeat until it is in, then stop." },
+    { k: "puz", script: "sexy sexy sexy", focus: true, t: "试一试：白色朝上。数一数你做了几遍。|Try it: white faces up. Count how many times you do it." },
+    { k: "puz", script: "U sexy sexy sexy sexy sexy", focus: true, t: "角块不在家的上方。先转顶层。|The corner is not above its home. Turn the top layer first." },
+    { k: "puz", script: "y U' sexy", focus: true, t: "这次家不在右前方。先转整个魔方。|This time the home is not at the front right. Turn the whole cube first." }
+  ] },
+  { id: 3, name: "白色一层|The white layer", sub: "第 1 步：4 个白色角块|Step 1: all 4 white corners", step: 1, goal: 1, dim: "white", buttons: TURNS.concat(["sexy"]), tasks: [
+    { k: "info", t: "二阶魔方没有中心块。怎么知道家在哪里？看已经放好的白色角块：新角块的侧面颜色，要和它旁边的角块对上。|A 2x2 has no centers. So how do you know where home is? Look at the white corners already in place: a new corner's side colors must match the corner next to it." },
+    { k: "puz", script: "y' sexy sexy", focus: true, t: "顶层没有白色角块。有一个角块在底层，可是方向不对。把它转到右前，做一遍万能公式，它就到顶层了。|There is no white corner on top. One corner is on the bottom but turned the wrong way. Bring it to the front right and do the magic move once: it goes up to the top." },
+    { k: "puz", focus: true, t: "白色角块都要放好。一个一个来。|Put all the white corners in, one at a time." },
+    { k: "puz", focus: true, t: "再来一次。|Once more." },
+    { k: "puz", focus: false, t: "真魔方的样子。只看白色角块。|A real cube. Look only at the white corners." }
+  ] },
+  { id: 4, name: "黄色顶面|Yellow top", sub: "第 2 步：小鱼公式|Step 2: the Sune", step: 2, goal: 2, dim: "yface", buttons: ["U", "U'", "sune"], tasks: [
+    { k: "info", t: "第 2 步：把<b>整个顶面</b>变成黄色。先数一数：有几个角块黄色朝上？<br>1 个：放到左前。0 个：让左前角块的黄色朝左。2 个：让左前角块的黄色朝着你。<br>然后做<b>小鱼公式 R U R' U R U2 R'</b>。再数，再摆，再做。|Step 2: make the <b>whole top</b> yellow. First count: how many corners have yellow facing up?<br>One: put it at the front left. None: make the front-left corner's yellow face left. Two: make the front-left corner's yellow face you.<br>Then do the <b>Sune R U R' U R U2 R'</b>. Count, set up and do it again.", pics: [{ view: "top", script: "sune", dim: "yface", cap: "1 个：放左前|One: at the front left" }, { view: "top", script: "sune sune", dim: "yface", cap: "0 个：黄色朝左|None: yellow faces left" }, { view: "top", script: "sune sune U2 sune", dim: "yface", cap: "2 个：黄色朝着你|Two: yellow faces you" }] },
+    { k: "guided", script: "sune", t: "只有 1 个角块黄色朝上，它在左前。做小鱼公式：R U R' U R U2 R'。|Only 1 corner has yellow up, and it is at the front left. Do the Sune: R U R' U R U2 R'." },
+    { k: "puz", script: "U2 sune", focus: true, t: "有 1 个角块黄色朝上，可是不在左前。先转顶层。|One corner has yellow up, but it is not at the front left. Turn the top layer first." },
+    { k: "puz", ups: 2, focus: true, t: "有 2 个角块黄色朝上。看左前的角块：让它的黄色朝着你。|Two corners have yellow up. Look at the front-left corner: make its yellow face you." },
+    { k: "puz", ups: 0, focus: true, t: "没有角块黄色朝上。看左前的角块：让它的黄色朝左。左边在背面，拖动魔方看一看。|No corner has yellow up. Look at the front-left corner: make its yellow face left. The left side is hidden, so drag the cube to look." },
+    { k: "puz", focus: false, t: "真魔方的样子。先数，再摆，再做。|A real cube. Count, set up, then do it." }
+  ] },
+  { id: 5, name: "顶层角块回家|Top corners home", sub: "第 3 步：找车灯|Step 3: find the headlights", step: 3, goal: 3, dim: "none", buttons: ["U", "U'", "aperm"], tasks: [
+    { k: "info", t: "第 3 步：让顶层的 4 个角块回家。先找<b>车灯</b>：一个侧面上，上面两个角块的颜色一样。<br>有车灯：转顶层，把车灯放到<b>后面</b>，做<b>换角公式</b>。没有车灯：先做一遍公式。最后转顶层，让上下两层对上。|Step 3: get the 4 top corners home. First find the <b>headlights</b>: two top corners on one side with the same color.<br>Headlights: turn the top layer to put them at the <b>back</b>, then do the <b>corner swap</b>. No headlights: do the move once first. At the end, turn the top layer until it lines up with the bottom.", pics: [{ view: "top", script: "aperm", dim: "none", cap: "车灯在后面（图的上边）|Headlights at the back (top of the picture)" }] },
+    { k: "guided", script: "aperm", t: "车灯在后面。做换角公式：R' F R' B2 R F' R' B2 R2。B2 就是后面转两下。|The headlights are at the back. Do the corner swap: R' F R' B2 R F' R' B2 R2. B2 means turn the back twice." },
+    { k: "puz", script: "U aperm", t: "先找到车灯在哪一面，把它转到后面。拖动魔方可以看后面。|Find which side has the headlights and turn them to the back. Drag the cube to see the back." },
+    { k: "puz", script: "U", t: "四面都有车灯：角块的顺序已经对了。只要转顶层，让上下两层对上。|Every side has headlights: the corners are already in order. Just turn the top layer to line it up with the bottom." },
+    { k: "puz", lights: 0, t: "四面都找不到车灯。先做一遍公式，再找。|No side has headlights. Do the move once, then look again." },
+    { k: "puz", t: "再来一个。|One more." }
+  ] },
+  { id: 6, name: "从头到尾|Start to finish", sub: "三步连起来，自己决定|All three steps, your own choices", step: 0, goal: 3, dim: "none", buttons: FACE12.concat(["y", "y'"], ALL_FORMULAS), tasks: [
+    { k: "info", t: "现在从头到尾自己来：白色一层、黄色顶面、顶层角块回家。魔方下面的 3 个小灯，会告诉你做好了几步。|Now do it all yourself: the white layer, the yellow top, then the top corners home. The 3 lights under the cube show how many steps are done." },
+    { k: "puz", full: true, t: "把整个魔方拼好。卡住了可以看 📖 步骤卡，或者按 💡 提示。|Solve the whole cube. Stuck? Look at the 📖 step cards or press 💡 Hint." },
+    { k: "puz", full: true, t: "再拼一个！|Solve another one!" }
+  ] }
+];
+function puzzleSpec(level, task) {
+  const spec = { goal: level.goal, allowed: level.buttons, full: !!task.full };
+  if (task.script != null) spec.script = task.script;
+  if (task.ups != null) spec.want = c => yellowUp(c) === task.ups;
+  if (task.lights != null) spec.want = c => headlightSides(c).length === task.lights;
+  return spec;
+}
+/*LEVELS-END*/
+if (typeof module !== "undefined") module.exports = Object.assign(module.exports || {}, { LANG, tr, FACE12, TURNS, FORMULA_NAME, COLOR_NAME, MOVE_TXT, DIM, STEPS, ALL_FORMULAS, LEVELS, puzzleSpec });
+</script>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+const T = (zh, en) => (LANG.cur === "en" ? en : zh);       /* for words built from parts */
+
+/* ---------- language: Chinese or English, one at a time; the choice is remembered on this device ---------- */
+const LANG_KEY = "cube2x2_quest_lang";
+try { const l = localStorage.getItem(LANG_KEY); if (l === "en" || l === "zh") LANG.cur = l; } catch (e) {}
+const UI = {
+  title: "二阶魔方闯关|2x2 Cube Quest",
+  wayPlay: "在屏幕上闯关|Play on the screen",
+  wayPlaySub: "六关，一关学一步。魔方在屏幕上，可以转、可以撤销、可以要提示。|Six levels, one step each. The cube is on the screen: turn it, undo, and ask for hints.",
+  wayPrint: "打印三步卡|Print the 3-step sheet",
+  wayPrintSub: "拿着真魔方，一步一步照着做。三步、三个公式，打印出来两三页纸。|Hold a real cube and follow along. Three steps and three moves on two or three printed pages.",
+  intro: "二阶魔方只有三步、三个公式。它们和三阶魔方的第 2、5、6 步一模一样，所以学会二阶，三阶的七步里就有三步会了。两种学法用的是同一个方法，可以换着用。|The 2x2 takes three steps and three moves. They are exactly steps 2, 5 and 6 of the 3x3, so learning the 2x2 already gives you 3 of the 3x3's 7 steps. Both ways use the same method, so you can switch between them.",
+  drag: "👆 拖动魔方可以转着看|👆 Drag the cube to look around",
+  resetView: "↺ 摆正|↺ Reset view",
+  stageLabel: "屏幕上的魔方，用手指拖动可以转着看|The cube on the screen. Drag it to look around.",
+  levels: "← 关卡|← Levels", cards: "📖 步骤卡|📖 Step cards", restart: "⟲ 重来|⟲ Start over", undo: "↶ 撤销|↶ Undo", hint: "💡 提示|💡 Hint",
+  next: "下一题 ▶|Next ▶", finish: "过关 🎉|Finish 🎉", again: "再玩一次|Play again", start: "开始|Start",
+  doneSoFar: "已经做了：|Done so far: ", flip: "翻过来|Flip over", flipSub: "白色朝下|White to the bottom",
+  close: "关上|Close", front: "前面|front", backLevels: "回到关卡|Back to levels", print: "🖨️ 打印|🖨️ Print",
+  stars: "星星看的是自己想出来的：少按 💡 提示，星星就多。|Stars are for working it out yourself: fewer 💡 hints, more stars.",
+  thinkAgain: "再想一想。|Think again.",
+  broken: "小心：前面做好的被弄乱了。可以按 ↶ 撤销。|Careful: an earlier step got broken. You can press ↶ Undo."
+};
+const LIGHT = ["白色一层|White layer", "黄色顶面|Yellow top", "顶层角块|Top corners"];
+function applyStatic() {
+  document.documentElement.lang = LANG.cur === "en" ? "en" : "zh-CN";
+  document.title = tr(UI.title);
+  document.querySelectorAll("[data-t]").forEach(el => { el.textContent = tr(UI[el.dataset.t]); });
+  $("h1[data-t]").textContent = "🧊 " + tr(UI.title);
+  $("#stage").setAttribute("aria-label", tr(UI.stageLabel));
+  $(".langs").setAttribute("aria-label", T("语言", "Language"));
+  document.querySelectorAll(".lang").forEach(b => { const on = b.dataset.lang === LANG.cur; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); });
+}
+function setLang(l) {
+  if (l === LANG.cur) return;
+  LANG.cur = l; try { localStorage.setItem(LANG_KEY, l); } catch (e) {}
+  applyStatic(); renderPrint();
+  if (!$("#home").hidden) renderHome();
+  if (!$("#play").hidden && P.L) { drawLights(); renderPanel(); }
+  if (!$("#modal").hidden) { if (modalKind === "cards") openCards(cardsAt); else if (modalKind === "win") showWin(); }
+}
+document.querySelector(".langs").addEventListener("click", e => { const b = e.target.closest("[data-lang]"); if (b) setLang(b.dataset.lang); });
+
+/* ---------- saved progress (this browser only; the site's account script syncs it when a parent signs in) ---------- */
+const KEY = "cube2x2_quest_v1";
+function load() { try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && typeof s === "object" && s.lv && typeof s.lv === "object") return s; } catch (e) {} return { lv: {} }; }
+let SAVE = load();
+function save() { try { localStorage.setItem(KEY, JSON.stringify(SAVE)); } catch (e) {} }
+const lvSave = id => (SAVE.lv[id] = SAVE.lv[id] && typeof SAVE.lv[id] === "object" ? SAVE.lv[id] : { at: 0, done: false, stars: 0 });
+const totalStars = () => LEVELS.reduce((n, L) => n + Math.min(3, Math.max(0, +((SAVE.lv[L.id] || {}).stars) || 0)), 0);
+
+/* ---------- words for moves ---------- */
+const COLOR_HEX = { W: "#F6F6F0", Y: "#FFD500", G: "#009B48", R: "#C41E3A", B: "#0046AD", O: "#FF5800" };
+const PLASTIC = "#1d1b22", DIMHEX = "#cfcbd8";
+function tokWords(t) {           /* "右↑" / "right ↑", for under a letter */
+  const b = t.replace(/2$/, ""), m = MOVE_TXT[b];
+  if (!m) return t === "z2" ? tr(UI.flip) : "";
+  return /2$/.test(t) ? T(tr(m[3]) + "×2", tr(m[3]) + " ×2") : T(tr(m[3]) + m[2], tr(m[3]) + " " + m[2]);
+}
+function tokLong(t) {            /* "右边往上" / "Right side turns up" */
+  const b = t.replace(/2$/, ""), m = MOVE_TXT[b];
+  if (!m) return t;
+  if (/2$/.test(t)) return T(tr(m[0]) + "转两下", tr(m[0]) + " turns twice");
+  const d = tr(m[1]);
+  return T(tr(m[0]) + d, tr(m[0]) + (d.charAt(0) === ":" ? "" : " ") + d);
+}
+function sayAct(s) {             /* the second hint: which button */
+  if (!s || !s.act) return "";
+  if (FORMULA[s.act]) {
+    const n = (s.code === "corner-in" || s.code === "corner-again" || s.code === "corner-first") && s.reps > 1 ? s.reps : 0;
+    return T("按 <b>", "Press the <b>") + esc(tr(FORMULA_NAME[s.act])) + T("</b>" + (n ? "，这一块要做 " + n + " 遍。" : "。"), "</b> button" + (n ? " " + n + " times for this one." : "."));
+  }
+  if (/2$/.test(s.act)) { const b = s.act.slice(0, -1); return T("按 <b>" + b + "</b> 两下（", "Press <b>" + b + "</b> twice (") + esc(tokLong(b)) + T("）。", ")."); }
+  return T("按 <b>", "Press <b>") + esc(s.act) + "</b>" + (s.twice ? T(" 两下", " twice") : "") + T("（", " (") + esc(tokLong(s.act)) + T("）。", ").");
+}
+
+/* ---------- pictures: an SVG drawn from the cube model, for the step cards and the printed sheet ---------- */
+function cubeSVG(cube, view, dimFn, hlId) {
+  const N = cube.n, hh = cube.h;
+  const col = (cb, s) => (dimFn && dimFn(cb, s)) ? DIMHEX : COLOR_HEX[s.c];
+  const out = [];
+  if (view === "top") {
+    const U = Math.round(102 / N), P = 12, G = 3, o = 16;         /* cell, strip depth, gap, margin */
+    const W = N * U + 2 * (P + G) + 2 * o;
+    out.push(`<svg viewBox="0 0 ${W} ${W}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(T("从上往下看的顶面", "The top seen from above"))}">`);
+    const x0 = o + P + G, y0 = o + P + G;
+    out.push(`<rect x="${x0 - 2}" y="${y0 - 2}" width="${N * U + 4}" height="${N * U + 4}" rx="5" fill="${PLASTIC}"/>`);
+    for (const cb of cube.c) {
+      if (cb.p[1] !== hh) continue;
+      const cx = x0 + (cb.p[0] + hh) * U, cy = y0 + (cb.p[2] + hh) * U;
+      for (const s of cb.st) {
+        const n = s.n, f = col(cb, s), stroke = cb.id === hlId ? ` stroke="#f2b705" stroke-width="4"` : "";
+        if (n[1] === 1) out.push(`<rect x="${cx + 2}" y="${cy + 2}" width="${U - 4}" height="${U - 4}" rx="5" fill="${f}"${stroke}/>`);
+        else if (n[2] === 1) out.push(`<rect x="${cx + 3}" y="${y0 + N * U + G}" width="${U - 6}" height="${P}" rx="3" fill="${f}" stroke="${PLASTIC}" stroke-width="1.5"/>`);
+        else if (n[2] === -1) out.push(`<rect x="${cx + 3}" y="${y0 - G - P}" width="${U - 6}" height="${P}" rx="3" fill="${f}" stroke="${PLASTIC}" stroke-width="1.5"/>`);
+        else if (n[0] === 1) out.push(`<rect x="${x0 + N * U + G}" y="${cy + 3}" width="${P}" height="${U - 6}" rx="3" fill="${f}" stroke="${PLASTIC}" stroke-width="1.5"/>`);
+        else if (n[0] === -1) out.push(`<rect x="${x0 - G - P}" y="${cy + 3}" width="${P}" height="${U - 6}" rx="3" fill="${f}" stroke="${PLASTIC}" stroke-width="1.5"/>`);
+      }
+    }
+    out.push(`<text x="${W / 2}" y="${W - 2}" text-anchor="middle" font-size="10" fill="#6b6385">${esc(tr(UI.front))}</text>`);
+    out.push("</svg>");
+    return out.join("");
+  }
+  /* three sides: top, front (lower left), right (lower right) */
+  const c30 = Math.cos(Math.PI / 6), K = 78 / N;
+  const pr = v => [(v[0] - v[2]) * c30 * K, (-v[1] + (v[0] + v[2]) * 0.5) * K];
+  const pts = [];
+  const quad = (q, a, b, h) => [[1, 1], [1, -1], [-1, -1], [-1, 1]].map(([i, j]) => pr([q[0] + h * (i * a[0] + j * b[0]), q[1] + h * (i * a[1] + j * b[1]), q[2] + h * (i * a[2] + j * b[2])]));
+  const body = [];
+  for (const [n, a, b] of [[[0, 1, 0], [1, 0, 0], [0, 0, 1]], [[0, 0, 1], [1, 0, 0], [0, 1, 0]], [[1, 0, 0], [0, 0, 1], [0, 1, 0]]]) {
+    const q = quad([n[0] * (hh + 0.5), n[1] * (hh + 0.5), n[2] * (hh + 0.5)], a, b, hh + 0.55); pts.push(...q);
+    body.push(`<polygon points="${q.map(p => p.map(x => x.toFixed(1)).join(",")).join(" ")}" fill="${PLASTIC}" stroke="${PLASTIC}" stroke-width="3" stroke-linejoin="round"/>`);
+  }
+  const st = [];
+  for (const cb of cube.c) for (const s of cb.st) {
+    const n = s.n; if (!(n[0] === 1 || n[1] === 1 || n[2] === 1)) continue;
+    const ax = n[0] ? 0 : n[1] ? 1 : 2, a = [0, 0, 0], b = [0, 0, 0]; a[(ax + 1) % 3] = 1; b[(ax + 2) % 3] = 1;
+    const q = quad([cb.p[0] + n[0] * 0.5, cb.p[1] + n[1] * 0.5, cb.p[2] + n[2] * 0.5], a, b, 0.42);
+    const stroke = cb.id === hlId ? ` stroke="#f2b705" stroke-width="3.5"` : "";
+    st.push(`<polygon points="${q.map(p => p.map(x => x.toFixed(1)).join(",")).join(" ")}" fill="${col(cb, s)}" stroke-linejoin="round"${stroke}/>`);
+  }
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]), m = 6;
+  const minX = Math.min(...xs) - m, minY = Math.min(...ys) - m, w = Math.max(...xs) - minX + m, h = Math.max(...ys) - minY + m;
+  return `<svg viewBox="${minX.toFixed(1)} ${minY.toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(T("魔方的上面、前面和右面", "The top, front and right of the cube"))}">${body.join("")}${st.join("")}</svg>`;
+}
+function picCube(p) { const c = makeCube(2); if (p.pre) run(c, p.pre); applyAlg(c, invertSeq(expand(p.script))); return c; }
+function picCaption(p, cube) {
+  if (p.cap) return tr(p.cap);
+  if (p.capFn === "corner") {
+    const cb = pieceAt(cube, [cube.h, cube.h, cube.h]), d = facing(cb, "W"), s = nextStep2(cube);
+    const where = d[0] === 1 ? T("朝右", "right") : d[1] === 1 ? T("朝上", "up") : T("朝前", "front");
+    return T("白色" + where + "：做 " + s.reps + " 遍", "White faces " + where + ": " + s.reps + (s.reps === 1 ? " time" : " times"));
+  }
+  return "";
+}
+function picHTML(p) {
+  const c = picCube(p), hl = p.capFn === "corner" ? pieceAt(c, [c.h, c.h, c.h]).id : null;
+  return `<figure class="pic" style="margin:0">${cubeSVG(c, p.view, DIM[p.dim], hl)}<figcaption>${esc(picCaption(p, c))}</figcaption></figure>`;
+}
+function formulaHTML(f) {
+  const toks = parseAlg(FORMULA[f]);
+  return `<div class="formula"><span class="fn">${esc(tr(FORMULA_NAME[f]))}</span>${toks.map(t => `<span class="t"><span class="l">${esc(t)}</span><span class="w">${esc(tokWords(t))}</span></span>`).join("")}</div>`;
+}
+function stepCardHTML(st) {
+  const moves = st.formulas.length ? T("公式：", "Moves: ") + st.formulas.map(f => esc(tr(FORMULA_NAME[f]))).join(T("、", ", ")) : T("不用公式", "No moves to learn");
+  return `<div class="stepcard"><h3>${T("第 " + st.n + " 步", "Step " + st.n)} · ${esc(tr(st.name))}<small>${moves}</small></h3>
+    <div class="pics">${st.pics.map(picHTML).join("")}</div>
+    <ol>${st.look.map(x => `<li>${esc(tr(x))}</li>`).join("")}</ol>
+    ${st.formulas.map(formulaHTML).join("")}
+    ${st.note ? `<div class="note">${T("🧩 卡住了：", "🧩 Stuck: ")}${esc(tr(st.note))}</div>` : ""}
+    <div class="think">${T("💭 想一想：", "💭 Think: ")}${esc(tr(st.think))}</div></div>`;
+}
+const KEY_TOKS = ["R", "R'", "L", "L'", "U", "U'", "F", "F'", "B", "B'", "D", "D'", "y", "y'"];
+function keyHTML() {
+  return `<div class="keytable">${KEY_TOKS.map(t => `<div class="key"><span class="l">${esc(t)}</span><span>${esc(tokLong(t))} ${MOVE_TXT[t][2]}</span></div>`).join("")}</div>`;
+}
+function renderPrint() {
+  $("#print").innerHTML = `<div class="sheetpage">
+    <div class="printbar noprint"><button class="btn" id="printBack">${esc(T("← 回到关卡", "← Back to levels"))}</button><button class="btn main" id="printNow">${esc(tr(UI.print))}</button><span class="draghint">${esc(T("用 A4 纸打印，大约两三页。", "Prints on two or three sheets of A4 or Letter paper."))}</span></div>
+    <div class="card"><h2 style="color:var(--brand);margin-bottom:6px">${esc(T("二阶魔方 · 三步还原卡", "2x2 Cube · The 3-Step Sheet"))}</h2>
+      <p style="margin:4px 0">${T("拿法：<b>白色朝下</b>，一直朝下。二阶魔方没有中心块：第一个白色角块放好以后，它就是地图，别的角块都跟着它找家。", "How to hold it: <b>white on the bottom</b>, and keep it there. A 2x2 has no centers: once the first white corner is in, it is your map, and every other corner finds its home from it.")}</p>
+      <p style="margin:4px 0">${esc(T("字母口令：字母说的是转哪一层。不带 ' 就按下面的方向转，带 ' 就反过来。字母后面有 2，就转两下。",
+        "The letters say which layer to turn. A letter on its own means turn it the way shown below. With ' after it, turn the other way. With 2 after it, turn it twice."))}</p>
+      ${keyHTML()}
+      <p style="margin:8px 0 0">${esc(T("三步：", "The 3 steps: ") + STEPS.map(s => "①②③".charAt(s.n - 1) + " " + tr(s.name)).join(" → ") + T("。", "."))}</p>
+    </div>
+    ${STEPS.map(stepCardHTML).join("")}
+    <p class="draghint">${esc(T("图上灰色的小块，这一步先不用管。从上往下看的图，四边的小条是侧面最上面一排的颜色，“前面”在下边。",
+      "Gray pieces in a picture can be ignored in that step. In the top-down pictures, the little strips around the edge are the top row of each side, and the front is at the bottom."))}</p>
+  </div>`;
+  $("#printBack").onclick = () => show("home");
+  $("#printNow").onclick = () => window.print();
+}
+
+/* ---------- the 3D cube on the screen ---------- */
+const V = { cube: makeCube(2), rx: -26, ry: -36, S: 50, els: [], dim: null, hl: null, run: 0, busy: false };
+const FACE_TF = { "1,0,0": "rotateY(90deg)", "-1,0,0": "rotateY(-90deg)", "0,1,0": "rotateX(90deg)", "0,-1,0": "rotateX(-90deg)", "0,0,1": "", "0,0,-1": "rotateY(180deg)" };
+/* The camera distance grows with the cube (about 8 cube-widths away), so a big cube on an iPad is not stretched by a close-up perspective. */
+function sizeCube() {
+  const st = $("#stage"), w = st.clientWidth || 320, h = st.clientHeight || 300;
+  V.S = Math.max(30, Math.floor(Math.min(w, h) * 0.5 / 2));
+  st.style.perspective = Math.round(V.S * 2 * 8) + "px";
+}
+const baseTf = cb => `translate3d(${cb.p[0] * V.S}px, ${-cb.p[1] * V.S}px, ${cb.p[2] * V.S}px)`;
+function draw() {
+  sizeCube();
+  const S = V.S, scene = $("#scene"); scene.style.transform = `rotateX(${V.rx}deg) rotateY(${V.ry}deg)`;
+  const frag = document.createDocumentFragment();
+  V.els = V.cube.c.map(cb => {
+    const el = document.createElement("div"); el.className = "cubie" + (V.hl === cb.id ? " hl" : ""); el.dataset.cid = cb.id; el.style.transform = baseTf(cb);
+    for (const key of Object.keys(FACE_TF)) {
+      const f = document.createElement("div"); f.className = "fc";
+      f.style.cssText = `width:${S}px;height:${S}px;left:${-S / 2}px;top:${-S / 2}px;transform:${FACE_TF[key]} translateZ(${S / 2}px)`;
+      const s = cb.st.find(s => s.n.join(",") === key);
+      if (s) { const i = document.createElement("i"); i.className = "st-" + s.c + (V.dim && V.dim(cb, s) ? " dim" : ""); f.appendChild(i); }
+      el.appendChild(f);
+    }
+    frag.appendChild(el); return el;
+  });
+  scene.replaceChildren(frag);
+  drawLights();
+}
+function rotCss(axis, deg) { const a = [0, 0, 0]; a[axis] = 1; return `rotate3d(${a[0]}, ${-a[1]}, ${a[2]}, ${-deg}deg)`; }
+const reduceMotion = (() => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } })();
+function animateTok(tok, done) {
+  const info = tokInfo(tok); let dur = info.whole ? 420 : 300; if (Math.abs(info.q) === 2) dur *= 1.5; if (reduceMotion) dur = 80;
+  const movers = []; V.cube.c.forEach((cb, i) => { if (info.whole || cb.p[info.axis] * info.sign > 0) movers.push([V.els[i], baseTf(cb)]); });
+  const t0 = performance.now(), run = V.run;
+  const step = now => {
+    if (V.run !== run) return;
+    const p = Math.min(1, (now - t0) / dur), e = p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2, tf = rotCss(info.axis, info.q * 90 * e);
+    for (const [el, b] of movers) el.style.transform = tf + " " + b;
+    if (p < 1) requestAnimationFrame(step); else { applyTok(V.cube, tok); draw(); done && done(); }
+  };
+  requestAnimationFrame(step);
+}
+function playToks(toks, done) {
+  V.busy = true; setButtons(false);
+  const run = V.run; let i = 0;
+  const next = () => { if (V.run !== run) return; if (i >= toks.length) { V.busy = false; setButtons(true); done && done(); return; } animateTok(toks[i++], next); };
+  next();
+}
+(function attachDrag() {
+  const st = $("#stage"); let d = null;
+  st.addEventListener("pointerdown", e => { d = { x: e.clientX, y: e.clientY, rx: V.rx, ry: V.ry, moved: false }; try { st.setPointerCapture(e.pointerId); } catch (_) {} });
+  st.addEventListener("pointermove", e => {
+    if (!d) return;
+    if (Math.abs(e.clientX - d.x) + Math.abs(e.clientY - d.y) > 6) d.moved = true;
+    V.ry = d.ry + (e.clientX - d.x) * 0.5; V.rx = Math.max(-85, Math.min(85, d.rx - (e.clientY - d.y) * 0.5));
+    $("#scene").style.transform = `rotateX(${V.rx}deg) rotateY(${V.ry}deg)`;
+  });
+  st.addEventListener("pointerup", e => { const was = d; d = null; if (was && !was.moved) { try { tapAt(document.elementFromPoint(e.clientX, e.clientY)); } catch (_) {} } });
+  st.addEventListener("pointercancel", () => { d = null; });
+})();
+$("#resetView").onclick = () => { V.rx = -26; V.ry = -36; $("#scene").style.transform = `rotateX(${V.rx}deg) rotateY(${V.ry}deg)`; };
+let resizeT; window.addEventListener("resize", () => { clearTimeout(resizeT); resizeT = setTimeout(() => { if (!V.busy && !$("#play").hidden) draw(); }, 150); });
+
+/* the three lights under the cube: how many steps are finished */
+function drawLights() {
+  const box = $("#lights");
+  if (!P.L || P.L.id === 1) { box.hidden = true; return; }
+  box.hidden = false;
+  const k = stage2(V.cube);
+  box.innerHTML = STEPS.map((s, i) => `<div class="light ${i < k ? "on" : ""}"><b>${i < k ? "✓" : s.n}</b>${esc(tr(LIGHT[i]))}</div>`).join("");
+}
+
+/* ---------- play ---------- */
+const P = { L: null, ti: 0, task: null, start: null, hist: [], spec: null, state: "", hint: 0, reveals: 0, fb: "", pulse: null, wrong: {}, scr: [] };
+const randSeed = () => (Math.random() * 1e9) >>> 0;
+function show(name) { for (const id of ["home", "play", "print"]) $("#" + id).hidden = id !== name; if (name === "home") renderHome(); if (name === "print") renderPrint(); window.scrollTo(0, 0); }
+function renderHome() {
+  $("#starTotal").textContent = "⭐ " + totalStars();
+  const next = (LEVELS.find(L => !(SAVE.lv[L.id] || {}).done) || {}).id;
+  $("#levelList").innerHTML = LEVELS.map(L => {
+    const s = SAVE.lv[L.id] || {}, stars = Math.min(3, +s.stars || 0);
+    const label = s.done ? "⭐".repeat(stars) + "☆".repeat(3 - stars) + " " + tr(UI.again) : (s.at > 0 ? T("接着玩（第 " + (s.at + 1) + " 题）", "Continue (question " + (s.at + 1) + ")") : tr(UI.start));
+    return `<button class="lv ${s.done ? "done" : ""} ${L.id === next ? "next" : ""}" data-lv="${L.id}"><span class="num">${s.done ? "✓" : L.id}</span><b>${esc(tr(L.name))}</b><span>${esc(tr(L.sub))}</span><span class="st">${esc(label)}</span></button>`;
+  }).join("");
+}
+$("#levelList").addEventListener("click", e => { const b = e.target.closest("[data-lv]"); if (b) openLevel(+b.dataset.lv); });
+$("#goLevels").onclick = () => { const el = $("#levelList"); el.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" }); };
+$("#goPrint").onclick = () => show("print");
+
+function openLevel(id) {
+  P.L = LEVELS.find(L => L.id === id); const s = lvSave(id);
+  P.ti = s.done || !(s.at >= 0 && s.at < P.L.tasks.length) ? 0 : s.at;
+  if (s.done) { s.at = 0; }
+  P.reveals = 0; P.wrong = {};
+  show("play"); startTask();
+}
+function heldSolved() { return makeCube(2); }
+function scrambleFaces(n) {
+  const out = []; let last = "";
+  while (out.length < n) { const t = FACE12[Math.floor(Math.random() * 12)]; if (t.charAt(0) === last) continue; last = t.charAt(0); out.push(t); }
+  return out;
+}
+function startTask() {
+  V.run++; V.busy = false; V.hl = null; P.wrong = {};
+  const L = P.L, task = (P.task = L.tasks[P.ti]);
+  P.hist = []; P.hint = 0; P.fb = ""; P.pulse = null; P.state = "go"; P.spec = null; P.gi = 0;
+  V.dim = null;
+  if (task.k === "guided" || task.k === "puz") {
+    P.spec = puzzleSpec(L, task);
+    let c = null; for (let i = 0; i < 20 && !c; i++) c = makePuzzle2(P.spec, randSeed());
+    P.start = c || heldSolved();
+    if (task.k === "guided") P.seq = expand(task.script);
+    V.dim = task.focus || task.k === "guided" ? DIM[L.dim] : null;
+  } else if (task.k === "find") {
+    P.start = scrambled2(rng32(randSeed()));
+  } else if (task.k === "undo") {
+    let c; do { c = makeCube(2); P.scr = scrambleFaces(task.n); applyAlg(c, P.scr); } while (isSolved(c)); P.start = c;   /* on a 2x2, R then L' just turns the whole cube */
+  } else {
+    P.start = heldSolved();
+    if (task.k === "info" || task.k === "ask") V.dim = L.id > 1 ? DIM[L.dim] : null;
+  }
+  V.cube = cloneCube(P.start);
+  draw(); renderPanel();
+  const s = lvSave(L.id); if (!s.done) { s.at = P.ti; save(); }
+}
+function goalNow() {
+  const t = P.task;
+  if (t.k === "undo") return isSolved(V.cube);
+  if (t.k === "guided" || t.k === "puz") return stage2(V.cube) >= P.spec.goal;
+  return false;
+}
+function buttonsFor() {
+  const t = P.task, L = P.L;
+  if (t.k === "undo") return FACE12;
+  if (t.k !== "puz") return [];
+  let b = L.buttons.slice(); if (t.flipEnd && b.indexOf("flip") < 0) b.push("flip");
+  if (!t.flipEnd && L.up) b = b.filter(x => x !== "flip");
+  return b;
+}
+function mvButton(a) {
+  if (a === "flip") return `<button class="mv flip" data-act="flip"><span class="l" style="font:800 18px/1.2 var(--font)">${esc(tr(UI.flip))}</span><span class="w">${esc(tr(UI.flipSub))}</span></button>`;
+  if (FORMULA[a]) return `<button class="mv f" data-act="${a}"><span class="l">${esc(tr(FORMULA_NAME[a]))}</span><span class="w">${esc(FORMULA[a])}</span></button>`;
+  return `<button class="mv" data-act="${esc(a)}"><span class="l">${esc(a)}</span><span class="w">${esc(tokLong(a))} ${MOVE_TXT[a] ? MOVE_TXT[a][2] : ""}</span></button>`;
+}
+function dotsHTML() { return `<div class="dots" aria-label="${esc(T("第 " + (P.ti + 1) + " 题，共 " + P.L.tasks.length + " 题", "Question " + (P.ti + 1) + " of " + P.L.tasks.length))}">${P.L.tasks.map((_, i) => `<span class="dot ${i < P.ti ? "done" : i === P.ti ? "cur" : ""}"></span>`).join("")}</div>`; }
+/* feedback is kept as a pair or a function, so it can be shown again in the other language */
+const fbText = () => (typeof P.fb === "function" ? P.fb() : tr(P.fb));
+function renderPanel() {
+  const L = P.L, t = P.task, done = P.state === "done";
+  let h = `<div class="phead"><button class="btn small" id="back">${esc(tr(UI.levels))}</button><h2>${esc(T("第 " + L.id + " 关", "Level " + L.id))} · ${esc(tr(L.name))}</h2>${L.id > 1 ? `<button class="btn small" id="cards">${esc(tr(UI.cards))}</button>` : ""}</div>${dotsHTML()}`;
+  h += `<div class="say">${tr(t.t)}</div>`;
+  if (t.pics) h += `<div class="pics">${t.pics.map(picHTML).join("")}</div>`;
+  if (t.k === "ask") h += `<div class="opts">${t.opts.map((o, i) => `<button class="opt ${P.wrong[i] ? "no" : ""} ${done && i === t.ans ? "yes" : ""}" data-opt="${i}" ${done ? "disabled" : ""}>${esc(tr(o))}</button>`).join("")}</div>`;
+  if (t.k === "guided") {
+    h += `<div class="seq">${P.seq.map((tok, i) => `<button class="sq ${i < P.gi ? "past" : i === P.gi && !done ? "now" : ""}" data-sq="${i}" ${i !== P.gi || done ? "disabled" : ""}><span class="l">${esc(tok)}</span><span class="w">${esc(tokWords(tok))}</span></button>`).join("")}</div>`;
+    if (!done) h += `<div class="ctrl"><button class="btn small" id="restart">${esc(tr(UI.restart))}</button></div>`;
+  }
+  const btns = buttonsFor();
+  if (btns.length && !done) {
+    h += `<div class="moves">${btns.map(mvButton).join("")}</div>`;
+    h += `<div class="ctrl"><button class="btn small" id="undo" ${P.hist.length ? "" : "disabled"}>${esc(tr(UI.undo))}</button><button class="btn small" id="restart">${esc(tr(UI.restart))}</button><button class="btn small" id="hint">${esc(tr(UI.hint))}</button></div>`;
+  }
+  const used = {}; for (const a of P.hist) if (FORMULA[a] && a !== "flip") used[a] = (used[a] || 0) + 1;
+  if (t.k === "puz" && Object.keys(used).length) h += `<div class="draghint">${esc(tr(UI.doneSoFar))}${Object.keys(used).map(a => esc(tr(FORMULA_NAME[a])) + " × " + used[a]).join(T("，", ", "))}</div>`;
+  const fb = fbText();
+  if (fb) h += `<div class="fb ${P.fbKind || "hint"}">${fb}</div>`;
+  if (t.k === "info" || done) h += `<div class="ctrl"><button class="btn main" id="next">${esc(tr(P.ti + 1 >= L.tasks.length ? UI.finish : UI.next))}</button></div>`;
+  $("#panel").innerHTML = h;
+  if (P.pulse) { const b = $("#panel").querySelector(`[data-act="${CSS.escape(P.pulse)}"]`); if (b) b.classList.add("pulse"); }
+  setButtons(!V.busy);
+}
+function setButtons(on) { document.querySelectorAll("#panel .mv, #panel #undo, #panel #restart, #panel #hint").forEach(b => { if (b.id === "undo") b.disabled = !on || !P.hist.length; else b.disabled = !on; }); document.querySelectorAll("#panel .sq.now").forEach(b => { b.disabled = !on; }); }
+function say(msg, kind) { P.fb = msg; P.fbKind = kind; }
+function succeed(msg) {
+  P.state = "done"; P.pulse = null; V.hl = null; draw();
+  say(msg || "做到了！|You did it!", "good"); renderPanel();
+}
+$("#panel").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b || b.disabled) return;
+  if (b.id === "back") { V.run++; show("home"); return; }
+  if (b.id === "cards") { openCards(); return; }
+  if (b.id === "next") { nextTask(); return; }
+  if (V.busy) return;
+  if (b.id === "undo") { const a = P.hist.pop(); if (a) { applyAlg(V.cube, invertSeq(expand(a))); P.pulse = null; P.hint = 0; say(""); draw(); renderPanel(); } return; }
+  if (b.id === "restart") { V.cube = cloneCube(P.start); P.hist = []; P.gi = 0; P.pulse = null; P.hint = 0; V.hl = null; say(""); draw(); renderPanel(); return; }
+  if (b.id === "hint") { giveHint(); return; }
+  if (b.dataset.act) { doAct(b.dataset.act); return; }
+  if (b.dataset.sq != null) { const i = +b.dataset.sq; if (i !== P.gi) return; P.gi++; renderPanel(); playToks([P.seq[i]], () => { if (P.gi >= P.seq.length) { succeed(goalNow() ? "做到了！公式做完，这一块就回家了。|You did it! The move is done and the piece is home." : "公式做完了。|The move is done."); } else renderPanel(); }); return; }
+  if (b.dataset.opt != null) { answer(+b.dataset.opt); return; }
+});
+function doAct(a) {
+  P.hist.push(a); P.pulse = null; V.hl = null; P.hint = 0; say(""); renderPanel();
+  playToks(expand(a), afterAct);
+}
+function afterAct() {
+  const t = P.task;
+  if (goalNow()) {
+    const k = stage2(V.cube);
+    const msg = t.k === "undo" ? "对！魔方回到原样了。|Yes! The cube is back to how it was."
+      : t.full ? "🎉 整个魔方拼好了！你自己做完了三步。|🎉 The whole cube is solved! You did all three steps yourself."
+      : P.L.goal === 1 && P.L.id === 3 ? "白色一层做好了！侧面的颜色也都对上了。|The white layer is done, and the side colors all match!"
+      : P.L.id > 1 ? () => T("做到了！现在做好了 " + k + " 步。", "You did it! " + k + (k === 1 ? " step is" : " steps are") + " done now.") : "做到了！|You did it!";
+    succeed(msg); return;
+  }
+  if (P.task.k === "puz" && P.L.goal >= 2 && stage2(V.cube) < Math.min(P.L.goal - 1, stage2(P.start))) say(UI.broken, "bad");
+  renderPanel();
+}
+function answer(i) {
+  const t = P.task;
+  if (i === t.ans) { P.state = "done"; say(() => "✓ " + esc(tr(t.why)), "good"); }
+  else { P.wrong[i] = 1; say(UI.thinkAgain, "bad"); }
+  renderPanel();
+}
+const KIND = ["", "", "", "角块|corner"], A_KIND = ["", "", "", "a corner"];
+const COLOR_ORDER = "WYGRBO";      /* white first, as the task words say it ("white-green edge") */
+const colsOf = cb => cb.st.map(s => s.c).sort((a, b) => COLOR_ORDER.indexOf(a) - COLOR_ORDER.indexOf(b)).map(c => tr(COLOR_NAME[c])).join(T("·", "-"));
+function tapAt(el) {
+  const t = P.task; if (!t || P.state === "done" || (t.k !== "tap" && t.k !== "find")) return;
+  const cel = el && el.closest ? el.closest(".cubie") : null; if (!cel) return;
+  const cb = pieceById(V.cube, +cel.dataset.cid); if (!cb) return;
+  const n = cb.st.length;
+  V.hl = cb.id; draw();
+  if (t.k === "tap") {
+    if (n === t.want) succeed(() => T("对！这是" + tr(KIND[n]) + "，它有 " + n + " 种颜色：" + esc(colsOf(cb)) + "。", "Yes! This is " + A_KIND[n] + ". It has " + n + (n === 1 ? " color: " : " colors: ") + esc(colsOf(cb)) + "."));
+    else { say(() => T("这是" + tr(KIND[n]) + "，它有 " + n + " 种颜色。再找一找。", "This is " + A_KIND[n] + " with " + n + (n === 1 ? " color" : " colors") + ". Keep looking."), "bad"); renderPanel(); }
+  } else {
+    const want = t.colors.split("").sort().join(""), got = cb.st.map(s => s.c).sort().join("");
+    if (want === got) succeed(() => T("找到了！这就是 " + esc(colsOf(cb)) + " " + tr(KIND[n]) + "。", "Found it! This is the " + esc(colsOf(cb)) + " " + tr(KIND[n]) + "."));
+    else { say(() => T("这是 " + esc(colsOf(cb)) + " " + tr(KIND[n]) + "。再找一找。", "This is the " + esc(colsOf(cb)) + " " + tr(KIND[n]) + ". Keep looking."), "bad"); renderPanel(); }
+  }
+}
+
+/* ---------- hints: first what to look at, then which button ---------- */
+const HINT = {
+  "corner-hold": "看发光的角块。它的家在哪里？先转整个魔方，让家到右前方。|Look at the glowing corner. Where is its home? Turn the whole cube first so the home is at the front right.",
+  "corner-above": "家已经在右前方了。转顶层，把发光的角块放到家的正上方。|The home is at the front right. Turn the top layer to put the glowing corner right above it.",
+  "corner-in": "角块在家的正上方了。重复万能公式，直到它回家。|The corner is right above its home. Repeat the magic move until it is in.",
+  "corner-again": "角块到家了，可是方向不对。继续做万能公式。|The corner is home but turned the wrong way. Keep doing the magic move.",
+  "corner-pop-hold": "顶层没有白色角块了，可是底层有一个放错了（发光的那块）。转整个魔方，让它到右前下。|No white corner is on top, but one on the bottom is wrong (the glowing one). Turn the whole cube so it is at the bottom front right.",
+  "corner-pop": "放错的角块在右前下。做一遍万能公式，它就到顶层了。|The wrong corner is at the bottom front right. Do the magic move once to bring it up to the top.",
+  "yc-L-turn": "这是拐角。转顶层，把拐角放到左后：一块在后面，一块在左边。|It's an L. Turn the top layer to put it at the back left: one edge at the back, one on the left.",
+  "yc-L": "拐角在左后了。做黄十字公式。|The L is at the back left. Do the yellow cross move.",
+  "sune-turn-one": "数一数：1 个角块黄色朝上。转顶层，把它放到左前。|Count: 1 corner has yellow up. Turn the top layer to put it at the front left.",
+  "sune-one": "黄色朝上的角块在左前了。做小鱼公式。|The yellow-up corner is at the front left. Do the Sune.",
+  "sune-turn-none": "数一数：没有角块黄色朝上。转顶层，让左前角块的黄色朝左。|Count: no corner has yellow up. Turn the top layer until the front-left corner's yellow faces left.",
+  "sune-none": "左前角块的黄色朝左了。做小鱼公式。|The front-left corner's yellow faces left. Do the Sune.",
+  "sune-turn-two": "数一数：2 个角块黄色朝上。转顶层，让左前角块的黄色朝着你。|Count: 2 corners have yellow up. Turn the top layer until the front-left corner's yellow faces you.",
+  "sune-two": "左前角块的黄色朝着你了。做小鱼公式。|The front-left corner's yellow faces you. Do the Sune.",
+  "ap-line-up": "四面都有车灯：顺序已经对了。只要转顶层，让上下两层对上。|Every side has headlights, so the order is right. Just turn the top layer until it lines up with the bottom.",
+  "corner-first": "还没有放好的白色角块，所以第一个放在哪里都可以。转顶层，把发光的角块放到右前方的上面，再重复万能公式，直到白色朝下。|No white corner is in place yet, so the first one can go anywhere. Turn the top layer to put the glowing corner above the front right, then repeat the magic move until white faces down.",
+  "ap-none": "找不到车灯。先做一遍换角公式。|No headlights. Do the corner swap once first.",
+  "ap-turn": "车灯在别的面。转顶层，把车灯放到后面。|The headlights are on another side. Turn the top layer to put them at the back.",
+  "ap-back": "车灯在后面了。做换角公式。|The headlights are at the back. Do the corner swap.",
+};
+function solveFacesWithin(cube, n) {      /* the undo tasks: a turn that brings the cube back within n turns */
+  let layer = [[]];
+  for (let d = 1; d <= n; d++) {
+    const next = [];
+    for (const seq of layer) for (const t of FACE12) { const s = seq.concat([t]), c = cloneCube(cube); applyAlg(c, s); if (isSolved(c)) return s; next.push(s); }
+    layer = next;
+  }
+  return null;
+}
+function giveHint() {
+  const t = P.task;
+  if (t.k === "undo") {
+    const s = solveFacesWithin(V.cube, 3);
+    if (!s) { say("走远了。按 ⟲ 重来，再试一次。|That went too far. Press ⟲ Start over and try again.", "hint"); renderPanel(); return; }
+    P.reveals++;
+    if (P.hint === 0) { P.hint = 1; say("看一看：哪一层的颜色和旁边的不一样？那一层被转过。|Look: which layer's colors don't match the rest? That layer was turned.", "hint"); }
+    else { P.pulse = s[0]; say(() => T("按 <b>", "Press <b>") + esc(s[0]) + T("</b>（", "</b> (") + esc(tokLong(s[0])) + T("）。", ")."), "hint"); }
+    renderPanel(); return;
+  }
+  const s = nextStep2(V.cube);
+  if (s.done) return;
+  if (!s.act) { say("先按 ⟲ 重来。|Press ⟲ Start over first.", "hint"); renderPanel(); return; }
+  const avail = buttonsFor();
+  if (s.step < P.L.step && P.L.id !== 6) { say("前面做好的被弄乱了。按 ↶ 撤销，或者按 ⟲ 重来。|An earlier step got broken. Press ↶ Undo or ⟲ Start over.", "bad"); renderPanel(); return; }
+  let btn = s.act; if (/2$/.test(btn) && !FORMULA[btn]) btn = btn.slice(0, -1);
+  if (avail.indexOf(btn) < 0) {      /* the method needs a button this level does not have (e.g. edge to the left in level 4) */
+    V.hl = s.piece != null ? s.piece : null; draw();
+    say(btn === "eL" ? "这一块要往左放，下一关才学。按 ↶ 撤销，或者按 ⟲ 重来，换一块往右放的。|This edge needs to go left, which comes in the next level. Press ↶ Undo or ⟲ Start over, and pick an edge that goes right."
+      : "这一步这一关做不了。按 ⟲ 重来。|This level can't do that step. Press ⟲ Start over.", "hint");
+    renderPanel(); return;
+  }
+  if (s.code !== "flip") P.reveals++;      /* every press counts for the stars, except the reminder to flip */
+  V.hl = s.piece != null ? s.piece : null;
+  if (P.hint === 0 && s.code !== "flip") {
+    P.hint = 1;
+    say(() => T("第 " + s.step + " 步。", "Step " + s.step + ". ") + tr(HINT[s.code]) + "<br><small>" + T("再按一次 💡，告诉你按哪个。", "Press 💡 again to see which button.") + "</small>", "hint");
+  } else {
+    P.pulse = btn;
+    say(() => (s.code === "flip" ? tr(HINT.flip) + "<br>" : "") + sayAct(s), "hint");
+  }
+  draw(); renderPanel();
+}
+
+/* ---------- level done, step cards ---------- */
+let modalKind = "", cardsAt = 1, winInfo = null;
+function nextTask() {
+  if (P.ti + 1 < P.L.tasks.length) { P.ti++; startTask(); return; }
+  const s = lvSave(P.L.id), stars = P.reveals <= 1 ? 3 : P.reveals <= 6 ? 2 : 1;
+  s.done = true; s.at = 0; s.stars = Math.max(+s.stars || 0, stars); save();
+  $("#starTotal").textContent = "⭐ " + totalStars();
+  burst();
+  winInfo = { L: P.L, stars }; showWin();
+}
+function showWin() {
+  const L = winInfo.L, stars = winInfo.stars, nextL = LEVELS.find(x => x.id === L.id + 1);
+  const learned = L.step >= 1 ? T("你学会了第 " + L.step + " 步：" + tr(STEPS[L.step - 1].name) + "。拿真魔方试一试！", "You learned step " + L.step + ": " + tr(STEPS[L.step - 1].name) + ". Try it on a real cube!")
+    : L.id === 6 ? T("三步你都会了。现在可以拿真魔方，从头到尾自己拼。", "You know all three steps. Now take a real cube and solve it from start to finish.")
+    : T("你认识了二阶魔方的 8 个角块。", "You know the 2x2 and its 8 corners now.");
+  openModal(`<div class="win"><div class="big">🎉</div><h2>${esc(T("第 " + L.id + " 关过关！", "Level " + L.id + " done!"))}</h2><div style="font-size:32px">${"⭐".repeat(stars)}${"☆".repeat(3 - stars)}</div>
+    <p>${esc(learned)}</p><p class="draghint">${esc(tr(UI.stars))}</p>
+    <div class="ctrl" style="justify-content:center">${nextL ? `<button class="btn main" data-goto="${nextL.id}">${esc(T("下一关：", "Next level: ") + tr(nextL.name))} ▶</button>` : ""}<button class="btn" data-home>${esc(tr(UI.backLevels))}</button></div></div>`, "win");
+}
+function burst() { if (reduceMotion) return; const em = ["⭐", "🎉", "✨", "🟨", "🟩", "🟥", "🟦"]; for (let i = 0; i < 26; i++) { const s = document.createElement("span"); s.className = "burst"; s.textContent = em[i % em.length]; s.style.left = 50 + (Math.random() - .5) * 20 + "vw"; s.style.top = "40vh"; s.style.setProperty("--dx", (Math.random() - .5) * 90 + "vw"); s.style.setProperty("--dy", (Math.random() - .7) * 70 + "vh"); document.body.appendChild(s); setTimeout(() => s.remove(), 1500); } }
+function openModal(html, kind) { modalKind = kind || ""; $("#sheet").innerHTML = html; $("#modal").hidden = false; }
+function closeModal() { $("#modal").hidden = true; modalKind = ""; }
+$("#modal").addEventListener("click", e => {
+  if (e.target.id === "modal" || e.target.closest("[data-close]")) { closeModal(); return; }
+  const g = e.target.closest("[data-goto]"); if (g) { closeModal(); openLevel(+g.dataset.goto); return; }
+  if (e.target.closest("[data-home]")) { closeModal(); show("home"); return; }
+  const t = e.target.closest("[data-step]"); if (t) { openCards(+t.dataset.step); }
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#modal").hidden) closeModal(); });
+function openCards(n) {
+  n = n || Math.max(1, P.L.step || 1); cardsAt = n;
+  openModal(`<button class="btn small x" data-close aria-label="${esc(tr(UI.close))}">✕</button>
+    <div class="ctrl" style="margin-bottom:10px">${STEPS.map(s => `<button class="btn small ${s.n === n ? "main" : ""}" data-step="${s.n}">${s.n}</button>`).join("")}</div>
+    ${stepCardHTML(STEPS[n - 1])}`, "cards");
+}
+
+applyStatic();
+renderPrint();      /* filled in from the start, so printing from any screen prints the step sheet */
+show("home");
+</script>
+<script>(function backPill() {
+  try { if (window.parent !== window) return; } catch (e) { return; }
+  var h = '', m = /[?&]home=([^&]*)/.exec(location.search || '');
+  if (m) { try { h = decodeURIComponent(m[1]); } catch (e) { h = ''; } }
+  if (h && (!/^[A-Za-z0-9._%~/-]+$/.test(h) || h.indexOf('//') >= 0)) h = '';
+  var a = document.createElement('div');
+  a.setAttribute('style', 'position:fixed;z-index:2147483647;box-sizing:border-box;display:inline-flex;align-items:center;gap:8px');
+  if (h) {
+    var back = document.createElement('a'); back.href = h; back.textContent = '🏠 Home';
+    back.setAttribute('style', 'box-sizing:border-box;display:inline-flex;align-items:center;min-height:56px;padding:0 22px;border:3px solid #fff;background:#1f5f99;color:#fff;font:800 20px system-ui,sans-serif;border-radius:999px;white-space:nowrap;text-decoration:none;box-shadow:0 2px 10px rgba(0,0,0,.45)');
+    a.appendChild(back);
+  }
+  var upd = document.createElement('button'); upd.type = 'button';
+  upd.setAttribute('style', 'box-sizing:border-box;min-height:56px;padding:0 22px;border:3px solid #fff;background:#E8590C;color:#fff;font:800 20px system-ui,sans-serif;border-radius:999px;cursor:pointer;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,.45)');
+  a.appendChild(upd);
+  /* A page with a top bar keeps a spot for the buttons in it (<span data-pill-slot>): there they sit in the bar's own row, a little smaller,
+     and can never cover the title. Every other page gets the floating pill below. */
+  var slot = document.querySelector('[data-pill-slot]');
+  if (slot) {
+    a.setAttribute('style', 'box-sizing:border-box;display:inline-flex;align-items:center;flex-wrap:wrap;gap:6px');
+    [back, upd].forEach(function (el) { if (el) { el.style.minHeight = '44px'; el.style.padding = '0 14px'; el.style.fontSize = '17px'; el.style.borderWidth = '2px'; el.style.boxShadow = 'none'; } });
+  }
+  (slot || document.body).appendChild(a);
+  /* Update: get the newest copy of the site from the internet. With no internet nothing is touched, so offline games keep working.
+     Progress lives in localStorage and is never touched. Only this site's offline games are asked for their newest version (nothing is deleted); other apps on this web address are never touched. */
+  var LABEL = '🔄 Update', busy = false, KEY = 'tmg.justUpdated', small = false;
+  upd.textContent = LABEL;
+  function label() { return small && !busy ? '🔄' : LABEL; }
+  var showing = false;   // a short message (Updated ✓, No internet) is on the button
+  function say(t) { showing = true; upd.textContent = t; upd.setAttribute('aria-label', t); setTimeout(function () { showing = false; upd.textContent = label(); upd.setAttribute('aria-label', 'Update'); if (!slot) later(); }, 2500); }
+  /* No offline copy is ever deleted any more. Every offline worker of this site is asked for its newest version; a new version only
+     takes over once it has completely downloaded the game, so with bad Wi-Fi the old copy simply stays and the game keeps opening with
+     no internet. (Before 2026-11-07 Update deleted every offline copy, and those games then needed the internet until each was opened
+     online again.) For the offline game this page belongs to, wait until its new version is in charge (at most 20 s) before reloading,
+     so the child sees the newest version at once. Other workers carry on downloading after the reload. */
+  function wait(ms) { return new Promise(function (ok) { setTimeout(ok, ms); }); }
+  function inCharge(r) {   // 'ok', or 'failed' when the new version could not install (bad Wi-Fi): the old copy stays in charge
+    return new Promise(function (ok) {
+      var w = r.installing || r.waiting; if (!w) { ok('ok'); return; }
+      w.addEventListener('statechange', function () { if (w.state === 'activated') ok('ok'); else if (w.state === 'redundant') ok('failed'); });
+    });
+  }
+  function cap(p, ms) { return Promise.race([p, wait(ms).then(function () { throw new Error('too slow'); })]); }
+  function clearOffline(base) {
+    if (!navigator.serviceWorker || !navigator.serviceWorker.getRegistrations) return Promise.resolve();
+    var site = location.origin + base;
+    return navigator.serviceWorker.getRegistrations().then(function (rs) {
+      return Promise.all(rs.filter(function (r) { return r.scope.indexOf(site) === 0; }).map(function (r) {
+        var mine = r.scope !== site && location.href.indexOf(r.scope) === 0;   // this page's own offline game (not the site-wide Chinese worker)
+        var job = r.update().then(function () { return mine ? inCharge(r) : 'ok'; }, function () { return mine ? 'failed' : 'ok'; });
+        return Promise.race([job, wait(mine ? 20000 : 4000).then(function () { return mine ? 'failed' : 'ok'; })]);
+      }));
+    }).then(function (res) { return res.indexOf('failed') < 0; });   // false: this game's newest version did not arrive in time
+  }
+  upd.addEventListener('click', function () {
+    if (busy) return; busy = true; upd.textContent = 'Updating…'; upd.setAttribute('aria-label', 'Updating…'); if (!slot) later();
+    var ROOT = '/ten-minute-games/', p = location.pathname, i = p.indexOf(ROOT), base = i >= 0 ? p.slice(0, i + ROOT.length) : '/';
+    function fresh(u) { return cap(fetch(u, { cache: 'reload' }), 8000).catch(function () {}); }
+    var done = true;   // every step has a time limit, so "Updating…" never hangs on a Wi-Fi with no real internet
+    cap(fetch(base + 'version.json?t=' + Date.now(), { cache: 'no-store' }), 8000).then(function (r) { if (!r.ok) throw new Error('no copy'); })
+      .then(function () { return clearOffline(base).then(function (ok) { done = ok; }); })
+      .then(function () { return Promise.all([fresh(location.href), fresh(base + 'index.html')]); })
+      .then(function () {
+              try { sessionStorage.setItem(KEY, done ? '1' : 'retry'); sessionStorage.setItem(SPOT, JSON.stringify({ p: location.pathname + location.search, y: Math.round(window.scrollY || 0) })); } catch (e) {}
+              location.reload(); },
+            function () { busy = false; say('No internet'); });
+  });
+  /* After Update, come back to the same spot on the same page. Without this an iPad jumped to the "#section" left in the address by the
+     last category tile tapped. The spot is put back once at once and again while the page
+     finishes building (fonts, the sign-in panel), unless the child has started scrolling by then. */
+  var SPOT = 'tmg.updSpot';
+  try {
+    var sp = JSON.parse(sessionStorage.getItem(SPOT) || 'null'); sessionStorage.removeItem(SPOT);
+    if (sp && sp.p === location.pathname + location.search && sp.y >= 0) {
+      try { history.scrollRestoration = 'manual'; } catch (e) {}
+      // only the home and book pages: there a "#section" is just a place to scroll to (a game may use its "#..." to pick a tab)
+      if (location.hash && document.querySelector('meta[name="tmg-home"]')) try { history.replaceState(history.state, '', location.pathname + location.search); } catch (e) {}
+      var moved = false, auto = function () { try { history.scrollRestoration = 'auto'; } catch (e) {} }, stop = function () { moved = true; auto(); };   // Back from a game keeps its usual spot
+      ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(function (t) { window.addEventListener(t, stop, { passive: true, once: true }); });
+      var back2 = function () {
+        if (moved) return;
+        var root = document.documentElement, was = root.style.scrollBehavior; root.style.scrollBehavior = 'auto';   // no smooth glide
+        window.scrollTo(0, sp.y); root.style.scrollBehavior = was;
+      };
+      back2(); window.addEventListener('load', back2); [150, 600, 1500].forEach(function (ms) { setTimeout(back2, ms); }); setTimeout(auto, 1600);
+    }
+  } catch (e) {}
+  try { var was = sessionStorage.getItem(KEY); if (was) { sessionStorage.removeItem(KEY); say(was === 'retry' ? 'Try again later' : 'Updated ✓'); } } catch (e) {}
+  if (slot) return;   // in a top bar: nothing to move around
+  /* The lessons keep their own buttons along the screen edges (Previous / Next in a footer, controls in a header), so a pill nailed to
+     one corner always sat on top of something. Keep the pill 44px tall (easy to tap) and, whenever the page layout changes, put it in
+     whichever of six edge spots does not cover a button, link or field (spots tried in this order: bottom-centre, bottom-left,
+     bottom-right, top-centre, top-left, top-right). Buttons that are always on screen (fixed or sticky) count much more than ones
+     that scroll away. It does not move during scrolling; once scrolling stops it moves only if its spot now covers something. */
+  var SPOTS = ['bc', 'bl', 'br', 'tc', 'tl', 'tr'], cur = '', timer = 0, room = false;
+  /* On a phone the two wide pills (about 300px) covered something in every spot, for example "Begin" on a lesson's first screen.
+     Below 560px wide they become two round 48px buttons (🏠 and 🔄, still easy to tap; the words stay for screen readers),
+     and the page gets room at the bottom so it can always scroll clear of them. */
+  if (back) { back.setAttribute('aria-label', 'Home'); back.title = 'Home'; }
+  if (!showing) upd.setAttribute('aria-label', 'Update'); upd.title = 'Update';
+  function sizeUp() {
+    var want = document.documentElement.clientWidth < 560;
+    if (want !== small) {
+      small = want;
+      [back, upd].forEach(function (el) { if (!el) return;
+        el.style.minHeight = small ? '48px' : '56px'; el.style.minWidth = small ? '48px' : '';
+        el.style.padding = small ? '0 10px' : '0 22px'; el.style.justifyContent = 'center'; });
+      if (back) back.textContent = small ? '🏠' : '🏠 Home';
+      if (!busy && !showing) upd.textContent = label();
+    }
+    if (small && !room) { room = true; document.body.style.paddingBottom = 'calc(' + (getComputedStyle(document.body).paddingBottom || '0px') + ' + 72px)'; }
+  }
+  var SEL = 'button,a[href],input,select,textarea,summary,label,[role=button],[role=tab],[tabindex]:not([tabindex="-1"])';
+  function put(s) {
+    var st = a.style, v = s.charAt(0) === 'b' ? 'bottom' : 'top', side = s.charAt(1);
+    st.top = st.bottom = st.left = st.right = 'auto'; st.transform = 'none';
+    st[v] = '10px'; st[v] = 'calc(10px + env(safe-area-inset-' + v + ', 0px))';
+    if (side === 'c') { st.left = '50%'; st.transform = 'translateX(-50%)'; }
+    else { var d = side === 'l' ? 'left' : 'right'; st[d] = '10px'; st[d] = 'calc(10px + env(safe-area-inset-' + d + ', 0px))'; }
+  }
+  function fixedish(e) {
+    for (var n = e; n && n.nodeType === 1; n = n.parentElement) { var p = getComputedStyle(n).position; if (p === 'fixed' || p === 'sticky') return true; }
+    return false;
+  }
+  function place() {
+    try {
+      sizeUp();
+      var W = document.documentElement.clientWidth, H = window.innerHeight, items = [], all, i, j;
+      a.style.pointerEvents = 'none'; all = document.querySelectorAll(SEL);   /* (while measuring, the pill itself must not count as covering anything) */
+      for (i = 0; i < all.length; i++) {
+        var e = all[i]; if (e === a || a.contains(e) || e.querySelector(SEL)) continue;
+        var cs = getComputedStyle(e); if (cs.display === 'none' || cs.visibility === 'hidden' || cs.pointerEvents === 'none') continue;
+        var r = e.getBoundingClientRect(); if (r.width < 2 || r.height < 2 || r.bottom <= 0 || r.top >= H || r.right <= 0 || r.left >= W) continue;
+        var t = document.elementFromPoint(Math.min(Math.max(r.left + r.width / 2, 0), W - 1), Math.min(Math.max(r.top + r.height / 2, 0), H - 1));
+        if (t && !e.contains(t)) continue;   /* hidden behind something else right now (for example scrolled under the footer): not a button the pill can cover */
+        items.push({ r: r, hard: fixedish(e) });
+      }
+      var res = {};
+      SPOTS.forEach(function (s) {
+        put(s); var b = a.getBoundingClientRect(), hard = 0, soft = 0;
+        items.forEach(function (it) { var q = it.r; if (q.left < b.right - 1 && q.right > b.left + 1 && q.top < b.bottom - 1 && q.bottom > b.top + 1) { if (it.hard) hard++; else soft++; } });
+        res[s] = { hard: hard, soft: soft };
+      });
+      var best = '', c = res[cur];
+      for (j = 0; j < SPOTS.length; j++) { var x = res[SPOTS[j]]; if (!best || x.hard < res[best].hard || (x.hard === res[best].hard && x.soft < res[best].soft)) best = SPOTS[j]; }
+      if (!(c && c.hard === 0 && (c.soft === 0 || res[best].hard > 0 || res[best].soft > 0))) cur = best;
+      put(cur); a.style.pointerEvents = '';
+    } catch (e) { put(cur || 'bl'); a.style.pointerEvents = ''; }
+  }
+  function later() { clearTimeout(timer); timer = setTimeout(function () { place(); timer = setTimeout(place, 500); }, 120); }
+  put('bc'); cur = 'bc'; place();
+  window.addEventListener('resize', later); window.addEventListener('orientationchange', later); window.addEventListener('load', later);
+  /* once scrolling has stopped, move only if the buttons now sit on top of something (place() keeps a free spot) */
+  var scrollTimer = 0; window.addEventListener('scroll', function () { clearTimeout(scrollTimer); scrollTimer = setTimeout(place, 400); }, { passive: true });
+  try { new MutationObserver(function (ms) { for (var i = 0; i < ms.length; i++) if (!a.contains(ms[i].target)) { later(); return; } }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden', 'disabled', 'aria-hidden', 'open'] }); } catch (e) { /* no observer: the spot is only worked out at load and on resize */ }
+})()</script><script>(function noZoom() {
+  var st = document.createElement('style');
+  // text-size-adjust: Safari enlarges text after a turn to landscape; manipulation: no double-tap zoom (rules that set their own touch-action, such as drag areas, still win)
+  st.textContent = 'html{-webkit-text-size-adjust:100%;text-size-adjust:100%}*{touch-action:manipulation}';
+  (document.head || document.documentElement).appendChild(st);
+  var stop = function (e) { e.preventDefault(); };
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (t) { document.addEventListener(t, stop, { passive: false }); });   // Safari's pinch
+  document.addEventListener('touchmove', function (e) { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });   // two fingers: no pinch
+})()</script></body>
+</html>
