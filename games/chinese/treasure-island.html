@@ -617,9 +617,16 @@ button{font:inherit;cursor:pointer}
 .result .miss{color:var(--red);margin-top:6px}
 .result .han{letter-spacing:3px}
 .ask-over{position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px}
-.ask-box{background:#fff;border-radius:22px;padding:22px;max-width:460px;text-align:center;font-size:19px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.ask-box{position:relative;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow-y:auto;background:#fff;border-radius:22px;padding:22px;max-width:460px;text-align:center;font-size:19px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
 .btn.redo{background:#e8a317;box-shadow:0 5px 0 #b37a0c}
 .ask-box h3{font-size:24px;margin-bottom:8px}
+/* the owner, 2026-11-18: a cross in every continue box; small red "clear" buttons */
+.ask-x{position:absolute;top:6px;right:6px;width:50px;height:50px;border-radius:50%;border:0;background:#f1f1f1;color:#555;font:700 28px/1 var(--display);cursor:pointer}
+.ask-x:active{background:#e0e0e0}
+.ask-box h3{padding:0 40px}
+.ask-box .clrrow{margin-top:14px;padding-top:12px;border-top:2px dashed #e5e5e5}
+.btn.clr{font-size:16px;color:#b3261e;border-color:#e8b4b0}
+.clrall{margin:26px 0 8px;justify-content:center}
 /* bingo on a sideways screen: everything but the card in a column on the left, the card on the right */
 @media (min-width:700px) and (min-height:600px) and (min-aspect-ratio:5/4){
 .wrap.bwide{max-width:1120px}
@@ -1318,6 +1325,11 @@ function menu() {
     ls.appendChild(wb);
   }
   app.appendChild(ls);
+  if (hasProgress()) {   // clear the whole lesson (the owner, 2026-11-18), small and at the very bottom
+    var ca = E('div', 'row clrall'), cb = E('button', 'btn ghost clr', '🗑 Clear the whole lesson 清空整课'); cb.type = 'button';
+    cb.onclick = function () { afterVoice(function () { askBox('Clear the whole lesson? 清空整课？', 'This erases all the scores, ticks, the story and Write it of this lesson for the player now playing, as if the lesson had not been played. It cannot be undone. If you are signed in, the copy online is cleared too.', [['🗑 Yes, clear it all 清空', function () { wipe('all'); }], ['Cancel 取消', null, true]], true); }, cb); };
+    ca.appendChild(cb); app.appendChild(ca);
+  }
   // no source line under the levels (the owner, 2026-11-07: the lessons do not name their sources). The old drawings are public domain
   // (Wikimedia Commons, Ancient Chinese characters project; many redrawn from Richard Sears's Chinese Etymology).
 }
@@ -1355,12 +1367,13 @@ function storyPart() {   // how many lines were heard, when the talk was left ha
 /* like a level (the owner, 2026-11-07): coming back asks Continue, Start over or Skip, the same buttons as everywhere. Continue goes on
    from the line where the child stopped; a talk heard to the end before shows all its lines (tap one to hear it again) with the
    buttons for what comes next. A new talk just starts. */
+function clearStory() { return clearBtn('🗑 Clear the story 清空', 'story', 'Clear the story? 清空这一部分？', 'This forgets how far the story was heard.'); }
 function openStory() {
   var n = storyPart(), all = STORY.lines.length;
   if (n) return askBox('Start here: continue?', 'You heard ' + n + ' of the ' + all + ' lines. Continue from there, start again from the first line, or skip to level 1?',
-    [['▶ Continue 继续', function () { story(n); }], ['↺ Start over 重新开始', function () { story(0); }, true], skipBtn(LEVELS[0])]);
+    [['▶ Continue 继续', function () { story(n); }], ['↺ Start over 重新开始', function () { story(0); }, true], skipBtn(LEVELS[0]), clearStory()]);
   if (save.story) return askBox('Start here: continue?', 'You heard all ' + all + ' lines last time. Continue to see them all, start over from the first line, or skip to level 1?',
-    [['▶ Continue 继续', function () { story(all); }], ['↺ Start over 重新开始', function () { story(0); }, true], skipBtn(LEVELS[0])]);
+    [['▶ Continue 继续', function () { story(all); }], ['↺ Start over 重新开始', function () { story(0); }, true], skipBtn(LEVELS[0]), clearStory()]);
   story(0);
 }
 var storyRun = 0;   // each opening of the talk counts up, so a late "line heard" from an earlier one is ignored
@@ -1496,7 +1509,8 @@ function openWrite() {
         : 'You have written ' + wn + ' of ' + CHARS.length + ' characters. Continue with the ones not written yet, start over from the first (the green ticks and the score go), or go back to all levels?')
       + (save.score.write ? ' Your score now: <b>' + levelScore(save.score.write) + UNIT + ' of ' + save.score.write.of + UNIT + '</b>.' : ''),
     [[all ? '▶ Write again 再写一遍' : '▶ Continue 继续', function () { writeIt(all ? 0 : firstNew); }],
-     ['↺ Start over 重新开始', function () { save.write = {}; save.wslip = {}; writeScore(); store(); showTotal(); writeIt(0); }, true], skipBtn(null)]);
+     ['↺ Start over 重新开始', function () { save.write = {}; save.wslip = {}; writeScore(); store(); showTotal(); writeIt(0); }, true], skipBtn(null),
+     clearBtn('🗑 Clear Write it 清空', 'write', 'Clear Write it? 清空写一写？', 'This erases the green ticks and the score of Write it.')]);
 }
 function writeIt(at) {
   app.classList.remove('big', 'bwide', 'storyw');
@@ -1642,16 +1656,44 @@ function skipBtn(after) {
   return after ? ['⏭ Skip to level ' + after.n + ' 跳过', function () { open(after); }, true] : ['⏭ All levels 全部', menu, true];
 }
 /* a small question box over the page: title, words, and buttons [label, what it does, ghost?] */
-function askBox(title, html, buttons) {
-  var o = E('div', 'ask-over'), box = E('div', 'ask-box'), r = E('div', 'row'); box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', title);
+function askBox(title, html, buttons, stay) {   // a button [label, what it does, 'clear'] goes in a small row of its own below the others
+  var o = E('div', 'ask-over'), box = E('div', 'ask-box'), r = E('div', 'row'), rc = null; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', title);
+  var x = E('button', 'ask-x', '✕'); x.type = 'button'; x.setAttribute('aria-label', 'Close');   // the owner, 2026-11-18: a cross closes the box and leaves the child on the level list, free to pick anything
+  x.onclick = function () { if (Date.now() - navAt < 350) return; navAt = Date.now(); o.remove(); if (!stay && !app.querySelector('.levels')) menu(); };   // stay: a question about clearing just closes (the page under it stays)
+  box.appendChild(x);
   box.appendChild(E('h3', null, title)); box.appendChild(E('p', null, html));
   buttons.forEach(function (b, n) {
-    var el = E('button', 'btn' + (b[2] ? ' ghost' : ''), b[0]); el.type = 'button';
+    var clr = b[2] === 'clear', el = E('button', 'btn' + (b[2] ? ' ghost' : '') + (clr ? ' clr' : ''), b[0]); el.type = 'button';
     el.onclick = function () { if (Date.now() - navAt < 350) return; navAt = Date.now(); o.remove(); if (b[1]) b[1](); };   // a double tap must not also answer the question underneath, nor tap the next box (Skip can open one at once)
-    r.appendChild(el); if (n === 0) setTimeout(function () { el.focus(); }, 0);
+    if (clr) { if (!rc) rc = E('div', 'row clrrow'); rc.appendChild(el); } else r.appendChild(el);
+    if (n === (stay ? buttons.length - 1 : 0)) setTimeout(function () { el.focus(); }, 0);   // a clear question starts on Cancel, so a held Enter cannot wipe
   });
-  box.appendChild(r); o.appendChild(box); document.body.appendChild(o);
+  box.appendChild(r); if (rc) box.appendChild(rc); o.appendChild(box); document.body.appendChild(o);
 }
+/* clearing what was done (the owner, 2026-11-18): one level, the story, Write it, or the whole lesson, after a yes/cancel question. The save
+   is written like any other save, so the account script sends it to the signed-in child's cloud copy too (nothing else is touched);
+   the push at once is so a child who closes the page straight away does not leave the old progress online. */
+function hasProgress() {
+  var any = function (o) { return isObj(o) && Object.keys(o).length > 0; };
+  return any(save.done) || any(save.score) || any(save.at) || any(save.re) || !!save.bingo || !!save.story || (Math.floor(+save.storyAt) || 0) > 0 || any(save.write) || any(save.wslip);
+}
+function wipe(what) {   // what: a level (L), 'story', 'write' or 'all'
+  if (what === 'all') { ['at', 're', 'bingo', 'story', 'storyAt', 'write', 'wslip'].forEach(function (k) { delete save[k]; }); save.done = {}; save.score = {}; }
+  else if (what === 'story') { delete save.story; delete save.storyAt; }
+  else if (what === 'write') { delete save.write; delete save.wslip; delete save.score.write; }
+  else { delete save.done[what.n]; delete save.score[what.n]; if (save.at) delete save.at[what.n]; if (save.re) delete save.re[what.n]; if (what.run) delete save.bingo; }
+  storyRun++;   // a late "line heard" of the story must not write storyAt again
+  store(); showTotal();
+  try { if (window.TMG && TMG._cloud && TMG.kid && TMG.kid !== 'guest') TMG._cloud.push(TMG.kid); } catch (e) {}
+  menu();
+}
+function clearBtn(label, what, title, text) {   // the small "clear" button of a continue box
+  return [label, function () {
+    askBox(title, text + ' It cannot be undone. If you are signed in, the copy online is cleared too.',
+      [['🗑 Yes, clear it 清空', function () { wipe(what); }], ['Cancel 取消', null, true]], true);
+  }, 'clear'];
+}
+function clearLevel(L) { return clearBtn('🗑 Clear this level 清空这一关', L, 'Clear level ' + L.n + '? 清空这一关？', 'This erases the score, the tick and the missed questions of level ' + L.n + ', as if it had not been played.'); }
 /* start a level: one left half way asks "continue or start over?"; one with a score says the new score will take its place */
 function open(L) {
   var going = L.run ? save.bingo : save.at && save.at[L.n], sc = save.score[L.n];
@@ -1664,13 +1706,13 @@ function open(L) {
     var many = w.steps.length > 1 ? 's' : '';
     return askBox('Level ' + L.n + ': the missed questions', (w.started ? 'You were trying the missed questions again' : 'You have ' + w.steps.length + ' missed question' + many + ' to try again')
         + (worth(w.round) ? ' (' + fmt(worth(w.round)) + UNIT + ' each)' : ' (practice, no cents)') + '. Try ' + (many ? 'them' : 'it') + ' now, play the whole level again, or ' + ahead + '?' + now,
-      [['▶ Continue 继续', function () { play(L, w.started ? { steps: w.steps, ids: w.re.ids, from: w.re, round: w.round } : { steps: w.steps, ids: w.re.ids, round: w.round }); }], ['↺ Play the level again 重新开始', function () { delete save.re[L.n]; store(); go(); }, true], skip]);
+      [['▶ Continue 继续', function () { play(L, w.started ? { steps: w.steps, ids: w.re.ids, from: w.re, round: w.round } : { steps: w.steps, ids: w.re.ids, round: w.round }); }], ['↺ Play the level again 重新开始', function () { delete save.re[L.n]; store(); go(); }, true], skip, clearLevel(L)]);
   }
   if (going) return askBox('Level ' + L.n + ': continue?', 'You stopped this level half way. Continue from where you were, start the level again, or ' + ahead + '?' + now,
-    [['▶ Continue 继续', go], ['↺ Start over 重新开始', fresh, true], skip]);
+    [['▶ Continue 继续', go], ['↺ Start over 重新开始', fresh, true], skip, clearLevel(L)]);
   if (!sc) return go();
   askBox('Level ' + L.n + ': start over?', 'You finished this level. Your score now: <b>' + levelScore(sc) + UNIT + ' of ' + sc.of + UNIT + '</b>. Play it again and your new score will replace this one, even if it is lower. Or ' + ahead + '.',
-    [['↺ Start over 重新开始', go], skip]);
+    [['↺ Start over 重新开始', go], skip, clearLevel(L)]);
 }
 
 /* ---------- one engine for every level: a queue of steps ---------- */
