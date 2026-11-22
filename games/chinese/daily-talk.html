@@ -836,6 +836,62 @@ button{-webkit-appearance:none;appearance:none}
 .bline{width:100%;max-width:760px;margin-left:auto;margin-right:auto}
 .starc .poly,.sent.right .poly{color:inherit}
 .opt.ok .poly,.opt.no .poly{color:inherit}
+/* the pinyin switch */
+.nopy .wp,.nopy .spy{display:none}
+/* a clear row to go back (the owner, 2026-11-22): to the list of days, or to the Chinese part of the home page; and the pinyin switch */
+.navrow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;width:100%;max-width:1280px;margin:0 auto;padding:10px 16px 0}
+.navbtn{display:inline-flex;align-items:center;min-height:54px;border:3px solid var(--blue);background:#fff;color:var(--blue);border-radius:999px;padding:0 20px;font:800 20px var(--display);white-space:nowrap;text-decoration:none;box-shadow:0 4px 0 var(--blue-s)}
+.navbtn:active{transform:translateY(2px);box-shadow:0 2px 0 var(--blue-s)}
+.navbtn.waiting{opacity:.55}
+.navbtn.pybtn{margin-left:auto;font-size:18px}
+.pybtn[aria-pressed="false"]{background:var(--blue);color:#fff}
+/* two halves (the owner, 2026-11-22): on a wide screen the card is split, the picture or the question on the left, the sentence or the answers on the right, with big type */
+.two{display:flex;flex-direction:column;align-items:center;width:100%}
+.lcol,.rcol{display:flex;flex-direction:column;align-items:center;width:100%;min-width:0}
+@media (min-width:800px){
+  .wrap.big{max-width:1280px}
+  .big .two{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);column-gap:44px;align-items:center}
+  .big .sentline{font-size:80px;margin:0 0 8px}
+  .big .bigemoji{font-size:150px;margin:0}
+  .big .enq{font-size:38px;margin-top:6px}.big .enq.small{font-size:30px}
+  .big .askline{font-size:66px;flex-wrap:wrap}
+  .big .opt.pic{width:150px;height:136px;font-size:84px}
+  .big .opt{width:140px;height:124px;font-size:76px}
+  .big .opt.cn{font-size:46px;min-height:104px;max-width:none}
+  .big .opts{margin-top:0}
+  .big .tile{min-height:104px;font-size:54px;padding:4px 14px}
+  .big .bline{min-height:120px;max-width:none}
+  .big .starc .big1{font-size:68px}.big .starc .sp{font-size:26px}.big .stlab{font-size:19px}
+  .big .sayit{font-size:24px}
+  .big .say{font-size:22px}
+  .big .btn{font-size:28px;min-height:68px}
+  .big .bigspeak{min-width:84px;min-height:84px;font-size:40px}
+  .big .stephead{font-size:24px}
+}
+@media (min-width:800px) and (max-height:860px){
+  .big .sentline{font-size:76px}.big .bigemoji{font-size:128px}
+  .big .enq{font-size:34px}.big .enq.small{font-size:28px}
+  .big .askline{font-size:60px}
+  .big .opt.pic{width:140px;height:126px;font-size:78px}
+  .big .opt{width:132px;height:116px;font-size:70px}
+  .big .opt.cn{font-size:42px;min-height:92px}
+  .big .tile{min-height:96px;font-size:50px}
+  .big .bline{min-height:108px}
+  .big .starc .big1{font-size:62px}
+  .big .btn{font-size:26px;min-height:64px}
+  .big .bigspeak{min-width:76px;min-height:76px;font-size:36px}
+}
+}
+@media (min-width:600px){.big .panel{min-height:calc(100vh - 300px);min-height:calc(100dvh - 300px)}}   /* the row of back buttons above takes some of the screen */
+@media (min-width:800px) and (max-height:860px){
+  .big .panel{padding-top:10px;padding-bottom:12px}
+  .big .sentline{font-size:70px;margin-bottom:4px}
+  .big .panel .row:last-of-type{margin-top:6px}
+  .big .say{margin-bottom:4px}
+  .big .learnp .starbox{margin-top:8px}
+  .big .bigemoji{font-size:120px}
+}
+@media (min-width:800px){.big .sentline.long{font-size:60px}}
 </style>
 <style>
 /* Daily Talk: the sentences a family says every day, five a day. Each sentence has a picture, pinyin, English and one "star" character to learn.
@@ -844,7 +900,8 @@ button{-webkit-appearance:none;appearance:none}
 </style>
 </head>
 <body>
-<header class="top"><h1>💬 Daily Talk <span class="han">日常对话</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Days</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
+<header class="top"><h1>💬 Daily Talk <span class="han">日常对话</span></h1><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
+<nav class="navrow" aria-label="Where to go"><button class="navbtn" id="lvbtn" type="button">◀ All days <span class="han">全部</span></button><a class="navbtn" id="chbtn" href="../../index.html#chinese">◀ Chinese <span class="han">中文课</span></a><button class="navbtn pybtn" id="pybtn" type="button" aria-pressed="true">Pinyin <span class="han">拼音</span>: on</button></nav>
 <div class="wrap" id="app"></div>
 <script>
 /* ---------- content: every sentence is our own ---------- */
@@ -1129,6 +1186,11 @@ function fmt(x) { return String(Math.round(x * 100) / 100); }
 function total() { var t = 0; Object.keys(save.days).forEach(function (k) { t += save.days[k].pts; }); return t; }
 function showTotal() { document.getElementById('stamps').textContent = '💰 ' + fmt(total()) + UNIT; }
 showTotal();
+/* pinyin on or off (the owner, 2026-11-22): one switch in the header hides every pinyin line of the game (over the sentences, on the tiles, by the star
+   character); the readings box of a grey character is a dictionary and keeps its pinyin. The choice is saved with the progress. */
+function setPinyin(on) { save.nopy = !on; store(); document.body.classList.toggle('nopy', !on); var b = document.getElementById('pybtn'); if (b) { b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.innerHTML = 'Pinyin <span class="han nopoly">拼音</span>: ' + (on ? 'on' : 'off'); } }
+document.body.classList.toggle('nopy', !!save.nopy);
+(function () { var b = document.getElementById('pybtn'); if (b) { b.onclick = function () { setPinyin(!!save.nopy); }; setPinyin(!save.nopy); } })();
 function txt(tag, cls, t) { var e = E(tag, cls); e.textContent = t; return e; }   // plain text from the data, never read as HTML
 
 /* ---------- the data: weeks, days, sentences ---------- */
@@ -1179,8 +1241,9 @@ function answerFx(btn, ok, correctBtn) {
 /* ---------- the questions: each has render(box, answer) and calls answer(true or false) once ---------- */
 function qListen(D, it) {   // the voice says a sentence: pick its picture
   return { sayFirst: sentOf(it), texts: [sentOf(it)], render: function (box, answer) {
-    box.appendChild(txt('p', 'say', 'Listen. Which picture is it? '));
-    var hr = E('div', 'row'); hr.appendChild(speakBtn(sentOf(it), true)); box.appendChild(hr);
+    var L = E('div', 'lcol'), R = E('div', 'rcol'); box.appendChild(L); box.appendChild(R);   // two halves on a wide screen: the question left, the answers right
+    L.appendChild(txt('p', 'say', 'Listen. Which picture is it? '));
+    var hr = E('div', 'row'); hr.appendChild(speakBtn(sentOf(it), true)); L.appendChild(hr);
     var opts = E('div', 'opts'), right = null, done = false;
     shuffle([it].concat(others(D, it, mateOf(D, it)))).forEach(function (x) {
       var b = E('button', 'opt pic', x.e); b.type = 'button'; b.setAttribute('aria-label', 'picture');
@@ -1188,13 +1251,14 @@ function qListen(D, it) {   // the voice says a sentence: pick its picture
       b.onclick = function () { if (done) return; done = true; var ok = x === it; answerFx(b, ok, right); answer(ok, sentOf(it)); };
       opts.appendChild(b);
     });
-    box.appendChild(opts);
+    R.appendChild(opts);
   } };
 }
 function qEn(D, it) {   // an English line: pick the Chinese sentence
   return { texts: [sentOf(it)], render: function (box, answer) {
-    box.appendChild(txt('p', 'say', 'How do you say it in Chinese?'));
-    box.appendChild(txt('div', 'enq', '“' + it.en + '”'));
+    var L = E('div', 'lcol'), R = E('div', 'rcol'); box.appendChild(L); box.appendChild(R);   // two halves on a wide screen: the question left, the answers right
+    L.appendChild(txt('p', 'say', 'How do you say it in Chinese?'));
+    L.appendChild(txt('div', 'enq', '“' + it.en + '”'));
     var opts = E('div', 'opts col'), right = null, done = false;
     shuffle([it].concat(others(D, it, mateOf(D, it)))).forEach(function (x) {
       var b = E('button', 'opt wide cn'); b.type = 'button'; b.appendChild(ruby(x));
@@ -1202,15 +1266,16 @@ function qEn(D, it) {   // an English line: pick the Chinese sentence
       b.onclick = function () { if (done) return; done = true; var ok = x === it; answerFx(b, ok, right); answer(ok, sentOf(it)); };
       opts.appendChild(b);
     });
-    box.appendChild(opts);
+    R.appendChild(opts);
   } };
 }
 function qAnswer(D, it, p) {   // someone says a sentence: pick the right thing to answer
   var a = byId(p.a), ban = {}; (p.x || []).forEach(function (id) { ban[id] = 1; });
   return { sayFirst: sentOf(it), texts: [sentOf(it), sentOf(a)], render: function (box, answer) {
-    box.appendChild(txt('p', 'say', 'Someone says this to you. What do you answer?'));
-    var q = E('div', 'askline'); q.appendChild(speakBtn(sentOf(it))); q.appendChild(ruby(it)); box.appendChild(q);
-    box.appendChild(txt('div', 'enq small', '“' + it.en + '”'));
+    var L = E('div', 'lcol'), R = E('div', 'rcol'); box.appendChild(L); box.appendChild(R);   // two halves on a wide screen: the question left, the answers right
+    L.appendChild(txt('p', 'say', 'Someone says this to you. What do you answer?'));
+    var q = E('div', 'askline'); q.appendChild(speakBtn(sentOf(it))); q.appendChild(ruby(it)); L.appendChild(q);
+    L.appendChild(txt('div', 'enq small', '“' + it.en + '”'));
     var pool = poolOf(D).filter(function (x) { return x !== it && x !== a && !ban[x.id] && x.day !== undefined; }), opts = E('div', 'opts col'), right = null, done = false;
     var wrong = pick2(pool, [it, a].concat(pool.filter(function (x) { return x.e === a.e || x.e === it.e; })));
     shuffle([a].concat(wrong)).forEach(function (x) {
@@ -1219,15 +1284,16 @@ function qAnswer(D, it, p) {   // someone says a sentence: pick the right thing 
       b.onclick = function () { if (done) return; done = true; var ok = x === a; answerFx(b, ok, right); answer(ok, sentOf(a)); };
       opts.appendChild(b);
     });
-    box.appendChild(opts);
+    R.appendChild(opts);
   } };
 }
 function qStar(D, it) {   // the sentence with its star character hidden: pick the character
   var c = it.star.c;
   return { texts: [sentOf(it)], render: function (box, answer) {
-    box.appendChild(txt('p', 'say', 'Which character is missing? The pinyin helps.'));
-    var line = E('div', 'sentline'); var r = ruby(it, c); line.appendChild(r); box.appendChild(line);
-    box.appendChild(txt('div', 'enq small', '“' + it.en + '”'));
+    var L = E('div', 'lcol'), R = E('div', 'rcol'); box.appendChild(L); box.appendChild(R);   // two halves on a wide screen: the question left, the answers right
+    L.appendChild(txt('p', 'say', 'Which character is missing? The pinyin helps.'));
+    var line = E('div', 'sentline'); var r = ruby(it, c); line.appendChild(r); L.appendChild(line);
+    L.appendChild(txt('div', 'enq small', '“' + it.en + '”'));
     var opts = E('div', 'opts'), right = null, done = false;
     shuffle([c].concat(it.no)).forEach(function (x) {
       var b = E('button', 'opt'); b.type = 'button'; b.appendChild(txt('span', 'han', x));
@@ -1239,14 +1305,15 @@ function qStar(D, it) {   // the sentence with its star character hidden: pick t
       };
       opts.appendChild(b);
     });
-    box.appendChild(opts);
+    R.appendChild(opts);
   } };
 }
 function qBuild(D, it) {   // tap the pieces in order
   var units = it.t || it.w, up = it.tp || it.p;
   return { texts: [sentOf(it)], render: function (box, answer) {
-    box.appendChild(txt('p', 'say', 'Build the sentence. Tap the pieces in order.'));
-    box.appendChild(txt('div', 'enq', '“' + it.en + '”'));
+    var L = E('div', 'lcol'), R = E('div', 'rcol'); box.appendChild(L); box.appendChild(R);   // two halves on a wide screen: the question left, the answers right
+    L.appendChild(txt('p', 'say', 'Build the sentence. Tap the pieces in order.'));
+    L.appendChild(txt('div', 'enq', '“' + it.en + '”'));
     var line = E('div', 'bline'), tiles = E('div', 'tiles'), put = [], done = false, btns = [];
     function tileHtml(i) { var h = E('span', 'han tl'); h.appendChild(txt('span', 'wp', up[i])); h.appendChild(txt('span', 'wh', units[i])); return h; }
     function redraw() {
@@ -1266,7 +1333,7 @@ function qBuild(D, it) {   // tap the pieces in order
       b.onclick = function () { if (done || put.indexOf(i) >= 0) return; put.push(i); redraw(); };
       tiles.appendChild(b);
     });
-    box.appendChild(line); box.appendChild(tiles); redraw();
+    L.appendChild(line); R.appendChild(tiles); redraw();
   } };
 }
 
@@ -1337,18 +1404,19 @@ function learn(D, S, si, sn, done) {   // five cards: look, listen, say it out l
     head(D, S, si, sn, i, D.items.length, 1);
     var p = E('div', 'panel learnp');
     p.appendChild(txt('p', 'say', 'Sentence ' + (i + 1) + ' of ' + D.items.length));
-    p.appendChild(E('div', 'emoji bigemoji', it.e));
-    var s = ruby(it); var sw = E('div', 'sentline'); sw.appendChild(s); p.appendChild(sw);
-    p.appendChild(txt('div', 'enq', it.en));
+    var two = E('div', 'two'), lc = E('div', 'lcol'), rc = E('div', 'rcol'); two.appendChild(lc); two.appendChild(rc); p.appendChild(two);   // two halves on a wide screen: picture and English left, the sentence right
+    lc.appendChild(E('div', 'emoji bigemoji', it.e));
+    lc.appendChild(txt('div', 'enq', it.en));
+    var s = ruby(it); var sw = E('div', 'sentline' + (sentOf(it).length >= 7 ? ' long' : '')); sw.appendChild(s); rc.appendChild(sw);   // a long sentence is a little smaller so it still fits on two lines
     var star = E('div', 'starbox'); star.appendChild(txt('span', 'stlab', '⭐ Star character'));
-    var sc = E('button', 'starc'); sc.type = 'button'; sc.appendChild(txt('span', 'han big1', it.star.c)); sc.appendChild(txt('span', 'sp', it.star.py + ' · ' + it.star.en)); sc.onclick = function () { say(it.star.c); };
-    star.appendChild(sc); p.appendChild(star);
+    var sc = E('button', 'starc'); sc.type = 'button'; sc.appendChild(txt('span', 'han big1', it.star.c)); var sp = E('span', 'sp'); sp.appendChild(txt('span', 'spy', it.star.py + ' · ')); sp.appendChild(document.createTextNode(it.star.en)); sc.appendChild(sp); sc.onclick = function () { say(it.star.c); };
+    star.appendChild(sc); rc.appendChild(star);
     var r = E('div', 'row'); r.appendChild(speakBtn(sentOf(it), true));
     r.appendChild(txt('span', 'sayit', 'Now say it out loud!'));
     var nb = E('button', 'btn', 'I said it ▶'); nb.type = 'button'; nb.appendChild(document.createTextNode(' ')); nb.appendChild(E('span', 'han nopoly', '我说了'));
     nb.onclick = function () { afterVoice(function () { i++; if (i < D.items.length) card(); else done(); }, nb); };
     if (i > 0) { var bk = E('button', 'btn ghost', '◀ Back'); bk.type = 'button'; bk.onclick = function () { afterVoice(function () { i--; card(); }, bk); }; r.insertBefore(bk, r.firstChild); }
-    r.appendChild(nb); p.appendChild(r); app.appendChild(p);
+    r.appendChild(nb); rc.appendChild(r); app.appendChild(p);
     warm(D.items.map(sentOf).concat(D.items.map(function (x) { return x.star.c; })));
     afterPaint(function () { say(sentOf(it)); });
   }
@@ -1361,7 +1429,7 @@ function runQs(D, S, st, sn, qs, round, doneCb) {
     if (k >= qs.length) return end();
     var q = qs[k]; app.innerHTML = '';
     head(D, S, st.s, sn, k, qs.length, round);
-    var panel = E('div', 'panel'), box = E('div', 'qbox'), fb = E('div', 'fb'), nav = E('div', 'row'); panel.appendChild(box);
+    var panel = E('div', 'panel'), box = E('div', 'qbox two'), fb = E('div', 'fb'), nav = E('div', 'row'); panel.appendChild(box);
     q.render(box, function (ok, sayText) {
       beepPrep();   // the sound system is woken inside the tap
       if (round === 1) st.of += 1;
@@ -1434,7 +1502,7 @@ function askBox(title, html, buttons, stay) {
   box.appendChild(r); if (rc) box.appendChild(rc); o.appendChild(box); document.body.appendChild(o);
 }
 function wipe(what) {
-  if (what === 'all') { save.days = {}; save.at = {}; } else { delete save.days[what.id]; delete save.at[what.id]; }
+  if (what === 'all') { save.days = {}; save.at = {}; }   // the pinyin switch is a setting, not progress: it stays else { delete save.days[what.id]; delete save.at[what.id]; }
   store(); showTotal();
   try { if (window.TMG && TMG._cloud && TMG.kid && TMG.kid !== 'guest') TMG._cloud.push(TMG.kid); } catch (e) {}
   menu();
