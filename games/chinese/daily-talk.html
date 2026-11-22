@@ -1,0 +1,1682 @@
+<!doctype html>
+<html lang="en">
+<head><script>/* Ten-Minute Games accounts: a parent signs in with Google, adds children by nickname, and each child's game progress follows them
+   to any computer or iPad. Signing in is optional; without it every game works exactly as before (progress stays on this device).
+
+   How progress is kept: every game already saves its progress in this browser (localStorage) under its own names. This script,
+   which build.cjs puts at the very top of every page, keeps one copy of those values per player ("guest" = not signed in, or a
+   child). When the player changes, the values in the browser are swapped before the game reads them. When a child is playing,
+   their copy is also saved to Firebase (Firestore: families/<parent uid>/kids/<child id>), and loaded back on other devices.
+   Only values written by these game pages are kept; nothing else in the browser is read or sent.
+
+   Public Firebase web config: allowed on the public site by PRIVACY-RULE.md exception five. Access is guarded by the Firestore
+   rules (each parent can only read and write their own family), not by hiding this. */
+(function () {
+  'use strict';
+  if (window.TMG) return;
+  var CONFIG = {
+    apiKey: 'AIzaSyDC-kbJIExCfhIsUkkShVIO8VtBTe3D7WI',
+    authDomain: 'ten-minute-games.firebaseapp.com',
+    projectId: 'ten-minute-games',
+    storageBucket: 'ten-minute-games.firebasestorage.app',
+    messagingSenderId: '448551703283',
+    appId: '1:448551703283:web:7f0c2b75a166f1fcbb1d86'
+  };
+  var SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
+  var P = 'tmg.', GUEST = 'guest', MAX_VALUE = 200000;
+  var LS; try { LS = window.localStorage; LS.getItem(P + 'x'); } catch (e) { LS = null; }
+  if (!LS) { window.TMG = { kid: GUEST, ready: Promise.resolve(), mountHome: function () {} }; return; }
+  var rawSet = Storage.prototype.setItem, rawRemove = Storage.prototype.removeItem, rawGet = Storage.prototype.getItem;
+  function get(k) { return rawGet.call(LS, k); }
+  function put(k, v) { try { rawSet.call(LS, k, v); } catch (e) {} }
+  function del(k) { rawRemove.call(LS, k); }
+  function has(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
+  function J(k, d) { try { var v = get(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
+  function W(k, o) { put(k, JSON.stringify(o)); }
+  function ours(k) { return typeof k === 'string' && (k.indexOf(P) === 0 || k.indexOf('firebase') === 0); }
+
+  function current() { return get(P + 'current') || GUEST; }
+  function store(id) { return J(P + 'kid.' + id, { data: {}, updated: 0 }); }
+  function saveStore(id, s) { W(P + 'kid.' + id, s); }
+  function known() { return J(P + 'known', []); }
+
+  /* Put player `id`'s values into the browser. The values sitting there now belong to `owner`: keep them first. */
+  function swap() {
+    var id = current(), owner = get(P + 'owner') || GUEST;
+    if (owner === id) return false;
+    var ks = known(), from = store(owner), to = store(id), changed = false;
+    ks.forEach(function (k) { var v = get(k); if (v === null) delete from.data[k]; else from.data[k] = v; });
+    saveStore(owner, from);
+    ks.forEach(function (k) {
+      var want = Object.prototype.hasOwnProperty.call(to.data, k) ? to.data[k] : null;
+      if (get(k) !== want) { changed = true; if (want === null) del(k); else put(k, want); }
+    });
+    put(P + 'owner', id);
+    return changed;
+  }
+  swap();
+  /* The player this page was opened for. Another tab (or the home page, before Back brings this page out of memory) can switch the
+     player; from then on this page shows the wrong child, so its saves are kept for its own player and it reloads (see strayWrite). */
+  var pageKid = current();
+  function setCurrent(id) { put(P + 'current', id); pageKid = id; if (window.TMG) window.TMG.kid = id; }
+
+  /* Every write a game makes is copied into the current player's store. For a child, the name is also listed under `changed` until it has reached the cloud.
+     Until this page has heard from the cloud, writes only wait: a game saving as it opens must not make an out-of-date device look newest. */
+  var dirtyTimer = 0, syncing = false, waiting = {}, onHome = !!document.querySelector('meta[name="tmg-home"]');
+  if (get(P + 'dirty') === '1') {          // left by an older version of this script: everything this child has here may be unsent
+    if (current() !== GUEST) { var old = store(current()); old.changed = {}; Object.keys(old.data).forEach(function (k) { old.changed[k] = 1; }); saveStore(current(), old); }
+    del(P + 'dirty');
+  }
+  function onDevice(id, uid) { return !!uid && get(P + 'uid') === uid && J(P + 'family', { kids: [] }).kids.some(function (k) { return k.id === id; }); }
+  function bytes(s) { try { return new Blob([s]).size; } catch (e) { return unescape(encodeURIComponent(s)).length; } }   // Firestore counts UTF-8 bytes (a Chinese character is 3)
+  function bump(s) { s.seq = (s.seq || 0) + 1; s.updated = Date.now(); }   // seq counts saves, so two saves in the same millisecond are still told apart
+  function later() { clearTimeout(dirtyTimer); dirtyTimer = setTimeout(function () { cloud.push(pageKid); }, 3000); }
+  /* A save from a page whose player is no longer the current one (two tabs, or a page brought back by Back after the parent switched
+     child). The browser's values now belong to `cur`: put this key back the way `cur` had it, keep the save for the page's own player
+     (and send it), then reload so the page shows the right child. */
+  function strayWrite(k, v, cur) {
+    var other = store(cur), want = has(other.data, k) ? other.data[k] : null;
+    if (want === null) del(k); else put(k, want);
+    var nv = v === null ? null : String(v);
+    // signed out, or the child was removed, in another tab: this device was cleared on purpose, so nothing is kept for them
+    if ((pageKid !== GUEST && !onDevice(pageKid, get(P + 'uid'))) || (nv !== null && nv.length > MAX_VALUE)) { stale(); return; }
+    var s = store(pageKid), had = has(s.data, k) ? s.data[k] : null;
+    if (had !== nv) {
+      if (nv === null) delete s.data[k]; else s.data[k] = nv;
+      bump(s);
+      if (pageKid !== GUEST) (s.changed = s.changed || {})[k] = 1;
+      saveStore(pageKid, s);
+      if (pageKid !== GUEST) {   // send it before reloading (at most 3 s); if that fails, the next page that opens sends it (sendOthers)
+        var go = function () { clearTimeout(t); stale(); }, t = setTimeout(go, 3000);
+        cloud.push(pageKid).then(go, go);
+        return;
+      }
+    }
+    stale();
+  }
+  var reloading = false;
+  function stale() { if (!reloading && document.visibilityState !== 'hidden') { reloading = true; location.reload(); } }
+  function checkPlayer() { if (current() !== pageKid) stale(); }
+  window.addEventListener('pageshow', function (e) { if (e.persisted) checkPlayer(); });
+  window.addEventListener('storage', function (e) { if (e.key === P + 'current' || e.key === null) checkPlayer(); });
+  function noteWrite(k, v) {
+    if (ours(k)) return;
+    var id = current();
+    if (id !== pageKid) { strayWrite(k, v, id); return; }   // before the size check: a big save from a stale page must not stay on the wrong child
+    if (v !== null && String(v).length > MAX_VALUE) return;
+    var ks = known(); if (ks.indexOf(k) < 0) { ks.push(k); W(P + 'known', ks); }
+    var s = store(id), had = has(s.data, k) ? s.data[k] : null;
+    if (had === (v === null ? null : String(v))) return;   // nothing new
+    if (v === null) delete s.data[k]; else s.data[k] = String(v);
+    if (id === GUEST) { bump(s); saveStore(id, s); return; }
+    if (syncing) { waiting[k] = 1; s.seq = (s.seq || 0) + 1; saveStore(id, s); return; }
+    (s.changed = s.changed || {})[k] = 1; bump(s); saveStore(id, s);
+    later();
+  }
+  Storage.prototype.setItem = function (k, v) { rawSet.call(this, k, v); if (this === LS) noteWrite(String(k), String(v)); };
+  Storage.prototype.removeItem = function (k) { rawRemove.call(this, k); if (this === LS) noteWrite(String(k), null); };
+  /* the writes that were waiting now count as this child's changes */
+  function settle() {
+    syncing = false;
+    var ks = Object.keys(waiting), id = pageKid; waiting = {};   // the waiting saves were made by this page, for its own child
+    if (!ks.length || id === GUEST) return;
+    var s = store(id); s.changed = s.changed || {};
+    ks.forEach(function (k) { s.changed[k] = 1; });
+    bump(s); saveStore(id, s); later();
+  }
+  function reloadPage() {
+    try {
+      var flag = 'tmg.reloaded.' + location.pathname, last = Number(sessionStorage.getItem(flag)) || 0;
+      if (Date.now() - last > 30000) { sessionStorage.setItem(flag, String(Date.now())); location.reload(); }
+    } catch (e) {}
+  }
+  /* A child's copies on this device: progress and the reward words. */
+  function dropKid(id) {
+    del(P + 'kid.' + id);
+    var end = '.rewards.' + id;
+    Object.keys(LS).forEach(function (k) { if (k.indexOf(P) === 0 && k.slice(-end.length) === end) del(k); });
+  }
+  /* The child was removed on another device: this device lets go too, and never writes them back. */
+  function childGone(id) {
+    if (current() === id) { setCurrent(GUEST); swap(); }
+    dropKid(id);
+    var fam = J(P + 'family', null);
+    if (fam && fam.kids) { fam.kids = fam.kids.filter(function (k) { return k.id !== id; }); W(P + 'family', fam); }
+  }
+
+  /* ---------- Firebase (loaded only when it is needed) ---------- */
+  var fb = null;
+  function loadScript(src) { return new Promise(function (ok, no) { var s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); }
+  function firebaseReady() {
+    if (fb) return fb;
+    fb = loadScript(SDK + 'firebase-app-compat.js')
+      .then(function () { return Promise.all([loadScript(SDK + 'firebase-auth-compat.js'), loadScript(SDK + 'firebase-firestore-compat.js')]); })
+      .then(function () {
+        var app = window.firebase.apps.length ? window.firebase.app() : window.firebase.initializeApp(CONFIG);
+        return { auth: app.auth(), db: app.firestore() };
+      });
+    return fb;
+  }
+  function userNow(f) { return new Promise(function (ok) { var off = f.auth.onAuthStateChanged(function (u) { off(); ok(u); }); }); }
+  function kidsRef(f, uid) { return f.db.collection('families').doc(uid).collection('kids'); }
+
+  /* After an upload, the browser takes the cloud's values for games this device did not change. A key is only replaced when the browser
+     still holds what this device last knew (`before`), so nothing the browser holds that the store never saw (for example a value too big
+     to sync) is overwritten. `skip` = keys with changes not sent yet: they stay as they are. */
+  function applyToBrowser(id, before, after, skip) {
+    var ks = known(), grew = false;
+    Object.keys(after).forEach(function (k) { if (ks.indexOf(k) < 0) { ks.push(k); grew = true; } });
+    if (grew) W(P + 'known', ks);
+    if ((get(P + 'owner') || GUEST) !== id) return;
+    ks.forEach(function (k) {
+      if (has(skip, k)) return;
+      var was = has(before, k) ? before[k] : null, want = has(after, k) ? after[k] : null;
+      if (want === was || get(k) !== was) return;
+      if (want === null) del(k); else put(k, want);
+    });
+  }
+
+  var cloud = {
+    /* Upload a child's changes. true = nothing is left unsent.
+       Only the games this device changed are written: in one transaction the cloud copy is read, this device's changed keys are put into
+       it, and it is written back. So a device that has been open for a long time never puts its old copy of a game over newer progress
+       made on another device. The transaction fails on a child who has been removed (`not-found`), so they are never brought back. */
+    push: function (id) {
+      id = id || current();
+      var uid = get(P + 'uid');
+      if (id === GUEST || !uid) return Promise.resolve(true);
+      if (syncing && id === current()) return ready.then(function () { return cloud.push(id); });
+      var s = store(id), keys = Object.keys(s.changed || {});
+      if (!keys.length) return Promise.resolve(true);
+      var name = (J(P + 'family', { kids: [] }).kids.filter(function (k) { return k.id === id; })[0] || {}).name || 'Player';
+      var sent = null;
+      return firebaseReady().then(function (f) {
+        var ref = kidsRef(f, uid).doc(id);
+        return f.db.runTransaction(function (tx) {
+          return tx.get(ref).then(function (doc) {
+            if (!doc.exists) { var gone = new Error('removed'); gone.code = 'not-found'; throw gone; }
+            var c = doc.data() || {}, data = JSON.parse(JSON.stringify(c.data || {})), up = Math.max(Date.now(), (c.updated || 0) + 1);
+            keys.forEach(function (k) { if (has(s.data, k)) data[k] = s.data[k]; else delete data[k]; });
+            if (bytes(JSON.stringify(data)) > 900000) { var big = new Error('too big'); big.code = 'too-big'; throw big; }   // a Firestore document holds at most 1 MB: keep it on this device only
+            tx.update(ref, { name: name, data: data, updated: up });
+            sent = { data: data, updated: up };
+          });
+        });
+      }).then(function () {
+        if (!onDevice(id, uid)) return true;   // signed out or removed while this upload ran: do not bring the copy back to this device
+        var now = store(id), during = (now.seq || 0) !== (s.seq || 0) || now.updated !== s.updated, still = during ? (now.changed || {}) : {};
+        var data = JSON.parse(JSON.stringify(sent.data));
+        Object.keys(still).forEach(function (k) { if (has(now.data, k)) data[k] = now.data[k]; else delete data[k]; });   // saved while this upload ran: kept, sent next time
+        saveStore(id, { data: data, updated: Math.max(sent.updated, now.updated || 0), changed: still, base: sent.updated, seq: now.seq || 0 });   // base: the version the cloud now holds
+        applyToBrowser(id, now.data, data, still);
+        return true;
+      }, function (e) {
+        if (e && e.code === 'not-found') { childGone(id); if (!onHome && id === pageKid) reloadPage(); return true; }
+        return false;
+      });
+    },
+    /* compare with the cloud; returns true when the values in the browser changed */
+    pull: function () {
+      var id = current(), uid = get(P + 'uid');
+      if (id === GUEST || !uid) return Promise.resolve(false);
+      return firebaseReady().then(function (f) { return kidsRef(f, uid).doc(id).get(); }).then(function (doc) {
+        if (!doc.exists) { childGone(id); return true; }
+        var c = doc.data(), s = store(id), cu = c.updated || 0, mine = s.changed || {};
+        var news = s.base != null ? cu !== s.base : cu > (s.updated || 0);   // has the cloud changed since this device last synced?
+        if (!news) {
+          if (cu < (s.updated || 0) && !Object.keys(mine).length) { s.changed = {}; Object.keys(s.data).forEach(function (k) { s.changed[k] = 1; }); saveStore(id, s); }
+          return false;
+        }
+        /* the cloud is newer: take it, keeping only what this device changed and has not sent yet */
+        var data = JSON.parse(JSON.stringify(c.data || {})), mineKeys = Object.keys(mine);
+        mineKeys.forEach(function (k) { if (Object.prototype.hasOwnProperty.call(s.data, k)) data[k] = s.data[k]; else delete data[k]; });
+        saveStore(id, { data: data, updated: mineKeys.length ? Math.max(Date.now(), cu + 1) : cu, changed: mine, base: cu, seq: (s.seq || 0) + 1 });   // seq moves on, so an upload running now keeps its own unsent marks
+        waiting = {};
+        var ks = known(); Object.keys(data).forEach(function (k) { if (ks.indexOf(k) < 0) ks.push(k); }); W(P + 'known', ks);
+        var changed = false;
+        if ((get(P + 'owner') || GUEST) === id) ks.forEach(function (k) {
+          var want = Object.prototype.hasOwnProperty.call(data, k) ? data[k] : null;
+          if (get(k) !== want) { changed = true; if (want === null) del(k); else put(k, want); }
+        });
+        return changed;
+      }, function () { return false; });
+    }
+  };
+  /* hear from the cloud, then send whatever is left to send */
+  function syncNow() {
+    syncing = true;
+    setTimeout(function () { if (syncing) settle(); }, 20000);   // no answer for this long: what the child has been doing counts
+    return cloud.pull().then(function (changed) { settle(); cloud.push(); return changed; });
+  }
+  window.addEventListener('pagehide', function () { cloud.push(pageKid); });
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') cloud.push(pageKid); else checkPlayer(); });
+
+  /* On a game page with a child playing: fetch their newest progress; if it differs from what the game already read, reload. */
+  var ready = Promise.resolve();
+  if (get(P + 'uid') && current() !== GUEST) {
+    ready = syncNow().then(function (changed) { if (changed && !onHome) reloadPage(); });
+  }
+  /* other children on this device with changes not sent yet (for example a save kept by strayWrite just before a reload): send them too */
+  function sendOthers() {
+    if (!get(P + 'uid')) return;
+    J(P + 'family', { kids: [] }).kids.forEach(function (k) { if (k.id !== current() && Object.keys(store(k.id).changed || {}).length) cloud.push(k.id); });
+  }
+  ready.then(function () { setTimeout(sendOthers, 1500); });
+
+  /* ---------- the parent panel on the home page ---------- */
+  function E(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function newId() { var a = new Uint8Array(9); crypto.getRandomValues(a); return Array.prototype.map.call(a, function (b) { return ('0' + b.toString(16)).slice(-2); }).join(''); }
+  function cleanName(s) { return String(s || '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 20); }
+
+  function mountHome(box) {
+    var msg = '', askDelete = null, deleting = false;   // askDelete: the loaded Firebase while the parent is asked to confirm with Google; deleting: Google window open or deletion running
+    function render() {
+      box.replaceChildren();
+      var uid = get(P + 'uid'), fam = J(P + 'family', { kids: [] }), cur = current();
+      if (!uid) askDelete = null;
+      if (deleting) {   // nothing else to tap until the deletion has finished or stopped
+      } else if (!uid) {
+        var b = E('button', 'acct-btn', 'Parent sign-in'); b.type = 'button'; b.onclick = signIn;
+        box.appendChild(b);
+        box.appendChild(E('span', 'acct-note', 'Optional: keep each child’s progress on every device.'));
+      } else {
+        /* a box that says plainly who is playing now, with big name buttons: a child should notice at once when the wrong name is on */
+        var who = E('div', 'acct-who'), me = fam.kids.filter(function (k) { return k.id === cur; })[0];
+        var now = E('p', 'acct-now', 'Playing now: '); now.appendChild(E('b', null, me ? '▶ ' + me.name : 'Just looking (saved on this device only)'));
+        who.appendChild(now);
+        var row = E('div', 'acct-kids');
+        fam.kids.forEach(function (k) {
+          var chip = E('button', 'acct-kid' + (k.id === cur ? ' on' : ''), (k.id === cur ? '▶ ' : '') + k.name); chip.type = 'button';
+          chip.setAttribute('aria-pressed', k.id === cur ? 'true' : 'false');
+          chip.onclick = function () { choose(k.id); };
+          row.appendChild(chip);
+        });
+        var g = E('button', 'acct-kid' + (cur === GUEST ? ' on' : ''), 'Just looking'); g.type = 'button'; g.onclick = function () { choose(GUEST); };
+        row.appendChild(g);
+        var add = E('button', 'acct-btn small', '+ Add child'); add.type = 'button'; add.onclick = addKid;
+        row.appendChild(add);
+        who.appendChild(row);
+        who.appendChild(E('span', 'acct-ask', fam.kids.length > 1 ? 'Not you? Tap your own name before you play.' : fam.kids.length ? 'Tap + Add child for a brother or sister.' : 'Add a child to keep their progress.'));
+        box.appendChild(who);
+        var tools = E('span', 'acct-tools');   // grown-up links, small, at the bottom of the box
+        var so = E('button', 'acct-link', 'Sign out'); so.type = 'button'; so.onclick = signOut; tools.appendChild(so);
+        var rm = E('button', 'acct-link', 'Remove a child'); rm.type = 'button'; rm.onclick = removeKid; tools.appendChild(rm);
+        var dl = E('button', 'acct-link danger', 'Delete account and all data'); dl.type = 'button'; dl.onclick = deleteAll; tools.appendChild(dl);
+        var pv = E('a', 'acct-link', 'Privacy'); pv.href = 'privacy.html'; tools.appendChild(pv);
+        who.appendChild(tools);
+      }
+      if (msg) box.appendChild(E('div', 'acct-msg', msg));
+      if (askDelete && uid) {
+        var cf = E('div', 'acct-confirm');
+        cf.appendChild(E('div', 'acct-msg', 'Last step: confirm with Google that it is you. Then the account, all children and all progress are deleted.'));
+        var yes = E('button', 'acct-btn danger', 'Confirm with Google and delete'); yes.type = 'button'; yes.onclick = reallyDelete; cf.appendChild(yes);
+        var no = E('button', 'acct-link', 'Cancel'); no.type = 'button'; no.onclick = function () { askDelete = null; say('Nothing was deleted.'); }; cf.appendChild(no);
+        box.appendChild(cf);
+      }
+    }
+    function say(t) { msg = t; render(); }
+    function loadFamily(f, uid) {
+      return kidsRef(f, uid).get().then(function (q) {
+        var kids = []; q.forEach(function (d) { kids.push({ id: d.id, name: cleanName(d.data().name) || 'Player' }); });
+        kids.sort(function (a, b) { return a.name.localeCompare(b.name); });
+        var before = J(P + 'family', { kids: [] }).kids;
+        W(P + 'family', { kids: kids });
+        if (current() !== GUEST && !kids.some(function (k) { return k.id === current(); })) { setCurrent(GUEST); swap(); }
+        before.forEach(function (o) { if (!kids.some(function (k) { return k.id === o.id; })) dropKid(o.id); });
+        return kids;
+      });
+    }
+    function signIn() {
+      if (deleting) return; askDelete = null;
+      say('Opening Google sign-in…');
+      firebaseReady().then(function (f) {
+        var p = new window.firebase.auth.GoogleAuthProvider();
+        return f.auth.signInWithPopup(p).then(function (r) { put(P + 'uid', r.user.uid); return loadFamily(f, r.user.uid); });
+      }).then(function (kids) { msg = kids.length ? 'Signed in. Pick who is playing.' : 'Signed in. Add your first child (a nickname is enough).'; render(); },
+        function (e) { say(e && e.code === 'auth/popup-closed-by-user' ? '' : 'Sign-in did not work' + (e && e.code ? ' (' + e.code + ')' : '') + '. Please try again.'); });
+    }
+    function addKid() {
+      if (deleting) return; askDelete = null;
+      var name = cleanName(window.prompt('Child’s nickname (not their full name):', ''));
+      if (!name) return;
+      var uid = get(P + 'uid'), id = newId(), fam = J(P + 'family', { kids: [] });
+      var guest = store(GUEST), first = fam.kids.length === 0 && Object.keys(guest.data).length > 0;
+      var start = { data: {}, updated: Date.now() };
+      if (first && window.confirm('Move the progress already on this device to ' + name + '?')) {
+        swap(); start = { data: JSON.parse(JSON.stringify(store(GUEST).data)), updated: Date.now() };
+      }
+      say('Adding ' + name + '…');
+      firebaseReady().then(function (f) {
+        return kidsRef(f, uid).doc(id).set({ name: name, data: start.data, updated: start.updated }).then(function () { return loadFamily(f, uid); });
+      }).then(function () { start.base = start.updated; saveStore(id, start); choose(id); }, function () { say('Could not add ' + name + '. Please try again.'); });
+    }
+    function choose(id) {
+      if (deleting) return; askDelete = null;
+      cloud.push().then(function () {
+        setCurrent(id); swap();
+        msg = id === GUEST ? 'Just looking: progress stays on this device.' : 'Now playing: ' + ((J(P + 'family', { kids: [] }).kids.filter(function (k) { return k.id === id; })[0] || {}).name || '');
+        render();
+        if (id !== GUEST) ready = syncNow();
+      });
+    }
+    function removeKid() {
+      if (deleting) return; askDelete = null;
+      var fam = J(P + 'family', { kids: [] }); if (!fam.kids.length) return;
+      var name = window.prompt('Type the nickname of the child to remove. Their progress is deleted everywhere.\n\n' + fam.kids.map(function (k) { return k.name; }).join(', '), '');
+      var k = fam.kids.filter(function (x) { return x.name === cleanName(name); })[0]; if (!k) return;
+      var uid = get(P + 'uid');
+      firebaseReady().then(function (f) { return kidsRef(f, uid).doc(k.id).delete().then(function () { return loadFamily(f, uid); }); })
+        .then(function () { dropKid(k.id); say(k.name + ' was removed.'); }, function () { say('Could not remove ' + k.name + '. Please try again.'); });
+    }
+    /* leave this device as a guest device: the children's copies are taken off it. keepUnsent keeps any copy that has not reached the cloud yet. */
+    function forgetDevice(keepUnsent) {
+      setCurrent(GUEST); swap();
+      J(P + 'family', { kids: [] }).kids.forEach(function (k) {
+        if (keepUnsent && Object.keys(store(k.id).changed || {}).length) return;
+        del(P + 'kid.' + k.id);
+      });
+      if (!keepUnsent) del(P + 'family');
+      del(P + 'uid');
+    }
+    /* never sign out while something has not reached the cloud: signing out takes the only copy off this device */
+    function signOut() {
+      if (deleting) return; askDelete = null;
+      var ids = J(P + 'family', { kids: [] }).kids.map(function (k) { return k.id; });
+      say('Saving…');
+      ready.then(function () { return Promise.all(ids.map(function (id) { return cloud.push(id); })); }).then(function (done) {
+        if (done.indexOf(false) >= 0) { say('Not signed out: some progress has not been saved yet. Check the internet and try again.'); return; }
+        return firebaseReady().then(function (f) { return f.auth.signOut(); }).then(function () { forgetDevice(); say('Signed out. This device is back to guest play.'); },
+          function () { forgetDevice(); say('Signed out on this device.'); });
+      });
+    }
+    /* Deleting a Google sign-in needs a recent sign-in. Safari only opens the Google window straight from a tap,
+       so: first tap asks, Firebase is loaded, then a second button opens the Google window inside its own tap,
+       and only after Google says yes is anything deleted. */
+    function deleteAll() {
+      if (deleting) return;
+      if (!window.confirm('Delete your account, all your children and all their progress? This cannot be undone.')) return;
+      askDelete = null; say('One moment…');
+      firebaseReady().then(function (f) { return userNow(f).then(function (u) {
+        if (!u || u.uid !== get(P + 'uid')) { forgetDevice(true); say('This device is no longer signed in. Sign in again, then delete.'); return; }
+        askDelete = f; say('');
+      }); }, function () { say('Could not reach Google. Check the internet and try again. Nothing was deleted.'); });
+    }
+    function reallyDelete() {
+      var f = askDelete, u = f && f.auth.currentUser, stage = 'confirm';
+      askDelete = null;
+      if (deleting) return;
+      if (!u || u.uid !== get(P + 'uid')) { say('This device is no longer signed in. Sign in again, then delete.'); return; }
+      var uid = u.uid;
+      deleting = true;
+      say('Waiting for Google… (close the Google window to cancel)');
+      function gone() { deleting = false; var ids = J(P + 'family', { kids: [] }).kids.map(function (k) { return k.id; }); forgetDevice(); ids.forEach(dropKid); say('Your account and all its data were deleted.'); }
+      u.reauthenticateWithPopup(new window.firebase.auth.GoogleAuthProvider())   // opened inside this tap, so Safari lets it open
+        .then(function () { stage = 'delete'; say('Deleting…'); return kidsRef(f, uid).get(); })
+        .then(function (q) { var jobs = []; q.forEach(function (d) { jobs.push(d.ref.delete()); }); return Promise.all(jobs); })
+        .then(function () { return u.delete(); })
+        .then(gone, function (e) {
+          var c = e && e.code;
+          deleting = false;
+          if (c === 'auth/user-not-found') { gone(); return; }   // the sign-in record is already gone (an earlier try finished but its answer was lost)
+          if (stage === 'confirm') {
+            if (c === 'auth/user-mismatch') say('That was a different Google account. Nothing was deleted. Tap "Delete account and all data" again and pick the account you signed in with.');
+            else if (c === 'auth/popup-closed-by-user' || c === 'auth/cancelled-popup-request') say('Nothing was deleted.');
+            else if (c === 'auth/popup-blocked') say('The Google window did not open. Nothing was deleted. Wait a moment and tap "Delete account and all data" again.');
+            else say('Google did not confirm' + (c ? ' (' + c + ')' : '') + '. Nothing was deleted. Please try again.');
+          } else say('Not finished: some data may already be deleted. Check the internet and tap "Delete account and all data" again to finish.');
+        });
+    }
+    /* check the sign-in is still valid (it can end on another device) */
+    if (get(P + 'uid')) firebaseReady().then(function (f) { return userNow(f).then(function (u) {
+      if (!u) { forgetDevice(true); render(); return; }
+      return loadFamily(f, u.uid).then(render);
+    }); }, function () {});
+    render();
+  }
+
+  window.TMG = { kid: current(), ready: ready, mountHome: mountHome, _swap: swap, _cloud: cloud };
+})();
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Daily Talk · 日常对话</title>
+<meta name="theme-color" content="#0f766e">
+<link rel="stylesheet" href="../../fonts/fonts.css">
+<style>
+/* The shared look of every Chinese lesson game. A lesson sets its own colours (--page, --blue, --blue-s, --blue-d) and its .opt::before. */
+:root{
+  color-scheme:light;
+  --ink:#1d2b4f; --mute:#4a587a; --page:#eef6ff; --card:#fff;
+  --blue:#1b6fd1; --blue-s:#d5e9ff; --blue-d:#0f4d97; --red:#d6246e; --red-s:#ffd8ea; --green:#1f8f45; --green-s:#d3f4dd; --gold:#ffd23f;
+  --display:"Baloo 2","Nunito","Trebuchet MS",system-ui,sans-serif;
+  --body:"Nunito","Trebuchet MS",system-ui,sans-serif;
+  --han:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC","Noto Sans CJK SC",sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--page);color:var(--ink);font:700 18px/1.5 var(--body);display:flex;flex-direction:column}
+h1,h2,h3{font-family:var(--display);margin:0;line-height:1.15}
+.han{font-family:var(--han);font-weight:700}
+.wrap{width:100%;max-width:760px;margin:0 auto;padding:16px}
+button{font:inherit;cursor:pointer}
+.top{display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:10px 16px;background:#fff;border-bottom:3px solid var(--blue-s)}
+.top h1{font-size:22px;flex:1 1 240px}
+.stamps{font:800 18px var(--display);background:var(--blue-s);color:var(--blue);border-radius:999px;padding:4px 14px;white-space:nowrap}
+.btn{min-height:52px;border:0;border-radius:16px;padding:8px 22px;font:800 20px var(--display);background:var(--blue);color:#fff;box-shadow:0 5px 0 var(--blue-d)}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 var(--blue-d)}
+.btn.ghost{background:#fff;color:var(--blue);box-shadow:0 5px 0 var(--blue-s)}
+.speak{border:0;background:var(--blue-s);color:var(--blue);border-radius:999px;min-width:48px;min-height:48px;font-size:22px}
+
+/* level menu */
+.hero{text-align:center;padding:18px 0 6px}
+.hero .big{font-size:64px;line-height:1}
+.hero p{margin:8px auto 0;color:var(--mute);max-width:560px}
+.levels{display:grid;gap:14px;margin-top:18px}
+.lv{display:flex;align-items:center;gap:14px;text-align:left;border:3px solid var(--blue-s);background:#fff;border-radius:22px;padding:14px 16px;box-shadow:0 6px 0 var(--blue-s)}
+.lv .n{flex:0 0 auto;width:56px;height:56px;border-radius:16px;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font:800 26px var(--display)}
+.lv.done .n{background:var(--green)}
+.lv h3{font-size:21px}
+.lv p{margin:2px 0 0;color:var(--mute);font-size:16px}
+.lv .cont{color:var(--blue);font-weight:800}
+.lv .go{margin-left:auto;font-size:28px}
+
+/* play */
+.bar{height:12px;background:#fff;border-radius:999px;overflow:hidden;box-shadow:inset 0 0 0 2px var(--blue-s);margin:6px 0 14px}
+.bar i{display:block;height:100%;width:0;background:var(--blue);transition:width .3s}
+.panel{background:#fff;border-radius:26px;padding:20px;box-shadow:0 8px 0 var(--blue-s);text-align:center}
+.say{color:var(--mute);font-size:17px;margin:0 0 10px}
+.card-big{font-size:110px;line-height:1.1}
+.py{font:800 30px var(--display);color:var(--blue)}
+.mean{font-size:20px;color:var(--mute)}
+.word{font-size:64px;letter-spacing:6px}
+.built{max-width:560px;margin:14px auto 0;background:#f4f8ff;border:3px solid var(--blue-s);border-radius:18px;padding:12px 16px;text-align:left;font-size:17px;line-height:1.5}
+.built .bt{font:800 18px var(--display);color:var(--blue);text-align:center}
+.built p{margin:8px 0 0}
+.built .how{border-top:2px dashed var(--blue-s);padding-top:8px}
+.pieces{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:8px}
+.piece{min-width:56px;height:56px;padding:0 6px;border-radius:12px;background:#fff;border:3px solid var(--blue-s);display:inline-flex;align-items:center;justify-content:center;font-size:36px}
+.piece.rad{border-color:var(--red);color:var(--red);background:var(--red-s)}
+.piece.rest{font:700 15px var(--body);color:var(--mute);max-width:150px;text-align:center;line-height:1.2}
+.plus{font:800 20px var(--display);color:var(--mute)}
+.rline{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:10px;text-align:center}
+.rline i{color:var(--blue);font-style:normal}
+.rg{color:var(--red);font-size:1.25em}
+.see{letter-spacing:4px;font-size:1.15em}
+.speak.small{min-width:44px;min-height:44px;font-size:18px}
+@media (max-width:480px){.card-big{font-size:88px}.built{font-size:16px;padding:10px 12px}}
+.slot{display:inline-block;min-width:1.1em;border-bottom:6px solid var(--red);color:var(--red)}
+.sentence{font-size:34px;line-height:1.6}
+.emoji{font-size:56px;line-height:1}
+.opts{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+.opt{position:relative;width:110px;height:92px;border:3px solid #e9c46a;border-radius:14px;background:#fffaf0;font-family:var(--han);font-size:52px;color:var(--ink);box-shadow:0 5px 0 #e9c46a;overflow:hidden;padding:0;display:inline-flex;align-items:center;justify-content:center}   /* iPad gives buttons ~1em padding: keep the character in the middle */
+.opt span{position:relative}
+.opt.ok{border-color:var(--green);background:var(--green-s);box-shadow:0 5px 0 var(--green)}
+.opt.no{border-color:var(--red);background:var(--red-s);box-shadow:0 5px 0 var(--red);animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.fb{min-height:34px;margin-top:12px;font:800 20px var(--display)}
+.fb.ok{color:var(--green)}.fb.no{color:var(--red)}
+.row{display:flex;gap:12px;justify-content:center;align-items:center;flex-wrap:wrap;margin-top:12px}
+
+/* the letter at the end */
+.letter{max-width:520px;margin:10px auto 0;background:#fffdf6;border:3px solid #e9c46a;border-radius:18px;padding:18px 20px;text-align:left;font-family:var(--han);font-size:24px;line-height:1.8;position:relative}
+.letter .st{position:absolute;right:14px;top:12px;font-size:44px;transform:rotate(8deg)}
+.fly{animation:fly 1.6s ease-in forwards}
+@keyframes fly{to{transform:translate(60vw,-60vh) rotate(25deg) scale(.3);opacity:0}}
+
+/* level 5: bingo */
+.bgoal{font:800 22px var(--display);color:var(--blue)}
+.bhint{min-height:30px;margin-top:6px;color:var(--mute);font-size:18px}
+.bgrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;max-width:560px;margin:12px auto 0}
+.bcell{position:relative;aspect-ratio:1;min-width:0;padding:0;border:3px solid #e9c46a;border-radius:12px;background:#fffaf0;color:var(--ink);font-family:var(--han);font-weight:700;font-size:clamp(20px,6.2vw,40px);line-height:1;box-shadow:0 3px 0 #e9c46a;touch-action:manipulation}
+.bcell.free{background:var(--gold);border-color:#c79a12;box-shadow:0 3px 0 #c79a12;font-size:clamp(24px,7vw,44px)}
+.bcell.on{background:var(--blue-s);border-color:var(--blue);box-shadow:0 3px 0 var(--blue);animation:stampOn .3s ease}
+.bcell.line{background:var(--green-s);border-color:var(--green);box-shadow:0 3px 0 var(--green)}
+.bcell.no{background:var(--red-s);border-color:var(--red);animation:shake .3s}
+.bcell.peek{animation:peek 1s ease-in-out infinite}
+@keyframes stampOn{0%{transform:scale(1.25)}100%{transform:scale(1)}}
+@keyframes peek{50%{background:var(--gold);transform:scale(1.08)}}
+.btn.hear{min-height:60px;font-size:22px;padding:8px 28px}
+.opt.wide{width:100%;max-width:560px;height:auto;min-height:64px;padding:10px 16px;font-size:26px;line-height:1.4;text-align:left}
+.opt.wide::before{display:none}
+.opt.word{width:auto;min-width:150px;padding:0 18px;font-size:44px}
+/* level 3: sentence pattern */
+.pat{font-family:var(--han);font-weight:700;font-size:40px;color:var(--blue);margin:4px 0 8px}
+.key{color:var(--red)}
+.exs{max-width:560px;margin:14px auto 0;text-align:left;display:grid;gap:10px}
+.ex{display:flex;align-items:center;gap:12px;background:#fffaf0;border:3px solid #e9c46a;border-radius:16px;padding:8px 12px}
+.ex .han{font-size:26px}
+.ex .mean{font-size:16px}
+.bline{min-height:76px;max-width:620px;margin:12px auto 0;border-bottom:4px dashed var(--blue-s);display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;padding:8px}
+.bline.ok{border-color:var(--green)}
+.bline.no{border-color:var(--red);animation:shake .3s}
+.endmark{font-family:var(--han);font-size:30px;color:var(--mute)}
+.tiles{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:16px;min-height:60px}
+.tile{min-height:56px;padding:6px 14px;border:3px solid #e9c46a;border-radius:14px;background:#fffaf0;color:var(--ink);font-family:var(--han);font-weight:700;font-size:28px;box-shadow:0 4px 0 #e9c46a;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.tile.key{border-color:var(--red);box-shadow:0 4px 0 var(--red)}
+.bline .tile{background:#fff}
+.bleft{font:800 18px var(--display);color:var(--mute);margin-top:4px}
+.bwin{font:800 clamp(34px,8vw,52px)/1.1 var(--display);color:var(--green);margin-top:12px}
+@media (max-width:480px){.wrap{padding:12px}.panel.bpanel{padding:14px 10px}}
+@media (prefers-reduced-motion:reduce){.bcell.on,.bcell.peek{animation:none}.bcell.peek{background:var(--gold)}}
+/* levels 1-4 on a tablet or computer: everything 20% bigger (phones keep the sizes above) */
+@media (min-width:600px){
+.wrap.big{max-width:912px}
+.big .panel{min-height:calc(100vh - 214px);min-height:calc(100dvh - 214px);display:flex;flex-direction:column;justify-content:center}   /* the card fills the screen, its content in the middle: no empty half below */
+.big .say{font-size:20px}
+.big .card-big{font-size:132px}
+.big .py{font-size:36px}
+.big .mean{font-size:24px}
+.big .word{font-size:77px}
+.big .sentence{font-size:41px}
+.big .emoji{font-size:67px}
+.big .opt{width:132px;height:110px;font-size:62px}
+.big .opt.wide{width:100%;max-width:672px;height:auto;font-size:31px}
+.big .opt.word{width:auto;min-width:180px;font-size:53px}
+.big .fb{font-size:24px;min-height:41px}
+.big .btn{min-height:62px;font-size:24px;padding:8px 26px}
+.big .speak{min-width:58px;min-height:58px;font-size:26px}
+.big .built{max-width:672px;font-size:20px}
+.big .built .bt{font-size:22px}
+.big .piece{min-width:67px;height:67px;font-size:43px}
+.big .piece.rest{font-size:18px;max-width:180px}
+.big .plus{font-size:24px}
+.big .pat{font-size:48px}
+.big .exs{max-width:672px}
+.big .ex .han{font-size:31px}
+.big .ex .mean{font-size:19px}
+.big .tile{min-height:67px;font-size:34px;padding:6px 17px}
+.big .endmark{font-size:36px}
+.big .bline{min-height:91px;max-width:744px}
+.big .letter{max-width:624px;font-size:29px}
+}
+/* the owner, 2026-11-18: the pinyin and the English of a new-character card, and the English under a level-2 word, 100% bigger */
+.meetp>.py{font-size:60px}
+.meetp>.mean,.mean.wmean{font-size:40px}
+.meetp>.mean.m2,.mean.wmean.m2{font-size:30px}.meetp>.mean.m3,.mean.wmean.m3{font-size:26px}.meetp>.mean.m4{font-size:20px}
+@media (min-width:600px){.big .meetp>.py{font-size:72px}.big .meetp>.mean,.big .mean.wmean{font-size:48px}.big .meetp>.mean.m2,.big .mean.wmean.m2{font-size:36px}.big .meetp>.mean.m3,.big .mean.wmean.m3{font-size:30px}.big .meetp>.mean.m4{font-size:24px}}
+/* upright tablet (not the side-by-side layout): a little smaller so the Got it button stays on screen */
+@media (min-width:600px) and (max-aspect-ratio:5/4){.big .meetp>.py{font-size:52px}.big .meetp>.mean,.big .mean.wmean{font-size:34px}.big .meetp>.mean.m2,.big .mean.wmean.m2{font-size:26px}.big .meetp>.mean.m3,.big .mean.wmean.m3{font-size:22px}.big .meetp>.mean.m4{font-size:18px}}
+/* a new-character card on a sideways iPad: the character on the left, how it is built on the right, so "Got it" stays on screen */
+@media (min-width:900px) and (min-aspect-ratio:5/4){
+.big .panel.meetp{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.7fr);grid-template-rows:auto auto auto auto;column-gap:28px;align-content:center;align-items:center}
+.big .meetp>.say{grid-column:1;grid-row:1}.big .meetp>.charrow{grid-column:1;grid-row:2}.big .meetp>.py{grid-column:1;grid-row:3}.big .meetp>.mean{grid-column:1;grid-row:4;align-self:start}
+.big .meetp>.built{grid-column:2;grid-row:1 / 5;margin:0}.big .meetp>.row{grid-column:1 / 3;grid-row:5}
+.big .meetp .charrow{display:flex;justify-content:center;flex-wrap:nowrap;gap:10px}.big .meetp .card-big{font-size:104px}.big .meetp .old{max-width:150px;flex-direction:column;gap:0}.big .meetp .old .cap{text-align:center;margin-top:4px;font-size:12.5px}.big .meetp .old img{width:78px;height:78px}   /* sideways: the old form beside the character, so the card keeps its height */
+.big .pat{font-size:40px;margin:0 0 2px}.big .exs{gap:5px;margin-top:6px}.big .ex{padding:2px 12px}.big .ex .han{font-size:26px}.big .ex .mean{font-size:16px}.big .panel{padding-top:12px;padding-bottom:12px}   /* the sentence-pattern card, sideways: a little tighter so "Got it" stays on screen */
+}
+.big .panel>.built,.big .panel>.exs,.big .panel>.bline,.big .panel>.tiles,.big .panel>.letter{width:100%}   /* in the full-height card, keep these full width */
+.nav{display:flex;justify-content:space-between;gap:10px;margin:0 0 8px}
+.nav .btn{min-height:48px;font-size:18px;padding:4px 18px}
+.nav .btn:disabled{opacity:.35;cursor:default}
+@media (min-width:600px){.big .nav .btn{min-height:56px;font-size:21px}}
+/* scores */
+.tally{font:800 20px var(--display);align-self:center;white-space:nowrap}
+.tally .tr{color:var(--green)}.tally .tw{color:var(--red);margin-left:26px}
+.lv .sc{color:var(--green);font-weight:800}
+.result{max-width:560px;margin:12px auto 0;background:#fffaf0;border:3px solid #e9c46a;border-radius:18px;padding:12px 16px;font-size:19px}
+.result .big1{font:800 26px var(--display);color:var(--green)}
+.result .miss{color:var(--red);margin-top:6px}
+.result .han{letter-spacing:3px}
+.ask-over{position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px}
+.ask-box{position:relative;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow-y:auto;background:#fff;border-radius:22px;padding:22px;max-width:460px;text-align:center;font-size:19px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.btn.redo{background:#e8a317;box-shadow:0 5px 0 #b37a0c}
+.ask-box h3{font-size:24px;margin-bottom:8px}
+/* the owner, 2026-11-18: a cross in every continue box; small red "clear" buttons */
+.ask-x{position:absolute;top:6px;right:6px;width:50px;height:50px;border-radius:50%;border:0;background:#f1f1f1;color:#555;font:700 28px/1 var(--display);cursor:pointer}
+.ask-x:active{background:#e0e0e0}
+.ask-box h3{padding:0 40px}
+.ask-box .clrrow{margin-top:14px;padding-top:12px;border-top:2px dashed #e5e5e5}
+.btn.clr{font-size:16px;color:#b3261e;border-color:#e8b4b0}
+.clrall{margin:26px 0 8px;justify-content:center}
+/* bingo on a sideways screen: everything but the card in a column on the left, the card on the right */
+@media (min-width:700px) and (min-height:600px) and (min-aspect-ratio:5/4){
+.wrap.bwide{max-width:1120px}
+.bpanel{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto auto 1fr auto;column-gap:28px;align-items:start;text-align:center}
+.bpanel>.bgoal{grid-column:1;grid-row:1;margin-top:8px}
+.bpanel>.btop{grid-column:1;grid-row:2;flex-direction:column;gap:10px}
+.bpanel>.bhint{grid-column:1;grid-row:3}
+.bpanel>.bend{grid-column:1;grid-row:4}
+.bpanel>.bback{grid-column:1;grid-row:5}
+.bpanel>.bgrid{grid-column:2;grid-row:1 / 6;margin:0;width:min(600px,calc(100vh - 200px));width:min(600px,calc(100dvh - 200px))}
+}
+/* the character long ago */
+.charrow{display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap}
+.old{display:flex;flex-direction:column;align-items:center;max-width:200px}
+.old img{width:86px;height:86px;background:#fff;border:3px solid #e9c46a;border-radius:14px;padding:4px}
+.old .cap{font-size:13px;color:var(--mute);line-height:1.35;text-align:center;margin-top:4px}
+.big .old img{width:100px;height:100px}
+.big .old .cap{font-size:15px}
+.big .charrow .card-big{line-height:1}.big .old{flex-direction:row;gap:12px;max-width:none}.big .old .cap{text-align:left;max-width:230px;margin-top:0}   /* upright: the caption beside the drawing, so the card stays short */
+button{-webkit-appearance:none;appearance:none}
+.opt.wide{justify-content:flex-start}
+.speak{padding:0}
+.big .charrow{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:18px}   /* the big character exactly in the middle, its old form to the right */
+.big .charrow>.card-big{grid-column:2}
+.big .charrow>.old{grid-column:3;justify-self:start}
+.barrow{display:flex;align-items:center;gap:12px;margin:4px 0 10px}
+.barrow .bar{flex:1;margin:0}
+.stepn{font:800 18px/1 var(--display);color:var(--mute);white-space:nowrap}
+.lvbtn{min-height:44px;border:2px solid var(--blue);background:#fff;color:var(--blue);border-radius:999px;padding:0 16px;font:800 17px var(--display);white-space:nowrap}
+.btn.waiting,.lvbtn.waiting{opacity:.55}
+/* "Start here": the lesson's short talk (only in a lesson with a STORY) */
+.lvs{display:flex;align-items:center;gap:14px;text-align:left;border:3px solid #e9c46a;background:#fffaf0;border-radius:22px;padding:14px 16px;box-shadow:0 6px 0 #e9c46a}   /* looks like a level card, but is not one (.lv) */
+.lvs .n{flex:0 0 auto;width:56px;height:56px;border-radius:16px;background:#e09a1f;color:#fff;display:flex;align-items:center;justify-content:center;font:800 26px var(--display)}
+.lvs.done .n{background:var(--green)}
+.lvs h3{font-size:21px}
+.lvs p{margin:2px 0 0;color:var(--mute);font-size:16px}
+.lvs .cont{color:var(--blue);font-weight:800}.lvs .sc{color:var(--green);font-weight:800}   /* "Continue…" and the score, coloured as on the level cards */
+.lvs .go{margin-left:auto;font-size:28px}
+.storyp{text-align:left}
+.storyp>.say{text-align:center}
+.stitle{text-align:center;font-size:30px;margin:0 0 4px}
+.stitle .sen{display:block;font:700 18px var(--body);color:var(--mute)}
+.shelp{text-align:center;color:var(--mute);font-size:16px;margin:0 0 10px}
+.talk{display:flex;flex-direction:column;gap:12px;max-width:680px;margin:0 auto}
+.bubble{align-self:flex-start;max-width:92%;background:#f3f7ff;border:3px solid var(--blue-s);border-radius:20px 20px 20px 6px;padding:8px 14px 10px;scroll-margin-bottom:110px;cursor:pointer;transition:box-shadow .2s}   /* a new line scrolls into view above the buttons */
+.bubble.right{align-self:flex-end;background:#fff8e8;border-color:#f1dfb8;border-radius:20px 20px 6px 20px}
+.bubble.patb{border-color:var(--red)}
+.who{font:800 16px var(--display);color:var(--mute)}
+.srow{display:flex;align-items:flex-start;gap:10px}
+.srow .speak{flex:0 0 auto}
+.sline{font-size:30px;line-height:1.45;min-width:0;overflow-wrap:anywhere}   /* always wraps inside its bubble (iPad Safari, 2026-11-07) */
+.newc{-webkit-appearance:none;appearance:none;border:0;background:none;margin:0;padding:0;font:inherit;line-height:inherit;color:var(--blue);text-decoration:underline;text-decoration-style:dotted;text-underline-offset:5px;cursor:pointer;display:inline}
+.newc.key{color:var(--red)}
+.newc.demo{cursor:default}
+.pyl{font:700 18px var(--body);color:var(--blue);margin-top:2px}
+.nopy .pyl{display:none}
+.noen .bubble .mean{display:none}
+.bubble .mean{font-size:17px}
+.patn{margin-top:4px;font:800 15px var(--display);color:var(--red)}
+.sctl{position:sticky;bottom:0;margin:12px -20px -20px;padding:12px 20px 16px;background:rgba(255,255,255,.96);border-radius:0 0 26px 26px}
+.sctl .togs{display:inline-flex;gap:8px;flex-wrap:nowrap}
+@media (max-width:600px){.sctl .togs .btn{padding-left:10px;padding-right:10px;font-size:15px}}
+.sctl .mains{display:inline-flex;flex-wrap:wrap;justify-content:center;gap:10px}
+/* the new characters stay at the top of the screen while the talk scrolls (the owner, 2026-11-08) */
+.storyp .today{position:sticky;top:0;z-index:4;background:#fff;padding:6px 0;margin-top:0;box-shadow:0 6px 8px -6px rgba(0,0,0,.15)}
+.storyp .bubble{scroll-margin-top:170px}   /* a new line is not hidden under the sticky row */
+@media (min-width:900px){.storyp .bubble{scroll-margin-top:120px}}
+@media (max-width:600px){.storyp .today .tchar{min-width:40px;min-height:40px;font-size:21px}.storyp .today{gap:4px}}
+/* wide screens (iPad sideways): Pinyin/English on the left, the buttons that move on at the right, the talk gets the whole middle */
+.wrap.storyw{max-width:1180px}
+@media (min-width:900px){
+  .storyw .storyp{display:grid;grid-template-columns:172px minmax(0,1fr) 182px;column-gap:14px;align-items:start}
+  .storyw .storyp>*{grid-column:2}
+  .storyw .storyp .talk,.storyw .storyp .today{max-width:none}
+  .storyw .sctl{display:contents}
+  .storyw .sctl .togs,.storyw .sctl .mains{grid-row:1 / span 20;position:sticky;top:16px;align-self:start;display:flex;flex-direction:column;gap:10px}
+  .storyw .sctl .togs{grid-column:1}
+  .storyw .sctl .mains{grid-column:3}
+  .storyw .sctl .btn{width:100%;margin:0;padding-left:10px;padding-right:10px;font-size:17px}
+  .storyw .storyp .today{gap:4px}
+  .storyw .storyp .tlab{font-size:14px}
+}
+.today{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;margin:6px auto 10px;max-width:680px}
+.tlab{font:800 15px var(--display);color:var(--mute);margin-right:4px}
+.tchar{-webkit-appearance:none;appearance:none;min-width:44px;min-height:44px;padding:0 6px;border:2px solid #ddd;border-radius:12px;background:#fff;color:#b9b9b9;font-size:24px;line-height:1}
+.tchar.lit{border-color:var(--blue);color:var(--blue);background:var(--blue-s)}
+.nobr{white-space:nowrap}
+.bubble.playing{box-shadow:0 0 0 4px var(--gold)}
+
+/* "Write it 写一写": stroke order (left) and writing with a finger (right), each in a 田字格 box */
+.wtitle{font-size:24px;align-self:center}
+.wchips{margin:0 auto 8px;gap:4px}
+.wchips .tchar{color:var(--ink);border-color:var(--blue-s);min-width:42px;min-height:42px;font-size:22px}
+.tchar.wrote{border-color:var(--green);color:var(--green);background:var(--green-s)}
+.tchar.cur{box-shadow:0 0 0 3px var(--gold)}
+.whead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:2px 0 8px}
+.whead .btn{min-height:48px;padding:4px 16px;font-size:18px}
+.whead .btn:disabled{opacity:.35;cursor:default}
+.winfo{display:flex;align-items:center;justify-content:center;gap:12px;min-width:0}
+.wbig{font-size:52px;line-height:1;color:var(--blue)}
+.wtext{text-align:left}
+.wtext .py{font-size:22px;color:var(--blue)}
+.wtext .mean{font-size:17px;color:var(--mute)}
+.wrow{display:flex;flex-wrap:wrap;justify-content:center;gap:24px}
+.wbox{display:flex;flex-direction:column;align-items:center;min-width:0}
+.wlab{margin:0 0 6px;font:800 17px var(--display);color:var(--mute)}
+.tzg{position:relative;background:#fff;border:3px solid #e2a3a3;border-radius:6px;-webkit-user-select:none;user-select:none}
+.tzg::before,.tzg::after{content:"";position:absolute;pointer-events:none}
+.tzg::before{left:50%;top:0;bottom:0;border-left:2px dashed #efc4c4}
+.tzg::after{top:50%;left:0;right:0;border-top:2px dashed #efc4c4}
+.tzg svg{position:relative;z-index:1;display:block}
+.wq{touch-action:none;-webkit-touch-callout:none}
+.wbtns{margin-top:10px;gap:10px}
+.wbtns .btn{min-height:46px;padding:6px 16px;font-size:18px}
+.wmsg{min-height:27px;margin:10px 0 4px;color:var(--blue-d)}
+.wwords{display:flex;flex-wrap:nowrap;align-items:center;justify-content:center;gap:8px;margin:2px auto 0;max-width:720px}   /* one row: a long meaning is cut short (… ) instead of making a second row below the screen */
+.wword{-webkit-appearance:none;appearance:none;border:2px solid var(--blue-s);background:#fff;border-radius:14px;padding:4px 12px;min-height:46px;font:inherit;color:var(--ink);line-height:1.2;flex:0 1 auto;min-width:0}
+.wword .han{font-size:22px}
+.wword .wc{color:var(--blue)}
+.wword small{font:700 13px var(--body);color:var(--mute);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;max-width:13em;margin:0 auto}   /* a long meaning takes two short lines */
+.wwords .tlab{flex:0 0 auto}
+.pwords{margin-top:8px;flex-wrap:wrap}   /* level 1: words with the character left blank, under the pinyin */
+.hero .offl{margin-top:6px;font:800 15px var(--display);color:var(--green)}
+.hero .offl:empty{display:none}
+/* the story's cast (lessons with LESSON.cast): the speakers on a little stage; the one talking hops, a new line pops in */
+.stage{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:4px 0 8px}
+.actor{display:flex;flex-direction:column;align-items:center;min-width:64px;padding:4px 6px;border-radius:16px;transition:background .2s}
+.actor .face{font-size:44px;line-height:1.1}
+.actor .aname{font-size:16px;font-weight:800;color:var(--mute)}
+.actor.talking{background:var(--blue-s)}
+.actor.talking .face{animation:hop .5s ease-in-out infinite alternate}
+@keyframes hop{from{transform:translateY(0) rotate(-4deg)}to{transform:translateY(-10px) rotate(4deg)}}
+.bubble.pop{animation:popin .35s ease-out}
+.who .wface{display:inline-block;font-size:28px;vertical-align:middle}
+.bubble.playing .wface{animation:hop .5s ease-in-out infinite alternate}
+@keyframes popin{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+@media (prefers-reduced-motion:reduce){.actor.talking .face,.bubble.pop,.bubble.playing .wface{animation:none}}
+@media (max-width:500px){.actor{min-width:52px}.actor .face{font-size:34px}}
+
+/* the owner, 2026-11-22: polyphonic characters are grey (first purple; the owner changed it to grey the same day); a tap shows all their readings */
+.poly{color:#5b6270;border-bottom:3px dotted #9aa1ad;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.key .poly,.newc .poly,.tchar .poly,.slot .poly,.wc .poly,.wbig .poly,.rad .poly,.miss .poly,.patn .poly{color:inherit}   /* where the colour carries a meaning (the red key word, a lit chip, the answer), the line under the character is what marks it */
+.polybox .ask-box{max-width:520px;text-align:center}
+.pbig{font-size:84px;line-height:1.1;color:#5b6270}
+.prd{text-align:left;border:3px solid #d9dce2;background:#f6f7f9;border-radius:16px;padding:10px 16px;margin-top:10px}
+.prd.here{border-color:#5b6270}
+.ppy{font:800 28px var(--display);color:#5b6270}.ppy small{font:800 14px var(--body);color:var(--mute);margin-left:6px}
+.pen{color:var(--mute);font-size:17px;line-height:1.3}
+.pwd{margin-top:6px;font-size:18px;line-height:1.5}.pwd .han{font-size:26px}.pwd small{font:700 15px var(--body);color:var(--mute)}
+.pnote{font-size:15px;color:var(--mute);margin-top:12px}
+</style>
+<style>
+/* Daily Talk 日常对话: the look of the sentence game. Used together with _engine/chinese-engine.css (the shared buttons, cards, boxes). */
+.weekh{margin:22px 0 -4px;font-size:22px;color:var(--blue-d)}
+.lv p{overflow-wrap:anywhere}
+.stephead{font:800 20px var(--display);color:var(--blue-d);margin:0 0 8px;display:flex;flex-wrap:wrap;gap:8px;align-items:baseline}
+.stephead .rnd{font:800 15px var(--display);color:#b3261e;background:#ffe9e7;border-radius:999px;padding:2px 12px}
+.qbox{display:flex;flex-direction:column;align-items:center}
+.enq{font:700 24px/1.35 var(--body);color:var(--ink);margin:8px auto 0;max-width:620px}
+.enq.small{font-size:20px;color:var(--mute)}
+/* a sentence with its pinyin over every word */
+.sent{display:inline-block;line-height:1.1;text-align:center}
+.wd{display:inline-flex;flex-direction:column;align-items:center;margin:0 5px;vertical-align:bottom}
+.wp{display:block;font:800 .42em/1.2 var(--display);color:var(--blue);letter-spacing:0;white-space:nowrap}
+.wh{display:block;font-size:1em;line-height:1.15}
+.wend{display:inline-block;vertical-align:bottom;margin-left:1px;line-height:1.15}
+.sentline{font-size:44px;margin:8px 0 2px;overflow-wrap:anywhere}
+.sent.right .wh{color:var(--green)}
+.bigemoji{font-size:84px;margin:2px 0 6px}
+.learnp .starbox{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin:14px auto 0;background:#fffaf0;border:3px solid #e9c46a;border-radius:18px;padding:8px 14px;max-width:520px}
+.stlab{font:800 16px var(--display);color:#b7791f}
+.starc{border:0;background:#fff;border-radius:14px;padding:4px 14px;display:inline-flex;align-items:center;gap:12px;box-shadow:0 3px 0 #e9c46a}
+.starc .big1{font-size:46px;line-height:1.1;color:var(--red)}
+.starc .sp{font:800 20px var(--display);color:var(--ink)}
+.sayit{font:800 20px var(--display);color:var(--blue-d);flex-basis:100%;text-align:center;order:-1}
+.bigspeak{min-width:64px;min-height:64px;font-size:30px}
+.askline{display:flex;align-items:center;justify-content:center;gap:12px;font-size:38px;margin-top:6px}
+.opts.col{flex-direction:column;align-items:center;gap:12px;width:100%}
+.opt.pic{width:130px;height:120px;font-size:68px}
+.opt.cn{font-size:34px;line-height:1.1;height:auto;min-height:92px;width:100%;max-width:640px;justify-content:center;padding:8px 14px}
+.opt.cn .wp{font-size:.4em}
+.opt.cn::before{display:none}
+.opt.ok .wh,.opt.ok .wp{color:var(--green)}
+.opt.no .wh,.opt.no .wp{color:var(--red)}
+.tile{padding:4px 12px;min-height:76px}
+.tl{display:inline-flex;flex-direction:column;align-items:center;line-height:1.1}
+.tl .wp{font-size:.5em}
+.bline .tile{background:#fff}
+.bline{min-height:96px}
+.fb{min-height:34px}
+.panel .row:last-of-type{margin-top:14px}
+@media (min-width:600px){
+  .big .sentline{font-size:60px}
+  .big .askline{font-size:48px}
+  .big .bigemoji{font-size:100px}
+  .big .enq{font-size:30px}.big .enq.small{font-size:24px}
+  .big .opt.pic{width:150px;height:134px;font-size:76px}
+  .big .opt.cn{font-size:42px;max-width:760px}
+  .big .tile{min-height:92px;font-size:42px}
+  .big .starc .big1{font-size:56px}
+}
+/* a card is a column of its own so everything stays on one screen: tighter when the screen is short */
+@media (max-height:760px){
+  .big .sentline{font-size:48px}.big .bigemoji{font-size:72px}.big .enq{font-size:26px}
+  .big .opt.pic{height:110px}.big .opt.cn{min-height:76px;font-size:36px}
+}
+.bline{width:100%;max-width:760px;margin-left:auto;margin-right:auto}
+.starc .poly,.sent.right .poly{color:inherit}
+.opt.ok .poly,.opt.no .poly{color:inherit}
+</style>
+<style>
+/* Daily Talk: the sentences a family says every day, five a day. Each sentence has a picture, pinyin, English and one "star" character to learn.
+   All sentences are our own. The first week: waking up, getting ready, eating, please and thank you, bedtime. */
+:root{ --page:#f0fdfa; --blue:#0f766e; --blue-s:#ccfbf1; --blue-d:#115e59; }   /* this game's colors */
+</style>
+</head>
+<body>
+<header class="top"><h1>💬 Daily Talk <span class="han">日常对话</span></h1><button class="lvbtn" id="lvbtn" type="button">☰ Days</button><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
+<div class="wrap" id="app"></div>
+<script>
+/* ---------- content: every sentence is our own ---------- */
+var TALK = { id: 'daily-talk', voice: 'daily-voice', intro: { emoji: '💬', title: 'Daily Talk 日常对话' } };
+/* a sentence: w = its words, p = the pinyin of each word, end = the punctuation, en = English, e = a picture (one emoji, different for each sentence of a day),
+   star = the one character to learn, no = two characters that do not fit in its place (for "find the star character"),
+   t and tp = the pieces for building, only when the sentence is a single word. pairs = a question and its answer (x = sentences that would also answer it). */
+var WEEKS = [{
+  n: 1, title: 'Week 1: the first words', zh: '第一周',
+  review: { id: 'r1', title: 'Week 1 review', zh: '第一周复习', e: '🏆' },
+  days: [
+    { id: 'd1', title: 'Day 1: Waking up', zh: '起床', e: '🌅',
+      pairs: [{ q: 'd1.3', a: 'd1.4' }],
+      items: [
+        { w: ['早上', '好'], p: ['zǎoshang', 'hǎo'], end: '！', en: 'Good morning!', e: '🌅', star: { c: '好', py: 'hǎo', en: 'good' }, no: ['大', '月'] },
+        { w: ['我', '起床', '了'], p: ['wǒ', 'qǐchuáng', 'le'], end: '。', en: "I'm up! (I got out of bed.)", e: '⏰', star: { c: '我', py: 'wǒ', en: 'I, me' }, no: ['石', '鱼'] },
+        { w: ['你', '睡', '得', '好', '吗'], p: ['nǐ', 'shuì', 'de', 'hǎo', 'ma'], end: '？', en: 'Did you sleep well?', e: '🛌', star: { c: '你', py: 'nǐ', en: 'you' }, no: ['车', '石'] },
+        { w: ['我', '睡', '得', '很', '好'], p: ['wǒ', 'shuì', 'de', 'hěn', 'hǎo'], end: '。', en: 'I slept very well.', e: '😊', star: { c: '很', py: 'hěn', en: 'very' }, no: ['月', '门'] },
+        { w: ['我', '要', '刷牙'], p: ['wǒ', 'yào', 'shuāyá'], end: '。', en: "I'm going to brush my teeth.", e: '🦷', star: { c: '要', py: 'yào', en: 'want; going to' }, no: ['月', '鸟'] }
+      ] },
+    { id: 'd2', title: 'Day 2: Getting ready', zh: '穿衣服', e: '👕',
+      pairs: [{ q: 'd2.4', a: 'd2.5' }],
+      items: [
+        { w: ['我', '要', '洗脸'], p: ['wǒ', 'yào', 'xǐliǎn'], end: '。', en: "I'm going to wash my face.", e: '🧼', star: { c: '洗', py: 'xǐ', en: 'wash' }, no: ['石', '车'] },
+        { w: ['我', '要', '穿', '衣服'], p: ['wǒ', 'yào', 'chuān', 'yīfu'], end: '。', en: "I'm going to put on my clothes.", e: '👕', star: { c: '衣', py: 'yī', en: 'clothes' }, no: ['山', '水'] },
+        { w: ['我', '自己', '穿', '鞋'], p: ['wǒ', 'zìjǐ', 'chuān', 'xié'], end: '。', en: 'I put on my shoes myself.', e: '👟', star: { c: '自', py: 'zì', en: 'self' }, no: ['月', '鸟'] },
+        { w: ['我的', '书包', '在', '哪儿'], p: ['wǒ de', 'shūbāo', 'zài', 'nǎr'], end: '？', en: 'Where is my schoolbag?', e: '🤷', star: { c: '书', py: 'shū', en: 'book' }, no: ['日', '木'] },
+        { w: ['书包', '在', '这儿'], p: ['shūbāo', 'zài', 'zhèr'], end: '。', en: 'The schoolbag is here.', e: '🎒', star: { c: '在', py: 'zài', en: 'be at; in' }, no: ['大', '石'] }
+      ] },
+    { id: 'd3', title: 'Day 3: Eating', zh: '吃饭', e: '🍚',
+      pairs: [{ q: 'd3.3', a: 'd3.4', x: ['d3.1', 'd3.5'] }],
+      items: [
+        { w: ['我', '饿', '了'], p: ['wǒ', 'è', 'le'], end: '。', en: "I'm hungry.", e: '🤤', star: { c: '饿', py: 'è', en: 'hungry' }, no: ['石', '车'] },
+        { w: ['开饭', '了'], p: ['kāifàn', 'le'], end: '！', en: "Time to eat! (Dinner's ready!)", e: '🍚', star: { c: '饭', py: 'fàn', en: 'rice; meal' }, no: ['月', '日'] },
+        { w: ['你', '想', '吃', '什么'], p: ['nǐ', 'xiǎng', 'chī', 'shénme'], end: '？', en: 'What would you like to eat?', e: '🍴', star: { c: '吃', py: 'chī', en: 'eat' }, no: ['车', '月'] },
+        { w: ['我', '想', '吃', '面条'], p: ['wǒ', 'xiǎng', 'chī', 'miàntiáo'], end: '。', en: "I'd like noodles.", e: '🍜', star: { c: '面', py: 'miàn', en: 'noodles; face' }, no: ['鸟', '云'] },
+        { w: ['我', '吃饱', '了'], p: ['wǒ', 'chībǎo', 'le'], end: '。', en: "I'm full.", e: '😌', star: { c: '饱', py: 'bǎo', en: 'full (of food)' }, no: ['车', '门'] }
+      ] },
+    { id: 'd4', title: 'Day 4: Please and thank you', zh: '请和谢谢', e: '🙏',
+      pairs: [{ q: 'd4.2', a: 'd4.3', x: ['d4.5'] }, { q: 'd4.4', a: 'd4.5' }],
+      items: [
+        { w: ['请', '给', '我', '一杯', '水'], p: ['qǐng', 'gěi', 'wǒ', 'yì bēi', 'shuǐ'], end: '。', en: 'Please give me a glass of water.', e: '💧', star: { c: '水', py: 'shuǐ', en: 'water' }, no: ['石', '月'] },
+        { w: ['谢谢'], p: ['xièxie'], t: ['谢', '谢'], tp: ['xiè', 'xie'], end: '！', en: 'Thank you!', e: '🙏', star: { c: '谢', py: 'xiè', en: 'thank' }, no: ['石', '车'] },
+        { w: ['不', '客气'], p: ['bú', 'kèqi'], end: '。', en: "You're welcome.", e: '🤗', star: { c: '不', py: 'bù (bú here)', en: 'not; no' }, no: ['月', '石'] },
+        { w: ['对不起'], p: ['duìbuqǐ'], t: ['对', '不', '起'], tp: ['duì', 'bu', 'qǐ'], end: '。', en: "I'm sorry.", e: '😔', star: { c: '对', py: 'duì', en: 'right; toward' }, no: ['月', '鸟'] },
+        { w: ['没', '关系'], p: ['méi', 'guānxi'], end: '。', en: "It's OK. (No problem.)", e: '🤝', star: { c: '没', py: 'méi', en: 'not have' }, no: ['月', '石'] }
+      ] },
+    { id: 'd5', title: 'Day 5: Bedtime', zh: '睡觉', e: '🌙',
+      pairs: [],
+      items: [
+        { w: ['我', '累', '了'], p: ['wǒ', 'lèi', 'le'], end: '。', en: "I'm tired.", e: '😩', star: { c: '累', py: 'lèi', en: 'tired' }, no: ['石', '车'] },
+        { w: ['我', '想', '睡觉'], p: ['wǒ', 'xiǎng', 'shuìjiào'], end: '。', en: 'I want to go to sleep.', e: '😴', star: { c: '睡', py: 'shuì', en: 'sleep' }, no: ['石', '鸟'] },
+        { w: ['请', '关灯'], p: ['qǐng', 'guāndēng'], end: '。', en: 'Please turn off the light.', e: '💡', star: { c: '灯', py: 'dēng', en: 'light; lamp' }, no: ['月', '石'] },
+        { w: ['晚安'], p: ['wǎn’ān'], t: ['晚', '安'], tp: ['wǎn', 'ān'], end: '！', en: 'Good night!', e: '🌙', star: { c: '安', py: 'ān', en: 'peaceful; safe' }, no: ['月', '石'] },
+        { w: ['明天', '见'], p: ['míngtiān', 'jiàn'], end: '！', en: 'See you tomorrow!', e: '👋', star: { c: '见', py: 'jiàn', en: 'see; meet' }, no: ['石', '月'] }
+      ] }
+  ]
+}];
+</script>
+<script>
+/* Daily Talk 日常对话: the engine of the sentence game (five new sentences a day: look, listen, say it, then questions). A page defines, before
+   loading this file: TALK (its id, voice folder, intro) and WEEKS (days of five sentences each). Made 2026-11-22. The voice, sound and
+   polyphonic-character code is copied from _engine/chinese-engine.js (the lesson engine): a fix there may be needed here too.
+   The polyphonic table between POLY-BEGIN and POLY-END is put in by .claude/skills/chinese-lesson-game/scripts/embed-poly.py. */
+var app = document.getElementById('app');
+function E(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+
+/* voice: every character, word and sentence is recorded in advance with a warm voice (<lesson folder>/<TALK.voice>/<key>.mp3, made by
+   网站\make-voices.py; key = the same hash as voice-lines.cjs). Text with no recording stays silent: the device's own voice is never used. */
+var VKEYS = null, player = null;
+try { fetch(TALK.voice + '/keys.json').then(function (r) { return r.json(); }).then(function (k) { VKEYS = {}; k.forEach(function (x) { VKEYS[x] = 1; }); }, function () {}); } catch (e) {}
+function vkey(t) { t = String(t).replace(/＿/g, '').trim(); var h = 0x811c9dc5; for (var i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
+var voiceWait = null, voiceDone = null;   // the recording now playing, and how to mark it finished
+var pending = null, pendBtn = null, navAt = 0;   // the one move waiting for the voice to end, and when the child last moved on
+/* Fast sound (computers): a recording that is downloaded and decoded (BUF) plays through Web Audio, which starts at once; until the
+   first tap, and for anything not decoded yet, the <audio> player is used. On iPad and iPhone no AudioContext is made up front (one
+   made early can sound crackly on iOS): see IOS_FAST below. */
+var IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && 'ontouchend' in document);
+/* iPad sound (2026-11-08): on iPad and iPhone (iOS 17+) every recording plays through Web Audio, decoded in memory and trimmed to
+   the words, so a tap sounds at once, as on computers. Earlier tries trembled on the owner's iPad (11-07; 11-08 with a context at
+   the device rate and 5 ms fades); since the context runs at the recordings' own 24000 Hz with no fades, it is clean and fast
+   (tried in city-walk, then made the setting for every lesson). The context is made inside the first tap, the <audio> player is
+   never used for the voice once it exists (no mixing), and recordings are decoded one at a time. A lesson can set iosFast: false.
+   iOS before 17 keeps the <audio> player (Web Audio there goes quiet with the silent switch on). */
+var IOS_FAST = IOS && TALK.iosFast !== false && !!navigator.audioSession;   // iOS 17+ only: before that, Web Audio goes quiet with the silent switch on
+var AC = null, BUF = {}, srcNode = null, loadingDone = null;   // loadingDone: a line being fetched or decoded before it plays (it counts as speaking)
+try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}   // iPad (iOS 17+): play even in silent mode, like the <audio> player
+try { var ACx = window.AudioContext || window.webkitAudioContext; if (ACx && !IOS) AC = new ACx(); } catch (e) { AC = null; }
+var FAST = !!AC && !IOS;
+function watchAC() {
+  AC.onstatechange = function () {   // iPad paused the sound (a call, another app): a move waiting for this recording may go now
+    if (AC.state !== 'running' && srcNode && voiceDone) { var n = srcNode; srcNode = null; try { n.onended = null; n.stop(0); } catch (e) {} voiceDone(); }
+  };
+}
+if (AC) watchAC();
+function startFast() {   // iPad (IOS_FAST): inside the first tap, make the context and decode what is downloaded already
+  if (AC || !IOS_FAST) return;
+  var C = window.AudioContext || window.webkitAudioContext;
+  try { AC = new C({ sampleRate: 24000 }); } catch (e) { try { AC = new C(); } catch (e2) { AC = null; return; } }   // the recordings' own rate: no converting on every play (2026-11-08)
+  FAST = true; watchAC();
+  try { var OC = window.OfflineAudioContext || window.webkitOfflineAudioContext; DEC = new OC(1, 1, AC.sampleRate); } catch (e) { DEC = null; }   // decode off the playing context, at its rate
+  Object.keys(BLOBS).forEach(function (k) { if (!BUF[k]) queueTrim(k, BLOBS[k]); });
+}
+/* iPad: decode one recording at a time (a burst of ~100 at once can make an older iPad stutter); a line asked for now goes first */
+var TQ = [], TBUSY = false;
+function queueTrim(k, b, then, front) { var j = { k: k, b: b, then: then }; if (front) TQ.unshift(j); else TQ.push(j); runTrim(); }
+function runTrim() {
+  if (TBUSY) return;
+  var j = TQ.shift(); if (!j) return;
+  if (BUF[j.k]) { if (j.then) j.then(); return runTrim(); }
+  TBUSY = true;
+  var fired = false, cb = function () { if (fired) return; fired = true; TBUSY = false; if (j.then) j.then(); runTrim(); };
+  setTimeout(cb, 4000);   // a decode that never answers must not hold up the rest
+  trimOf(j.k, j.b, cb);
+}
+var SILENT = null, primed = false;   // a tiny silent sound, played once inside the first tap so iPad also allows the <audio> player later
+function silentUrl() {
+  if (SILENT) return SILENT;
+  var b = new ArrayBuffer(46), v = new DataView(b), w = function (o, s) { for (var i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, 'RIFF'); v.setUint32(4, 38, true); w(8, 'WAVE'); w(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, 8000, true); v.setUint32(28, 16000, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, 2, true); v.setInt16(44, 0, true);
+  return (SILENT = URL.createObjectURL(new Blob([b], { type: 'audio/wav' })));
+}
+function unlockSound() {   // every tap: make sure Web Audio may play (iPad also pauses it after a call or another app)
+  startFast();
+  if (!primed && !IOS_FAST && (!player || player.paused)) {
+    primed = true;
+    try { if (!player) player = new Audio(); var u = silentUrl(); player.src = u; var q = player.play();
+      if (q && q.then) q.then(function () { if (player.src === u) player.pause(); }, function () {}); } catch (e) {}
+  }
+  if (!AC || AC.state === 'running') return;
+  try { var r = AC.resume(); if (r && r.catch) r.catch(function () {}); } catch (e) {}
+  try { var s = AC.createBufferSource(); s.buffer = AC.createBuffer(1, 1, AC.sampleRate); s.connect(AC.destination); s.start(0); } catch (e) {}
+}
+['touchend', 'pointerdown', 'mousedown', 'keydown'].forEach(function (ev) { document.addEventListener(ev, unlockSound, true); });
+function stopSound() {
+  if (player) try { player.pause(); } catch (e) {}
+  if (srcNode) {
+    var n = srcNode; srcNode = null;
+    try {
+      n.onended = null;
+      n.stop(0);
+    } catch (e) {}
+  }
+}
+function playBuf(k, done) {   // Web Audio: starts at once, ends when the words end
+  var node = AC.createBufferSource(); node.buffer = BUF[k];
+  node.connect(AC.destination);
+  node.onended = function () { if (srcNode === node) srcNode = null; done(); };
+  srcNode = node; node.start(0);
+}
+function speaking() {   // is a recording still being said? (an interrupted or paused one does not hold anything up)
+  if (!voiceDone) return false;
+  if (loadingDone && loadingDone === voiceDone) return true;   // iPad: still being fetched or decoded, about to play
+  if (srcNode) return !!AC && AC.state === 'running';
+  return !!player && !player.paused && !player.ended;
+}
+function say(t) {
+  if (voiceDone) voiceDone();                   // the one before is over (cut off by this one)
+  stopSound();
+  var k = vkey(t);
+  if (VKEYS && !VKEYS[k]) return;               // no recording for this text: stay quiet, never the device's robot voice
+  var over = false, done;                       // each recording has its own "done", so a late signal from an old one cannot end this one
+  voiceWait = new Promise(function (r) { done = function () { if (over) return; over = true; if (voiceDone === done) voiceDone = null; if (loadingDone === done) loadingDone = null; r(); }; });
+  voiceDone = done;
+  setTimeout(done, 15000);                      // never wait for ever
+  if (FAST && BUF[k] && AC.state === 'running') {   // decoded, trimmed to the words: starts at once and ends when the words end
+    try { playBuf(k, done); return; } catch (e) { srcNode = null; }
+  }
+  if (IOS_FAST && AC) {   // iPad: not decoded yet, or the sound is paused (after a call): get it ready, then play (never through the <audio> player, which would mix the two)
+    loadingDone = done;
+    var play = function () { if (over) return; loadingDone = null; if (BUF[k] && AC.state === 'running') { try { playBuf(k, done); } catch (e) { done(); } } else done(); };
+    var go = function () {
+      if (over) return;
+      if (AC.state === 'running') return play();
+      try { var r = AC.resume(); if (r && r.then) r.then(play, done); else play(); } catch (e) { done(); }
+      setTimeout(function () { if (!over && AC.state !== 'running') done(); }, 1500);   // the sound stays paused (after a call): do not hold the child up
+    };
+    if (BUF[k]) go();
+    else if (BLOBS[k]) queueTrim(k, BLOBS[k], go, true);
+    else {
+      var got = false;
+      fetch(TALK.voice + '/' + k + '.mp3').then(function (r) { if (!r.ok) throw 0; return r.blob(); }).then(function (b) { got = true; BLOBS[k] = b; queueTrim(k, b, go, true); }, done);
+      setTimeout(function () { if (!got && loadingDone === done) done(); }, 4000);   // slow internet: stay quiet rather than hold Next or Quit for long (decoding has its own limit)
+    }
+    return;
+  }
+  if (IOS_FAST) { done(); return; }             // iPad before the first tap: nothing may play yet anyway, and the <audio> player is never used here
+  if (!player) player = new Audio();            // one player, reused, so iPad keeps allowing it after the first tap
+  player.onended = player.onerror = done;
+  var tr = READY[k] && TRIM[k];               // where the words start and end in this recording, when known
+  player.onloadedmetadata = player.onplaying = null;
+  if (tr) {
+    // skip the silence before the words (computers only: on iPad and iPhone the jump plus the player's slow start could cut off the
+    // first character, as the owner heard in the talks on 2026-11-07, so there the recording plays from its very start, ~0.2 s of silence)
+    if (!IOS) player.onloadedmetadata = function () { try { if (tr.s > 0.12 && player.currentTime < tr.s - 0.10) player.currentTime = tr.s - 0.10; } catch (e) {} };
+    player.onplaying = function () { (function check() {   // the words are over: moving on may go ahead (the silent tail is not waited for)
+      if (over) return; var left = tr.e + 0.12 - player.currentTime; if (left <= 0.02) return done(); setTimeout(check, Math.min(left, 0.5) * 1000);
+    })(); };
+  }
+  player.src = READY[k] || TALK.voice + '/' + k + '.mp3';   // downloaded already: plays at once; else fetched now (also before the list has arrived)
+  var p = player.play(); if (p && p.catch) p.catch(done);   // interrupted, blocked or missing: stay quiet (🔊 replays it)
+}
+/* never cut a recording short. A tap on Next, Back, Quit, Levels or a level waits until the voice has finished; only the latest tap
+   is kept (Quit then Next = Next, Next then Quit = Quit); a second tap within a third of a second of moving on is ignored (the next card's
+   button sits in the same spot); a move made by the game itself (btn left out) never overrides one the child asked for. */
+function afterVoice(fn, btn, again) {
+  if (btn && !again && Date.now() - navAt < 350) return;
+  if (!speaking()) {
+    if (btn) { navAt = Date.now(); if (pendBtn) pendBtn.classList.remove('waiting'); pending = pendBtn = null; }
+    return fn();
+  }
+  if (!btn && pending) return;
+  if (btn) { if (pendBtn) pendBtn.classList.remove('waiting'); pendBtn = btn; btn.classList.add('waiting'); }
+  pending = fn;
+  voiceWait.then(function () {
+    if (pending !== fn) return;                 // a later tap took its place
+    var b = pendBtn; pending = pendBtn = null; if (b) b.classList.remove('waiting');
+    afterVoice(fn, b, true);                    // check again: a 🔊 tapped meanwhile is waited for too
+  });
+}
+/* download the recordings a level will need as soon as it starts, so a tap plays them from memory with no wait */
+var READY = {}, ASKED = {};
+var TRIM = {}, DEC = null, BLOBS = {};   // per recording: where the speaking starts and ends (seconds), found once it is downloaded; the downloaded files
+function trimOf(k, b, then) {   // then (optional): called once BUF[k] is ready, or when decoding failed
+  var fin = function () { if (then) { var t = then; then = null; t(); } };
+  try {
+    if (!DEC) { var OC = window.OfflineAudioContext || window.webkitOfflineAudioContext; DEC = (FAST && AC) || (OC ? new OC(1, 1, 44100) : null); if (!DEC) return fin(); }
+    var dec = DEC, fr = new FileReader();
+    fr.onload = function () {
+      var ok = function (a) { try { var d = a.getChannelData(0), n = d.length, i = 0, j = n - 1; while (i < n && Math.abs(d[i]) < 0.01) i++; while (j > i && Math.abs(d[j]) < 0.01) j--; } catch (e) { return fin(); }
+        if (j <= i) return fin();
+        TRIM[k] = { s: i / a.sampleRate, e: j / a.sampleRate };
+        if (dec === AC || (IOS_FAST && AC)) try {   // keep just the words (from 0.10 s before to 0.12 s after): less memory, and it ends when the words end
+          var rate = a.sampleRate, from = Math.max(0, i - Math.round(0.10 * rate)), to = Math.min(n, j + Math.round(0.12 * rate));
+          var b2 = AC.createBuffer(1, to - from, rate); b2.getChannelData(0).set(d.subarray(from, to)); BUF[k] = b2;
+        } catch (e) {}
+        fin(); };
+      try { var p = dec.decodeAudioData(fr.result, ok, fin); if (p && p.catch) p.catch(fin); } catch (e) { fin(); }
+    };
+    fr.onerror = fin;
+    fr.readAsArrayBuffer(b);
+  } catch (e) { fin(); }
+}
+function warm(texts) {
+  texts.forEach(function (t) {
+    if (!t) return; var k = vkey(t); if (ASKED[k] || (VKEYS && !VKEYS[k])) return; ASKED[k] = 1;
+    try { fetch(TALK.voice + '/' + k + '.mp3').then(function (r) { if (!r.ok) throw 0; return r.blob(); }).then(function (b) { BLOBS[k] = b; if (IOS_FAST) { if (AC) queueTrim(k, b); } else { READY[k] = URL.createObjectURL(b); trimOf(k, b); } }, function () { delete ASKED[k]; }); } catch (e) { delete ASKED[k]; }
+  });
+}
+/* tiny sounds for right and wrong, no files needed */
+var ac = null;
+/* iPad showed the green or red of an answer late (the owner, 2026-11-08): starting a sound before the colour held the screen for a moment.
+   Now the colour comes first and the sound right after the screen has been drawn. The beep's sound system is still made inside the
+   tap (beepPrep), as iPad allows it there. */
+function afterPaint(fn) { var go = function () { setTimeout(fn, 0); }; if (window.requestAnimationFrame) requestAnimationFrame(go); else go(); }
+function beepCtx() {   // the beep's sound system, made at the first beep and woken again after a phone call paused it
+  ac = ac || AC || new (window.AudioContext || window.webkitAudioContext)();
+  if (ac.state !== 'running' && ac.resume) { var r = ac.resume(); if (r && r.catch) r.catch(function () {}); }
+  return ac;
+}
+function beepPrep() { try { if (beepCtx().state !== 'running') { var z = ac.createBufferSource(); z.buffer = ac.createBuffer(1, 1, ac.sampleRate); z.connect(ac.destination); z.start(0); } } catch (e) {} }   // inside the tap (older iPads: a silent sample wakes it)
+function beep(ok) {
+  try { beepCtx();
+    var o = ac.createOscillator(), g = ac.createGain(); o.connect(g); g.connect(ac.destination);
+    o.frequency.value = ok ? 880 : 220; g.gain.setValueAtTime(0.12, ac.currentTime); g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + (ok ? 0.25 : 0.35)); o.start(); o.stop(ac.currentTime + 0.4); } catch (e) { /* no sound */ }
+}
+
+/* ---------- progress and cents (the same ladder as the lesson games) ---------- */
+var KEY = 'chinese.' + TALK.id + '.v1';   // "chinese." names are mirrored into a signed-in child's profile by the site's account script
+var save = (function () { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } })();
+function isObj(x) { return !!x && typeof x === 'object' && !Array.isArray(x); }
+if (!isObj(save)) save = {};
+function store() { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) { /* private mode: progress is just not kept */ } }
+if (!isObj(save.days)) save.days = {}; if (!isObj(save.at)) save.at = {};
+Object.keys(save.days).forEach(function (k) { var s = save.days[k] || {}; save.days[k] = { pts: Math.max(0, +s.pts || 0), of: Math.max(0, +s.of || 0) }; });   // numbers only: they are shown on the page
+Object.keys(save.at).forEach(function (k) { var s = save.at[k] || {}; save.at[k] = { s: Math.max(0, Math.floor(+s.s) || 0), pts: Math.max(0, +s.pts || 0), of: Math.max(0, +s.of || 0) }; });
+var UNIT = '¢', LADDER = [1, 0.5, 0.25, 0.1];
+function worth(round) { return LADDER[round - 1] || 0; }
+function fmt(x) { return String(Math.round(x * 100) / 100); }
+function total() { var t = 0; Object.keys(save.days).forEach(function (k) { t += save.days[k].pts; }); return t; }
+function showTotal() { document.getElementById('stamps').textContent = '💰 ' + fmt(total()) + UNIT; }
+showTotal();
+function txt(tag, cls, t) { var e = E(tag, cls); e.textContent = t; return e; }   // plain text from the data, never read as HTML
+
+/* ---------- the data: weeks, days, sentences ---------- */
+var ALLD = [];   // every day in order, with the days of the week before it (its pool of sentences)
+WEEKS.forEach(function (W) {
+  var inWeek = [];
+  W.days.forEach(function (D) {
+    D.week = W.n; D.items.forEach(function (it, i) { it.id = D.id + '.' + (i + 1); it.day = D.id; });
+    inWeek.push(D); ALLD.push(D); D.upto = inWeek.slice();   // the sentences learned so far this week
+  });
+  var R = W.review; R.review = true; R.week = W.n; R.items = []; R.pairs = []; W.days.forEach(function (D) { R.items = R.items.concat(D.items); R.pairs = R.pairs.concat(D.pairs || []); }); R.upto = W.days.slice(); ALLD.push(R);
+});
+function sentOf(it) { return it.w.join('') + (it.end || ''); }
+function byId(id) { var f = null; ALLD.forEach(function (D) { D.items.forEach(function (it) { if (it.id === id) f = it; }); }); return f; }
+function poolOf(D) { var p = []; (D.upto || [D]).forEach(function (d) { p = p.concat(d.items); }); return p; }
+function replyOf(D, it) { var r = null; (D.pairs || []).forEach(function (p) { if (p.q === it.id) r = p; }); return r; }
+function mateOf(D, it) { var m = {}; (D.pairs || []).forEach(function (p) { if (p.q === it.id) m[p.a] = 1; if (p.a === it.id) m[p.q] = 1; }); return m; }
+function says(it) { return [sentOf(it)]; }
+
+/* ---------- small pieces ---------- */
+function ruby(it, blank) {   // the sentence with its pinyin over every word; blank = a character to hide (the star character)
+  var s = E('span', 'han sent');
+  it.w.forEach(function (w, n) {
+    var d = E('span', 'wd'); d.appendChild(txt('span', 'wp', it.p[n]));
+    var h = E('span', 'wh'); h.textContent = blank ? w.split(blank).join('＿') : w; d.appendChild(h); s.appendChild(d);
+  });
+  if (it.end) s.appendChild(txt('span', 'wend', it.end));
+  return s;
+}
+function speakBtn(t, big) { var b = E('button', 'speak' + (big ? ' bigspeak' : ''), '🔊'); b.type = 'button'; b.setAttribute('aria-label', 'Listen'); b.onclick = function () { say(t); }; return b; }
+function pick2(from, exclude) {   // two other sentences, never the one asked about, its partner in a question and answer, or one with the same picture
+  var out = [], ban = {}; exclude.forEach(function (x) { ban[x.id] = 1; if (x.e) ban['e' + x.e] = 1; });
+  shuffle(from).forEach(function (x) { if (out.length < 2 && !ban[x.id] && !ban['e' + x.e]) out.push(x); });
+  return out;
+}
+function others(D, it, mates) {   // distractors: this day first, earlier days of the week when this day has too few
+  var ex = [it]; Object.keys(mates || {}).forEach(function (id) { ex.push(byId(id)); });
+  if (D.review) D.items.forEach(function (x) { if (x.day === it.day) ex.push(x); });   // the review: a wrong picture or sentence comes from another day, so two sleepy faces never meet
+  var a = pick2(D.items, ex);
+  if (a.length < 2) a = a.concat(pick2(poolOf(D).filter(function (x) { return a.indexOf(x) < 0; }), ex.concat(a))).slice(0, 2);
+  return a;
+}
+function answerFx(btn, ok, correctBtn) {
+  btn.classList.add(ok ? 'ok' : 'no');
+  if (!ok && correctBtn) correctBtn.classList.add('ok');
+}
+
+/* ---------- the questions: each has render(box, answer) and calls answer(true or false) once ---------- */
+function qListen(D, it) {   // the voice says a sentence: pick its picture
+  return { sayFirst: sentOf(it), texts: [sentOf(it)], render: function (box, answer) {
+    box.appendChild(txt('p', 'say', 'Listen. Which picture is it? '));
+    var hr = E('div', 'row'); hr.appendChild(speakBtn(sentOf(it), true)); box.appendChild(hr);
+    var opts = E('div', 'opts'), right = null, done = false;
+    shuffle([it].concat(others(D, it, mateOf(D, it)))).forEach(function (x) {
+      var b = E('button', 'opt pic', x.e); b.type = 'button'; b.setAttribute('aria-label', 'picture');
+      if (x === it) right = b;
+      b.onclick = function () { if (done) return; done = true; var ok = x === it; answerFx(b, ok, right); answer(ok, sentOf(it)); };
+      opts.appendChild(b);
+    });
+    box.appendChild(opts);
+  } };
+}
+function qEn(D, it) {   // an English line: pick the Chinese sentence
+  return { texts: [sentOf(it)], render: function (box, answer) {
+    box.appendChild(txt('p', 'say', 'How do you say it in Chinese?'));
+    box.appendChild(txt('div', 'enq', '“' + it.en + '”'));
+    var opts = E('div', 'opts col'), right = null, done = false;
+    shuffle([it].concat(others(D, it, mateOf(D, it)))).forEach(function (x) {
+      var b = E('button', 'opt wide cn'); b.type = 'button'; b.appendChild(ruby(x));
+      if (x === it) right = b;
+      b.onclick = function () { if (done) return; done = true; var ok = x === it; answerFx(b, ok, right); answer(ok, sentOf(it)); };
+      opts.appendChild(b);
+    });
+    box.appendChild(opts);
+  } };
+}
+function qAnswer(D, it, p) {   // someone says a sentence: pick the right thing to answer
+  var a = byId(p.a), ban = {}; (p.x || []).forEach(function (id) { ban[id] = 1; });
+  return { sayFirst: sentOf(it), texts: [sentOf(it), sentOf(a)], render: function (box, answer) {
+    box.appendChild(txt('p', 'say', 'Someone says this to you. What do you answer?'));
+    var q = E('div', 'askline'); q.appendChild(speakBtn(sentOf(it))); q.appendChild(ruby(it)); box.appendChild(q);
+    box.appendChild(txt('div', 'enq small', '“' + it.en + '”'));
+    var pool = poolOf(D).filter(function (x) { return x !== it && x !== a && !ban[x.id] && x.day !== undefined; }), opts = E('div', 'opts col'), right = null, done = false;
+    var wrong = pick2(pool, [it, a].concat(pool.filter(function (x) { return x.e === a.e || x.e === it.e; })));
+    shuffle([a].concat(wrong)).forEach(function (x) {
+      var b = E('button', 'opt wide cn'); b.type = 'button'; b.appendChild(ruby(x));
+      if (x === a) right = b;
+      b.onclick = function () { if (done) return; done = true; var ok = x === a; answerFx(b, ok, right); answer(ok, sentOf(a)); };
+      opts.appendChild(b);
+    });
+    box.appendChild(opts);
+  } };
+}
+function qStar(D, it) {   // the sentence with its star character hidden: pick the character
+  var c = it.star.c;
+  return { texts: [sentOf(it)], render: function (box, answer) {
+    box.appendChild(txt('p', 'say', 'Which character is missing? The pinyin helps.'));
+    var line = E('div', 'sentline'); var r = ruby(it, c); line.appendChild(r); box.appendChild(line);
+    box.appendChild(txt('div', 'enq small', '“' + it.en + '”'));
+    var opts = E('div', 'opts'), right = null, done = false;
+    shuffle([c].concat(it.no)).forEach(function (x) {
+      var b = E('button', 'opt'); b.type = 'button'; b.appendChild(txt('span', 'han', x));
+      if (x === c) right = b;
+      b.onclick = function () {
+        if (done) return; done = true; var ok = x === c; answerFx(b, ok, right);
+        var whole = ruby(it); line.replaceChild(whole, r); if (ok) whole.classList.add('right');
+        answer(ok, sentOf(it));
+      };
+      opts.appendChild(b);
+    });
+    box.appendChild(opts);
+  } };
+}
+function qBuild(D, it) {   // tap the pieces in order
+  var units = it.t || it.w, up = it.tp || it.p;
+  return { texts: [sentOf(it)], render: function (box, answer) {
+    box.appendChild(txt('p', 'say', 'Build the sentence. Tap the pieces in order.'));
+    box.appendChild(txt('div', 'enq', '“' + it.en + '”'));
+    var line = E('div', 'bline'), tiles = E('div', 'tiles'), put = [], done = false, btns = [];
+    function tileHtml(i) { var h = E('span', 'han tl'); h.appendChild(txt('span', 'wp', up[i])); h.appendChild(txt('span', 'wh', units[i])); return h; }
+    function redraw() {
+      line.innerHTML = '';
+      put.forEach(function (i) { var b = E('button', 'tile'); b.type = 'button'; b.appendChild(tileHtml(i)); b.onclick = function () { if (done) return; put.splice(put.indexOf(i), 1); redraw(); }; line.appendChild(b); });
+      if (it.end) line.appendChild(txt('span', 'endmark han', it.end));
+      btns.forEach(function (b, i) { b.style.visibility = put.indexOf(i) >= 0 ? 'hidden' : 'visible'; });
+      if (put.length === units.length && !done) {
+        done = true; var ok = put.every(function (i, n) { return units[i] === units[orderIdx(n)]; });
+        line.classList.add(ok ? 'ok' : 'no'); if (!ok) { put = units.map(function (u, n) { return n; }); redraw(); line.classList.add('no'); }
+        answer(ok, sentOf(it));
+      }
+    }
+    function orderIdx(n) { return n; }   // the right order is the order in the data
+    shuffle(units.map(function (u, i) { return i; })).forEach(function (i) {
+      var b = E('button', 'tile'); b.type = 'button'; b.appendChild(tileHtml(i)); btns[i] = b;
+      b.onclick = function () { if (done || put.indexOf(i) >= 0) return; put.push(i); redraw(); };
+      tiles.appendChild(b);
+    });
+    box.appendChild(line); box.appendChild(tiles); redraw();
+  } };
+}
+
+/* ---------- a day: learn the sentences, then the questions ---------- */
+var STEPS = [
+  { key: 'learn', title: 'Learn the sentences', zh: '学句子' },
+  { key: 'listen', title: 'Hear it, find the picture', zh: '听一听' },
+  { key: 'en', title: 'Say it in Chinese', zh: '怎么说' },
+  { key: 'answer', title: 'What do you answer?', zh: '怎么回答' },
+  { key: 'star', title: 'Find the star character', zh: '找星星字' },
+  { key: 'build', title: 'Build the sentence', zh: '拼句子' }
+];
+function stepsOf(D) {
+  if (D.review) return [{ key: 'listen', title: 'Hear it, find the picture', zh: '听一听', n: 5 }, { key: 'en', title: 'Say it in Chinese', zh: '怎么说', n: 5 }, { key: 'star', title: 'Find the star character', zh: '找星星字', n: 5 }, { key: 'build', title: 'Build the sentence', zh: '拼句子', n: 4 }];
+  return STEPS.filter(function (s) { return s.key !== 'answer' || (D.pairs && D.pairs.length); });
+}
+function questionsOf(D, S) {
+  var pool = S.key === 'build' ? D.items.filter(function (x) { var u = x.t || x.w; return u.some(function (y) { return y !== u[0]; }); }) : D.items;   // 谢谢 has two same pieces: nothing to build
+  var items = D.review ? shuffle(pool).slice(0, S.n) : pool, out = [];
+  if (S.key === 'answer') { D.pairs.forEach(function (p) { out.push(qAnswer(D, byId(p.q), p)); }); return shuffle(out); }
+  items.forEach(function (it) { out.push(S.key === 'listen' ? qListen(D, it) : S.key === 'en' ? qEn(D, it) : S.key === 'star' ? qStar(D, it) : qBuild(D, it)); });
+  return D.review ? out : shuffle(out);
+}
+function head(D, S, si, sn, k, kn, round) {   // the top of every card: where we are in the day
+  var br = E('div', 'barrow'), bar = E('div', 'bar'); bar.appendChild(E('i')); bar.firstChild.style.width = Math.round(100 * ((si + k / kn) / sn)) + '%'; br.appendChild(bar);
+  br.appendChild(txt('span', 'stepn', 'Step ' + (si + 1) + '/' + sn)); app.appendChild(br);
+  var p = E('div', 'stephead'); p.appendChild(document.createTextNode(S.title + ' ')); p.appendChild(E('span', 'han nopoly', S.zh));
+  if (round > 1) p.appendChild(txt('span', 'rnd', worth(round) ? ['', 'Second', 'Third', 'Fourth'][round - 1] + ' try · ' + fmt(worth(round)) + UNIT + ' each' : 'Practice · no cents'));
+  app.appendChild(p);
+}
+function openDay(D) {
+  var at = save.at[D.id], done = save.days[D.id];
+  var clear = clearBtn('🗑 Clear this day 清空这一天', D, 'Clear this day? 清空这一天？', 'This erases the score and the tick of this day, as if it had not been played.');
+  if (at) return askBox(D.title + ': continue?', 'You stopped this day half way. Continue from where you were, or start the day again?',
+    [['▶ Continue 继续', function () { playDay(D, at.s, at.pts, at.of); }], ['↺ Start over 重新开始', function () { delete save.at[D.id]; store(); playDay(D, 0, 0, 0); }, true], clear]);
+  if (done) return askBox(D.title + ': play again?', 'You finished this day. Your score now: <b>' + fmt(done.pts) + UNIT + ' of ' + done.of + UNIT + '</b>. Play it again and the new score takes its place, even if it is lower.',
+    [['↺ Start over 重新开始', function () { playDay(D, 0, 0, 0); }], clear]);
+  playDay(D, 0, 0, 0);
+}
+function playDay(D, from, pts, of) {
+  var steps = stepsOf(D), st = { s: from, pts: pts, of: of }; if (st.s >= steps.length) { st.s = 0; st.pts = 0; st.of = 0; }
+  app.classList.add('big');
+  function next() {
+    if (st.s >= steps.length) return finishDay();
+    save.at[D.id] = { s: st.s, pts: st.pts, of: st.of }; store();
+    var S = steps[st.s];
+    if (S.key === 'learn') learn(D, S, st.s, steps.length, function () { st.s++; next(); });
+    else runQs(D, S, st, steps.length, questionsOf(D, S), 1, function () { st.s++; next(); });
+  }
+  function finishDay() {
+    var first = !save.days[D.id];
+    delete save.at[D.id]; save.days[D.id] = { pts: st.pts, of: st.of }; store(); showTotal();
+    app.innerHTML = ''; var p = E('div', 'panel');
+    p.appendChild(E('div', 'emoji', '🎉')); p.appendChild(E('h2', null, D.title + ' done!'));
+    p.appendChild(E('p', 'bwin', '💰 ' + fmt(st.pts) + UNIT + ' of ' + st.of + UNIT));
+    p.appendChild(E('p', 'say', 'Say the sentences to someone at home today. <span class="han nopoly">今天说给家人听！</span>'));
+    var r = E('div', 'row'), i = ALLD.indexOf(D), nx = ALLD[i + 1];
+    if (nx) { var b = E('button', 'btn', '▶ Next: ' + nx.title); b.type = 'button'; b.onclick = function () { afterVoice(function () { openDay(nx); }, b); }; r.appendChild(b); }
+    var m = E('button', 'btn ghost', '☰ All days'); m.type = 'button'; m.onclick = function () { afterVoice(menu, m); }; r.appendChild(m);
+    p.appendChild(r); app.appendChild(p); beep(true);
+  }
+  next();
+}
+function learn(D, S, si, sn, done) {   // five cards: look, listen, say it out loud
+  var i = 0;
+  function card() {
+    app.innerHTML = ''; var it = D.items[i];
+    head(D, S, si, sn, i, D.items.length, 1);
+    var p = E('div', 'panel learnp');
+    p.appendChild(txt('p', 'say', 'Sentence ' + (i + 1) + ' of ' + D.items.length));
+    p.appendChild(E('div', 'emoji bigemoji', it.e));
+    var s = ruby(it); var sw = E('div', 'sentline'); sw.appendChild(s); p.appendChild(sw);
+    p.appendChild(txt('div', 'enq', it.en));
+    var star = E('div', 'starbox'); star.appendChild(txt('span', 'stlab', '⭐ Star character'));
+    var sc = E('button', 'starc'); sc.type = 'button'; sc.appendChild(txt('span', 'han big1', it.star.c)); sc.appendChild(txt('span', 'sp', it.star.py + ' · ' + it.star.en)); sc.onclick = function () { say(it.star.c); };
+    star.appendChild(sc); p.appendChild(star);
+    var r = E('div', 'row'); r.appendChild(speakBtn(sentOf(it), true));
+    r.appendChild(txt('span', 'sayit', 'Now say it out loud!'));
+    var nb = E('button', 'btn', 'I said it ▶'); nb.type = 'button'; nb.appendChild(document.createTextNode(' ')); nb.appendChild(E('span', 'han nopoly', '我说了'));
+    nb.onclick = function () { afterVoice(function () { i++; if (i < D.items.length) card(); else done(); }, nb); };
+    if (i > 0) { var bk = E('button', 'btn ghost', '◀ Back'); bk.type = 'button'; bk.onclick = function () { afterVoice(function () { i--; card(); }, bk); }; r.insertBefore(bk, r.firstChild); }
+    r.appendChild(nb); p.appendChild(r); app.appendChild(p);
+    warm(D.items.map(sentOf).concat(D.items.map(function (x) { return x.star.c; })));
+    afterPaint(function () { say(sentOf(it)); });
+  }
+  card();
+}
+function runQs(D, S, st, sn, qs, round, doneCb) {
+  var k = 0, missed = [];
+  var texts = []; qs.forEach(function (q) { texts = texts.concat(q.texts); }); warm(texts);
+  function show() {
+    if (k >= qs.length) return end();
+    var q = qs[k]; app.innerHTML = '';
+    head(D, S, st.s, sn, k, qs.length, round);
+    var panel = E('div', 'panel'), box = E('div', 'qbox'), fb = E('div', 'fb'), nav = E('div', 'row'); panel.appendChild(box);
+    q.render(box, function (ok, sayText) {
+      beepPrep();   // the sound system is woken inside the tap
+      if (round === 1) st.of += 1;
+      if (ok) st.pts += worth(round); else missed.push(q);
+      showTotalLive();
+      fb.className = 'fb ' + (ok ? 'ok' : 'no'); fb.textContent = ok ? '✓ Yes! ' + (worth(round) ? '+' + fmt(worth(round)) + UNIT : '') : 'Not this time. Listen to the answer.';
+      afterPaint(function () { beep(ok); setTimeout(function () { say(sayText); }, 250); });
+      var nb = E('button', 'btn', k + 1 < qs.length ? 'Next ▶' : 'Done ▶'); nb.type = 'button';
+      nb.onclick = function () { afterVoice(function () { k++; show(); }, nb); }; nav.appendChild(nb);
+      panel.appendChild(nav);
+    });
+    panel.appendChild(fb); app.appendChild(panel);
+    if (q.sayFirst) afterPaint(function () { say(q.sayFirst); });
+  }
+  function showTotalLive() { var t = total() - (save.days[D.id] ? save.days[D.id].pts : 0) + st.pts; document.getElementById('stamps').textContent = '💰 ' + fmt(t) + UNIT; }
+  function end() {
+    if (!missed.length) return doneCb();
+    app.innerHTML = ''; head(D, S, st.s, sn, qs.length, qs.length, round);
+    var p = E('div', 'panel'); p.appendChild(E('div', 'emoji', '🔁'));
+    p.appendChild(E('h2', null, 'Try the missed ones again'));
+    p.appendChild(E('p', 'say', missed.length + ' to try again' + (worth(round + 1) ? ' for ' + fmt(worth(round + 1)) + UNIT + ' each.' : ' (practice, no cents).')));
+    var r = E('div', 'row'), b = E('button', 'btn redo', '▶ Try again 再试一次'); b.type = 'button';
+    b.onclick = function () { afterVoice(function () { runQs(D, S, st, sn, shuffle(missed), round + 1, doneCb); }, b); }; r.appendChild(b); p.appendChild(r); app.appendChild(p);
+  }
+  show();
+}
+
+/* ---------- the menu ---------- */
+document.getElementById('lvbtn').onclick = function () { afterVoice(menu, this); };
+function menu() {
+  app.classList.remove('big'); app.innerHTML = ''; showTotal();
+  var h = E('div', 'hero'); h.appendChild(E('div', 'big', TALK.intro.emoji)); h.appendChild(E('h2', null, TALK.intro.title));
+  h.appendChild(E('p', null, 'Five new sentences a day, about ten minutes. Look, listen, say it out loud, then play. Each answer right the first time earns 1¢; a missed one tried again earns 0.5¢, then 0.25¢, then 0.1¢. Tap 🔊 to hear. Tap a grey dotted character to see all its readings.'));
+  app.appendChild(h);
+  WEEKS.forEach(function (W) {
+    app.appendChild(E('h3', 'weekh', W.title + ' <span class="han nopoly">' + W.zh + '</span>'));
+    var ls = E('div', 'levels');
+    W.days.concat([W.review]).forEach(function (D) {
+      var d = save.days[D.id], b = E('button', 'lv' + (d ? ' done' : '')); b.type = 'button';
+      b.appendChild(E('span', 'n', d ? '✓' : D.e));
+      var t = E('div'); t.appendChild(E('h3', null, D.title + ' <span class="han nopoly">' + D.zh + '</span>'));
+      t.appendChild(E('p', null, D.review ? 'Mix up all the sentences of the week.' : D.items.map(function (x) { return sentOf(x); }).join('  ')));
+      if (d) t.appendChild(E('p', 'sc', '💰 ' + fmt(d.pts) + UNIT + ' of ' + d.of + UNIT));
+      if (save.at[D.id]) t.appendChild(E('p', 'cont', '⏯ Continue where you left off'));
+      b.appendChild(t); b.appendChild(E('span', 'go', '▶'));
+      b.onclick = function () { afterVoice(function () { openDay(D); }, b); };
+      ls.appendChild(b);
+    });
+    app.appendChild(ls);
+  });
+  if (Object.keys(save.days).length || Object.keys(save.at).length) {
+    var ca = E('div', 'row clrall'), cb = E('button', 'btn ghost clr', '🗑 Clear everything 全部清空'); cb.type = 'button';
+    cb.onclick = function () { afterVoice(function () { askBox('Clear everything? 清空全部？', 'This erases all the scores and ticks of Daily Talk for the player now playing. It cannot be undone. If you are signed in, the copy online is cleared too.', [['🗑 Yes, clear it all 清空', function () { wipe('all'); }], ['Cancel 取消', null, true]], true); }, cb); };
+    ca.appendChild(cb); app.appendChild(ca);
+  }
+}
+
+/* ---------- ✕ boxes and clearing (the same rules as the lesson games) ---------- */
+function askBox(title, html, buttons, stay) {
+  var o = E('div', 'ask-over'), box = E('div', 'ask-box'), r = E('div', 'row'), rc = null; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', title);
+  var x = E('button', 'ask-x', '✕'); x.type = 'button'; x.setAttribute('aria-label', 'Close');
+  x.onclick = function () { if (Date.now() - navAt < 350) return; navAt = Date.now(); o.remove(); };
+  box.appendChild(x); box.appendChild(E('h3', null, title)); box.appendChild(E('p', null, html));
+  buttons.forEach(function (b, n) {
+    var clr = b[2] === 'clear', el = E('button', 'btn' + (b[2] ? ' ghost' : '') + (clr ? ' clr' : ''), b[0]); el.type = 'button';
+    el.onclick = function () { if (Date.now() - navAt < 350) return; navAt = Date.now(); o.remove(); if (b[1]) b[1](); };
+    if (clr) { if (!rc) rc = E('div', 'row clrrow'); rc.appendChild(el); } else r.appendChild(el);
+    if (n === (stay ? buttons.length - 1 : 0)) setTimeout(function () { el.focus(); }, 0);   // a clear question starts on Cancel
+  });
+  box.appendChild(r); if (rc) box.appendChild(rc); o.appendChild(box); document.body.appendChild(o);
+}
+function wipe(what) {
+  if (what === 'all') { save.days = {}; save.at = {}; } else { delete save.days[what.id]; delete save.at[what.id]; }
+  store(); showTotal();
+  try { if (window.TMG && TMG._cloud && TMG.kid && TMG.kid !== 'guest') TMG._cloud.push(TMG.kid); } catch (e) {}
+  menu();
+}
+function clearBtn(label, what, title, text) {
+  return [label, function () { askBox(title, text + ' It cannot be undone. If you are signed in, the copy online is cleared too.', [['🗑 Yes, clear it 清空', function () { wipe(what); }], ['Cancel 取消', null, true]], true); }, 'clear'];
+}
+
+/* ---------- polyphonic characters (the owner, 2026-11-22) ----------
+   A character with more than one reading (长 cháng / zhǎng, 行 xíng / háng, 地 dì / de ...) is grey, with a dotted line under it, wherever
+   it shows on a lesson page. The voice does its best to pick the reading, but it can pick the wrong one, so a tap on the grey character
+   opens a box with ALL its readings and example words (inside a button, where a tap must keep its own job, press and hold instead).
+   The table is _engine/poly.json, put in here by scripts/embed-poly.py (run it after editing poly.json). Never edit the table below by hand. */
+var POLY = /*POLY-BEGIN*/{"的":[{"py":"de","en":"particle showing 'of' or 's (my, your)","w":[["我的","wǒ de","my; mine"],["好的","hǎo de","OK"],["红色的","hóngsè de","red (one)"]]},{"py":"dí","en":"really, truly","w":[["的确","díquè","indeed"],["的的确确","dídíquèquè","truly, really"]]},{"py":"dì","en":"target, goal","w":[["目的","mùdì","purpose; goal"],["目的地","mùdìdì","destination"]]},{"py":"dī","en":"taxi","w":[["的士","dīshì","taxi"],["打的","dǎdī","take a taxi"]]}],"了":[{"py":"le","en":"particle after a verb: done, or a change","w":[["好了","hǎo le","done; OK now"],["吃了","chī le","ate"],["下雨了","xià yǔ le","it's raining now"]]},{"py":"liǎo","en":"to finish; to understand; can (manage to)","w":[["了解","liǎojiě","understand"],["了不起","liǎobuqǐ","amazing"],["受不了","shòubuliǎo","can't stand it"]]}],"着":[{"py":"zhe","en":"particle after a verb: '-ing', still going on","w":[["看着","kànzhe","watching"],["走着","zǒuzhe","walking"],["坐着","zuòzhe","sitting"]]},{"py":"zháo","en":"to touch, reach; catch (fire, sleep)","w":[["睡着","shuìzháo","fall asleep"],["着急","zháojí","worried; in a hurry"],["着火","zháohuǒ","catch fire"]]},{"py":"zhuó","en":"to touch down; to put on","w":[["着陆","zhuólù","land (a plane)"],["着想","zhuóxiǎng","think of (others)"]]}],"得":[{"py":"de","en":"particle after a verb, telling how (like 'so well')","w":[["跑得快","pǎo de kuài","runs fast"],["写得好","xiě de hǎo","writes well"]]},{"py":"dé","en":"to get, gain","w":[["得到","dédào","get"],["得分","défēn","score points"],["心得","xīndé","what one learned"]]},{"py":"děi","en":"must, have to","w":[["我得走了","wǒ děi zǒu le","I have to go"],["得去","děi qù","must go"]]}],"地":[{"py":"de","en":"particle before a verb, like '-ly'","w":[["慢慢地","mànmàn de","slowly"],["高兴地","gāoxìng de","happily"]]},{"py":"dì","en":"ground, land, place","w":[["地方","dìfang","place"],["土地","tǔdì","land"],["地图","dìtú","map"]]}],"都":[{"py":"dōu","en":"all, both; already","w":[["都是","dōu shì","all are"],["全都","quándōu","all of them"]]},{"py":"dū","en":"capital city; big city","w":[["首都","shǒudū","capital city"],["都市","dūshì","city"]]}],"和":[{"py":"hé","en":"and; peace; gentle","w":[["我和你","wǒ hé nǐ","you and me"],["和平","hépíng","peace"]]},{"py":"huo","en":"(soft ending in a few words)","w":[["暖和","nuǎnhuo","warm"],["软和","ruǎnhuo","soft"]]},{"py":"huó","en":"to mix (flour or mud) with water","w":[["和面","huómiàn","knead dough"],["和泥","huóní","mix mud"]]},{"py":"hè","en":"to join in (singing); to echo","w":[["附和","fùhè","echo (what others say)"],["一唱一和","yíchàng-yíhè","one sings, one answers"]]}],"会":[{"py":"huì","en":"can, know how; meeting","w":[["开会","kāihuì","have a meeting"],["学会","xuéhuì","learn (how to)"],["一会儿","yíhuìr","a moment"]]},{"py":"kuài","en":"accounting (of money)","w":[["会计","kuàijì","accountant; accounting"],["会计师","kuàijìshī","accountant"]]}],"好":[{"py":"hǎo","en":"good, well","w":[["你好","nǐ hǎo","hello"],["好人","hǎorén","good person"],["好吃","hǎochī","tasty"]]},{"py":"hào","en":"to like, love to","w":[["爱好","àihào","hobby"],["好奇","hàoqí","curious"],["好学","hàoxué","love to learn"]]}],"长":[{"py":"cháng","en":"long; length","w":[["长城","Chángchéng","the Great Wall"],["长短","chángduǎn","length"],["长江","Chángjiāng","the Yangtze"]]},{"py":"zhǎng","en":"to grow; older; head of","w":[["长大","zhǎngdà","grow up"],["班长","bānzhǎng","class monitor"],["校长","xiàozhǎng","principal"]]}],"数":[{"py":"shù","en":"number","w":[["数字","shùzì","number; digit"],["数学","shùxué","math"]]},{"py":"shǔ","en":"to count","w":[["数一数","shǔ yi shǔ","count them"],["数星星","shǔ xīngxing","count the stars"]]}],"种":[{"py":"zhǒng","en":"seed; kind, type","w":[["种子","zhǒngzi","seed"],["品种","pǐnzhǒng","variety; breed"]]},{"py":"zhòng","en":"to plant","w":[["种花","zhòng huā","plant flowers"],["种树","zhòng shù","plant trees"],["种地","zhòngdì","farm the land"]]}],"觉":[{"py":"jué","en":"to feel; to wake up to","w":[["觉得","juéde","think; feel"],["感觉","gǎnjué","feeling"],["发觉","fājué","notice"]]},{"py":"jiào","en":"sleep","w":[["睡觉","shuìjiào","sleep"],["午觉","wǔjiào","nap"]]}],"教":[{"py":"jiāo","en":"to teach","w":[["教书","jiāoshū","teach (school)"],["教我","jiāo wǒ","teach me"]]},{"py":"jiào","en":"teaching, education","w":[["教室","jiàoshì","classroom"],["教育","jiàoyù","education"],["教师","jiàoshī","teacher"]]}],"为":[{"py":"wèi","en":"for; because of","w":[["为什么","wèi shénme","why"],["因为","yīnwèi","because"]]},{"py":"wéi","en":"to be, become; to act as","w":[["成为","chéngwéi","become"],["认为","rènwéi","think; believe"]]}],"兴":[{"py":"xìng","en":"interest, joy","w":[["高兴","gāoxìng","happy"],["兴趣","xìngqù","interest"]]},{"py":"xīng","en":"to rise, prosper; excited","w":[["兴奋","xīngfèn","excited"],["兴旺","xīngwàng","thriving"]]}],"行":[{"py":"xíng","en":"to walk, go; OK","w":[["自行车","zìxíngchē","bicycle"],["旅行","lǚxíng","travel"],["不行","bù xíng","no way; not OK"]]},{"py":"háng","en":"row, line; business, trade","w":[["银行","yínháng","bank"],["行业","hángyè","line of work"],["排行","páiháng","rank (in order)"]]}],"还":[{"py":"hái","en":"still, also","w":[["还有","hái yǒu","there is also"],["还是","háishi","or; still"]]},{"py":"huán","en":"to give back, return","w":[["还书","huán shū","return a book"],["归还","guīhuán","give back"]]}],"重":[{"py":"zhòng","en":"heavy; important","w":[["重要","zhòngyào","important"],["很重","hěn zhòng","very heavy"],["体重","tǐzhòng","body weight"]]},{"py":"chóng","en":"again, repeat","w":[["重新","chóngxīn","anew; again"],["重复","chóngfù","repeat"]]}],"少":[{"py":"shǎo","en":"few, little","w":[["很少","hěn shǎo","very few"],["少数","shǎoshù","minority; a few"]]},{"py":"shào","en":"young","w":[["少年","shàonián","youth; teenager"],["少先队","Shàoxiānduì","Young Pioneers"]]}],"看":[{"py":"kàn","en":"to look, see, read","w":[["看书","kàn shū","read a book"],["好看","hǎokàn","good-looking"]]},{"py":"kān","en":"to watch over, guard","w":[["看家","kānjiā","look after the house"],["看门","kānmén","guard the door"]]}],"发":[{"py":"fā","en":"to send out; to start","w":[["发现","fāxiàn","discover"],["出发","chūfā","set off"],["发芽","fāyá","sprout"]]},{"py":"fà","en":"hair","w":[["头发","tóufa","hair"],["理发","lǐfà","haircut"],["发型","fàxíng","hairstyle"]]}],"间":[{"py":"jiān","en":"between; room; time","w":[["时间","shíjiān","time"],["房间","fángjiān","room"],["中间","zhōngjiān","middle"]]},{"py":"jiàn","en":"a gap; to separate","w":[["间隔","jiàngé","gap; interval"],["间断","jiànduàn","break off"]]}],"干":[{"py":"gān","en":"dry","w":[["干净","gānjìng","clean"],["饼干","bǐnggān","cookie"],["干燥","gānzào","dry"]]},{"py":"gàn","en":"to do, work","w":[["干活","gànhuó","do work"],["能干","nénggàn","capable"]]}],"空":[{"py":"kōng","en":"empty; sky, air","w":[["天空","tiānkōng","sky"],["空气","kōngqì","air"]]},{"py":"kòng","en":"free time; empty space","w":[["有空","yǒu kòng","be free"],["空地","kòngdì","open space"],["空白","kòngbái","blank"]]}],"给":[{"py":"gěi","en":"to give; for","w":[["给你","gěi nǐ","here you are"],["送给","sònggěi","give (as a gift)"]]},{"py":"jǐ","en":"to supply","w":[["供给","gōngjǐ","supply"],["给予","jǐyǔ","give; grant"]]}],"假":[{"py":"jiǎ","en":"fake, false","w":[["真假","zhēnjiǎ","true or false"],["假话","jiǎhuà","lie"]]},{"py":"jià","en":"time off, vacation","w":[["放假","fàngjià","have a holiday"],["暑假","shǔjià","summer vacation"],["请假","qǐngjià","ask for leave"]]}],"角":[{"py":"jiǎo","en":"horn; corner; angle","w":[["牛角","niújiǎo","ox horn"],["三角形","sānjiǎoxíng","triangle"],["墙角","qiángjiǎo","corner of a wall"]]},{"py":"jué","en":"role (in a play)","w":[["主角","zhǔjué","lead role"],["角色","juésè","role; character"]]}],"相":[{"py":"xiāng","en":"each other","w":[["相信","xiāngxìn","believe"],["互相","hùxiāng","each other"]]},{"py":"xiàng","en":"look, appearance; photo","w":[["照相","zhàoxiàng","take a photo"],["相片","xiàngpiàn","photo"],["真相","zhēnxiàng","the truth"]]}],"便":[{"py":"biàn","en":"handy, convenient","w":[["方便","fāngbiàn","convenient"],["顺便","shùnbiàn","on the way; while at it"]]},{"py":"pián","en":"(in 便宜) cheap","w":[["便宜","piányi","cheap"],["便宜货","piányihuò","bargain item"]]}],"传":[{"py":"chuán","en":"to pass on, spread","w":[["传说","chuánshuō","legend"],["传球","chuán qiú","pass the ball"]]},{"py":"zhuàn","en":"life story; a classic tale","w":[["传记","zhuànjì","biography"],["自传","zìzhuàn","autobiography"]]}],"调":[{"py":"tiáo","en":"to adjust, mix; naughty","w":[["调皮","tiáopí","naughty"],["空调","kōngtiáo","air conditioner"],["调整","tiáozhěng","adjust"]]},{"py":"diào","en":"to move, transfer; tune, tone","w":[["调查","diàochá","investigate; survey"],["声调","shēngdiào","tone (of a syllable)"]]}],"倒":[{"py":"dǎo","en":"to fall over","w":[["摔倒","shuāidǎo","fall down"],["倒下","dǎoxià","fall over"]]},{"py":"dào","en":"to pour; upside down; backward","w":[["倒水","dào shuǐ","pour water"],["倒立","dàolì","handstand"],["倒车","dàochē","back up (a car)"]]}],"更":[{"py":"gèng","en":"even more","w":[["更好","gèng hǎo","even better"],["更加","gèngjiā","even more"]]},{"py":"gēng","en":"to change; night watch","w":[["更换","gēnghuàn","replace"],["更正","gēngzhèng","correct (a mistake)"],["三更半夜","sāngēng-bànyè","in the middle of the night"]]}],"差":[{"py":"chà","en":"poor, not good; short of","w":[["差不多","chàbuduō","about the same"],["很差","hěn chà","very poor"]]},{"py":"chā","en":"difference","w":[["差别","chābié","difference"],["差距","chājù","gap"]]},{"py":"chāi","en":"errand, work trip","w":[["出差","chūchāi","go on a work trip"],["邮差","yóuchāi","mail carrier"]]},{"py":"cī","en":"(in 参差) uneven","w":[["参差","cēncī","uneven"],["参差不齐","cēncī-bùqí","uneven; not in line"]]}],"朝":[{"py":"cháo","en":"toward; dynasty","w":[["朝向","cháoxiàng","face toward"],["朝代","cháodài","dynasty"],["唐朝","Tángcháo","Tang dynasty"]]},{"py":"zhāo","en":"morning","w":[["朝阳","zhāoyáng","morning sun"],["朝气","zhāoqì","youthful energy"]]}],"处":[{"py":"chù","en":"place","w":[["到处","dàochù","everywhere"],["好处","hǎochù","benefit"],["处处","chùchù","everywhere"]]},{"py":"chǔ","en":"to deal with; get along","w":[["处理","chǔlǐ","handle"],["相处","xiāngchǔ","get along"]]}],"只":[{"py":"zhǐ","en":"only","w":[["只有","zhǐyǒu","only"],["只是","zhǐshì","just; only"]]},{"py":"zhī","en":"measure word for animals, one of a pair","w":[["一只猫","yì zhī māo","a cat"],["两只手","liǎng zhī shǒu","two hands"],["船只","chuánzhī","boats"]]}],"没":[{"py":"méi","en":"not have; did not","w":[["没有","méiyǒu","don't have; didn't"],["没关系","méi guānxi","it's OK"]]},{"py":"mò","en":"to sink, go under","w":[["淹没","yānmò","flood; drown"],["沉没","chénmò","sink"],["出没","chūmò","appear and vanish"]]}],"哪":[{"py":"nǎ","en":"which, where","w":[["哪里","nǎli","where"],["哪个","nǎge","which one"]]},{"py":"na","en":"particle at the end (like 啊)","w":[["天哪","tiān na","oh my!"]]},{"py":"né","en":"(in 哪吒) the boy hero Nezha","w":[["哪吒","Nézhā","Nezha"],["哪吒闹海","Nézhā nào hǎi","Nezha stirs up the sea"]]}],"那":[{"py":"nà","en":"that","w":[["那里","nàli","there"],["那么","nàme","so; then"]]},{"py":"nèi","en":"that (spoken, before a measure word)","w":[["那个","nèige","that one"],["那些","nèixiē","those"]]}],"什":[{"py":"shén","en":"(in 什么) what","w":[["什么","shénme","what"],["为什么","wèi shénme","why"]]},{"py":"shí","en":"assorted, various","w":[["什锦","shíjǐn","assorted"]]}],"难":[{"py":"nán","en":"hard, difficult","w":[["难过","nánguò","sad"],["困难","kùnnan","difficulty"],["难题","nántí","hard problem"]]},{"py":"nàn","en":"disaster, trouble","w":[["灾难","zāinàn","disaster"],["难民","nànmín","refugee"]]}],"背":[{"py":"bèi","en":"the back; to recite","w":[["后背","hòubèi","back (of the body)"],["背诵","bèisòng","recite"],["背后","bèihòu","behind"]]},{"py":"bēi","en":"to carry on the back","w":[["背书包","bēi shūbāo","carry a schoolbag"],["背包","bēibāo","backpack"]]}],"当":[{"py":"dāng","en":"to be, act as; at that time","w":[["当然","dāngrán","of course"],["当时","dāngshí","at that time"]]},{"py":"dàng","en":"to treat as; proper; fooled","w":[["上当","shàngdàng","be fooled"],["当作","dàngzuò","treat as"],["恰当","qiàdàng","fitting"]]}],"担":[{"py":"dān","en":"to carry; to take on","w":[["担心","dānxīn","worry"],["承担","chéngdān","take on"]]},{"py":"dàn","en":"a load on a pole","w":[["担子","dànzi","load; burden"],["重担","zhòngdàn","heavy burden"]]}],"切":[{"py":"qiē","en":"to cut","w":[["切菜","qiē cài","cut vegetables"],["切开","qiēkāi","cut open"]]},{"py":"qiè","en":"close, eager; all","w":[["一切","yíqiè","everything"],["亲切","qīnqiè","warm and kind"]]}],"参":[{"py":"cān","en":"to join, take part","w":[["参加","cānjiā","take part"],["参观","cānguān","visit; tour"]]},{"py":"shēn","en":"ginseng; sea cucumber","w":[["人参","rénshēn","ginseng"],["海参","hǎishēn","sea cucumber"]]},{"py":"cēn","en":"(in 参差) uneven","w":[["参差","cēncī","uneven"],["参差不齐","cēncī-bùqí","uneven; not in line"]]}],"结":[{"py":"jié","en":"to tie; knot; to end","w":[["结果","jiéguǒ","result"],["团结","tuánjié","unite"],["打结","dǎjié","tie a knot"]]},{"py":"jiē","en":"to bear (fruit); sturdy","w":[["结实","jiēshi","sturdy; strong"],["结巴","jiēba","stutter"]]}],"量":[{"py":"liàng","en":"amount, quantity","w":[["数量","shùliàng","number; amount"],["力量","lìliang","strength"],["大量","dàliàng","a large amount"]]},{"py":"liáng","en":"to measure","w":[["测量","cèliáng","measure"],["量体温","liáng tǐwēn","take one's temperature"]]}],"乐":[{"py":"lè","en":"happy, joy","w":[["快乐","kuàilè","happy"],["乐园","lèyuán","paradise; play park"]]},{"py":"yuè","en":"music","w":[["音乐","yīnyuè","music"],["乐器","yuèqì","musical instrument"]]}],"模":[{"py":"mó","en":"model, pattern; to copy","w":[["模型","móxíng","model"],["模仿","mófǎng","imitate"]]},{"py":"mú","en":"mold; look","w":[["模样","múyàng","look; appearance"],["模子","múzi","mold"]]}],"弹":[{"py":"tán","en":"to play (strings); to spring, bounce","w":[["弹琴","tán qín","play the piano"],["弹簧","tánhuáng","spring (coil)"]]},{"py":"dàn","en":"ball, bullet, bomb","w":[["弹弓","dàngōng","slingshot"],["弹丸","dànwán","pellet"]]}],"盛":[{"py":"shèng","en":"rich, flourishing; grand","w":[["茂盛","màoshèng","lush"],["盛开","shèngkāi","in full bloom"]]},{"py":"chéng","en":"to fill (a bowl), hold","w":[["盛饭","chéng fàn","dish out rice"],["盛汤","chéng tāng","ladle soup"]]}],"强":[{"py":"qiáng","en":"strong","w":[["强大","qiángdà","powerful"],["坚强","jiānqiáng","strong-willed"]]},{"py":"qiǎng","en":"to force","w":[["勉强","miǎnqiǎng","reluctantly; barely"],["强迫","qiǎngpò","force"]]},{"py":"jiàng","en":"stubborn","w":[["倔强","juéjiàng","stubborn"],["强嘴","jiàngzuǐ","talk back"]]}],"薄":[{"py":"báo","en":"thin (spoken)","w":[["薄饼","báobǐng","thin pancake"],["很薄","hěn báo","very thin"]]},{"py":"bó","en":"slight, weak","w":[["薄弱","bóruò","weak"],["单薄","dānbó","thin; frail"]]},{"py":"bò","en":"(in 薄荷) mint","w":[["薄荷","bòhe","mint"],["薄荷糖","bòhetáng","mint candy"]]}],"藏":[{"py":"cáng","en":"to hide; to store","w":[["捉迷藏","zhuō mícáng","hide-and-seek"],["躲藏","duǒcáng","hide"],["收藏","shōucáng","collect"]]},{"py":"zàng","en":"Tibet; treasure store","w":[["西藏","Xīzàng","Tibet"],["宝藏","bǎozàng","treasure"]]}],"号":[{"py":"hào","en":"number; date; sign","w":[["号码","hàomǎ","number"],["几号","jǐ hào","what date"],["口号","kǒuhào","slogan"]]},{"py":"háo","en":"to cry out, howl","w":[["号叫","háojiào","howl"],["号啕大哭","háotáo-dàkū","cry loudly"]]}],"称":[{"py":"chēng","en":"to call, name; to weigh","w":[["称赞","chēngzàn","praise"],["名称","míngchēng","name"]]},{"py":"chèn","en":"to match, fit","w":[["称心","chènxīn","just as one wishes"],["对称","duìchèn","symmetric"]]}],"创":[{"py":"chuàng","en":"to create, start","w":[["创造","chuàngzào","create"],["创新","chuàngxīn","new ideas"]]},{"py":"chuāng","en":"wound","w":[["创伤","chuāngshāng","wound; trauma"],["创口","chuāngkǒu","open wound"]]}],"磨":[{"py":"mó","en":"to rub, grind; to dawdle","w":[["磨刀","mó dāo","sharpen a knife"],["磨蹭","móceng","dawdle"]]},{"py":"mò","en":"millstone; to grind grain","w":[["石磨","shímò","stone mill"],["磨豆腐","mò dòufu","grind beans for tofu"]]}],"露":[{"py":"lù","en":"dew; to show, uncover","w":[["露水","lùshui","dew"],["露天","lùtiān","open-air"]]},{"py":"lòu","en":"to show (spoken)","w":[["露脸","lòuliǎn","show one's face"],["露馅儿","lòuxiànr","give oneself away"]]}],"塞":[{"py":"sāi","en":"to stuff in; a stopper","w":[["塞住","sāizhù","plug up"],["瓶塞","píngsāi","bottle stopper"]]},{"py":"sè","en":"blocked","w":[["堵塞","dǔsè","blocked; jammed"],["阻塞","zǔsè","block"]]},{"py":"sài","en":"border fort","w":[["边塞","biānsài","frontier fort"],["要塞","yàosài","fortress"]]}],"散":[{"py":"sàn","en":"to break up, scatter","w":[["散步","sànbù","take a walk"],["散开","sànkāi","spread out"],["分散","fēnsàn","scatter"]]},{"py":"sǎn","en":"loose","w":[["散文","sǎnwén","prose essay"],["松散","sōngsǎn","loose"]]}],"圈":[{"py":"quān","en":"circle, ring","w":[["圆圈","yuánquān","circle"],["圈子","quānzi","circle; ring"]]},{"py":"juàn","en":"pen for animals","w":[["猪圈","zhūjuàn","pigpen"],["羊圈","yángjuàn","sheep pen"]]}],"禁":[{"py":"jìn","en":"to forbid","w":[["禁止","jìnzhǐ","forbid"],["禁区","jìnqū","off-limits area"]]},{"py":"jīn","en":"to bear, hold back","w":[["不禁","bùjīn","can't help (doing)"],["禁不住","jīnbuzhù","can't help; can't bear"]]}],"扇":[{"py":"shàn","en":"a fan; measure word for doors","w":[["扇子","shànzi","fan"],["电扇","diànshàn","electric fan"]]},{"py":"shān","en":"to fan","w":[["扇风","shān fēng","fan the air"],["扇扇子","shān shànzi","wave a fan"]]}],"喝":[{"py":"hē","en":"to drink","w":[["喝水","hē shuǐ","drink water"],["喝茶","hē chá","drink tea"]]},{"py":"hè","en":"to shout","w":[["喝彩","hècǎi","cheer"],["喝令","hèlìng","shout an order"]]}],"凉":[{"py":"liáng","en":"cool, cold","w":[["凉快","liángkuai","nice and cool"],["凉水","liángshuǐ","cold water"]]},{"py":"liàng","en":"to let cool down","w":[["凉一凉","liàng yi liàng","let it cool"],["凉凉再喝","liàngliang zài hē","let it cool, then drink"]]}],"载":[{"py":"zài","en":"to carry, load","w":[["载重","zàizhòng","load (weight)"],["装载","zhuāngzài","load"]]},{"py":"zǎi","en":"to record; year","w":[["记载","jìzǎi","record"],["一年半载","yìnián-bànzǎi","a year or so"]]}],"曾":[{"py":"céng","en":"once, before","w":[["曾经","céngjīng","once; ever"],["不曾","bùcéng","never"]]},{"py":"zēng","en":"great- (family)","w":[["曾祖父","zēngzǔfù","great-grandfather"],["曾孙","zēngsūn","great-grandson"]]}],"劲":[{"py":"jìn","en":"strength; spirit","w":[["使劲","shǐjìn","push hard"],["有劲","yǒujìn","strong; fun"],["干劲","gànjìn","drive"]]},{"py":"jìng","en":"strong, powerful","w":[["强劲","qiángjìng","powerful"],["劲敌","jìngdí","tough rival"]]}],"钻":[{"py":"zuān","en":"to drill; to squeeze into","w":[["钻洞","zuān dòng","crawl into a hole"],["钻研","zuānyán","study hard"]]},{"py":"zuàn","en":"a drill; diamond","w":[["钻石","zuànshí","diamond"],["电钻","diànzuàn","power drill"]]}],"挑":[{"py":"tiāo","en":"to choose; to carry on a pole","w":[["挑选","tiāoxuǎn","choose"],["挑水","tiāo shuǐ","carry water"]]},{"py":"tiǎo","en":"to stir up; to raise","w":[["挑战","tiǎozhàn","challenge"],["挑拨","tiǎobō","stir up trouble"]]}],"脏":[{"py":"zāng","en":"dirty","w":[["脏衣服","zāng yīfu","dirty clothes"],["肮脏","āngzāng","filthy"]]},{"py":"zàng","en":"inner organs","w":[["心脏","xīnzàng","heart"],["内脏","nèizàng","inner organs"]]}],"缝":[{"py":"féng","en":"to sew","w":[["缝衣服","féng yīfu","sew clothes"],["缝补","féngbǔ","mend"]]},{"py":"fèng","en":"a crack, seam","w":[["门缝","ménfèng","crack of a door"],["裂缝","lièfèng","crack"]]}],"华":[{"py":"huá","en":"China; splendid","w":[["中华","Zhōnghuá","China"],["华丽","huálì","gorgeous"],["华人","huárén","Chinese people"]]},{"py":"huà","en":"(in 华山) Mount Hua","w":[["华山","Huà Shān","Mount Hua"],["西岳华山","Xīyuè Huà Shān","Mount Hua, the western peak"]]}],"累":[{"py":"lèi","en":"tired","w":[["很累","hěn lèi","very tired"],["累坏了","lèihuài le","worn out"]]},{"py":"lěi","en":"to pile up","w":[["积累","jīlěi","build up"],["日积月累","rìjī-yuèlěi","bit by bit over time"]]},{"py":"léi","en":"in heaps, in bunches","w":[["果实累累","guǒshí léiléi","heavy with fruit"],["累赘","léizhui","burden"]]}],"提":[{"py":"tí","en":"to lift, carry; to raise (a point)","w":[["提问","tíwèn","ask a question"],["提包","tíbāo","handbag"],["提醒","tíxǐng","remind"]]},{"py":"dī","en":"(in 提防) be on guard","w":[["提防","dīfang","be on guard"],["提防坏人","dīfang huàirén","watch out for bad people"]]}],"卷":[{"py":"juǎn","en":"to roll up","w":[["卷起","juǎnqǐ","roll up"],["卷发","juǎnfà","curly hair"]]},{"py":"juàn","en":"test paper; volume, scroll","w":[["试卷","shìjuàn","test paper"],["画卷","huàjuàn","painted scroll"]]}],"冲":[{"py":"chōng","en":"to rush; to rinse","w":[["冲锋","chōngfēng","charge"],["冲水","chōng shuǐ","flush; rinse"]]},{"py":"chòng","en":"facing; strong, blunt","w":[["冲着","chòngzhe","facing; toward"],["说话很冲","shuōhuà hěn chòng","speaks bluntly"]]}],"冠":[{"py":"guān","en":"hat, crown","w":[["鸡冠","jīguān","rooster's comb"],["皇冠","huángguān","crown"]]},{"py":"guàn","en":"first place","w":[["冠军","guànjūn","champion"],["夺冠","duóguàn","win first place"]]}],"中":[{"py":"zhōng","en":"middle; China","w":[["中国","Zhōngguó","China"],["中间","zhōngjiān","middle"]]},{"py":"zhòng","en":"to hit (a target)","w":[["打中","dǎzhòng","hit"],["中奖","zhòngjiǎng","win a prize"],["中毒","zhòngdú","be poisoned"]]}],"场":[{"py":"chǎng","en":"place, field; a show","w":[["操场","cāochǎng","playground"],["广场","guǎngchǎng","square"],["市场","shìchǎng","market"]]},{"py":"cháng","en":"measure word for rain, events; threshing floor","w":[["一场雨","yì cháng yǔ","a shower of rain"],["场院","chángyuàn","threshing yard"]]}],"作":[{"py":"zuò","en":"to do, make; work","w":[["作业","zuòyè","homework"],["工作","gōngzuò","work"]]},{"py":"zuō","en":"workshop","w":[["作坊","zuōfang","workshop"],["作揖","zuōyī","bow with hands clasped"]]}],"校":[{"py":"xiào","en":"school","w":[["学校","xuéxiào","school"],["校园","xiàoyuán","campus"]]},{"py":"jiào","en":"to check, correct","w":[["校对","jiàoduì","proofread"],["校正","jiàozhèng","correct"]]}],"正":[{"py":"zhèng","en":"straight; right; just now","w":[["正在","zhèngzài","in the middle of"],["正确","zhèngquè","correct"]]},{"py":"zhēng","en":"(in 正月) first month of the lunar year","w":[["正月","zhēngyuè","first lunar month"],["正月十五","zhēngyuè shíwǔ","Lantern Festival day"]]}],"漂":[{"py":"piào","en":"(in 漂亮) pretty","w":[["漂亮","piàoliang","pretty"],["漂漂亮亮","piàopiaoliàngliàng","all neat and pretty"]]},{"py":"piāo","en":"to float, drift","w":[["漂浮","piāofú","float"],["漂流","piāoliú","drift; rafting"]]},{"py":"piǎo","en":"to bleach, rinse","w":[["漂白","piǎobái","bleach"],["漂洗","piǎoxǐ","rinse"]]}],"转":[{"py":"zhuǎn","en":"to turn, change","w":[["转身","zhuǎnshēn","turn around"],["转弯","zhuǎnwān","turn a corner"]]},{"py":"zhuàn","en":"to spin, go around","w":[["转圈","zhuànquān","spin around"],["转动","zhuàndòng","rotate"]]}],"奇":[{"py":"qí","en":"strange; wonderful","w":[["奇怪","qíguài","strange"],["好奇","hàoqí","curious"]]},{"py":"jī","en":"odd (number)","w":[["奇数","jīshù","odd number"],["奇偶","jī'ǒu","odd and even"]]}],"占":[{"py":"zhàn","en":"to take, occupy","w":[["占领","zhànlǐng","occupy"],["占座","zhànzuò","save a seat"]]},{"py":"zhān","en":"to tell fortunes","w":[["占卜","zhānbǔ","tell fortunes"],["占卦","zhānguà","divine"]]}],"系":[{"py":"xì","en":"system; department; related","w":[["关系","guānxi","relation"],["系统","xìtǒng","system"]]},{"py":"jì","en":"to tie, fasten","w":[["系鞋带","jì xiédài","tie shoelaces"],["系领带","jì lǐngdài","put on a tie"]]}],"熟":[{"py":"shú","en":"ripe; cooked; familiar","w":[["成熟","chéngshú","ripe; mature"],["熟练","shúliàn","skilled"]]},{"py":"shóu","en":"ripe; cooked (spoken)","w":[["饭熟了","fàn shóu le","the rice is done"],["熟了","shóu le","it's ripe"]]}],"吓":[{"py":"xià","en":"to scare","w":[["吓人","xiàrén","scary"],["吓一跳","xià yí tiào","be startled"]]},{"py":"hè","en":"to threaten","w":[["恐吓","kǒnghè","threaten"]]}],"落":[{"py":"luò","en":"to fall, drop","w":[["落叶","luòyè","fallen leaves"],["降落","jiàngluò","land; come down"],["日落","rìluò","sunset"]]},{"py":"là","en":"to leave behind; to fall behind","w":[["丢三落四","diūsān-làsì","forgetful"],["落了一个字","làle yí gè zì","left out a word"]]},{"py":"lào","en":"(in a few spoken words)","w":[["落枕","làozhěn","stiff neck from sleep"],["落色","làoshǎi","lose color"]]}],"应":[{"py":"yīng","en":"should","w":[["应该","yīnggāi","should"],["应当","yīngdāng","ought to"]]},{"py":"yìng","en":"to answer, respond; to suit","w":[["回应","huíyìng","respond"],["适应","shìyìng","adapt"],["应用","yìngyòng","use; app"]]}],"宁":[{"py":"níng","en":"peaceful, calm","w":[["安宁","ānníng","peaceful"],["宁静","níngjìng","quiet"]]},{"py":"nìng","en":"would rather","w":[["宁可","nìngkě","would rather"],["宁愿","nìngyuàn","would rather"]]}],"率":[{"py":"lǜ","en":"rate","w":[["效率","xiàolǜ","efficiency"],["速率","sùlǜ","speed; rate"]]},{"py":"shuài","en":"to lead; frank; careless","w":[["率领","shuàilǐng","lead"],["坦率","tǎnshuài","frank"],["草率","cǎoshuài","careless"]]}],"蒙":[{"py":"méng","en":"to cover; to receive","w":[["蒙住","méngzhù","cover up"],["启蒙","qǐméng","first teaching"]]},{"py":"mēng","en":"to fool; to guess","w":[["蒙骗","mēngpiàn","fool"],["瞎蒙","xiāmēng","make a wild guess"]]},{"py":"Měng","en":"Mongolia","w":[["蒙古","Měnggǔ","Mongolia"],["内蒙古","Nèi Měnggǔ","Inner Mongolia"]]}],"嚼":[{"py":"jiáo","en":"to chew","w":[["嚼口香糖","jiáo kǒuxiāngtáng","chew gum"],["细嚼慢咽","xìjiáo-mànyàn","chew well, swallow slowly"]]},{"py":"jué","en":"to chew (formal)","w":[["咀嚼","jǔjué","chew"],["咀嚼食物","jǔjué shíwù","chew food"]]}],"咳":[{"py":"ké","en":"to cough","w":[["咳嗽","késou","cough"],["咳嗽药","késou yào","cough medicine"]]},{"py":"hāi","en":"'oh!' (sigh or regret)","w":[["咳，我忘了","hāi, wǒ wàng le","oh no, I forgot"]]}],"扒":[{"py":"bā","en":"to dig, pull apart; to hold onto","w":[["扒开","bākāi","pull apart"],["扒着窗户","bāzhe chuānghu","hold onto the window"]]},{"py":"pá","en":"to pick pockets; to rake","w":[["扒手","páshǒu","pickpocket"],["扒窃","páqiè","pick pockets"]]}],"尽":[{"py":"jìn","en":"to use up; utmost; end","w":[["尽力","jìnlì","do one's best"],["尽头","jìntóu","end"]]},{"py":"jǐn","en":"as much as possible","w":[["尽管","jǐnguǎn","even though"],["尽快","jǐnkuài","as soon as possible"]]}],"血":[{"py":"xuè","en":"blood","w":[["血液","xuèyè","blood"],["血管","xuèguǎn","blood vessel"]]},{"py":"xiě","en":"blood (spoken)","w":[["一滴血","yì dī xiě","a drop of blood"],["流了点血","liúle diǎn xiě","bled a little"]]}],"似":[{"py":"sì","en":"like, similar; seem","w":[["相似","xiāngsì","similar"],["似乎","sìhū","seem"]]},{"py":"shì","en":"(in 似的) as if, like","w":[["似的","shìde","as if; like"],["像雪似的","xiàng xuě shìde","like snow"]]}],"恶":[{"py":"è","en":"evil, fierce","w":[["凶恶","xiōng'è","fierce"],["恶人","èrén","bad person"]]},{"py":"wù","en":"to hate","w":[["可恶","kěwù","hateful"],["厌恶","yànwù","dislike"]]},{"py":"ě","en":"(in 恶心) sick to the stomach","w":[["恶心","ěxin","feel sick"],["真恶心","zhēn ěxin","so gross"]]}],"曲":[{"py":"qū","en":"bent, curved","w":[["弯曲","wānqū","curved"],["曲线","qūxiàn","curve"]]},{"py":"qǔ","en":"song, tune","w":[["歌曲","gēqǔ","song"],["曲子","qǔzi","tune"],["作曲","zuòqǔ","compose music"]]}],"舍":[{"py":"shě","en":"to give up, let go","w":[["舍不得","shěbude","hate to part with"],["舍己为人","shějǐ-wèirén","put others first"]]},{"py":"shè","en":"house, hut","w":[["宿舍","sùshè","dorm"],["校舍","xiàoshè","school buildings"]]}],"宿":[{"py":"sù","en":"to stay overnight","w":[["宿舍","sùshè","dorm"],["住宿","zhùsù","lodging"]]},{"py":"xiǔ","en":"night (measure word)","w":[["一宿","yì xiǔ","one night"],["半宿","bàn xiǔ","half the night"]]},{"py":"xiù","en":"group of stars","w":[["星宿","xīngxiù","constellation"],["二十八宿","èrshíbā xiù","the 28 star groups"]]}],"省":[{"py":"shěng","en":"to save; province","w":[["省钱","shěng qián","save money"],["省份","shěngfèn","province"]]},{"py":"xǐng","en":"to reflect on; to wake","w":[["反省","fǎnxǐng","reflect on oneself"],["不省人事","bùxǐng-rénshì","unconscious"]]}],"将":[{"py":"jiāng","en":"will, going to","w":[["将来","jiānglái","future"],["将要","jiāngyào","be about to"]]},{"py":"jiàng","en":"general, commander","w":[["大将","dàjiàng","great general"],["将领","jiànglǐng","generals"]]}],"晃":[{"py":"huàng","en":"to sway, shake","w":[["摇晃","yáohuàng","sway"],["晃动","huàngdòng","rock; shake"]]},{"py":"huǎng","en":"to dazzle; to flash past","w":[["晃眼","huǎngyǎn","dazzling"],["一晃","yìhuǎng","in a flash"]]}],"泊":[{"py":"bó","en":"to moor, stop","w":[["停泊","tíngbó","anchor"],["漂泊","piāobó","drift; wander"]]},{"py":"pō","en":"lake","w":[["湖泊","húpō","lakes"]]}],"剥":[{"py":"bāo","en":"to peel (spoken)","w":[["剥皮","bāo pí","peel"],["剥花生","bāo huāshēng","shell peanuts"]]},{"py":"bō","en":"to strip, take away","w":[["剥削","bōxuē","exploit"],["剥夺","bōduó","take away"]]}],"刨":[{"py":"páo","en":"to dig","w":[["刨土","páo tǔ","dig the soil"],["刨根问底","páogēn-wèndǐ","get to the bottom of it"]]},{"py":"bào","en":"a plane (tool); to plane","w":[["刨子","bàozi","wood plane"],["刨花","bàohuā","wood shavings"]]}],"涨":[{"py":"zhǎng","en":"to rise (water, prices)","w":[["涨价","zhǎngjià","price goes up"],["涨潮","zhǎngcháo","high tide"]]},{"py":"zhàng","en":"to swell; to flush","w":[["涨红了脸","zhànghóngle liǎn","turn red in the face"],["头昏脑涨","tóuhūn-nǎozhàng","dizzy"]]}],"吐":[{"py":"tǔ","en":"to spit out","w":[["吐泡泡","tǔ pàopao","blow bubbles"],["谈吐","tántǔ","way of talking"]]},{"py":"tù","en":"to throw up","w":[["呕吐","ǒutù","vomit"],["吐沫","tùmo","saliva"]]}],"扎":[{"py":"zhā","en":"to prick; to camp","w":[["扎针","zhāzhēn","get a shot"],["驻扎","zhùzhā","be stationed"]]},{"py":"zā","en":"to tie, bind","w":[["扎辫子","zā biànzi","braid hair"],["包扎","bāozā","bandage"]]},{"py":"zhá","en":"(in 挣扎) to struggle","w":[["挣扎","zhēngzhá","struggle"],["拼命挣扎","pīnmìng zhēngzhá","struggle hard"]]}],"旋":[{"py":"xuán","en":"to turn, spin","w":[["旋转","xuánzhuǎn","spin"],["旋律","xuánlǜ","melody"]]},{"py":"xuàn","en":"whirling","w":[["旋风","xuànfēng","whirlwind"],["刮旋风","guā xuànfēng","a whirlwind blows"]]}],"闷":[{"py":"mèn","en":"bored, low","w":[["烦闷","fánmèn","fed up"],["闷闷不乐","mènmèn-bùlè","unhappy"]]},{"py":"mēn","en":"stuffy, airless","w":[["闷热","mēnrè","hot and stuffy"],["闷得慌","mēn de huang","so stuffy"]]}],"晕":[{"py":"yūn","en":"dizzy; to faint","w":[["头晕","tóuyūn","dizzy"],["晕倒","yūndǎo","faint"]]},{"py":"yùn","en":"motion sick; halo","w":[["晕车","yùnchē","carsick"],["月晕","yuèyùn","ring around the moon"]]}],"埋":[{"py":"mái","en":"to bury","w":[["埋藏","máicáng","bury; hide"],["埋头","máitóu","bury oneself in work"]]},{"py":"mán","en":"(in 埋怨) to blame","w":[["埋怨","mányuàn","complain; blame"],["别埋怨","bié mányuàn","don't complain"]]}],"铺":[{"py":"pū","en":"to spread, lay out","w":[["铺床","pū chuáng","make the bed"],["铺路","pū lù","pave a road"]]},{"py":"pù","en":"shop; bed","w":[["店铺","diànpù","shop"],["床铺","chuángpù","bed"]]}],"济":[{"py":"jì","en":"to help","w":[["经济","jīngjì","economy"],["救济","jiùjì","relief aid"]]},{"py":"jǐ","en":"(in 济南) Jinan; many","w":[["济南","Jǐnán","Jinan (city)"],["人才济济","réncái-jǐjǐ","full of talent"]]}],"屏":[{"py":"píng","en":"screen","w":[["屏幕","píngmù","screen"],["屏风","píngfēng","folding screen"]]},{"py":"bǐng","en":"to hold (breath)","w":[["屏住呼吸","bǐngzhù hūxī","hold one's breath"],["屏息","bǐngxī","hold one's breath"]]}],"供":[{"py":"gōng","en":"to supply, provide","w":[["提供","tígōng","provide"],["供应","gōngyìng","supply"]]},{"py":"gòng","en":"offering; to confess","w":[["供品","gòngpǐn","offerings"],["上供","shànggòng","make offerings"]]}],"钉":[{"py":"dīng","en":"nail","w":[["钉子","dīngzi","nail"],["图钉","túdīng","thumbtack"]]},{"py":"dìng","en":"to nail; to sew on","w":[["钉扣子","dìng kòuzi","sew on a button"],["钉钉子","dìng dīngzi","hammer a nail"]]}],"划":[{"py":"huá","en":"to row; to scratch; worth it","w":[["划船","huá chuán","row a boat"],["划算","huásuàn","worth it"]]},{"py":"huà","en":"to plan; to divide","w":[["计划","jìhuà","plan"],["划分","huàfēn","divide"]]}],"抹":[{"py":"mǒ","en":"to smear, wipe","w":[["涂抹","túmǒ","smear"],["抹眼泪","mǒ yǎnlèi","wipe away tears"]]},{"py":"mā","en":"to wipe (clean)","w":[["抹布","mābù","rag"],["抹桌子","mā zhuōzi","wipe the table"]]},{"py":"mò","en":"to plaster; to go around","w":[["抹墙","mò qiáng","plaster a wall"],["拐弯抹角","guǎiwān-mòjiǎo","beat around the bush"]]}],"挨":[{"py":"āi","en":"next to; one by one","w":[["挨着","āizhe","next to"],["挨家挨户","āijiā-āihù","door to door"]]},{"py":"ái","en":"to suffer, get (hit)","w":[["挨打","áidǎ","get spanked"],["挨骂","áimà","get scolded"]]}],"哄":[{"py":"hǒng","en":"to coax, fool","w":[["哄孩子","hǒng háizi","soothe a child"],["哄骗","hǒngpiàn","trick"]]},{"py":"hōng","en":"noise of a crowd","w":[["哄堂大笑","hōngtáng-dàxiào","the whole room laughs"],["闹哄哄","nàohōnghōng","noisy"]]}],"悄":[{"py":"qiāo","en":"quietly","w":[["悄悄","qiāoqiāo","quietly"],["静悄悄","jìngqiāoqiāo","very quiet"]]},{"py":"qiǎo","en":"quiet, silent","w":[["悄然","qiǎorán","quietly"],["悄声","qiǎoshēng","in a low voice"]]}],"稍":[{"py":"shāo","en":"a little, slightly","w":[["稍微","shāowēi","a little"],["稍等","shāoděng","wait a moment"]]},{"py":"shào","en":"(in 稍息) at ease","w":[["稍息","shàoxī","at ease!"],["立正，稍息","lìzhèng, shàoxī","attention! at ease!"]]}],"熬":[{"py":"áo","en":"to boil slowly; to endure","w":[["熬夜","áoyè","stay up late"],["熬粥","áo zhōu","cook porridge"],["熬药","áo yào","brew medicine"]]},{"py":"āo","en":"to stew (vegetables)","w":[["熬白菜","āo báicài","stewed cabbage"],["熬豆腐","āo dòufu","stewed tofu"]]}],"降":[{"py":"jiàng","en":"to come down, fall","w":[["下降","xiàjiàng","go down"],["降落","jiàngluò","land"],["降雨","jiàngyǔ","rainfall"]]},{"py":"xiáng","en":"to surrender; to tame","w":[["投降","tóuxiáng","surrender"],["降服","xiángfú","tame; subdue"]]}]}/*POLY-END*/;
+var POLY_KEYS = Object.keys(POLY).filter(function (k) { return k.length === 1; });
+var POLY_SPLIT = POLY_KEYS.length ? new RegExp('([' + POLY_KEYS.join('') + '])') : null;
+var POLY_SKIP = '.poly,.nopoly,.polybox,.btn,.lv,.lvs,.hero,.ask-over,.nav,.stepn,.tally,.bgoal,.bhint,.bend,.barrow,#offl,script,style,svg,canvas,textarea';   // the engine's own labels (重新开始, 还差 …) are not lesson text
+function polyWrap(root) {
+  if (!POLY_SPLIT) return;
+  var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: function (n) {
+    if (!POLY_SPLIT.test(n.nodeValue)) return NodeFilter.FILTER_REJECT;
+    var p = n.parentNode; return p && p.closest && !p.closest(POLY_SKIP) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+  } }), list = [];
+  while (w.nextNode()) list.push(w.currentNode);
+  list.forEach(function (n) {
+    var parts = n.nodeValue.split(POLY_SPLIT), f = document.createDocumentFragment();
+    parts.forEach(function (t, i) {
+      if (!t) return;
+      if (i % 2) { var s = document.createElement('span'); s.className = 'poly'; s.setAttribute('data-c', t); s.textContent = t; f.appendChild(s); }
+      else f.appendChild(document.createTextNode(t));
+    });
+    n.parentNode.replaceChild(f, n);
+  });
+}
+function polyOpen(ch) {   // the box: every reading of the character, with words
+  var d = POLY[ch]; if (!d || document.querySelector('.polybox')) return;
+  var o = E('div', 'ask-over polybox'), box = E('div', 'ask-box'), me = null;
+  box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', ch + ': all readings');
+  var x = E('button', 'ask-x', '✕'); x.type = 'button'; x.setAttribute('aria-label', 'Close');
+  var shut = function () { navAt = Date.now(); o.remove(); document.removeEventListener('keydown', esc, true); };   // navAt: a double tap must not also tap what is under the cross
+  var esc = function (e) { if (e.key === 'Escape') shut(); };
+  x.onclick = shut; o.onclick = function (e) { if (e.target === o) shut(); }; document.addEventListener('keydown', esc, true);   // the cross, a tap beside the box, or Esc
+  box.appendChild(x);
+  box.appendChild(E('div', 'pbig han', ch));
+  box.appendChild(E('h3', null, d.length + ' readings <span class="han">多音字</span>'));
+  var here = me ? String(me.py || '').normalize('NFC').toLowerCase().split(/[\s\/,;·]+/) : [];
+  d.forEach(function (rd) {
+    var mine = here.indexOf(String(rd.py).normalize('NFC').toLowerCase()) >= 0, row = E('div', 'prd' + (mine ? ' here' : ''));
+    row.appendChild(E('div', 'ppy', rd.py + (mine ? ' <small>★ in this lesson</small>' : '')));
+    row.appendChild(E('div', 'pen', rd.en));
+    var ws = E('div', 'pwd');
+    rd.w.forEach(function (w) { ws.appendChild(E('div', null, '<span class="han">' + w[0] + '</span> <small>' + w[1] + ' · ' + w[2] + '</small>')); });
+    row.appendChild(ws); box.appendChild(row);
+  });
+  box.appendChild(E('p', 'pnote', 'The voice does its best but can pick the wrong reading. Check here. <span class="han">声音可能读错，请看这里。</span>'));
+  o.appendChild(box); document.body.appendChild(o); setTimeout(function () { x.focus(); }, 0);
+}
+(function () {
+  var hold = 0, timer = 0, fired = false, xy = null;
+  function at(e) { var t = e.target; if (t && t.nodeType === 3) t = t.parentNode; return t && t.closest ? t.closest('.poly') : null; }
+  document.addEventListener('click', function (e) {
+    if (Date.now() < hold) { hold = 0; e.stopPropagation(); e.preventDefault(); return; }   // the release of a press and hold (the one click after it)
+    var s = at(e); if (!s || s.closest('button,.bubble')) return;   // inside a button its tap stays as it was (answer, speak): press and hold there
+    e.stopPropagation(); e.preventDefault(); polyOpen(s.getAttribute('data-c'));
+  }, true);
+  document.addEventListener('pointerdown', function (e) {
+    var s = at(e); if (!s || !s.closest('button,.bubble')) return;
+    fired = false; xy = [e.clientX, e.clientY]; clearTimeout(timer);
+    timer = setTimeout(function () { fired = true; polyOpen(s.getAttribute('data-c')); }, 650);
+  }, true);
+  document.addEventListener('pointermove', function (e) { if (timer && xy && Math.abs(e.clientX - xy[0]) + Math.abs(e.clientY - xy[1]) > 14) { clearTimeout(timer); timer = 0; } }, true);
+  ['pointerup', 'pointercancel'].forEach(function (ev) { document.addEventListener(ev, function () { clearTimeout(timer); timer = 0; if (fired) { hold = Date.now() + 400; fired = false; } }, true); });
+  document.addEventListener('contextmenu', function (e) { if (at(e)) e.preventDefault(); }, true);
+  try {
+    new MutationObserver(function () { polyWrap(app); }).observe(app, { childList: true, subtree: true, characterData: true });
+  } catch (e) {}
+})();
+
+menu();
+</script>
+<script>(function backPill() {
+  try { if (window.parent !== window) return; } catch (e) { return; }
+  var h = '', m = /[?&]home=([^&]*)/.exec(location.search || '');
+  if (m) { try { h = decodeURIComponent(m[1]); } catch (e) { h = ''; } }
+  if (h && (!/^[A-Za-z0-9._%~/-]+$/.test(h) || h.indexOf('//') >= 0)) h = '';
+  var a = document.createElement('div');
+  a.setAttribute('style', 'position:fixed;z-index:2147483647;box-sizing:border-box;display:inline-flex;align-items:center;gap:8px');
+  if (h) {
+    var back = document.createElement('a'); back.href = h; back.textContent = '🏠 Home';
+    back.setAttribute('style', 'box-sizing:border-box;display:inline-flex;align-items:center;min-height:56px;padding:0 22px;border:3px solid #fff;background:#1f5f99;color:#fff;font:800 20px system-ui,sans-serif;border-radius:999px;white-space:nowrap;text-decoration:none;box-shadow:0 2px 10px rgba(0,0,0,.45)');
+    a.appendChild(back);
+  }
+  var upd = document.createElement('button'); upd.type = 'button';
+  upd.setAttribute('style', 'box-sizing:border-box;min-height:56px;padding:0 22px;border:3px solid #fff;background:#E8590C;color:#fff;font:800 20px system-ui,sans-serif;border-radius:999px;cursor:pointer;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,.45)');
+  a.appendChild(upd);
+  /* A page with a top bar keeps a spot for the buttons in it (<span data-pill-slot>): there they sit in the bar's own row, a little smaller,
+     and can never cover the title. Every other page gets the floating pill below. */
+  var slot = document.querySelector('[data-pill-slot]');
+  if (slot) {
+    a.setAttribute('style', 'box-sizing:border-box;display:inline-flex;align-items:center;flex-wrap:wrap;gap:6px');
+    [back, upd].forEach(function (el) { if (el) { el.style.minHeight = '44px'; el.style.padding = '0 14px'; el.style.fontSize = '17px'; el.style.borderWidth = '2px'; el.style.boxShadow = 'none'; } });
+  }
+  (slot || document.body).appendChild(a);
+  /* Update: get the newest copy of the site from the internet. With no internet nothing is touched, so offline games keep working.
+     Progress lives in localStorage and is never touched. Only this site's offline games are asked for their newest version (nothing is deleted); other apps on this web address are never touched. */
+  var LABEL = '🔄 Update', busy = false, KEY = 'tmg.justUpdated', small = false;
+  upd.textContent = LABEL;
+  function label() { return small && !busy ? '🔄' : LABEL; }
+  var showing = false;   // a short message (Updated ✓, No internet) is on the button
+  function say(t) { showing = true; upd.textContent = t; upd.setAttribute('aria-label', t); setTimeout(function () { showing = false; upd.textContent = label(); upd.setAttribute('aria-label', 'Update'); if (!slot) later(); }, 2500); }
+  /* No offline copy is ever deleted any more. Every offline worker of this site is asked for its newest version; a new version only
+     takes over once it has completely downloaded the game, so with bad Wi-Fi the old copy simply stays and the game keeps opening with
+     no internet. (Before 2026-11-07 Update deleted every offline copy, and those games then needed the internet until each was opened
+     online again.) For the offline game this page belongs to, wait until its new version is in charge (at most 20 s) before reloading,
+     so the child sees the newest version at once. Other workers carry on downloading after the reload. */
+  function wait(ms) { return new Promise(function (ok) { setTimeout(ok, ms); }); }
+  function inCharge(r) {   // 'ok', or 'failed' when the new version could not install (bad Wi-Fi): the old copy stays in charge
+    return new Promise(function (ok) {
+      var w = r.installing || r.waiting; if (!w) { ok('ok'); return; }
+      w.addEventListener('statechange', function () { if (w.state === 'activated') ok('ok'); else if (w.state === 'redundant') ok('failed'); });
+    });
+  }
+  function cap(p, ms) { return Promise.race([p, wait(ms).then(function () { throw new Error('too slow'); })]); }
+  function clearOffline(base) {
+    if (!navigator.serviceWorker || !navigator.serviceWorker.getRegistrations) return Promise.resolve();
+    var site = location.origin + base;
+    return navigator.serviceWorker.getRegistrations().then(function (rs) {
+      return Promise.all(rs.filter(function (r) { return r.scope.indexOf(site) === 0; }).map(function (r) {
+        var mine = r.scope !== site && location.href.indexOf(r.scope) === 0;   // this page's own offline game (not the site-wide Chinese worker)
+        var job = r.update().then(function () { return mine ? inCharge(r) : 'ok'; }, function () { return mine ? 'failed' : 'ok'; });
+        return Promise.race([job, wait(mine ? 20000 : 4000).then(function () { return mine ? 'failed' : 'ok'; })]);
+      }));
+    }).then(function (res) { return res.indexOf('failed') < 0; });   // false: this game's newest version did not arrive in time
+  }
+  upd.addEventListener('click', function () {
+    if (busy) return; busy = true; upd.textContent = 'Updating…'; upd.setAttribute('aria-label', 'Updating…'); if (!slot) later();
+    var ROOT = '/ten-minute-games/', p = location.pathname, i = p.indexOf(ROOT), base = i >= 0 ? p.slice(0, i + ROOT.length) : '/';
+    function fresh(u) { return cap(fetch(u, { cache: 'reload' }), 8000).catch(function () {}); }
+    var done = true;   // every step has a time limit, so "Updating…" never hangs on a Wi-Fi with no real internet
+    cap(fetch(base + 'version.json?t=' + Date.now(), { cache: 'no-store' }), 8000).then(function (r) { if (!r.ok) throw new Error('no copy'); })
+      .then(function () { return clearOffline(base).then(function (ok) { done = ok; }); })
+      .then(function () { return Promise.all([fresh(location.href), fresh(base + 'index.html')]); })
+      .then(function () {
+              try { sessionStorage.setItem(KEY, done ? '1' : 'retry'); sessionStorage.setItem(SPOT, JSON.stringify({ p: location.pathname + location.search, y: Math.round(window.scrollY || 0) })); } catch (e) {}
+              location.reload(); },
+            function () { busy = false; say('No internet'); });
+  });
+  /* After Update, come back to the same spot on the same page. Without this an iPad jumped to the "#section" left in the address by the
+     last category tile tapped. The spot is put back once at once and again while the page
+     finishes building (fonts, the sign-in panel), unless the child has started scrolling by then. */
+  var SPOT = 'tmg.updSpot';
+  try {
+    var sp = JSON.parse(sessionStorage.getItem(SPOT) || 'null'); sessionStorage.removeItem(SPOT);
+    if (sp && sp.p === location.pathname + location.search && sp.y >= 0) {
+      try { history.scrollRestoration = 'manual'; } catch (e) {}
+      // only the home and book pages: there a "#section" is just a place to scroll to (a game may use its "#..." to pick a tab)
+      if (location.hash && document.querySelector('meta[name="tmg-home"]')) try { history.replaceState(history.state, '', location.pathname + location.search); } catch (e) {}
+      var moved = false, auto = function () { try { history.scrollRestoration = 'auto'; } catch (e) {} }, stop = function () { moved = true; auto(); };   // Back from a game keeps its usual spot
+      ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(function (t) { window.addEventListener(t, stop, { passive: true, once: true }); });
+      var back2 = function () {
+        if (moved) return;
+        var root = document.documentElement, was = root.style.scrollBehavior; root.style.scrollBehavior = 'auto';   // no smooth glide
+        window.scrollTo(0, sp.y); root.style.scrollBehavior = was;
+      };
+      back2(); window.addEventListener('load', back2); [150, 600, 1500].forEach(function (ms) { setTimeout(back2, ms); }); setTimeout(auto, 1600);
+    }
+  } catch (e) {}
+  try { var was = sessionStorage.getItem(KEY); if (was) { sessionStorage.removeItem(KEY); say(was === 'retry' ? 'Try again later' : 'Updated ✓'); } } catch (e) {}
+  if (slot) return;   // in a top bar: nothing to move around
+  /* The lessons keep their own buttons along the screen edges (Previous / Next in a footer, controls in a header), so a pill nailed to
+     one corner always sat on top of something. Keep the pill 44px tall (easy to tap) and, whenever the page layout changes, put it in
+     whichever of six edge spots does not cover a button, link or field (spots tried in this order: bottom-centre, bottom-left,
+     bottom-right, top-centre, top-left, top-right). Buttons that are always on screen (fixed or sticky) count much more than ones
+     that scroll away. It does not move during scrolling; once scrolling stops it moves only if its spot now covers something. */
+  var SPOTS = ['bc', 'bl', 'br', 'tc', 'tl', 'tr'], cur = '', timer = 0, room = false;
+  /* On a phone the two wide pills (about 300px) covered something in every spot, for example "Begin" on a lesson's first screen.
+     Below 560px wide they become two round 48px buttons (🏠 and 🔄, still easy to tap; the words stay for screen readers),
+     and the page gets room at the bottom so it can always scroll clear of them. */
+  if (back) { back.setAttribute('aria-label', 'Home'); back.title = 'Home'; }
+  if (!showing) upd.setAttribute('aria-label', 'Update'); upd.title = 'Update';
+  function sizeUp() {
+    var want = document.documentElement.clientWidth < 560;
+    if (want !== small) {
+      small = want;
+      [back, upd].forEach(function (el) { if (!el) return;
+        el.style.minHeight = small ? '48px' : '56px'; el.style.minWidth = small ? '48px' : '';
+        el.style.padding = small ? '0 10px' : '0 22px'; el.style.justifyContent = 'center'; });
+      if (back) back.textContent = small ? '🏠' : '🏠 Home';
+      if (!busy && !showing) upd.textContent = label();
+    }
+    if (small && !room) { room = true; document.body.style.paddingBottom = 'calc(' + (getComputedStyle(document.body).paddingBottom || '0px') + ' + 72px)'; }
+  }
+  var SEL = 'button,a[href],input,select,textarea,summary,label,[role=button],[role=tab],[tabindex]:not([tabindex="-1"])';
+  function put(s) {
+    var st = a.style, v = s.charAt(0) === 'b' ? 'bottom' : 'top', side = s.charAt(1);
+    st.top = st.bottom = st.left = st.right = 'auto'; st.transform = 'none';
+    st[v] = '10px'; st[v] = 'calc(10px + env(safe-area-inset-' + v + ', 0px))';
+    if (side === 'c') { st.left = '50%'; st.transform = 'translateX(-50%)'; }
+    else { var d = side === 'l' ? 'left' : 'right'; st[d] = '10px'; st[d] = 'calc(10px + env(safe-area-inset-' + d + ', 0px))'; }
+  }
+  function fixedish(e) {
+    for (var n = e; n && n.nodeType === 1; n = n.parentElement) { var p = getComputedStyle(n).position; if (p === 'fixed' || p === 'sticky') return true; }
+    return false;
+  }
+  function place() {
+    try {
+      sizeUp();
+      var W = document.documentElement.clientWidth, H = window.innerHeight, items = [], all, i, j;
+      a.style.pointerEvents = 'none'; all = document.querySelectorAll(SEL);   /* (while measuring, the pill itself must not count as covering anything) */
+      for (i = 0; i < all.length; i++) {
+        var e = all[i]; if (e === a || a.contains(e) || e.querySelector(SEL)) continue;
+        var cs = getComputedStyle(e); if (cs.display === 'none' || cs.visibility === 'hidden' || cs.pointerEvents === 'none') continue;
+        var r = e.getBoundingClientRect(); if (r.width < 2 || r.height < 2 || r.bottom <= 0 || r.top >= H || r.right <= 0 || r.left >= W) continue;
+        var t = document.elementFromPoint(Math.min(Math.max(r.left + r.width / 2, 0), W - 1), Math.min(Math.max(r.top + r.height / 2, 0), H - 1));
+        if (t && !e.contains(t)) continue;   /* hidden behind something else right now (for example scrolled under the footer): not a button the pill can cover */
+        items.push({ r: r, hard: fixedish(e) });
+      }
+      var res = {};
+      SPOTS.forEach(function (s) {
+        put(s); var b = a.getBoundingClientRect(), hard = 0, soft = 0;
+        items.forEach(function (it) { var q = it.r; if (q.left < b.right - 1 && q.right > b.left + 1 && q.top < b.bottom - 1 && q.bottom > b.top + 1) { if (it.hard) hard++; else soft++; } });
+        res[s] = { hard: hard, soft: soft };
+      });
+      var best = '', c = res[cur];
+      for (j = 0; j < SPOTS.length; j++) { var x = res[SPOTS[j]]; if (!best || x.hard < res[best].hard || (x.hard === res[best].hard && x.soft < res[best].soft)) best = SPOTS[j]; }
+      if (!(c && c.hard === 0 && (c.soft === 0 || res[best].hard > 0 || res[best].soft > 0))) cur = best;
+      put(cur); a.style.pointerEvents = '';
+    } catch (e) { put(cur || 'bl'); a.style.pointerEvents = ''; }
+  }
+  function later() { clearTimeout(timer); timer = setTimeout(function () { place(); timer = setTimeout(place, 500); }, 120); }
+  put('bc'); cur = 'bc'; place();
+  window.addEventListener('resize', later); window.addEventListener('orientationchange', later); window.addEventListener('load', later);
+  /* once scrolling has stopped, move only if the buttons now sit on top of something (place() keeps a free spot) */
+  var scrollTimer = 0; window.addEventListener('scroll', function () { clearTimeout(scrollTimer); scrollTimer = setTimeout(place, 400); }, { passive: true });
+  try { new MutationObserver(function (ms) { for (var i = 0; i < ms.length; i++) if (!a.contains(ms[i].target)) { later(); return; } }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden', 'disabled', 'aria-hidden', 'open'] }); } catch (e) { /* no observer: the spot is only worked out at load and on resize */ }
+})()</script><script>(function noZoom() {
+  var st = document.createElement('style');
+  // text-size-adjust: Safari enlarges text after a turn to landscape; manipulation: no double-tap zoom (rules that set their own touch-action, such as drag areas, still win)
+  st.textContent = 'html{-webkit-text-size-adjust:100%;text-size-adjust:100%}*{touch-action:manipulation}';
+  (document.head || document.documentElement).appendChild(st);
+  var stop = function (e) { e.preventDefault(); };
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (t) { document.addEventListener(t, stop, { passive: false }); });   // Safari's pinch
+  document.addEventListener('touchmove', function (e) { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });   // two fingers: no pinch
+})()</script></body>
+</html>
