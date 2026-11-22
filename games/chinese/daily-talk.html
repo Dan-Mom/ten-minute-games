@@ -881,7 +881,6 @@ button{-webkit-appearance:none;appearance:none}
   .big .btn{font-size:26px;min-height:64px}
   .big .bigspeak{min-width:76px;min-height:76px;font-size:36px}
 }
-}
 @media (min-width:600px){.big .panel{min-height:calc(100vh - 300px);min-height:calc(100dvh - 300px)}}   /* the row of back buttons above takes some of the screen */
 @media (min-width:800px) and (max-height:860px){
   .big .panel{padding-top:10px;padding-bottom:12px}
@@ -892,6 +891,12 @@ button{-webkit-appearance:none;appearance:none}
   .big .bigemoji{font-size:120px}
 }
 @media (min-width:800px){.big .sentline.long{font-size:60px}}
+.nopy .pyhelp{display:none}
+.nbw{white-space:nowrap}
+@media (max-width:480px){   /* a phone: smaller back buttons, so they take one or two rows, and three pictures fit in a row */
+  .navbtn{min-height:44px;font-size:16px;padding:0 12px}.navbtn.pybtn{margin-left:0;font-size:15px}
+  .opt.pic{width:104px;height:100px;font-size:56px}
+}
 </style>
 <style>
 /* Daily Talk: the sentences a family says every day, five a day. Each sentence has a picture, pinyin, English and one "star" character to learn.
@@ -973,7 +978,7 @@ function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { va
 /* voice: every character, word and sentence is recorded in advance with a warm voice (<lesson folder>/<TALK.voice>/<key>.mp3, made by
    网站\make-voices.py; key = the same hash as voice-lines.cjs). Text with no recording stays silent: the device's own voice is never used. */
 var VKEYS = null, player = null;
-try { fetch(TALK.voice + '/keys.json').then(function (r) { return r.json(); }).then(function (k) { VKEYS = {}; k.forEach(function (x) { VKEYS[x] = 1; }); }, function () {}); } catch (e) {}
+try { fetch(TALK.voice + '/keys.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).then(function (k) { VKEYS = {}; k.forEach(function (x) { VKEYS[x] = 1; }); }, function () {}); } catch (e) {}
 function vkey(t) { t = String(t).replace(/＿/g, '').trim(); var h = 0x811c9dc5; for (var i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
 var voiceWait = null, voiceDone = null;   // the recording now playing, and how to mark it finished
 var pending = null, pendBtn = null, navAt = 0;   // the one move waiting for the voice to end, and when the child last moved on
@@ -1064,17 +1069,18 @@ function say(t) {
   if (voiceDone) voiceDone();                   // the one before is over (cut off by this one)
   stopSound();
   var k = vkey(t);
+  dbg('say ' + t + (VKEYS ? (VKEYS[k] ? '' : '  NO RECORDING') : '  (list of recordings not loaded)'));
   if (VKEYS && !VKEYS[k]) return;               // no recording for this text: stay quiet, never the device's robot voice
   var over = false, done;                       // each recording has its own "done", so a late signal from an old one cannot end this one
   voiceWait = new Promise(function (r) { done = function () { if (over) return; over = true; if (voiceDone === done) voiceDone = null; if (loadingDone === done) loadingDone = null; r(); }; });
   voiceDone = done;
   setTimeout(done, 15000);                      // never wait for ever
   if (FAST && BUF[k] && AC.state === 'running') {   // decoded, trimmed to the words: starts at once and ends when the words end
-    try { playBuf(k, done); return; } catch (e) { srcNode = null; }
+    try { dbg('play: Web Audio'); playBuf(k, done); return; } catch (e) { srcNode = null; }
   }
   if (IOS_FAST && AC) {   // iPad: not decoded yet, or the sound is paused (after a call): get it ready, then play (never through the <audio> player, which would mix the two)
     loadingDone = done;
-    var play = function () { if (over) return; loadingDone = null; if (BUF[k] && AC.state === 'running') { try { playBuf(k, done); } catch (e) { done(); } } else done(); };
+    var play = function () { if (over) return; loadingDone = null; dbg('iPad play: decoded=' + !!BUF[k] + ' sound=' + AC.state); if (BUF[k] && AC.state === 'running') { try { playBuf(k, done); } catch (e) { done(); } } else done(); };
     var go = function () {
       if (over) return;
       if (AC.state === 'running') return play();
@@ -1085,7 +1091,7 @@ function say(t) {
     else if (BLOBS[k]) queueTrim(k, BLOBS[k], go, true);
     else {
       var got = false;
-      fetch(TALK.voice + '/' + k + '.mp3').then(function (r) { if (!r.ok) throw 0; return r.blob(); }).then(function (b) { got = true; BLOBS[k] = b; queueTrim(k, b, go, true); }, done);
+      fetch(TALK.voice + '/' + k + '.mp3').then(function (r) { if (!r.ok) throw 0; return r.blob(); }).then(function (b) { got = true; BLOBS[k] = b; queueTrim(k, b, go, true); }, function () { dbg('download failed'); done(); });
       setTimeout(function () { if (!got && loadingDone === done) done(); }, 4000);   // slow internet: stay quiet rather than hold Next or Quit for long (decoding has its own limit)
     }
     return;
@@ -1104,7 +1110,7 @@ function say(t) {
     })(); };
   }
   player.src = READY[k] || TALK.voice + '/' + k + '.mp3';   // downloaded already: plays at once; else fetched now (also before the list has arrived)
-  var p = player.play(); if (p && p.catch) p.catch(done);   // interrupted, blocked or missing: stay quiet (🔊 replays it)
+  dbg('play: audio element'); var p = player.play(); if (p && p.catch) p.catch(function (e) { dbg('audio blocked: ' + e); done(); });   // interrupted, blocked or missing: stay quiet (🔊 replays it)
 }
 /* never cut a recording short. A tap on Next, Back, Quit, Levels or a level waits until the voice has finished; only the latest tap
    is kept (Quit then Next = Next, Next then Quit = Quit); a second tap within a third of a second of moving on is ignored (the next card's
@@ -1188,9 +1194,9 @@ function showTotal() { document.getElementById('stamps').textContent = '💰 ' +
 showTotal();
 /* pinyin on or off (the owner, 2026-11-22): one switch in the header hides every pinyin line of the game (over the sentences, on the tiles, by the star
    character); the readings box of a grey character is a dictionary and keeps its pinyin. The choice is saved with the progress. */
-function setPinyin(on) { save.nopy = !on; store(); document.body.classList.toggle('nopy', !on); var b = document.getElementById('pybtn'); if (b) { b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.innerHTML = 'Pinyin <span class="han nopoly">拼音</span>: ' + (on ? 'on' : 'off'); } }
+function setPinyin(on, keep) { save.nopy = !on; if (!keep) store(); document.body.classList.toggle('nopy', !on); var b = document.getElementById('pybtn'); if (b) { b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.innerHTML = 'Pinyin <span class="han nopoly">拼音</span>: ' + (on ? 'on' : 'off'); } }
 document.body.classList.toggle('nopy', !!save.nopy);
-(function () { var b = document.getElementById('pybtn'); if (b) { b.onclick = function () { setPinyin(!!save.nopy); }; setPinyin(!save.nopy); } })();
+(function () { var b = document.getElementById('pybtn'); if (b) { b.onclick = function () { setPinyin(!!save.nopy); }; setPinyin(!save.nopy, true); } })();   // at load nothing is written: the account script must not see a change that is not one
 function txt(tag, cls, t) { var e = E(tag, cls); e.textContent = t; return e; }   // plain text from the data, never read as HTML
 
 /* ---------- the data: weeks, days, sentences ---------- */
@@ -1203,12 +1209,34 @@ WEEKS.forEach(function (W) {
   });
   var R = W.review; R.review = true; R.week = W.n; R.items = []; R.pairs = []; W.days.forEach(function (D) { R.items = R.items.concat(D.items); R.pairs = R.pairs.concat(D.pairs || []); }); R.upto = W.days.slice(); ALLD.push(R);
 });
+(function () {   // a mistake in the data shows in the console at once, not as a blank screen later
+  var seen = {};
+  ALLD.forEach(function (D) { D.items.forEach(function (it) { seen[it.id] = it; }); });
+  ALLD.forEach(function (D) {
+    (D.pairs || []).forEach(function (p) { if (!seen[p.q] || !seen[p.a]) console.error('Daily Talk: pair of ' + D.id + ' names a sentence that is not there', p); (p.x || []).forEach(function (x) { if (!seen[x]) console.error('Daily Talk: x of ' + D.id + ' names a sentence that is not there', x); }); });
+    if (D.review) return;
+    D.items.forEach(function (it) {
+      var s = it.w.join('');
+      if (it.w.length !== it.p.length) console.error('Daily Talk: words and pinyin differ in ' + it.id);
+      if (s.indexOf(it.star.c) < 0) console.error('Daily Talk: the star character is not in ' + it.id);
+      if (!it.no || it.no.length !== 2 || it.no.some(function (c) { return s.indexOf(c) >= 0; })) console.error('Daily Talk: the two wrong characters of ' + it.id + ' are missing or in the sentence');
+      if (it.t && (!it.tp || it.t.length !== it.tp.length)) console.error('Daily Talk: pieces and their pinyin differ in ' + it.id);
+    });
+  });
+})();
 function sentOf(it) { return it.w.join('') + (it.end || ''); }
 function byId(id) { var f = null; ALLD.forEach(function (D) { D.items.forEach(function (it) { if (it.id === id) f = it; }); }); return f; }
 function poolOf(D) { var p = []; (D.upto || [D]).forEach(function (d) { p = p.concat(d.items); }); return p; }
-function replyOf(D, it) { var r = null; (D.pairs || []).forEach(function (p) { if (p.q === it.id) r = p; }); return r; }
 function mateOf(D, it) { var m = {}; (D.pairs || []).forEach(function (p) { if (p.q === it.id) m[p.a] = 1; if (p.a === it.id) m[p.q] = 1; }); return m; }
-function says(it) { return [sentOf(it)]; }
+/* sound check (open the page with ?debug at the end of the address): a small black strip at the bottom says what the sound does on each tap */
+var DBGON = /[?&]debug/.test(location.search), DBGL = [];
+function dbg(m) {
+  if (!DBGON) return;
+  DBGL.push(m); if (DBGL.length > 12) DBGL.shift();
+  var d = document.getElementById('dbg');
+  if (!d) { d = document.createElement('pre'); d.id = 'dbg'; d.setAttribute('style', 'position:fixed;left:0;right:0;bottom:0;z-index:99999;margin:0;padding:6px 10px;background:rgba(0,0,0,.8);color:#7CFC00;font:13px/1.35 monospace;white-space:pre-wrap;pointer-events:none'); document.body.appendChild(d); }
+  d.textContent = 'iOS=' + IOS + ' fastiOS=' + IOS_FAST + ' ctx=' + (AC ? AC.state : '-') + ' recordings=' + (VKEYS ? Object.keys(VKEYS).length : 'not loaded') + '\n' + DBGL.join('\n');
+}
 
 /* ---------- small pieces ---------- */
 function ruby(it, blank) {   // the sentence with its pinyin over every word; blank = a character to hide (the star character)
@@ -1217,10 +1245,10 @@ function ruby(it, blank) {   // the sentence with its pinyin over every word; bl
     var d = E('span', 'wd'); d.appendChild(txt('span', 'wp', it.p[n]));
     var h = E('span', 'wh'); h.textContent = blank ? w.split(blank).join('＿') : w; d.appendChild(h); s.appendChild(d);
   });
-  if (it.end) s.appendChild(txt('span', 'wend', it.end));
+  if (it.end) { var last = s.lastChild, nb = E('span', 'nbw'); s.replaceChild(nb, last); nb.appendChild(last); nb.appendChild(txt('span', 'wend', it.end)); }   // the mark never wraps alone
   return s;
 }
-function speakBtn(t, big) { var b = E('button', 'speak' + (big ? ' bigspeak' : ''), '🔊'); b.type = 'button'; b.setAttribute('aria-label', 'Listen'); b.onclick = function () { say(t); }; return b; }
+function speakBtn(t, big) { var b = E('button', 'speak' + (big ? ' bigspeak' : ''), '🔊'); b.type = 'button'; b.setAttribute('aria-label', 'Listen'); b.onclick = function () { unlockSound(); say(t); }; return b; }   // a tap is always a valid moment to wake the sound (iPad)
 function pick2(from, exclude) {   // two other sentences, never the one asked about, its partner in a question and answer, or one with the same picture
   var out = [], ban = {}; exclude.forEach(function (x) { ban[x.id] = 1; if (x.e) ban['e' + x.e] = 1; });
   shuffle(from).forEach(function (x) { if (out.length < 2 && !ban[x.id] && !ban['e' + x.e]) out.push(x); });
@@ -1291,12 +1319,12 @@ function qStar(D, it) {   // the sentence with its star character hidden: pick t
   var c = it.star.c;
   return { texts: [sentOf(it)], render: function (box, answer) {
     var L = E('div', 'lcol'), R = E('div', 'rcol'); box.appendChild(L); box.appendChild(R);   // two halves on a wide screen: the question left, the answers right
-    L.appendChild(txt('p', 'say', 'Which character is missing? The pinyin helps.'));
+    L.appendChild(E('p', 'say', 'Which character is missing?<span class="pyhelp"> The pinyin helps.</span>'));
     var line = E('div', 'sentline'); var r = ruby(it, c); line.appendChild(r); L.appendChild(line);
     L.appendChild(txt('div', 'enq small', '“' + it.en + '”'));
     var opts = E('div', 'opts'), right = null, done = false;
     shuffle([c].concat(it.no)).forEach(function (x) {
-      var b = E('button', 'opt'); b.type = 'button'; b.appendChild(txt('span', 'han', x));
+      var b = E('button', 'opt'); b.type = 'button'; b.appendChild(txt('span', 'han nopoly', x));   // nopoly: a grey dotted answer would give itself away
       if (x === c) right = b;
       b.onclick = function () {
         if (done) return; done = true; var ok = x === c; answerFx(b, ok, right);
@@ -1384,7 +1412,6 @@ function playDay(D, from, pts, of) {
     else runQs(D, S, st, steps.length, questionsOf(D, S), 1, function () { st.s++; next(); });
   }
   function finishDay() {
-    var first = !save.days[D.id];
     delete save.at[D.id]; save.days[D.id] = { pts: st.pts, of: st.of }; store(); showTotal();
     app.innerHTML = ''; var p = E('div', 'panel');
     p.appendChild(E('div', 'emoji', '🎉')); p.appendChild(E('h2', null, D.title + ' done!'));
@@ -1409,7 +1436,7 @@ function learn(D, S, si, sn, done) {   // five cards: look, listen, say it out l
     lc.appendChild(txt('div', 'enq', it.en));
     var s = ruby(it); var sw = E('div', 'sentline' + (sentOf(it).length >= 7 ? ' long' : '')); sw.appendChild(s); rc.appendChild(sw);   // a long sentence is a little smaller so it still fits on two lines
     var star = E('div', 'starbox'); star.appendChild(txt('span', 'stlab', '⭐ Star character'));
-    var sc = E('button', 'starc'); sc.type = 'button'; sc.appendChild(txt('span', 'han big1', it.star.c)); var sp = E('span', 'sp'); sp.appendChild(txt('span', 'spy', it.star.py + ' · ')); sp.appendChild(document.createTextNode(it.star.en)); sc.appendChild(sp); sc.onclick = function () { say(it.star.c); };
+    var sc = E('button', 'starc'); sc.type = 'button'; sc.appendChild(txt('span', 'han big1', it.star.c)); var sp = E('span', 'sp'); sp.appendChild(txt('span', 'spy', it.star.py + ' · ')); sp.appendChild(document.createTextNode(it.star.en)); sc.appendChild(sp); sc.onclick = function () { unlockSound(); say(it.star.hear || it.star.c); };
     star.appendChild(sc); rc.appendChild(star);
     var r = E('div', 'row'); r.appendChild(speakBtn(sentOf(it), true));
     r.appendChild(txt('span', 'sayit', 'Now say it out loud!'));
@@ -1417,7 +1444,7 @@ function learn(D, S, si, sn, done) {   // five cards: look, listen, say it out l
     nb.onclick = function () { afterVoice(function () { i++; if (i < D.items.length) card(); else done(); }, nb); };
     if (i > 0) { var bk = E('button', 'btn ghost', '◀ Back'); bk.type = 'button'; bk.onclick = function () { afterVoice(function () { i--; card(); }, bk); }; r.insertBefore(bk, r.firstChild); }
     r.appendChild(nb); rc.appendChild(r); app.appendChild(p);
-    warm(D.items.map(sentOf).concat(D.items.map(function (x) { return x.star.c; })));
+    warm(D.items.map(sentOf).concat(D.items.map(function (x) { return x.star.hear || x.star.c; })));
     afterPaint(function () { say(sentOf(it)); });
   }
   card();
@@ -1436,7 +1463,7 @@ function runQs(D, S, st, sn, qs, round, doneCb) {
       if (ok) st.pts += worth(round); else missed.push(q);
       showTotalLive();
       fb.className = 'fb ' + (ok ? 'ok' : 'no'); fb.textContent = ok ? '✓ Yes! ' + (worth(round) ? '+' + fmt(worth(round)) + UNIT : '') : 'Not this time. Listen to the answer.';
-      afterPaint(function () { beep(ok); setTimeout(function () { say(sayText); }, 250); });
+      afterPaint(function () { beep(ok); setTimeout(function () { if (!panel.isConnected) return; say(sayText); }, 250); });   // not over the next question after a quick Next
       var nb = E('button', 'btn', k + 1 < qs.length ? 'Next ▶' : 'Done ▶'); nb.type = 'button';
       nb.onclick = function () { afterVoice(function () { k++; show(); }, nb); }; nav.appendChild(nb);
       panel.appendChild(nav);
@@ -1502,7 +1529,8 @@ function askBox(title, html, buttons, stay) {
   box.appendChild(r); if (rc) box.appendChild(rc); o.appendChild(box); document.body.appendChild(o);
 }
 function wipe(what) {
-  if (what === 'all') { save.days = {}; save.at = {}; }   // the pinyin switch is a setting, not progress: it stays else { delete save.days[what.id]; delete save.at[what.id]; }
+  // the pinyin switch is a setting, not progress: it stays
+  if (what === 'all') { save.days = {}; save.at = {}; } else { delete save.days[what.id]; delete save.at[what.id]; }
   store(); showTotal();
   try { if (window.TMG && TMG._cloud && TMG.kid && TMG.kid !== 'guest') TMG._cloud.push(TMG.kid); } catch (e) {}
   menu();
