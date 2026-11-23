@@ -1205,7 +1205,22 @@ function speaking() {   // is a recording still being said? (an interrupted or p
   return !!player && !player.paused && !player.ended;
 }
 var sayTok = 0;   // goes up with every say(): a line waiting its turn (the English after the Chinese) is dropped when something else was said meanwhile
-var RECORDING = false;   // true while the child's microphone is open: nothing else is said (it would be recorded)
+var RECORDING = false;
+var WARM = null, micOK = false;   // the microphone, kept ready while the learn cards are open (opening it at the tap took seconds on iPad), once this page has been allowed
+try { if (navigator.permissions && navigator.permissions.query) navigator.permissions.query({ name: 'microphone' }).then(function (p) { if (p.state === 'granted') micOK = true; }, function () {}); } catch (e) {}
+function dropMic() {   // let go of the microphone: leaving the learn cards, the day, or the app
+  if (WARM && WARM.stream) WARM.stream.getTracks().forEach(function (k) { try { k.stop(); } catch (e) {} });
+  var had = !!WARM; WARM = null; if (had) { dbg('microphone released'); reviveSound(); }
+}
+function warmMic() {   // called when a learn card opens, and only when the page has been allowed already: no question is asked here
+  if (WARM || !micOK || RECORDING || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) return;
+  var mine = WARM = { stream: null }, t0 = performance.now();
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(function (s) {
+    if (WARM !== mine) { s.getTracks().forEach(function (k) { k.stop(); }); return; }
+    mine.stream = s; dbg('microphone kept ready (took ' + Math.round(performance.now() - t0) + ' ms)');
+    s.getAudioTracks().forEach(function (k) { k.onended = function () { if (WARM === mine) WARM = null; }; });
+  }, function () { if (WARM === mine) WARM = null; micOK = false; });
+}   // true while the child's microphone is open: nothing else is said (it would be recorded)
 function say(t) {
   if (RECORDING) return;
   if (curRec) curRec.stopMine();   // the child's own recording stops when the model voice starts
@@ -1552,7 +1567,7 @@ function qBuild(D, it) {   // tap the pieces in order
 /* ---------- a day: learn the sentences, then the questions ---------- */
 var TABLAB = { learn: '📖 Learn', listen: '👂 Hear', en: '💬 Say', answer: '↩️ Answer', star: '🔤 Find', build: '🧩 Build' };   // the tabs at the top of a day (the owner, 2026-11-22: the child picks the part to do)
 var tabsEl = document.getElementById('daytabs');
-function hideTabs() { if (tabsEl) tabsEl.classList.remove('on'); }
+function hideTabs() { if (tabsEl) tabsEl.classList.remove('on'); dropMic(); }   // the day is left (menu, or finished)
 var STEPS = [
   { key: 'learn', title: 'Learn the sentences', zh: '学句子' },
   { key: 'listen', title: 'Hear it, find the answer', zh: '听一听' },
@@ -1572,9 +1587,10 @@ function questionsOf(D, S) {
   items.forEach(function (it) { out.push(S.key === 'listen' ? qListen(D, it) : S.key === 'en' ? qEn(D, it) : S.key === 'star' ? qStar(D, it) : qBuild(D, it)); });
   return D.review ? out : shuffle(out);
 }
+function leaveLearn(S) { if (S && S.key !== 'learn') dropMic(); }
 function closePopups() { var w = document.querySelector('.writepop, .polybox'); while (w) { w.remove(); w = document.querySelector('.writepop, .polybox'); } curWrite = null; }   // a box left open over a card that has gone
 function head(D, S, si, sn, k, kn, round, label, frac) {
-  closePopups();
+  closePopups(); leaveLearn(S);
   if (curRec) { curRec.dispose(); curRec = null; }   // a recording is dropped when its card is left
   var f = frac != null ? frac : kn ? k / kn : 0;   // the bar: how far in this part
   var br = E('div', 'barrow'), bar = E('div', 'bar'); bar.appendChild(E('i')); bar.firstChild.style.width = Math.round(100 * f) + '%'; br.appendChild(bar);
@@ -1752,8 +1768,10 @@ function recorder() {   // returns { recB, playB, msg, dispose, active, stop, st
   }
   function release() {   // let go of the microphone, and give iPad its normal sound back
     clearTimeout(timer);
-    if (stream) { stream.getTracks().forEach(function (k) { try { k.stop(); } catch (e) {} }); stream = null; }
-    RECORDING = false; reviveSound();
+    var keep = stream && WARM && WARM.stream === stream;   // the ready microphone stays open for the next take
+    if (stream && !keep) stream.getTracks().forEach(function (k) { try { k.stop(); } catch (e) {} });
+    stream = null; RECORDING = false;
+    if (!WARM || !WARM.stream) reviveSound();
   }
   function stopRec() { try { if (mr && mr.state !== 'inactive') { state = 'stopping'; show(); tStop = performance.now(); mr.stop(); } } catch (e) {} }   // the button says so at once; the recording is finished a moment later
   function stopMine() {
@@ -1769,18 +1787,19 @@ function recorder() {   // returns { recB, playB, msg, dispose, active, stop, st
     cutSound(); stopMine(); tTap = performance.now();
     state = 'ask'; RECORDING = true; show();
     if (!recSupported()) return fail('This browser cannot record.');
+    var w = WARM && WARM.stream;
+    if (w && w.getAudioTracks().some(function (k) { return k.readyState === 'live'; })) return gotMic(w);   // already open: no waiting
     msg.textContent = 'Getting the microphone ready… wait for the red button. (Tap Allow if Safari asks.)';
-    setTimeout(function () {   // after the button has been drawn: opening the microphone can hold the page for a moment
-      if (state !== 'ask') return;
-      // no echo cancelling, noise cutting or automatic gain: iPad then opens the plain microphone, which starts faster and does not turn the other sounds down
-      navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }).then(gotMic, noMic);
-    }, 30);
+    // asked for inside the tap itself, with no extra settings: iPad Safari only opens the microphone for a request made straight from a tap, and an
+    // earlier version that waited a moment and asked for special settings was refused ("Could not start the microphone", the owner, 2026-11-23)
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(gotMic, noMic);
     function gotMic(s) {
-      dbg('microphone ready after ' + ms(tTap));
+      var took = performance.now() - tTap; dbg('microphone ready after ' + ms(tTap));
+      micOK = true; if (!WARM || !WARM.stream) WARM = { stream: s };   // after the first take the microphone is kept for the learn cards
       if (gone || !recB.isConnected) { s.getTracks().forEach(function (k) { k.stop(); }); state = 'idle'; release(); return; }
-      if (stream) stream.getTracks().forEach(function (k) { try { k.stop(); } catch (e) {} });
+      if (stream && stream !== s) stream.getTracks().forEach(function (k) { try { k.stop(); } catch (e) {} });
       stream = s; chunks = [];
-      s.getAudioTracks().forEach(function (k) { k.onended = function () { stopRec(); }; });   // another app took the microphone
+      s.getAudioTracks().forEach(function (k) { k.onended = function () { if (WARM && WARM.stream === s) WARM = null; stopRec(); }; });   // another app took the microphone
       var type = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg'].filter(function (m) { return window.MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m); })[0];
       try {
         mr = type ? new MediaRecorder(s, { mimeType: type }) : new MediaRecorder(s);
@@ -1795,13 +1814,13 @@ function recorder() {   // returns { recB, playB, msg, dispose, active, stop, st
         };
         mr.start();
       } catch (e) { return fail('This browser cannot record.'); }
-      state = 'rec'; msg.textContent = 'Say it now! Tap ⏹ when you are done.'; show(); dbg('recording ' + sessionInfo());
+      state = 'rec'; msg.textContent = 'Say it now! Tap ⏹ when you are done.' + (took > 900 ? ' (the microphone needed ' + (Math.round(took / 100) / 10) + ' s to start)' : ''); show(); dbg('recording ' + sessionInfo());
       timer = setTimeout(stopRec, 10000);   // never records for ever
     }
     function noMic(err) {
-      var n = err && err.name;
+      var n = err && err.name; dbg('microphone refused: ' + n + (err && err.message ? ' - ' + err.message : ''));
       fail(n === 'NotAllowedError' || n === 'SecurityError' ? 'The microphone is off for this page. Ask a grown-up to allow it (aA, Website Settings, Microphone), then reload the page.'
-        : n === 'NotFoundError' || n === 'NotReadableError' ? 'The microphone is busy or missing. Close other apps and try again.' : 'Could not start the microphone.');
+        : n === 'NotFoundError' || n === 'NotReadableError' ? 'The microphone is busy or missing. Close other apps and try again.' : 'Could not start the microphone (' + (n || 'unknown') + ').');
     }
   };
   playB.onclick = function () {
@@ -1826,7 +1845,7 @@ function recorder() {   // returns { recB, playB, msg, dispose, active, stop, st
   return { recB: recB, playB: playB, msg: msg, active: function () { return state !== 'idle'; }, stop: stopRec, stopMine: stopMine,
     dispose: function () { gone = true; RECORDING = false; mineBuf = null; try { if (mr && mr.state !== 'inactive') { mr.onstop = null; mr.stop(); } } catch (e) {} release(); stopMine(); if (url) URL.revokeObjectURL(url); url = null; } };
 }
-document.addEventListener('visibilitychange', function () { if (document.hidden && curRec && curRec.active()) curRec.stop(); });   // leaving the app ends a recording
+document.addEventListener('visibilitychange', function () { if (document.hidden) { if (curRec && curRec.active()) curRec.stop(); dropMic(); } });   // leaving the app ends a recording
 function learn(D, S, si, sn, done) {   // five cards: the picture and the English on the left, the sentence on the right (tap a character to write it)
   var i = 0, n = D.items.length;
   function card() {
@@ -1839,6 +1858,7 @@ function learn(D, S, si, sn, done) {   // five cards: the picture and the Englis
     rc.appendChild(E('p', 'tapnote', 'Tap a character to write it ✍️ <span class="han nopoly">点一个字来写</span>'));
     var sr = E('div', 'row sayrow'), lb = E('button', 'btn ghost listenbtn', '🔊 Listen again'); lb.setAttribute('aria-label', 'Listen again 再听一遍'); lb.type = 'button';   // the speaker only plays the sentence: it says so (the owner, 2026-11-22: "say it out loud" next to it was misleading)
     lb.onclick = function () { unlockSound(); sayThen(sentOf(it), it.en, function () { return lb.isConnected; }); }; sr.appendChild(lb); rc.appendChild(sr);
+    warmMic();
     if (recSupported()) { var rec = recorder(); curRec = rec; sr.appendChild(rec.recB); sr.appendChild(rec.playB); rc.appendChild(rec.msg); }   // record me / my voice, next to listen again
     var r = E('div', 'row learnnav dock');
     r.appendChild(E('p', 'sayit2', 'Now say it yourself! Tap 🎤 to record it. <span class="han nopoly">听完，自己跟着说一遍</span>'));   // the child says it, after hearing it
