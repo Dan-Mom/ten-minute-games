@@ -1206,6 +1206,7 @@ function speaking() {   // is a recording still being said? (an interrupted or p
 }
 var sayTok = 0;   // goes up with every say(): a line waiting its turn (the English after the Chinese) is dropped when something else was said meanwhile
 var RECORDING = false;
+var KEEP_MIC = false;   // off: the microphone is opened at the tap and let go after each take, as in the version that worked on the iPad (keeping it ready was not confirmed on a real iPad)
 var WARM = null, micOK = false;   // the microphone, kept ready while the learn cards are open (opening it at the tap took seconds on iPad), once this page has been allowed
 try { if (navigator.permissions && navigator.permissions.query) navigator.permissions.query({ name: 'microphone' }).then(function (p) { if (p.state === 'granted') micOK = true; }, function () {}); } catch (e) {}
 function dropMic() {   // let go of the microphone: leaving the learn cards, the day, or the app
@@ -1213,7 +1214,7 @@ function dropMic() {   // let go of the microphone: leaving the learn cards, the
   var had = !!WARM; WARM = null; if (had) { dbg('microphone released'); reviveSound(); }
 }
 function warmMic() {   // called when a learn card opens, and only when the page has been allowed already: no question is asked here
-  if (WARM || !micOK || RECORDING || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) return;
+  if (!KEEP_MIC || WARM || !micOK || RECORDING || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) return;
   var mine = WARM = { stream: null }, t0 = performance.now();
   navigator.mediaDevices.getUserMedia({ audio: true }).then(function (s) {
     if (WARM !== mine) { s.getTracks().forEach(function (k) { k.stop(); }); return; }
@@ -1790,12 +1791,13 @@ function recorder() {   // returns { recB, playB, msg, dispose, active, stop, st
     var w = WARM && WARM.stream;
     if (w && w.getAudioTracks().some(function (k) { return k.readyState === 'live'; })) return gotMic(w);   // already open: no waiting
     msg.textContent = 'Getting the microphone ready… wait for the red button. (Tap Allow if Safari asks.)';
+    try { if (navigator.audioSession) navigator.audioSession.type = 'play-and-record'; } catch (e) {}   // as in the version that recorded on the iPad
     // asked for inside the tap itself, with no extra settings: iPad Safari only opens the microphone for a request made straight from a tap, and an
     // earlier version that waited a moment and asked for special settings was refused ("Could not start the microphone", the owner, 2026-11-23)
     navigator.mediaDevices.getUserMedia({ audio: true }).then(gotMic, noMic);
     function gotMic(s) {
       var took = performance.now() - tTap; dbg('microphone ready after ' + ms(tTap));
-      micOK = true; if (!WARM || !WARM.stream) WARM = { stream: s };   // after the first take the microphone is kept for the learn cards
+      micOK = true; if (KEEP_MIC && (!WARM || !WARM.stream)) WARM = { stream: s };   // after the first take the microphone is kept for the learn cards
       if (gone || !recB.isConnected) { s.getTracks().forEach(function (k) { k.stop(); }); state = 'idle'; release(); return; }
       if (stream && stream !== s) stream.getTracks().forEach(function (k) { try { k.stop(); } catch (e) {} });
       stream = s; chunks = [];
