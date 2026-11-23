@@ -920,10 +920,6 @@ button{-webkit-appearance:none;appearance:none}
 .writepop .ask-box.wbig{max-width:520px;width:100%;padding:18px 16px 14px}
 .writepop .wlab2{margin-top:4px;padding:0 40px}
 .btn.small{min-height:44px;font-size:17px;padding:4px 16px}
-.big .learnsent{font-size:92px}
-.big .learnsent.long{font-size:70px}
-.big .learnp .bigemoji{font-size:150px}
-.big .learnp .enq{font-size:44px}
 @media (min-width:700px) and (max-height:860px){.big .learnp .bigemoji{font-size:108px}.big .learnsent{font-size:80px}.big .learnsent.long{font-size:62px}.big .learnp .enq{font-size:36px}}
 /* the answer and the Next button stay on the screen (the owner, 2026-11-22: on an iPad with the browser bars showing, Next was below the screen after building a sentence) */
 .dock{position:sticky;bottom:0;z-index:4;background:rgba(255,255,255,.97);margin:6px -12px -12px;padding:4px 12px 12px;border-radius:0 0 22px 22px}
@@ -992,6 +988,20 @@ button{-webkit-appearance:none;appearance:none}
 @media (min-width:700px) and (max-height:860px){.big .many .tile{min-height:66px;font-size:36px}.big .many .bline{min-height:76px}}
 /* an upright iPad (700-799 px wide): the learn card's columns are narrow, so the type is smaller (the code review, 2026-11-22) */
 @media (min-width:700px) and (max-width:799px){.big .learnsent{font-size:64px}.big .learnsent.long{font-size:52px}.big .learnp .bigemoji{font-size:104px}.big .learnp .enq{font-size:32px}}
+/* big learn card only from 700 px wide (on a phone these sizes made the page twice as high as the screen) */
+@media (min-width:700px){.big .learnsent{font-size:92px}.big .learnsent.long{font-size:70px}.big .learnp .bigemoji{font-size:150px}.big .learnp .enq{font-size:44px}}
+@media (min-width:700px) and (max-width:799px){.big .learnsent{font-size:64px}.big .learnsent.long{font-size:52px}.big .learnp .bigemoji{font-size:104px}.big .learnp .enq{font-size:32px}}
+@media (min-width:700px) and (max-height:860px){.big .learnp .bigemoji{font-size:108px}.big .learnsent{font-size:80px}.big .learnsent.long{font-size:62px}.big .learnp .enq{font-size:36px}}
+@media (min-width:700px) and (max-width:799px) and (max-height:860px){.big .learnsent{font-size:64px}.big .learnsent.long{font-size:52px}}
+@media (max-width:699px){.learnsent{font-size:48px}.learnsent.long{font-size:40px}.learnp .bigemoji{font-size:70px}.learnp .enq{font-size:24px}}
+/* the buttons next to "listen again" keep their size on a taller screen too (the engine's .big .btn is stronger than a single class) */
+.btn.listenbtn,.btn.recbtn,.btn.recplay{min-height:52px;font-size:20px;padding:4px 16px}
+@media (min-width:700px) and (max-height:800px){.big .btn.recbtn,.big .btn.recplay,.big .btn.listenbtn{min-height:46px;font-size:17px;padding:2px 12px}}
+/* a long press on a character or an English line must not start iOS text selection */
+.wch,.sent,.sentline,.enq{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.tzg,.tzg *{touch-action:none}
+.writepop{overscroll-behavior:contain}
+@media (min-width:700px) and (max-height:800px){.big .learnsent{font-size:64px}.big .learnsent.long{font-size:52px}.big .learnp .bigemoji{font-size:80px}.big .learnp .enq{font-size:28px}}
 </style>
 <style>
 /* Daily Talk: the sentences a family says every day, five a day. Each sentence has a picture, pinyin, English and one "star" character to learn.
@@ -1157,6 +1167,7 @@ function silentUrl() {
   return (SILENT = URL.createObjectURL(new Blob([b], { type: 'audio/wav' })));
 }
 function unlockSound() {   // every tap: make sure Web Audio may play (iPad also pauses it after a call or another app)
+  if (AC && AC.stale && IOS_FAST) rebuildSound();   // it stayed asleep after the microphone: a new one, made inside this tap
   startFast();
   if (!primed && !IOS_FAST && (!player || player.paused)) {
     primed = true;
@@ -1191,7 +1202,10 @@ function speaking() {   // is a recording still being said? (an interrupted or p
   return !!player && !player.paused && !player.ended;
 }
 var sayTok = 0;   // goes up with every say(): a line waiting its turn (the English after the Chinese) is dropped when something else was said meanwhile
+var RECORDING = false;   // true while the child's microphone is open: nothing else is said (it would be recorded)
 function say(t) {
+  if (RECORDING) return;
+  if (curRec) curRec.stopMine();   // the child's own recording stops when the model voice starts
   sayTok++;
   if (voiceDone) voiceDone();                   // the one before is over (cut off by this one)
   stopSound();
@@ -1336,7 +1350,7 @@ function sayThen(a, b, alive) {   // say a, and when it is over b (the English a
   if (w) w.then(function () { if (my === sayTok && (!alive || alive())) say(b); });
 }
 function enLine(it, cls) {   // the English of a sentence: tap it to hear it again (the English is read out too: the owner, 2026-11-22)
-  var e = txt('div', cls, cls.indexOf('small') >= 0 ? '“' + it.en + '”' : it.en); e.onclick = function () { unlockSound(); say(it.en); }; e.style.cursor = 'pointer'; return e;
+  var e = txt('div', cls, cls.indexOf('small') >= 0 ? '“' + it.en + '”' : it.en); e.onclick = function () { unlockSound(); say(it.en); }; e.style.cursor = 'pointer'; e.setAttribute('role', 'button'); e.setAttribute('tabindex', '0'); e.setAttribute('aria-label', 'Hear it again: ' + it.en); return e;
 }
 function txt(tag, cls, t) { var e = E(tag, cls); e.textContent = t; return e; }   // plain text from the data, never read as HTML
 
@@ -1350,7 +1364,7 @@ WEEKS.forEach(function (W) {
   });
   var R = W.review; R.review = true; R.week = W.n; R.items = []; R.pairs = []; W.days.forEach(function (D) { R.items = R.items.concat(D.items); R.pairs = R.pairs.concat(D.pairs || []); }); R.upto = W.days.slice(); ALLD.push(R);
 });
-(function () {   // a mistake in the data shows in the console at once, not as a blank screen later
+(function () { try {   // a mistake in the data shows in the console at once, not as a blank screen later
   var seen = {};
   ALLD.forEach(function (D) { D.items.forEach(function (it) { seen[it.id] = it; }); });
   ALLD.forEach(function (D) {
@@ -1361,22 +1375,40 @@ WEEKS.forEach(function (W) {
       if (it.w.length !== it.p.length) console.error('Daily Talk: words and pinyin differ in ' + it.id);
       if (s.indexOf(it.star.c) < 0) console.error('Daily Talk: the star character is not in ' + it.id);
       if (!it.no || it.no.length !== 2 || it.no.some(function (c) { return s.indexOf(c) >= 0; })) console.error('Daily Talk: the two wrong characters of ' + it.id + ' are missing or in the sentence');
-      if (it.t && (!it.tp || it.t.length !== it.tp.length)) console.error('Daily Talk: pieces and their pinyin differ in ' + it.id);
+      if (it.t && (!it.tp || it.t.length !== it.tp.length || it.t.join('') !== s)) console.error('Daily Talk: pieces, their pinyin or their sum differ in ' + it.id);
+      if (it.no && it.no[0] === it.no[1]) console.error('Daily Talk: the two wrong characters of ' + it.id + ' are the same');
     });
+    var em = {}; D.items.forEach(function (it) { if (em[it.e]) console.error('Daily Talk: the picture ' + it.e + ' is used twice in ' + D.id); em[it.e] = 1; });
   });
-})();
+} catch (e) { console.error('Daily Talk: the data check could not run', e); } })();
 function sentOf(it) { return it.w.join('') + (it.end || ''); }
 function byId(id) { var f = null; ALLD.forEach(function (D) { D.items.forEach(function (it) { if (it.id === id) f = it; }); }); return f; }
 function poolOf(D) { var p = []; (D.upto || [D]).forEach(function (d) { p = p.concat(d.items); }); return p; }
 function mateOf(D, it) { var m = {}; (D.pairs || []).forEach(function (p) { if (p.q === it.id) m[p.a] = 1; if (p.a === it.id) m[p.q] = 1; }); return m; }
 /* sound check (open the page with ?debug at the end of the address): a small black strip at the bottom says what the sound does on each tap */
 var DBGON = /[?&]debug/.test(location.search), DBGL = [];
+function sessionInfo() { return 'sess=' + (navigator.audioSession ? navigator.audioSession.type : '-') + ' ctx=' + (AC ? AC.state + '@' + AC.sampleRate : '-'); }
+function reviveSound() {   // after the microphone: the model voice must still be heard (iPad can leave the sound session in recording mode: quiet, or on the earpiece)
+  var back = function () { try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {} };
+  back(); setTimeout(back, 300);   // the microphone lets go a little later than the call returns
+  if (!AC) return;
+  try { var q = AC.resume(); if (q && q.catch) q.catch(function () {}); } catch (e) {}
+  setTimeout(function () { dbg('after the microphone: ' + sessionInfo()); if (AC && AC.state !== 'running' && IOS_FAST) AC.stale = true; }, 900);
+}
+function rebuildSound() {
+  var old = AC; dbg('sound system rebuilt (it was ' + (old ? old.state : '-') + ')');
+  if (voiceDone) voiceDone();
+  AC = null; ac = null; FAST = false; srcNode = null;
+  try { old.onstatechange = null; old.close(); } catch (e) {}
+  BUF = {}; TQ = []; TBUSY = false; DEC = null;
+  startFast();   // a new 24000 Hz context, and the downloaded recordings are decoded again
+}
 function dbg(m) {
   if (!DBGON) return;
   DBGL.push(m); if (DBGL.length > 12) DBGL.shift();
   var d = document.getElementById('dbg');
   if (!d) { d = document.createElement('pre'); d.id = 'dbg'; d.setAttribute('style', 'position:fixed;left:0;right:0;bottom:0;z-index:99999;margin:0;padding:6px 10px;background:rgba(0,0,0,.8);color:#7CFC00;font:13px/1.35 monospace;white-space:pre-wrap;pointer-events:none'); document.body.appendChild(d); }
-  d.textContent = 'iOS=' + IOS + ' fastiOS=' + IOS_FAST + ' ctx=' + (AC ? AC.state : '-') + ' recordings=' + (VKEYS ? Object.keys(VKEYS).length : 'not loaded') + '\n' + DBGL.join('\n');
+  d.textContent = 'iOS=' + IOS + ' fastiOS=' + IOS_FAST + ' ' + sessionInfo() + ' recordings=' + (VKEYS ? Object.keys(VKEYS).length : 'not loaded') + '\n' + DBGL.join('\n');
 }
 
 /* ---------- small pieces ---------- */
@@ -1536,7 +1568,9 @@ function questionsOf(D, S) {
   items.forEach(function (it) { out.push(S.key === 'listen' ? qListen(D, it) : S.key === 'en' ? qEn(D, it) : S.key === 'star' ? qStar(D, it) : qBuild(D, it)); });
   return D.review ? out : shuffle(out);
 }
+function closePopups() { var w = document.querySelector('.writepop, .polybox'); while (w) { w.remove(); w = document.querySelector('.writepop, .polybox'); } curWrite = null; }   // a box left open over a card that has gone
 function head(D, S, si, sn, k, kn, round, label, frac) {
+  closePopups();
   if (curRec) { curRec.dispose(); curRec = null; }   // a recording is dropped when its card is left
   var f = frac != null ? frac : kn ? k / kn : 0;   // the bar: how far in this part
   var br = E('div', 'barrow'), bar = E('div', 'bar'); bar.appendChild(E('i')); bar.firstChild.style.width = Math.round(100 * f) + '%'; br.appendChild(bar);
@@ -1571,7 +1605,7 @@ function playDay(D, from, pts, of, sp) {
       var b = E('button', 'daytab' + (i === st.s ? ' cur' : '') + (st.sp[S.key] ? ' done' : '')); b.type = 'button'; b.textContent = TABLAB[S.key] || S.title;
       b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', i === st.s ? 'true' : 'false'); b.setAttribute('aria-label', S.title + ' ' + S.zh + (st.sp[S.key] ? ', done' : ''));
       b.onclick = function () {   // at once: it stops the voice, it does not wait for it
-        var w = document.querySelector('.writepop, .polybox'); while (w) { w.remove(); w = document.querySelector('.writepop, .polybox'); } curWrite = null;
+        closePopups();
         navAt = Date.now(); cutSound(); abandon(); st.s = i; next();
       };
       tabsEl.appendChild(b);
@@ -1624,7 +1658,7 @@ window.addEventListener('resize', function () {   // turning the iPad: the box t
   clearTimeout(resizeAt); resizeAt = setTimeout(function () { if (curWrite) curWrite.resize(); }, 250);
 });
 function writeBox(star) {   // star = { c: the character, py: its word's pinyin, en: the word, hear: what to say }: watch the strokes once, then write the character with a finger; returns { el, init, resize }
-  var wrap = E('div', 'wbox2'), tz = E('div', 'tzg wq'), msg = E('p', 'wmsg'), w = null, nextStroke = 0, total = 0, failed = false, lastS = 0, c = star.c;
+  var wrap = E('div', 'wbox2'), tz = E('div', 'tzg wq'), msg = E('p', 'wmsg'), w = null, nextStroke = 0, total = 0, failed = false, lastS = 0, demoTok = 0, c = star.c;
   var lab = E('div', 'wlab2'); lab.appendChild(E('span', 'wl', 'Write it ✍️ <span class="han nopoly">写一写</span>'));
   var ch = E('button', 'starc'); ch.type = 'button'; ch.setAttribute('aria-label', c + ', ' + star.py);
   ch.appendChild(txt('span', 'han big1 nopoly', c)); var sp = E('span', 'sp'); sp.appendChild(txt('span', 'spy', star.py + (star.en ? ' · ' : ''))); sp.appendChild(document.createTextNode(star.en)); ch.appendChild(sp);
@@ -1633,14 +1667,18 @@ function writeBox(star) {   // star = { c: the character, py: its word's pinyin,
   var btns = E('div', 'row wbtns'), watchB = E('button', 'btn ghost', '▶ Watch <span class="han nopoly">看笔顺</span>'), hintB = E('button', 'btn ghost', '💡 Hint <span class="han nopoly">提示</span>'), againB = E('button', 'btn ghost', '↺ Again <span class="han nopoly">再写</span>');
   watchB.type = hintB.type = againB.type = 'button'; btns.appendChild(watchB); btns.appendChild(hintB); btns.appendChild(againB); wrap.appendChild(btns); wrap.appendChild(msg);
   function size() {
-    var wide = wrap.clientWidth || 300, room = window.innerHeight - (tz.getBoundingClientRect().top) - 190;
+    var wide = wrap.clientWidth || 300, room = window.innerHeight - 32 - (POLY[c] ? 250 : 190);   // a fixed allowance for the rest of the box: measuring the page made the size drift
     return Math.max(150, Math.min(wide - 6, room, 360));
   }
   function dims(s) { return { width: s, height: s, padding: Math.round(s * 0.06) }; }
   function fit(s) { lastS = s; tz.style.width = tz.style.height = (s + 6) + 'px'; }   // + the 3 px border on each side
-  function watch() { if (!w || failed) return; try { w.cancelQuiz(); w.animateCharacter({ onComplete: function () { setTimeout(function () { if (tz.isConnected) start(); }, 500); } }); } catch (e) {} }
+  function watch() {
+    if (!w || failed) return; var my = ++demoTok;
+    try { w.cancelQuiz(); w.animateCharacter({ onComplete: function (res) {   // a demo that was cancelled must not start the quiz (it wiped what the child had written)
+      if (my !== demoTok || (res && res.canceled)) return; setTimeout(function () { if (tz.isConnected && my === demoTok) start(); }, 500); } }); } catch (e) {}
+  }
   function start() {
-    if (!w || failed) return; nextStroke = 0;
+    if (!w || failed) return; nextStroke = 0; demoTok++;
     msg.textContent = 'Write it stroke by stroke, inside the gray shape.';
     try {
       w.quiz({
@@ -1659,7 +1697,7 @@ function writeBox(star) {   // star = { c: the character, py: its word's pinyin,
   hintB.onclick = function () { if (w && !failed && nextStroke < total) try { w.highlightStroke(nextStroke); } catch (e) {} };
   function init() {   // once the box is on the page, so its size is known
     if (typeof HanziWriter === 'undefined') { failed = true; msg.textContent = 'The writing box did not load. Reload the page.'; return; }
-    failed = false; tz.innerHTML = ''; var s = size(); fit(s);
+    failed = false; tz.innerHTML = ''; var s = size(); fit(s); msg.textContent = 'Watch how it is written first.';
     var col = (getComputedStyle(document.documentElement).getPropertyValue('--blue') || '').trim() || '#0f766e';
     w = HanziWriter.create(tz, c, Object.assign(dims(s), {
       charDataLoader: function (x, ok, bad) { strokesOf(x).then(ok, function (e) { failed = true; msg.textContent = 'Oops, this one did not load. Ask a grown-up to check the internet, then tap ↺ Again.'; if (bad) bad(e); }); },
@@ -1678,11 +1716,12 @@ function writePopup(ch, it, n) {
   var x = E('button', 'ask-x', '✕'); x.type = 'button'; x.setAttribute('aria-label', 'Close');
   var wb = writeBox({ c: ch, py: it.p[n], en: word.length > 1 ? 'in ' + word : '', hear: word });
   var shut = function () { navAt = Date.now(); o.remove(); if (curWrite === wb) curWrite = null; document.removeEventListener('keydown', esc, true); };
-  var esc = function (e) { if (e.key === 'Escape') shut(); };
+  var esc = function (e) { if (!o.isConnected) { document.removeEventListener('keydown', esc, true); return; } if (e.key === 'Escape' && !document.querySelector('.polybox')) shut(); };   // the readings box above it closes first
   x.onclick = shut; o.onclick = function (e) { if (e.target === o) shut(); }; document.addEventListener('keydown', esc, true);
   box.appendChild(x); box.appendChild(wb.el);
   if (POLY[ch]) { var pr = E('div', 'row'), pb = E('button', 'btn ghost small', 'All readings <span class="han nopoly">多音字</span>'); pb.type = 'button'; pb.onclick = function () { polyOpen(ch); }; pr.appendChild(pb); box.appendChild(pr); }
   o.appendChild(box); document.body.appendChild(o);
+  if (pendBtn) pendBtn.classList.remove('waiting'); pending = pendBtn = null;   // a Next that was waiting for the voice must not go on behind the box
   curWrite = wb; wb.init(); unlockSound(); say(word); setTimeout(function () { x.focus(); }, 0);
 }
 document.addEventListener('click', function (e) {   // before the grey-character box (registered first), so a tap on a character writes it
@@ -1692,50 +1731,67 @@ document.addEventListener('click', function (e) {   // before the grey-character
   var it = q.closest('[data-item]'); if (!it) return;
   writePopup(q.getAttribute('data-c'), byId(it.getAttribute('data-item')), +q.getAttribute('data-n'));
 }, true);
-document.addEventListener('keydown', function (e) { if ((e.key === 'Enter' || e.key === ' ') && e.target && e.target.classList && e.target.classList.contains('wch')) { e.preventDefault(); e.target.click(); } }, true);
+document.addEventListener('keydown', function (e) { if ((e.key === 'Enter' || e.key === ' ') && e.target && e.target.classList && (e.target.classList.contains('wch') || e.target.classList.contains('enq'))) { e.preventDefault(); e.target.click(); } }, true);
 /* "Record me" (the owner, 2026-11-22): the child says the sentence after hearing it, the voice is recorded, and the child plays it back to compare with the model.
    The recording lives only in this page's memory (never saved, never sent anywhere) and is dropped when the card is left. */
 var curRec = null;
 function recSupported() { return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder); }
-function recorder() {   // returns { recB, playB, msg, dispose }
+function recorder() {   // returns { recB, playB, msg, dispose, active, stop, stopMine }
   var recB = E('button', 'btn ghost recbtn'), playB = E('button', 'btn ghost recplay', '▶ My voice'), msg = E('p', 'recmsg', 'Your voice is not saved or sent anywhere.');
   recB.type = playB.type = 'button'; playB.disabled = true; playB.setAttribute('aria-label', 'Play my voice 我的声音');
-  var stream = null, mr = null, chunks = [], url = null, audio = null, timer = 0, state = 'idle', gone = false;
-  function show() { recB.textContent = state === 'rec' ? '⏹ Stop' : '🎤 Record me'; recB.setAttribute('aria-label', state === 'rec' ? 'Stop 停止' : 'Record me 跟读录音'); recB.classList.toggle('recording', state === 'rec'); playB.disabled = !url || state === 'rec'; }
+  var stream = null, mr = null, chunks = [], url = null, audio = null, timer = 0, state = 'idle', gone = false;   // state: idle, ask (waiting for the microphone), rec
+  function show() { recB.textContent = state === 'rec' ? '⏹ Stop' : '🎤 Record me'; recB.setAttribute('aria-label', state === 'rec' ? 'Stop 停止' : 'Record me 跟读录音'); recB.classList.toggle('recording', state === 'rec'); recB.disabled = state === 'ask'; playB.disabled = !url || state !== 'idle'; }
   function release() {   // let go of the microphone, and give iPad its normal sound back
     clearTimeout(timer);
     if (stream) { stream.getTracks().forEach(function (k) { try { k.stop(); } catch (e) {} }); stream = null; }
-    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+    RECORDING = false; reviveSound();
   }
   function stopRec() { try { if (mr && mr.state !== 'inactive') mr.stop(); } catch (e) {} }
+  function stopMine() { if (audio) { try { audio.pause(); } catch (e) {} } }
+  function fail(text) { release(); state = 'idle'; msg.textContent = text; show(); }
   recB.onclick = function () {
+    if (state === 'ask') return;   // a second tap while Safari is asking must not open a second microphone
     unlockSound();
     if (state === 'rec') return stopRec();
-    stopSound(); if (audio) try { audio.pause(); } catch (e) {}
+    cutSound(); stopMine();
+    state = 'ask'; RECORDING = true; show();
     try { if (navigator.audioSession) navigator.audioSession.type = 'play-and-record'; } catch (e) {}
-    msg.textContent = '';
+    if (!recSupported()) return fail('This browser cannot record.');
+    msg.textContent = 'Tap Allow if Safari asks. Your voice is not saved or sent.';
     navigator.mediaDevices.getUserMedia({ audio: true }).then(function (s) {
-      if (gone || !recB.isConnected) { s.getTracks().forEach(function (k) { k.stop(); }); return; }
+      if (gone || !recB.isConnected) { s.getTracks().forEach(function (k) { k.stop(); }); state = 'idle'; release(); return; }
+      if (stream) stream.getTracks().forEach(function (k) { try { k.stop(); } catch (e) {} });
       stream = s; chunks = [];
+      s.getAudioTracks().forEach(function (k) { k.onended = function () { stopRec(); }; });   // another app took the microphone
       var type = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg'].filter(function (m) { return window.MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m); })[0];
-      try { mr = type ? new MediaRecorder(s, { mimeType: type }) : new MediaRecorder(s); } catch (e) { release(); msg.textContent = 'This browser cannot record.'; return; }
-      mr.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
-      mr.onstop = function () {
-        release(); state = 'idle';
-        if (!gone && chunks.length) { if (url) URL.revokeObjectURL(url); url = URL.createObjectURL(new Blob(chunks, { type: mr.mimeType || type || 'audio/mp4' })); msg.textContent = 'Tap ▶ to hear yourself, then 🔊 to hear the model.'; }
-        show();
-      };
-      mr.start(); state = 'rec'; msg.textContent = 'Say it now! Tap ⏹ when you are done.'; show();
+      try {
+        mr = type ? new MediaRecorder(s, { mimeType: type }) : new MediaRecorder(s);
+        mr.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
+        mr.onstop = function () {
+          release(); state = 'idle';
+          if (!gone && chunks.length) { if (url) URL.revokeObjectURL(url); url = URL.createObjectURL(new Blob(chunks, { type: mr.mimeType || type || 'audio/mp4' })); msg.textContent = 'Tap ▶ to hear yourself, then 🔊 to hear the model.'; }
+          else if (!gone) msg.textContent = 'I did not hear anything. Tap 🎤 and try again.';
+          show();
+        };
+        mr.start();
+      } catch (e) { return fail('This browser cannot record.'); }
+      state = 'rec'; msg.textContent = 'Say it now! Tap ⏹ when you are done.'; show(); dbg('recording ' + sessionInfo());
       timer = setTimeout(stopRec, 10000);   // never records for ever
-    }, function () { release(); state = 'idle'; msg.textContent = 'The microphone is off. Ask a grown-up to allow it for this page.'; show(); });
+    }, function (err) {
+      var n = err && err.name;
+      fail(n === 'NotAllowedError' || n === 'SecurityError' ? 'The microphone is off for this page. Ask a grown-up to allow it (aA, Website Settings, Microphone), then reload the page.'
+        : n === 'NotFoundError' || n === 'NotReadableError' ? 'The microphone is busy or missing. Close other apps and try again.' : 'Could not start the microphone.');
+    });
   };
   playB.onclick = function () {
-    if (!url) return; unlockSound(); stopSound(); if (audio) try { audio.pause(); } catch (e) {}
+    if (!url || state !== 'idle') return; unlockSound(); cutSound(); stopMine();
     audio = new Audio(url); var p = audio.play(); if (p && p.catch) p.catch(function () { msg.textContent = 'Could not play it.'; });
   };
   show();
-  return { recB: recB, playB: playB, msg: msg, dispose: function () { gone = true; release(); try { if (mr && mr.state !== 'inactive') { mr.onstop = null; mr.stop(); } } catch (e) {} if (audio) try { audio.pause(); } catch (e) {} if (url) URL.revokeObjectURL(url); url = null; } };
+  return { recB: recB, playB: playB, msg: msg, active: function () { return state !== 'idle'; }, stop: stopRec, stopMine: stopMine,
+    dispose: function () { gone = true; RECORDING = false; try { if (mr && mr.state !== 'inactive') { mr.onstop = null; mr.stop(); } } catch (e) {} release(); stopMine(); if (url) URL.revokeObjectURL(url); url = null; } };
 }
+document.addEventListener('visibilitychange', function () { if (document.hidden && curRec && curRec.active()) curRec.stop(); });   // leaving the app ends a recording
 function learn(D, S, si, sn, done) {   // five cards: the picture and the English on the left, the sentence on the right (tap a character to write it)
   var i = 0, n = D.items.length;
   function card() {
@@ -1755,6 +1811,7 @@ function learn(D, S, si, sn, done) {   // five cards: the picture and the Englis
     nb.onclick = function () { afterVoice(function () { i++; if (i < n) card(); else done(); }, nb); };
     if (i > 0) { var bk = E('button', 'btn ghost', '◀ Back'); bk.type = 'button'; bk.onclick = function () { afterVoice(function () { i--; card(); }, bk); }; r.appendChild(bk); }
     r.appendChild(nb); p.appendChild(r); app.appendChild(p);
+    it.w.join('').split('').forEach(function (ch) { strokesOf(ch).catch(function () {}); });   // so the writing box opens at once, even on slow Wi-Fi
     warm(D.items.map(sentOf).concat(D.items.map(function (x) { return x.en; }), D.items.reduce(function (a, x) { return a.concat(x.w); }, [])));
     afterPaint(function () { sayThen(sentOf(it), it.en, function () { return p.isConnected; }); });   // the Chinese, then the English, so the child can listen without looking
   }
@@ -1799,11 +1856,12 @@ function runQs(D, S, st, sn, qs, round, doneCb) {
 /* ---------- the menu ---------- */
 document.getElementById('lvbtn').onclick = function () { afterVoice(menu, this); };
 function menu() {
+  closePopups();
   if (curRec) { curRec.dispose(); curRec = null; }
   hideTabs();
   app.classList.remove('big'); app.innerHTML = ''; showTotal();
   var h = E('div', 'hero'); h.appendChild(E('div', 'big', TALK.intro.emoji)); h.appendChild(E('h2', null, TALK.intro.title));
-  h.appendChild(E('p', null, 'Five new sentences a day, about ten minutes. Look, listen, say it out loud, then play. Each answer right the first time earns 1¢; a missed one tried again earns 0.5¢, then 0.25¢, then 0.1¢. Tap 🔊 to hear. Tap a grey dotted character to see all its readings.'));
+  h.appendChild(E('p', null, 'Five new sentences a day, about ten minutes. Look, listen, say it out loud, then play. Each answer right the first time earns 1¢; a missed one tried again earns 0.5¢, then 0.25¢, then 0.1¢. Tap 🔊 to hear. Tap a character of a sentence to write it.'));
   app.appendChild(h);
   WEEKS.forEach(function (W) {
     app.appendChild(E('h3', 'weekh', W.title + ' <span class="han nopoly">' + W.zh + '</span>'));
@@ -1881,6 +1939,7 @@ function polyWrap(root) {
 }
 function polyOpen(ch) {   // the box: every reading of the character, with words
   var d = POLY[ch]; if (!d || document.querySelector('.polybox')) return;
+  if (pendBtn) pendBtn.classList.remove('waiting'); pending = pendBtn = null;
   var o = E('div', 'ask-over polybox'), box = E('div', 'ask-box'), me = null;
   box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', ch + ': all readings');
   var x = E('button', 'ask-x', '✕'); x.type = 'button'; x.setAttribute('aria-label', 'Close');
