@@ -442,6 +442,7 @@
 <title>枫叶魔方闯关</title>
 <script>try { if (localStorage.getItem("ivy_quest_lang") === "en") { document.title = "Maple Leaf Cube Quest"; document.documentElement.lang = "en"; } } catch (e) {}</script>
 <meta name="theme-color" content="#b8461b">
+<link rel="icon" href="data:,">
 <style>
 /* Maple Leaf (Ivy) Cube Quest: two steps (corners, then leaves with the little dance), on a cube on the screen, plus a printable step sheet.
    Same look and controls as 3x3 Cube Quest. Chinese or English, switched with the toggle at the top. */
@@ -635,7 +636,7 @@ button:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
   <section id="play" hidden>
     <div class="play">
       <div class="card stagecard">
-        <div class="stage" id="stage"><div class="scene" id="scene"></div></div>
+        <div class="stage" id="stage" role="group"><div class="scene" id="scene"></div></div>
         <div class="stagebar"><span class="draghint" data-t="drag"></span><button class="btn small" id="resetView" data-t="resetView"></button></div>
         <div class="lights" id="lights"></div>
       </div>
@@ -646,7 +647,7 @@ button:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
   <section id="print" hidden></section>
 </div>
 
-<div class="modal" id="modal" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+<div class="modal" id="modal" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true" tabindex="-1"></div></div>
 
 <script>
 /* Maple Leaf (Ivy) Cube engine: the puzzle model and the beginner method as code. No screen code here.
@@ -749,7 +750,7 @@ function bestDance(s) {
    Step 2 (leaves): a little dance that puts the most leaves home. `plan` is the rest of a dance already started, if the child is following one. */
 function ivyNext(s, plan) {
   if (ivyIsSolved(s)) return { done: true, step: 2 };
-  if (plan && plan.length && cornersDone(ivyRun(ivyClone(s), plan)) ) return { step: 2, act: plan[0], dance: plan.slice(), code: "dance-go" };
+  if (plan && plan.length && !cornersDone(s) && cornersDone(ivyRun(ivyClone(s), plan))) return { step: 2, act: plan[0], dance: plan.slice(), code: "dance-go" };
   if (!cornersDone(s)) {
     for (let ci = 0; ci < 4; ci++) {
       const n = cornerNeeds(s, ci);
@@ -803,9 +804,9 @@ const TURN_BTNS = ["1", "1'", "2", "2'", "3", "3'", "4", "4'"];
    dim: "leaves" grays the leaves, so only the corners show. hl: corner numbers to circle. */
 const STEPS = [
   { n: 1, name: "角块|Corners", moves: false,
-    look: ["任意拿两个角块。它们总有一种颜色是一样的。|Pick any two corners. They always have exactly one color in common.",
+    look: ["任意选两个角块。它们总是只有一种颜色是一样的。|Pick any two corners. They always have exactly one color in common.",
            "这个一样的颜色，要在它们中间的那个面上。|That shared color belongs on the face between them.",
-           "拿起一个角块：它的每一面上，都有另一个角块。这两个角块都有的那种颜色，就是这一面的颜色。转这个角块，让它三个面都放对颜色。再做下一个。|Take one corner. Each of its three faces also has another corner on it. The color those two corners both have is that face's color. Turn the corner so all three of its faces show the right color. Then do the next one.",
+           "选一个角块：它的每一面上，都有另一个角块。这两个角块都有的那种颜色，就是这一面的颜色。转这个角块，让它三个面都放对颜色。再做下一个。|Choose one corner. Each of its three faces also has another corner on it. The color those two corners both have is that face's color. Turn the corner so all three of its faces show the right color. Then do the next one.",
            "四个角块都对好以后，每一面的两个角块颜色一样。叶子先不管。|When all four corners are right, the two corners on every face match. Don't worry about the leaves yet."],
     think: "角块只会在原地转，不会跑到别的地方。所以每一面应该是什么颜色，看角块就知道。|Corners only spin in place; they never move away. So the corners tell you what color each face should be.",
     pics: [{ script: "", dim: "leaves", cap: "角块都对好：每一面的两个角块颜色一样|Corners done: the two corners on each face match" }] },
@@ -813,20 +814,21 @@ const STEPS = [
     look: ["角块对好以后，只剩叶子。每片叶子要回到和它同色的面上。|With the corners right, only the leaves are left. Each leaf goes to the face of its own color.",
            "用小舞步：拧一个角块（A），再拧另一个角块（B），然后 A 拧回来，B 拧回来。A 和 B 都可以顺时针，也可以逆时针，只要后两下把它们转回去。|Use the little dance: turn one corner (A), turn another corner (B), then turn A back and B back. A and B can each turn either way, as long as the last two turns undo them.",
            "跳完以后角块还是对的，只有三片叶子换了位置。|After the dance the corners are still right. Only three leaves have swapped places.",
-           "看看换得对不对。不对就倒着跳回去：先拧 B，再拧 A，B 拧回来，A 拧回来。然后换两个角块，或者换个方向再试。|Check whether that helped. If not, dance it backwards to undo it: turn B, turn A, turn B back, turn A back. Then try two other corners, or the other way round.",
-           "三片不在家的叶子都挨着同一个会转的角块？那跳哪个舞步都不会马上变好。先随便跳一个舞步，换走其中一片，再接着做。|Are the three leaves that are away all next to the same corner piece (one of the 4 that turn)? Then no single dance makes it better right away. Do any dance that moves one of them first, then carry on."],
+           "选哪两个角块？挑一片不在家的叶子，它那一面上的两个角块，就是 A 和 B。小舞步一定会动到这片叶子。三片不在家的叶子里，常常只有一片正好合适，一片不行就换另一片。|Which two corners? Pick a leaf that is away from home: the two corners on its face are A and B. The little dance always moves that leaf. Often only one of the three leaves that are away is the right one, so if one doesn't work, try another.",
+           "看看回家的叶子有没有变多。没有就退回去：把同一个舞步再跳两遍（或者倒着跳：先拧 B，再拧 A，B 拧回来，A 拧回来），然后换个方向，或者换一片叶子再试。|Check whether more leaves are home. If not, undo it: do the same dance two more times (or dance it backwards: turn B, turn A, turn B back, turn A back). Then try the other way round, or another leaf.",
+           "三片不在家的叶子都挨着同一个角块？那跳哪个舞步都不会马上变好。先随便跳一个舞步，换走其中一片，再接着做。|Are the three leaves that are away all next to the same corner? Then no single dance makes it better right away. Do any dance that moves one of them first, then carry on."],
     think: "做一个动作，做第二个动作，再把两个都撤销：大部分都回到原样，只有一点点变了。这是解魔方最有用的想法之一。|Do a move, do a second move, then undo both: almost everything comes back, and only a little has changed. This is one of the most useful ideas for solving puzzles.",
-    pics: [{ script: "1 2 1' 2'", dim: "none", cap: "跳之前：三片叶子不在家（有一片在底面，这里看不到）|Before the dance: three leaves are away (one is on the bottom, hidden here)" }, { script: "", dim: "none", cap: "跳 1 2 1' 2' 之后：都回家了|After 1 2 1' 2': all home" }] }
+    pics: [{ script: "1 2 1' 2'", dim: "none", cap: "跳之前：三片叶子不在家（有一片在底面，这里看不到）|Before the dance: three leaves are away (one of them is on the bottom, out of sight)" }, { script: "", dim: "none", cap: "跳完小舞步：都回家了|After the little dance: all home" }] }
 ];
 
 /* task kinds: info (read), tap (tap a leaf or a corner), ask (pick an answer), try (turn freely, then Next),
    undo (turn a solved cube back), guided (tap the 4 turns of a dance in order), puz (free play to a goal). */
 const LEVELS = [
   { id: 1, name: "认识枫叶魔方|Meet the maple leaf cube", sub: "角块和叶子|Corners and leaves", step: 0, goal: 2, dim: "none", tasks: [
-    { k: "info", t: "枫叶魔方有两种块。<b>角块</b>有 3 种颜色，一共 4 个，只会在原地转。<b>叶子</b>只有 1 种颜色，一共 6 片，会从一面跑到另一面。<br>用手指拖动魔方，可以从别的方向看。|The maple leaf cube has two kinds of pieces. A <b>corner</b> has 3 colors. There are 4, and they only spin in place. A <b>leaf</b> has 1 color. There are 6, and they travel from face to face.<br>Drag the cube with your finger to look at it from other sides." },
+    { k: "info", t: "枫叶魔方有两种块。<b>角块</b>有 3 种颜色，一共 4 个，只会在原地转。<b>叶子</b>只有 1 种颜色，一共 6 片，会从一面跑到另一面。<br>魔方另外 4 个角，是三片叶子的尖碰在一起的地方，不是角块。<br>用手指拖动魔方，可以从别的方向看。|The maple leaf cube has two kinds of pieces. A <b>corner</b> has 3 colors. There are 4, and they only spin in place. A <b>leaf</b> has 1 color. There are 6, and they travel from face to face.<br>The cube's other 4 corners are just where three leaf tips meet; they are not corner pieces.<br>Drag the cube with your finger to look at it from other sides." },
     { k: "tap", want: "leaf", t: "点一片<b>叶子</b>。它在每一面的中间，像一片叶子。|Tap a <b>leaf</b>. It runs across the middle of a face, shaped like a leaf." },
     { k: "tap", want: "corner", t: "点一个<b>角块</b>。它在角上，有 3 种颜色。|Tap a <b>corner</b>. It sits on a corner and has 3 colors." },
-    { k: "info", t: "4 个角块上有号码：1、2、3、4。按 <b>1 ↻</b>，1 号角块就顺时针转三分之一圈。按 <b>1 ↺</b> 就反过来转。在魔方上直接点一个角块，也会顺时针转。|The 4 corners have numbers: 1, 2, 3 and 4. Press <b>1 ↻</b> and corner 1 turns a third of the way round, clockwise. Press <b>1 ↺</b> to turn it back. You can also tap a corner on the cube to turn it clockwise." },
+    { k: "info", t: "4 个角块上有号码：1、2、3、4。按 <b>1 ↻</b>，1 号角块就顺时针（看着那个角块）转三分之一圈。按 <b>1 ↺</b> 就反过来转。在魔方上直接点一个角块，也会顺时针转。|The 4 corners have numbers: 1, 2, 3 and 4. Press <b>1 ↻</b> and corner 1 turns a third of the way round, clockwise as you look straight at that corner. Press <b>1 ↺</b> to turn it back. You can also tap a corner on the cube to turn it clockwise." },
     { k: "try", t: "试一试：按 <b>1 ↻</b>，看看有哪些块跟着动。想转回去就按 <b>1 ↺</b>。|Try it: press <b>1 ↻</b> and watch which pieces move. To turn it back, press <b>1 ↺</b>." },
     { k: "ask", t: "转一下 1 号角块，一共有几块在动（算上角块自己）？|When corner 1 turns once, how many pieces move, counting the corner itself?", opts: ["3 块|3", "4 块|4", "6 块|6"], ans: 1, why: "4 块：角块自己，还有它旁边的 3 片叶子。|4: the corner itself and the 3 leaves next to it." },
     { k: "ask", t: "同一个角块，往同一个方向一直转，转几下会回到原样？|If you keep turning the same corner the same way, how many turns until it comes back?", opts: ["2 下|2", "3 下|3", "4 下|4"], ans: 1, why: "3 下。每一下转三分之一圈，三下正好一整圈。|3. Each turn is a third of the way round, so three turns make a whole circle." },
@@ -848,23 +850,23 @@ const LEVELS = [
     { k: "puz", kind: "corners", focus: false, t: "这次叶子也有颜色了，像真的魔方一样。还是只看角块。|This time the leaves have their colors, like a real cube. Still look only at the corners." }
   ] },
   { id: 4, name: "小舞步|The little dance", sub: "第 2 步：只换叶子，不动角块|Step 2: move leaves, keep the corners", step: 2, goal: 2, dim: "none", tasks: [
-    { k: "info", t: "第 2 步：<b>叶子</b>。角块已经对了，可是每转一下，角块就会歪。怎么办？<br>用<b>小舞步</b>：拧一个角块，再拧另一个，然后第一个拧回来，第二个拧回来。|Step 2: the <b>leaves</b>. The corners are right, but every turn twists a corner. What can we do?<br>Use the <b>little dance</b>: turn one corner, turn another one, then turn the first back, and the second back.", pics: [{ script: "1 2 1' 2'", dim: "none", cap: "跳之前（有一片不在家的叶子在底面，这里看不到）|Before the dance (one leaf that is away is on the bottom, hidden here)" }, { script: "", dim: "none", cap: "跳 1 2 1' 2' 之后|After 1 2 1' 2'" }] },
+    { k: "info", t: "第 2 步：<b>叶子</b>。角块已经对了，可是每转一下，角块就会歪。怎么办？<br>用<b>小舞步</b>：拧一个角块，再拧另一个，然后第一个拧回来，第二个拧回来。|Step 2: the <b>leaves</b>. The corners are right, but every turn twists a corner. What can we do?<br>Use the <b>little dance</b>: turn one corner, turn another one, then turn the first back, and the second back.", pics: [{ script: "1 2 1' 2'", dim: "none", cap: "跳之前（有一片不在家的叶子在底面，这里看不到）|Before the dance (one of the leaves that are away is on the bottom, out of sight)" }, { script: "", dim: "none", cap: "跳 1 2 1' 2' 之后|After 1 2 1' 2'" }] },
     { k: "guided", dance: "1 2 1' 2'", t: "跳小舞步：1 ↻，2 ↻，1 ↺，2 ↺。按顺序一下一下按。|Do the little dance: 1 ↻, 2 ↻, 1 ↺, 2 ↺. Press the turns one by one." },
     { k: "ask", t: "跳完小舞步，4 个角块还是对的吗？|After the little dance, are the 4 corners still right?", opts: ["还是对的|Yes", "歪了|No, they are twisted"], ans: 0, why: "还是对的。每个角块转过去又转回来了。|Yes. Every corner that turned was turned back." },
     { k: "ask", t: "小舞步让几片叶子换了位置？|How many leaves swap places in one little dance?", opts: ["2 片|2", "3 片|3", "6 片|6"], ans: 1, why: "3 片。它们轮流换位置，就像三个小朋友换座位。|3. They take each other's places in a circle, like three friends swapping seats." },
     { k: "guided", dance: "3 1' 3' 1", t: "换一个小舞步：3 ↻，1 ↺，3 ↺，1 ↻。还是“拧、拧、回、回”。|A different little dance: 3 ↻, 1 ↺, 3 ↺, 1 ↻. It's still turn, turn, back, back." }
   ] },
   { id: 5, name: "一次舞步|One dance", sub: "第 2 步：选对两个角块|Step 2: pick the right two corners", step: 2, goal: 2, dim: "none", tasks: [
-    { k: "info", t: "角块都对了，有三片叶子不在家。只要跳一次对的小舞步就好。<br>先想：哪三片叶子要换位置？试一个舞步；不对就倒着跳回去（先拧 B，再拧 A，B 回，A 回），再换两个角块或者换个方向。|The corners are right, and three leaves are away from home. One right little dance will finish it.<br>Think first: which three leaves need to move? Try a dance. If it's wrong, dance it backwards (turn B, turn A, B back, A back), then try two other corners or the other way round." },
+    { k: "info", t: "角块都对了，有三片叶子不在家。只要跳一次对的小舞步就好。<br>先想：挑一片不在家的叶子，它那一面上的两个角块就是 A 和 B。试一个舞步；不对就倒着跳回去（先拧 B，再拧 A，B 回，A 回），再换两个角块或者换个方向。|The corners are right, and three leaves are away from home. One right little dance will finish it.<br>Think first: pick a leaf that is away; the two corners on its face are A and B. Try a dance. If it's wrong, dance it backwards (turn B, turn A, B back, A back), then try two other corners or the other way round." },
     { k: "puz", kind: "dance1", t: "跳一次小舞步，让叶子都回家。|Do one little dance to bring every leaf home." },
     { k: "puz", kind: "dance1", t: "再来一次。|Once more." },
     { k: "puz", kind: "dance1", t: "最后一个。|Last one." }
   ] },
   { id: 6, name: "两次、三次舞步|Two or three dances", sub: "第 2 步：一步一步来|Step 2: a bit at a time", step: 2, goal: 2, dim: "none", tasks: [
-    { k: "info", t: "这次一次小舞步不够。最多跳三次就能全部回家。如果三片不在家的叶子都挨着同一个会转的角块，跳哪个舞步都不会马上变好：先随便跳一个，换走其中一片，再接着做。|This time one dance isn't enough. Three dances or fewer always gets every leaf home. If the three leaves that are away are all next to the same corner piece (one of the 4 that turn), no single dance makes it better right away: do any dance that moves one of them, then carry on." },
-    { k: "puz", kind: "dance2", t: "要跳两次小舞步。|This one takes two dances." },
+    { k: "info", t: "这次一次小舞步不够。最好的走法，三次以内就能全部回家。如果三片不在家的叶子都挨着同一个角块，跳哪个舞步都不会马上变好：先随便跳一个，换走其中一片，再接着做。|This time one dance isn't enough. The best way always takes three dances or fewer. If the three leaves that are away are all next to the same corner, no single dance makes it better right away: do any dance that moves one of them, then carry on." },
+    { k: "puz", kind: "dance2", t: "最好的走法要跳两次小舞步。|The best way takes two dances." },
     { k: "puz", kind: "dance2", t: "再来一个。|Another one." },
-    { k: "puz", kind: "dance3", t: "要跳三次小舞步。|This one takes three dances." }
+    { k: "puz", kind: "dance3", t: "最好的走法要跳三次小舞步。|The best way takes three dances." }
   ] },
   { id: 7, name: "从头到尾|Start to finish", sub: "两步连起来，自己决定|Both steps, your own choices", step: 0, goal: 2, dim: "none", tasks: [
     { k: "info", t: "现在从头到尾自己来：先把 4 个角块转对，再用小舞步让叶子回家。魔方下面的 2 个小灯，会告诉你做好了几步。|Now do it all yourself: first get the 4 corners right, then use little dances to bring the leaves home. The 2 lights under the cube show how many steps are done." },
@@ -944,10 +946,23 @@ document.querySelector(".langs").addEventListener("click", e => { const b = e.ta
 
 /* ---------- saved progress (this browser only; the site's account script syncs it when a parent signs in) ---------- */
 const KEY = "ivy_quest_v1";
-function load() { try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && typeof s === "object" && s.lv && typeof s.lv === "object") return s; } catch (e) {} return { lv: {} }; }
+function load() {
+  let s = null; try { s = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
+  const out = { lv: {} };
+  if (s && typeof s === "object" && s.lv && typeof s.lv === "object") for (const k of Object.keys(s.lv)) {
+    const v = s.lv[k]; if (!v || typeof v !== "object" || !/^\d{1,2}$/.test(k)) continue;
+    const int = (x, max) => (Number.isInteger(x) && x >= 0 ? Math.min(x, max) : 0);
+    const L = LEVELS.find(x => x.id === +k); if (!L) continue;
+    const done = v.done === true;
+    out.lv[k] = { at: int(v.at, L.tasks.length - 1), done, stars: done ? int(v.stars, 3) : 0, rev: int(v.rev, 999) };
+  }
+  return out;
+}
 let SAVE = load();
 function save() { try { localStorage.setItem(KEY, JSON.stringify(SAVE)); } catch (e) {} }
-const lvSave = id => (SAVE.lv[id] = SAVE.lv[id] && typeof SAVE.lv[id] === "object" ? SAVE.lv[id] : { at: 0, done: false, stars: 0 });
+const lvSave = id => (SAVE.lv[id] = SAVE.lv[id] && typeof SAVE.lv[id] === "object" ? SAVE.lv[id] : { at: 0, done: false, stars: 0, rev: 0 });
+/* a hint press counts for the stars, and is kept, so leaving the level and coming back does not wipe it */
+function noteReveal() { P.reveals++; const s = lvSave(P.L.id); if (!s.done) { s.rev = P.reveals; save(); } }
 const totalStars = () => LEVELS.reduce((n, L) => n + Math.min(3, Math.max(0, +((SAVE.lv[L.id] || {}).stars) || 0)), 0);
 
 /* ---------- words for turns ---------- */
@@ -1046,7 +1061,7 @@ function draw() {
     el.innerHTML = inner; frag.appendChild(el); V.els.push(el); return el;
   };
   IVY_FACES.forEach((f, fi) => {
-    faceDiv(fi, "base", `<svg viewBox="-1 -1 2 2"><rect x="-1" y="-1" width="2" height="2" fill="${PLASTIC}"/></svg>`, "", -0.5);
+    faceDiv(fi, "base", `<svg viewBox="-1 -1 2 2"><rect x="-1" y="-1" width="2" height="2" fill="${PLASTIC}"/></svg>`, "", -1.5);
     const lc = V.dim === "leaves" ? DIMHEX : COLOR_HEX[V.s.leaf[fi]];
     faceDiv(fi, "st", `<svg viewBox="-1 -1 2 2"><path data-pc="L${fi}" class="${V.hl.includes("L" + fi) ? "hl" : ""}" d="${pathD(SHAPES[fi].leaf)}" fill="${lc}"/></svg>`, faceCorners(fi).join(" "));
     for (const ci of faceCorners(fi)) faceDiv(fi, "st", `<svg viewBox="-1 -1 2 2"><path data-pc="C${ci}" class="${V.hl.includes("C" + ci) ? "hl" : ""}" d="${pathD(SHAPES[fi].corners[ci])}" fill="${COLOR_HEX[V.s.corner[ci][fi]]}"/></svg>`, "c" + ci);
@@ -1080,7 +1095,7 @@ function playTurns(ts, done) {
   st.addEventListener("pointerdown", e => { d = { x: e.clientX, y: e.clientY, rx: V.rx, ry: V.ry, moved: false }; try { st.setPointerCapture(e.pointerId); } catch (_) {} });
   st.addEventListener("pointermove", e => {
     if (!d) return;
-    if (Math.abs(e.clientX - d.x) + Math.abs(e.clientY - d.y) > 6) d.moved = true;
+    if (Math.abs(e.clientX - d.x) + Math.abs(e.clientY - d.y) > 10) d.moved = true;
     V.ry = d.ry + (e.clientX - d.x) * 0.5; V.rx = Math.max(-85, Math.min(85, d.rx - (e.clientY - d.y) * 0.5));
     setView();
   });
@@ -1118,7 +1133,7 @@ function openLevel(id) {
   P.L = LEVELS.find(L => L.id === id); const s = lvSave(id);
   P.ti = s.done || !(s.at >= 0 && s.at < P.L.tasks.length) ? 0 : s.at;
   if (s.done) s.at = 0;
-  P.reveals = 0; P.wrong = {};
+  P.reveals = s.done ? 0 : (s.rev || 0); P.wrong = {};
   show("play"); startTask();
 }
 function startTask() {
@@ -1162,7 +1177,7 @@ function renderPanel() {
   if (t.pics) h += `<div class="pics">${t.pics.map(picHTML).join("")}</div>`;
   if (t.k === "ask") h += `<div class="opts">${t.opts.map((o, i) => `<button class="opt ${P.wrong[i] ? "no" : ""} ${done && i === t.ans ? "yes" : ""}" data-opt="${i}" ${done ? "disabled" : ""}>${esc(tr(o))}</button>`).join("")}</div>`;
   if (t.k === "guided") {
-    h += `<div class="seq">${P.seq.map((tok, i) => `<button class="sq ${i < P.gi ? "past" : i === P.gi && !done ? "now" : ""}" data-sq="${i}" ${i !== P.gi || done ? "disabled" : ""}><span class="l">${esc(turnShort(tok))}</span><span class="w">${esc([T("拧", "turn"), T("拧", "turn"), T("回", "back"), T("回", "back")][i] || "")}</span></button>`).join("")}</div>`;
+    h += `<div class="seq">${P.seq.map((tok, i) => `<button class="sq ${i < P.gi ? "past" : i === P.gi && !done ? "now" : ""}" data-sq="${i}" ${i !== P.gi || done ? "disabled" : ""}><span class="l">${esc(turnShort(tok))}</span><span class="w">${esc([T("拧", "turn"), T("拧", "turn"), T("拧回来", "back"), T("拧回来", "back")][i] || "")}</span></button>`).join("")}</div>`;
     if (!done) h += `<div class="ctrl"><button class="btn small" id="restart">${esc(tr(UI.restart))}</button></div>`;
   }
   if (canTurn()) {
@@ -1170,7 +1185,7 @@ function renderPanel() {
     h += `<div class="ctrl"><button class="btn small" id="undo" ${P.hist.length ? "" : "disabled"}>${esc(tr(UI.undo))}</button><button class="btn small" id="restart">${esc(tr(UI.restart))}</button>${t.k === "try" ? "" : `<button class="btn small" id="hint">${esc(tr(UI.hint))}</button>`}</div>`;
   }
   const fb = fbText();
-  if (fb) h += `<div class="fb ${P.fbKind || "hint"}">${fb}</div>`;
+  if (fb) h += `<div class="fb ${P.fbKind || "hint"}" role="status">${fb}</div>`;
   if (t.k === "info" || t.k === "try" || done) h += `<div class="ctrl"><button class="btn main" id="next">${esc(tr(P.ti + 1 >= L.tasks.length ? UI.finish : UI.next))}</button></div>`;
   $("#panel").innerHTML = h;
   if (P.pulse) { const b = $("#panel").querySelector(`[data-act="${CSS.escape(P.pulse)}"]`); if (b) b.classList.add("pulse"); }
@@ -1219,7 +1234,7 @@ function afterTurn() {
       : "做到了！叶子都回家了。|You did it! Every leaf is home.";
     succeed(msg); return;
   }
-  if (t.k === "puz" && P.goal === 2) { const d = danceInProgress(); if (d && d.bad) say(UI.broken, "bad"); }   /* in the middle of a little dance the corners are twisted on purpose: no warning */
+  if (t.k === "puz" && P.goal === 2 && t.kind !== "full") { const d = danceInProgress(); if (d && d.bad) say(UI.broken, "bad"); }   /* in the middle of a little dance the corners are twisted on purpose: no warning */
   renderPanel();
 }
 function answer(i) {
@@ -1253,24 +1268,25 @@ function giveHint() {
   if (t.k === "undo") {
     const q = solveUndo(V.s);
     if (!q) { say("走远了。按 ⟲ 重来，再试一次。|That went too far. Press ⟲ Start over and try again.", "hint"); renderPanel(); return; }
-    P.reveals++;
+    noteReveal();
     if (P.hint === 0) { P.hint = 1; say("看一看：哪一个角块和旁边的颜色对不上？它被转过。|Look: which corner doesn't match the colors next to it? That one was turned.", "hint"); }
     else { P.pulse = q[0]; V.hl = ["C" + (+q[0][0] - 1)]; draw(); say(() => T("按 <b>", "Press <b>") + esc(turnShort(q[0])) + T("</b>（", "</b> (") + esc(turnLong(q[0])) + T("）。", ")."), "hint"); }
     renderPanel(); return;
   }
   if (P.goal === 2) {
     const d = danceInProgress();
-    if (d && d.bad) { say("这几下不是小舞步，转对的角块歪了。按 ↶ 撤销，回到角块都对的时候。|Those turns aren't a little dance, and the corners got twisted. Press ↶ Undo until the corners are right again.", "bad"); renderPanel(); return; }
-    if (d) P.plan = d.rest.slice();       /* finish the dance the child started */
+    if (d && d.bad && t.kind === "full") { /* the last level: just help with the corners again */ }
+    else if (d && d.bad) { say("这几下不是小舞步，转对的角块歪了。按 ↶ 撤销，回到角块都对的时候。|Those turns aren't a little dance, and the corners got twisted. Press ↶ Undo until the corners are right again.", "bad"); renderPanel(); return; }
+    if (d && !d.bad) P.plan = d.rest.slice();       /* finish the dance the child started */
   }
   const n = ivyNext(V.s, P.plan);
-  if (n.done) return;
-  P.reveals++;
+  if (n.done || goalNow()) { say("这一题已经做好了，按“下一题”。|This one is already done. Press Next.", "good"); P.state = "done"; renderPanel(); return; }
+  noteReveal();
   if (n.code === "corner") {
     if (P.hint === 0) { P.hint = 1; V.hl = []; say(() => T("第 1 步。找一个面：上面两个角块颜色不一样，那里至少有一个角块歪了。两个角块都有的那种颜色，才是这一面的颜色。", "Step 1. Find a face whose two corners don't match: at least one of them is wrong. The color both corners have is that face's color.") + "<br><small>" + T("再按一次 💡，告诉你按哪个。", "Press 💡 again to see which button.") + "</small>", "hint"); }
     else { V.hl = ["C" + n.corner]; P.pulse = n.act; say(() => T("按 <b>", "Press <b>") + esc(turnShort(n.act)) + T("</b>（", "</b> (") + esc(turnLong(n.act)) + T("）。", ")."), "hint"); }
   } else if (n.code === "dance") {
-    if (P.hint === 0) { P.hint = 1; V.hl = danceLeaves(V.s, n.dance); say(() => T("第 2 步。角块都对了，用小舞步换叶子。发光的三片叶子要换位置。想一想：用哪两个角块跳？", "Step 2. The corners are right, so use a little dance to move leaves. The three glowing leaves need to swap. Think: which two corners will you dance with?") + "<br><small>" + T("再按一次 💡，告诉你怎么跳。", "Press 💡 again to see the dance.") + "</small>", "hint"); }
+    if (P.hint === 0) { P.hint = 1; V.hl = danceLeaves(V.s, n.dance); say(() => T("第 2 步。角块都对了，用小舞步换叶子。发光的三片叶子要换位置。想一想：用哪两个角块跳？", "Step 2. The corners are right, so use a little dance to move leaves. The three glowing leaves need to swap. Think: which two corners will you dance with?") + (n.gain <= 0 ? "<br>" + T("这一次跳完，回家的叶子不会马上变多，它是为下一次做准备。", "This dance won't put more leaves home right away; it sets up the next one.") : "") + "<br><small>" + T("再按一次 💡，告诉你怎么跳。", "Press 💡 again to see the dance.") + "</small>", "hint"); }
     else { V.hl = danceLeaves(V.s, n.dance).concat(["C" + (+n.dance[0][0] - 1), "C" + (+n.dance[1][0] - 1)]); P.plan = n.dance.slice(); P.pulse = n.act; say(() => T("跳这个小舞步：", "Do this little dance: ") + n.dance.map(x => "<b>" + esc(turnShort(x)) + "</b>").join(T("，", ", ")) + T("。", "."), "hint"); }
   } else {      /* dance-go: the next turn of the dance already started */
     P.pulse = n.act; V.hl = ["C" + (+n.act[0] - 1)];
@@ -1284,7 +1300,7 @@ let modalKind = "", cardsAt = 1, winInfo = null;
 function nextTask() {
   if (P.ti + 1 < P.L.tasks.length) { P.ti++; startTask(); return; }
   const s = lvSave(P.L.id), stars = P.reveals <= 1 ? 3 : P.reveals <= 6 ? 2 : 1;
-  s.done = true; s.at = 0; s.stars = Math.max(+s.stars || 0, stars); save();
+  s.done = true; s.at = 0; s.rev = 0; s.stars = Math.max(+s.stars || 0, stars); save();
   $("#starTotal").textContent = "⭐ " + totalStars();
   burst(); winInfo = { L: P.L, stars }; showWin();
 }
@@ -1299,8 +1315,9 @@ function showWin() {
     <div class="ctrl" style="justify-content:center">${nextL ? `<button class="btn main" data-goto="${nextL.id}">${esc(T("下一关：", "Next level: ") + tr(nextL.name))} ▶</button>` : ""}<button class="btn" data-home>${esc(tr(UI.backLevels))}</button></div></div>`, "win");
 }
 function burst() { if (reduceMotion) return; const em = ["⭐", "🎉", "🍁", "✨"]; for (let i = 0; i < 24; i++) { const s = document.createElement("span"); s.className = "burst"; s.textContent = em[i % em.length]; s.style.left = 50 + (Math.random() - .5) * 20 + "vw"; s.style.top = "40vh"; s.style.setProperty("--dx", (Math.random() - .5) * 90 + "vw"); s.style.setProperty("--dy", (Math.random() - .7) * 70 + "vh"); document.body.appendChild(s); setTimeout(() => s.remove(), 1500); } }
-function openModal(html, kind) { modalKind = kind || ""; $("#sheet").innerHTML = html; $("#modal").hidden = false; }
-function closeModal() { $("#modal").hidden = true; modalKind = ""; $("#sheet").innerHTML = ""; }
+let modalFrom = null;
+function openModal(html, kind) { if ($("#modal").hidden) modalFrom = document.activeElement; modalKind = kind || ""; $("#sheet").innerHTML = html; $("#modal").hidden = false; try { $("#sheet").focus({ preventScroll: true }); } catch (e) {} }
+function closeModal() { $("#modal").hidden = true; modalKind = ""; $("#sheet").innerHTML = ""; try { if (modalFrom && document.contains(modalFrom)) modalFrom.focus({ preventScroll: true }); } catch (e) {} }
 $("#modal").addEventListener("click", e => {
   if (e.target.id === "modal" || e.target.closest("[data-close]")) { closeModal(); return; }
   const g = e.target.closest("[data-goto]"); if (g) { closeModal(); openLevel(+g.dataset.goto); return; }
