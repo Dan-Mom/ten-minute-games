@@ -945,6 +945,19 @@ button{-webkit-appearance:none;appearance:none}
   .big .say{font-size:18px;margin-bottom:2px}
 }
 .qdock{min-height:100px}   /* room kept for the answer and Next, so the card does not jump when an answer is given */
+/* the answers of "hear it": the picture and its English, stacked */
+.opt.picopt{display:flex;align-items:center;justify-content:flex-start;gap:16px;width:100%;max-width:640px;height:auto;min-height:84px;padding:6px 16px;text-align:left}
+.picopt .pe{font-size:54px;line-height:1;flex:0 0 auto;font-family:var(--body)}
+.picopt .pt{font:700 26px/1.25 var(--body);color:var(--ink)}
+.opt.picopt.ok .pt{color:var(--green)}.opt.picopt.no .pt{color:var(--red)}
+@media (min-width:700px){
+  .big .opt.picopt{width:100%;max-width:none;height:auto;min-height:100px;font-size:inherit}
+  .big .picopt .pe{font-size:64px}.big .picopt .pt{font-size:32px}
+}
+@media (min-width:700px) and (max-height:800px){
+  .big .opt.picopt{min-height:80px}.big .picopt .pe{font-size:50px}.big .picopt .pt{font-size:26px}
+}
+@media (max-width:480px){.opt.picopt{min-height:72px}.picopt .pe{font-size:44px}.picopt .pt{font-size:21px}}
 </style>
 <style>
 /* Daily Talk: the sentences a family says every day, five a day. Each sentence has a picture, pinyin, English and one "star" character to learn.
@@ -1361,11 +1374,11 @@ function answerFx(btn, ok, correctBtn) {
 function qListen(D, it) {   // the voice says a sentence: pick its picture
   return { sayFirst: sentOf(it), texts: [sentOf(it)], render: function (box, answer) {
     var L = E('div', 'lcol'), R = E('div', 'rcol'); box.appendChild(L); box.appendChild(R);   // two halves on a wide screen: the question left, the answers right
-    L.appendChild(txt('p', 'say', 'Listen. Which picture is it? '));
+    L.appendChild(txt('p', 'say', 'Listen. Which one is it?'));
     var hr = E('div', 'row'); hr.appendChild(speakBtn(sentOf(it), true)); L.appendChild(hr);
-    var opts = E('div', 'opts'), right = null, done = false;
-    shuffle([it].concat(others(D, it, mateOf(D, it)))).forEach(function (x) {
-      var b = E('button', 'opt pic', x.e); b.type = 'button'; b.setAttribute('aria-label', 'picture');
+    var opts = E('div', 'opts col'), right = null, done = false;
+    shuffle([it].concat(others(D, it, mateOf(D, it)))).forEach(function (x) {   // each answer: its picture and its English, one under the other (the owner, 2026-11-22: pictures alone are too hard to guess)
+      var b = E('button', 'opt wide picopt'); b.type = 'button'; b.appendChild(txt('span', 'pe', x.e)); b.appendChild(txt('span', 'pt', x.en));
       if (x === it) right = b;
       b.onclick = function () { if (done) return; done = true; var ok = x === it; answerFx(b, ok, right); answer(ok, sentOf(it)); };
       opts.appendChild(b);
@@ -1459,14 +1472,14 @@ function qBuild(D, it) {   // tap the pieces in order
 /* ---------- a day: learn the sentences, then the questions ---------- */
 var STEPS = [
   { key: 'learn', title: 'Learn the sentences', zh: '学句子' },
-  { key: 'listen', title: 'Hear it, find the picture', zh: '听一听' },
+  { key: 'listen', title: 'Hear it, find the answer', zh: '听一听' },
   { key: 'en', title: 'Say it in Chinese', zh: '怎么说' },
   { key: 'answer', title: 'What do you answer?', zh: '怎么回答' },
   { key: 'star', title: 'Find the missing character', zh: '找缺的字' },
   { key: 'build', title: 'Build the sentence', zh: '拼句子' }
 ];
 function stepsOf(D) {
-  if (D.review) return [{ key: 'listen', title: 'Hear it, find the picture', zh: '听一听', n: 5 }, { key: 'en', title: 'Say it in Chinese', zh: '怎么说', n: 5 }, { key: 'star', title: 'Find the missing character', zh: '找缺的字', n: 5 }, { key: 'build', title: 'Build the sentence', zh: '拼句子', n: 4 }];
+  if (D.review) return [{ key: 'listen', title: 'Hear it, find the answer', zh: '听一听', n: 5 }, { key: 'en', title: 'Say it in Chinese', zh: '怎么说', n: 5 }, { key: 'star', title: 'Find the missing character', zh: '找缺的字', n: 5 }, { key: 'build', title: 'Build the sentence', zh: '拼句子', n: 4 }];
   return STEPS.filter(function (s) { return s.key !== 'answer' || (D.pairs && D.pairs.length); });
 }
 function questionsOf(D, S) {
