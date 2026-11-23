@@ -940,7 +940,7 @@ button{-webkit-appearance:none;appearance:none}
   .big .panel{padding-top:8px}
   .big .say{font-size:18px;margin-bottom:2px}
 }
-.qdock{min-height:100px}   /* room kept for the answer and Next, so the card does not jump when an answer is given */
+.qdock{min-height:120px}   /* room kept for the answer and Next, so the card does not jump when an answer is given */
 /* the answers of "hear it": the picture and its English, stacked */
 .opt.picopt{display:flex;align-items:center;justify-content:flex-start;gap:16px;width:100%;max-width:640px;height:auto;min-height:84px;padding:6px 16px;text-align:left}
 .picopt .pe{font-size:54px;line-height:1;flex:0 0 auto;font-family:var(--body)}
@@ -1205,7 +1205,7 @@ function speaking() {   // is a recording still being said? (an interrupted or p
   return !!player && !player.paused && !player.ended;
 }
 var sayTok = 0;   // goes up with every say(): a line waiting its turn (the English after the Chinese) is dropped when something else was said meanwhile
-var RECORDING = false;
+var RECORDING = false, recOwner = null;   // recOwner: the recorder that opened the microphone; a late callback of an older one must not undo it
 var KEEP_MIC = false;   // off: the microphone is opened at the tap and let go after each take, as in the version that worked on the iPad (keeping it ready was not confirmed on a real iPad)
 var WARM = null, micOK = false;   // the microphone, kept ready while the learn cards are open (opening it at the tap took seconds on iPad), once this page has been allowed
 try { if (navigator.permissions && navigator.permissions.query) navigator.permissions.query({ name: 'microphone' }).then(function (p) { if (p.state === 'granted') micOK = true; }, function () {}); } catch (e) {}
@@ -1344,11 +1344,12 @@ function isObj(x) { return !!x && typeof x === 'object' && !Array.isArray(x); }
 if (!isObj(save)) save = {};
 function store() { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) { /* private mode: progress is just not kept */ } }
 if (!isObj(save.days)) save.days = {}; if (!isObj(save.at)) save.at = {};
-Object.keys(save.days).forEach(function (k) { var s = save.days[k] || {}; save.days[k] = { pts: Math.max(0, +s.pts || 0), of: Math.max(0, +s.of || 0) }; });   // numbers only: they are shown on the page
+function num(x, max) { x = +x; return isFinite(x) ? Math.min(max || 1000, Math.max(0, x)) : 0; }   // a saved number that is not a sane number becomes 0
+Object.keys(save.days).forEach(function (k) { var s = save.days[k] || {}; save.days[k] = { pts: num(s.pts), of: num(s.of) }; });   // numbers only: they are shown on the page
 Object.keys(save.at).forEach(function (k) {
   var s = save.at[k] || {}, sp = {};
-  if (isObj(s.sp)) Object.keys(s.sp).forEach(function (q) { var v = s.sp[q] || {}; sp[String(q).slice(0, 12)] = { pts: Math.max(0, +v.pts || 0), of: Math.max(0, +v.of || 0) }; });   // the result of each part of the day (numbers only)
-  save.at[k] = { s: Math.max(0, Math.floor(+s.s) || 0), pts: Math.max(0, +s.pts || 0), of: Math.max(0, +s.of || 0), sp: sp };
+  if (isObj(s.sp)) Object.keys(s.sp).forEach(function (q) { var v = s.sp[q] || {}; sp[String(q).slice(0, 12)] = { pts: num(v.pts), of: num(v.of) }; });   // the result of each part of the day (numbers only)
+  save.at[k] = { s: Math.max(0, Math.min(20, Math.floor(+s.s) || 0)), pts: num(s.pts), of: num(s.of), sp: sp, v: s.v === 2 ? 2 : 0 };   // v 2: written with the tabs (an empty sp then really means no part is done)
 });
 var UNIT = '¢', LADDER = [1, 0.5, 0.25, 0.1];
 function worth(round) { return LADDER[round - 1] || 0; }
@@ -1381,7 +1382,7 @@ WEEKS.forEach(function (W) {
     D.week = W.n; D.items.forEach(function (it, i) { it.id = D.id + '.' + (i + 1); it.day = D.id; });
     inWeek.push(D); ALLD.push(D); D.upto = inWeek.slice();   // the sentences learned so far this week
   });
-  var R = W.review; R.review = true; R.week = W.n; R.items = []; R.pairs = []; W.days.forEach(function (D) { R.items = R.items.concat(D.items); R.pairs = R.pairs.concat(D.pairs || []); }); R.upto = W.days.slice(); ALLD.push(R);
+  var R = W.review; if (R) { R.review = true; R.week = W.n; R.items = []; R.pairs = []; W.days.forEach(function (D) { R.items = R.items.concat(D.items); R.pairs = R.pairs.concat(D.pairs || []); }); R.upto = W.days.slice(); ALLD.push(R); }   // a week may have no review day
 });
 (function () { try {   // a mistake in the data shows in the console at once, not as a blank screen later
   var seen = {};
@@ -1408,11 +1409,11 @@ function mateOf(D, it) { var m = {}; (D.pairs || []).forEach(function (p) { if (
 var DBGON = /[?&]debug/.test(location.search), DBGL = [];
 function sessionInfo() { return 'sess=' + (navigator.audioSession ? navigator.audioSession.type : '-') + ' ctx=' + (AC ? AC.state + '@' + AC.sampleRate : '-'); }
 function reviveSound() {   // after the microphone: the model voice must still be heard (iPad can leave the sound session in recording mode: quiet, or on the earpiece)
-  var back = function () { try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {} };
+  var back = function () { if (RECORDING) return; try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {} };   // never while a take is being recorded
   back(); setTimeout(back, 300);   // the microphone lets go a little later than the call returns
   if (!AC) return;
   try { var q = AC.resume(); if (q && q.catch) q.catch(function () {}); } catch (e) {}
-  setTimeout(function () { dbg('after the microphone: ' + sessionInfo()); if (AC && AC.state !== 'running' && IOS_FAST) AC.stale = true; }, 900);
+  setTimeout(function () { if (RECORDING) return; dbg('after the microphone: ' + sessionInfo()); if (AC && AC.state !== 'running' && IOS_FAST) AC.stale = true; }, 900);
 }
 function rebuildSound() {
   var old = AC; dbg('sound system rebuilt (it was ' + (old ? old.state : '-') + ')');
@@ -1568,7 +1569,7 @@ function qBuild(D, it) {   // tap the pieces in order
 /* ---------- a day: learn the sentences, then the questions ---------- */
 var TABLAB = { learn: '📖 Learn', listen: '👂 Hear', en: '💬 Say', answer: '↩️ Answer', star: '🔤 Find', build: '🧩 Build' };   // the tabs at the top of a day (the owner, 2026-11-22: the child picks the part to do)
 var tabsEl = document.getElementById('daytabs');
-function hideTabs() { if (tabsEl) tabsEl.classList.remove('on'); dropMic(); }   // the day is left (menu, or finished)
+function hideTabs() { if (tabsEl) { tabsEl.classList.remove('on'); tabsEl.innerHTML = ''; } dropMic(); if (curRec) { curRec.dispose(); curRec = null; } }   // the day is left (menu, or finished): no tab stays behind, no microphone, no recording   // the day is left (menu, or finished)
 var STEPS = [
   { key: 'learn', title: 'Learn the sentences', zh: '学句子' },
   { key: 'listen', title: 'Hear it, find the answer', zh: '听一听' },
@@ -1583,8 +1584,9 @@ function stepsOf(D) {
 }
 function questionsOf(D, S) {
   var pool = S.key === 'build' ? D.items.filter(function (x) { var u = x.t || x.w; return u.some(function (y) { return y !== u[0]; }); }) : D.items;   // 谢谢 has two same pieces: nothing to build
+  if (S.key === 'star') pool = pool.filter(function (x) { return x.star && x.no && x.no.length >= 2; });   // a sentence with no star character has no such question
   var items = D.review ? shuffle(pool).slice(0, S.n) : pool, out = [];
-  if (S.key === 'answer') { D.pairs.forEach(function (p) { out.push(qAnswer(D, byId(p.q), p)); }); return shuffle(out); }
+  if (S.key === 'answer') { (D.pairs || []).forEach(function (p) { if (byId(p.q) && byId(p.a)) out.push(qAnswer(D, byId(p.q), p)); }); return shuffle(out); }   // a pair that names a missing sentence is skipped
   items.forEach(function (it) { out.push(S.key === 'listen' ? qListen(D, it) : S.key === 'en' ? qEn(D, it) : S.key === 'star' ? qStar(D, it) : qBuild(D, it)); });
   return D.review ? out : shuffle(out);
 }
@@ -1599,26 +1601,34 @@ function head(D, S, si, sn, k, kn, round, label, frac) {
   br.appendChild(txt('span', 'stepn', label || 'Question ' + Math.min(k + 1, kn) + '/' + kn)); app.appendChild(br);
 }
 function openDay(D) {
+  if (document.querySelector('.ask-over')) return;   // a question box is open already: never a second one on top
   var at = save.at[D.id], done = save.days[D.id];
   var clear = clearBtn('🗑 Clear this day 清空这一天', D, 'Clear this day? 清空这一天？', 'This erases the score and the tick of this day, as if it had not been played.');
   if (at) return askBox(D.title + ': continue?', 'You stopped this day half way. Continue from where you were, or start the day again?',
-    [['▶ Continue 继续', function () { playDay(D, at.s, at.pts, at.of, at.sp); }], ['↺ Start over 重新开始', function () { delete save.at[D.id]; store(); playDay(D, 0, 0, 0); }, true], clear]);
+    [['▶ Continue 继续', function () { playDay(D, at.s, at.pts, at.of, at.sp, at.v === 2); }], ['↺ Start over 重新开始', function () { delete save.at[D.id]; store(); playDay(D, 0, 0, 0); }, true], clear]);
   if (done) return askBox(D.title + ': play again?', 'You finished this day. Your score now: <b>' + fmt(done.pts) + UNIT + ' of ' + done.of + UNIT + '</b>. Play it again and the new score takes its place, even if it is lower.',
     [['↺ Start over 重新开始', function () { playDay(D, 0, 0, 0); }], clear]);
   playDay(D, 0, 0, 0);
 }
-function playDay(D, from, pts, of, sp) {
-  var steps = stepsOf(D), st = { s: from, pts: pts, of: of, sp: {}, base: null, prev: null };
-  if (isObj(sp) && Object.keys(sp).length) st.sp = JSON.parse(JSON.stringify(sp));
+function playDay(D, from, pts, of, sp, isNew) {
+  var steps = stepsOf(D), st = { s: from, pts: 0, of: 0, sp: {}, base: null, prev: null };
+  if (isNew || (isObj(sp) && Object.keys(sp).length)) st.sp = JSON.parse(JSON.stringify(sp || {}));
   else if (from > 0 && from < steps.length) steps.slice(0, from).forEach(function (S, i) { st.sp[S.key] = { pts: i === from - 1 ? pts : 0, of: i === from - 1 ? of : 0 }; });   // a save from before the tabs
+  Object.keys(st.sp).forEach(function (k) { if (!steps.some(function (S) { return S.key === k; })) delete st.sp[k]; });   // only the parts of this day
   if (st.s >= steps.length || st.s < 0) { st.s = 0; st.sp = {}; }
-  st.pts = 0; st.of = 0; Object.keys(st.sp).forEach(function (k) { st.pts += st.sp[k].pts; st.of += st.sp[k].of; });
+  recalc();
   app.classList.add('big');
+  function recalc() { var p = 0, o = 0; Object.keys(st.sp).forEach(function (k) { p += st.sp[k].pts; o += st.sp[k].of; }); st.pts = Math.round(p * 100) / 100; st.of = o; }   // the total of the finished parts
+  function refreshTotal() { document.getElementById('stamps').textContent = '💰 ' + fmt(total() - (save.days[D.id] ? save.days[D.id].pts : 0) + st.pts) + UNIT; }
   function allDone() { return steps.every(function (S) { return !!st.sp[S.key]; }); }
-  function persist() { var p = 0, o = 0; Object.keys(st.sp).forEach(function (k) { p += st.sp[k].pts; o += st.sp[k].of; }); save.at[D.id] = { s: st.s, pts: p, of: o, sp: JSON.parse(JSON.stringify(st.sp)) }; store(); }
+  function persist() {   // a part being played again keeps its old result in the save until the new one is finished
+    var q = JSON.parse(JSON.stringify(st.sp)); if (st.prev) q[steps[st.s].key] = st.prev;
+    var p = 0, o = 0; Object.keys(q).forEach(function (k) { p += q[k].pts; o += q[k].of; });
+    save.at[D.id] = { s: st.s, pts: Math.round(p * 100) / 100, of: o, sp: q, v: 2 }; store();
+  }
   function abandon() {   // leaving a part that was not finished: its cents so far are dropped, and an earlier result of it comes back
-    if (st.base) { st.pts = st.base.pts; st.of = st.base.of; if (st.prev) st.sp[steps[st.s].key] = st.prev; }
-    st.base = null; st.prev = null;
+    if (st.base && st.prev) st.sp[steps[st.s].key] = st.prev;
+    st.base = null; st.prev = null; recalc(); refreshTotal();
   }
   function tabs() {
     if (!tabsEl) return; tabsEl.innerHTML = ''; tabsEl.classList.add('on');
@@ -1635,15 +1645,15 @@ function playDay(D, from, pts, of, sp) {
   function next() {
     var S = steps[st.s];
     st.prev = st.sp[S.key] || null;   // playing a finished part again: its new result replaces the old one
-    if (st.prev) { st.pts -= st.prev.pts; st.of -= st.prev.of; delete st.sp[S.key]; }
-    st.base = { pts: st.pts, of: st.of };
-    persist(); tabs();
+    if (st.prev) delete st.sp[S.key];
+    recalc(); st.base = { pts: st.pts, of: st.of };
+    persist(); tabs(); refreshTotal();
     if (S.key === 'learn') learn(D, S, st.s, steps.length, finishStep);
     else runQs(D, S, st, steps.length, questionsOf(D, S), 1, finishStep);
   }
   function finishStep() {
     var S = steps[st.s];
-    st.sp[S.key] = { pts: Math.round((st.pts - st.base.pts) * 100) / 100, of: st.of - st.base.of }; st.base = null; st.prev = null;
+    st.sp[S.key] = { pts: Math.round((st.pts - st.base.pts) * 100) / 100, of: st.of - st.base.of }; st.base = null; st.prev = null; recalc();
     if (allDone()) return finishDay();
     var j = -1, i;
     for (i = st.s + 1; i < steps.length; i++) if (!st.sp[steps[i].key]) { j = i; break; }   // on to the next part not done yet
@@ -1735,7 +1745,8 @@ function writePopup(ch, it, n) {
   var word = it.w[n], o = E('div', 'ask-over writepop'), box = E('div', 'ask-box wbig');
   box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Write ' + ch);
   var x = E('button', 'ask-x', '✕'); x.type = 'button'; x.setAttribute('aria-label', 'Close');
-  var wb = writeBox({ c: ch, py: it.p[n], en: word.length > 1 ? 'in ' + word : '', hear: word });
+  var hearIt = word.length === 1 && '了得的着吗么呢吧地不'.indexOf(ch) >= 0 ? sentOf(it) : word;   // a bare 了, 得, 不 … is read in another way than in its sentence
+  var wb = writeBox({ c: ch, py: it.p[n], en: word.length > 1 ? 'in ' + word : '', hear: hearIt });
   var shut = function () { navAt = Date.now(); o.remove(); if (curWrite === wb) curWrite = null; document.removeEventListener('keydown', esc, true); };
   var esc = function (e) { if (!o.isConnected) { document.removeEventListener('keydown', esc, true); return; } if (e.key === 'Escape' && !document.querySelector('.polybox')) shut(); };   // the readings box above it closes first
   x.onclick = shut; o.onclick = function (e) { if (e.target === o) shut(); }; document.addEventListener('keydown', esc, true);
@@ -1743,7 +1754,7 @@ function writePopup(ch, it, n) {
   if (POLY[ch]) { var pr = E('div', 'row'), pb = E('button', 'btn ghost small', 'All readings <span class="han nopoly">多音字</span>'); pb.type = 'button'; pb.onclick = function () { polyOpen(ch); }; pr.appendChild(pb); box.appendChild(pr); }
   o.appendChild(box); document.body.appendChild(o);
   if (pendBtn) pendBtn.classList.remove('waiting'); pending = pendBtn = null;   // a Next that was waiting for the voice must not go on behind the box
-  curWrite = wb; wb.init(); unlockSound(); say(word); setTimeout(function () { x.focus(); }, 0);
+  curWrite = wb; wb.init(); unlockSound(); say(hearIt); setTimeout(function () { x.focus(); }, 0);
 }
 document.addEventListener('click', function (e) {   // before the grey-character box (registered first), so a tap on a character writes it
   var t = e.target; if (t && t.nodeType === 3) t = t.parentNode;
@@ -1758,9 +1769,9 @@ document.addEventListener('keydown', function (e) { if ((e.key === 'Enter' || e.
 var curRec = null;
 function recSupported() { return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder); }
 function recorder() {   // returns { recB, playB, msg, dispose, active, stop, stopMine }
-  var recB = E('button', 'btn ghost recbtn'), playB = E('button', 'btn ghost recplay', '▶ My voice'), msg = E('p', 'recmsg', 'Your voice is not saved or sent anywhere.');
+  var recB = E('button', 'btn ghost recbtn'), playB = E('button', 'btn ghost recplay', '▶ My voice'), msg = E('p', 'recmsg', 'Now say it yourself: tap 🎤. <span class="han nopoly">听完，自己说一遍。</span>');
   recB.type = playB.type = 'button'; playB.disabled = true; playB.setAttribute('aria-label', 'Play my voice 我的声音');
-  var stream = null, mr = null, chunks = [], url = null, audio = null, timer = 0, state = 'idle', gone = false, playing = false, mineBuf = null, mineNode = null, tTap = 0, tStop = 0;
+  var stream = null, mr = null, chunks = [], url = null, audio = null, timer = 0, askTimer = 0, stopTimer = 0, state = 'idle', gone = false, playing = false, mineBuf = null, mineNode = null, tTap = 0, tStop = 0, takeType = '', finished = true, me = {};
   function ms(t0) { return Math.round(performance.now() - t0) + ' ms'; }   // state: idle, ask (waiting for the microphone), rec
   function show() {
     recB.textContent = { idle: '🎤 Record me', ask: '🎤 Getting ready…', rec: '⏹ Stop', stopping: '⏳ Saving…' }[state] || '🎤 Record me';
@@ -1768,13 +1779,25 @@ function recorder() {   // returns { recB, playB, msg, dispose, active, stop, st
     playB.textContent = playing ? '⏸ Playing…' : '▶ My voice'; playB.disabled = !url || state !== 'idle';
   }
   function release() {   // let go of the microphone, and give iPad its normal sound back
-    clearTimeout(timer);
+    clearTimeout(timer); clearTimeout(askTimer); clearTimeout(stopTimer);
     var keep = stream && WARM && WARM.stream === stream;   // the ready microphone stays open for the next take
     if (stream && !keep) stream.getTracks().forEach(function (k) { try { k.stop(); } catch (e) {} });
-    stream = null; RECORDING = false;
-    if (!WARM || !WARM.stream) reviveSound();
+    stream = null;
+    if (recOwner === me || recOwner === null) { RECORDING = false; recOwner = null; if (!WARM || !WARM.stream) reviveSound(); }   // only the recorder that opened the microphone gives it back
   }
-  function stopRec() { try { if (mr && mr.state !== 'inactive') { state = 'stopping'; show(); tStop = performance.now(); mr.stop(); } } catch (e) {} }   // the button says so at once; the recording is finished a moment later
+  function finishTake() {   // the take is over (the recorder said so, or it did not answer in time)
+    if (finished) return; finished = true; clearTimeout(stopTimer);
+    dbg('recording saved after ' + ms(tStop)); release(); state = 'idle'; mineBuf = null;
+    if (!gone && chunks.length) {
+      if (url) URL.revokeObjectURL(url);
+      url = URL.createObjectURL(new Blob(chunks, { type: (mr && mr.mimeType) || takeType || 'audio/mp4' }));
+      audio = new Audio(); audio.preload = 'auto'; audio.src = url; audio.onended = audio.onpause = function () { playing = false; show(); }; try { audio.load(); } catch (e) {}   // ready before the tap
+      msg.textContent = 'Tap ▶ to hear yourself, then 🔊 to hear the model.';
+      if (AC && AC.decodeAudioData && window.Blob && Blob.prototype.arrayBuffer) { var td = performance.now(), mine = url; new Blob(chunks).arrayBuffer().then(function (ab) { AC.decodeAudioData(ab, function (b) { if (url === mine) { mineBuf = b; dbg('my voice ready (decoded in ' + ms(td) + ')'); } }, function () { dbg('my voice could not be decoded: it will play from the file'); }); }); }
+    } else if (!gone) msg.textContent = 'I did not hear anything. Tap 🎤 and try again.';
+    show();
+  }
+  function stopRec() { try { if (mr && mr.state !== 'inactive') { state = 'stopping'; show(); tStop = performance.now(); mr.stop(); clearTimeout(stopTimer); stopTimer = setTimeout(finishTake, 3000); } } catch (e) {} }   // if the recorder never answers, the take is finished after 3 s   // the button says so at once; the recording is finished a moment later
   function stopMine() {
     if (mineNode) { var n = mineNode; mineNode = null; try { n.onended = null; n.stop(0); } catch (e) {} }
     if (audio) { try { audio.pause(); } catch (e) {} }
@@ -1786,7 +1809,7 @@ function recorder() {   // returns { recB, playB, msg, dispose, active, stop, st
     unlockSound();
     if (state === 'rec') return stopRec();
     cutSound(); stopMine(); tTap = performance.now();
-    state = 'ask'; RECORDING = true; show();
+    state = 'ask'; RECORDING = true; recOwner = me; show();
     if (!recSupported()) return fail('This browser cannot record.');
     var w = WARM && WARM.stream;
     if (w && w.getAudioTracks().some(function (k) { return k.readyState === 'live'; })) return gotMic(w);   // already open: no waiting
@@ -1795,31 +1818,29 @@ function recorder() {   // returns { recB, playB, msg, dispose, active, stop, st
     // asked for inside the tap itself, with no extra settings: iPad Safari only opens the microphone for a request made straight from a tap, and an
     // earlier version that waited a moment and asked for special settings was refused ("Could not start the microphone", the owner, 2026-11-23)
     navigator.mediaDevices.getUserMedia({ audio: true }).then(gotMic, noMic);
+    clearTimeout(askTimer); askTimer = setTimeout(function () { if (state === 'ask') fail('The microphone did not answer. Tap 🎤 to try again.'); }, 20000);   // an unanswered request does not hold the button for ever
     function gotMic(s) {
+      clearTimeout(askTimer);
+      if (state !== 'ask') { if (!(WARM && WARM.stream === s)) s.getTracks().forEach(function (k) { try { k.stop(); } catch (e) {} }); return; }   // an answer that came after the request was given up, or the card was left
       var took = performance.now() - tTap; dbg('microphone ready after ' + ms(tTap));
       micOK = true; if (KEEP_MIC && (!WARM || !WARM.stream)) WARM = { stream: s };   // after the first take the microphone is kept for the learn cards
       if (gone || !recB.isConnected) { s.getTracks().forEach(function (k) { k.stop(); }); state = 'idle'; release(); return; }
       if (stream && stream !== s) stream.getTracks().forEach(function (k) { try { k.stop(); } catch (e) {} });
-      stream = s; chunks = [];
+      stream = s; chunks = []; finished = false; takeType = '';
       s.getAudioTracks().forEach(function (k) { k.onended = function () { if (WARM && WARM.stream === s) WARM = null; stopRec(); }; });   // another app took the microphone
       var type = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg'].filter(function (m) { return window.MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m); })[0];
       try {
         mr = type ? new MediaRecorder(s, { mimeType: type }) : new MediaRecorder(s);
         mr.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
-        mr.onstop = function () {
-          dbg('recording saved after ' + ms(tStop)); release(); state = 'idle'; mineBuf = null;
-          if (!gone && chunks.length) { if (url) URL.revokeObjectURL(url); url = URL.createObjectURL(new Blob(chunks, { type: mr.mimeType || type || 'audio/mp4' })); audio = new Audio(); audio.preload = 'auto'; audio.src = url; audio.onended = audio.onpause = function () { playing = false; show(); }; try { audio.load(); } catch (e) {}   // ready before the tap
-          msg.textContent = 'Tap ▶ to hear yourself, then 🔊 to hear the model.';
-          if (AC && AC.decodeAudioData && window.Blob && Blob.prototype.arrayBuffer) { var td = performance.now(), mine = url; new Blob(chunks).arrayBuffer().then(function (ab) { AC.decodeAudioData(ab, function (b) { if (url === mine) { mineBuf = b; dbg('my voice ready (decoded in ' + ms(td) + ')'); } }, function () { dbg('my voice could not be decoded: it will play from the file'); }); }); } }
-          else if (!gone) msg.textContent = 'I did not hear anything. Tap 🎤 and try again.';
-          show();
-        };
+        takeType = type || ''; mr.onstop = finishTake;
         mr.start();
       } catch (e) { return fail('This browser cannot record.'); }
       state = 'rec'; msg.textContent = 'Say it now! Tap ⏹ when you are done.' + (took > 900 ? ' (the microphone needed ' + (Math.round(took / 100) / 10) + ' s to start)' : ''); show(); dbg('recording ' + sessionInfo());
       timer = setTimeout(stopRec, 10000);   // never records for ever
     }
     function noMic(err) {
+      clearTimeout(askTimer);
+      if (state !== 'ask') return;
       var n = err && err.name; dbg('microphone refused: ' + n + (err && err.message ? ' - ' + err.message : ''));
       fail(n === 'NotAllowedError' || n === 'SecurityError' ? 'The microphone is off for this page. Ask a grown-up to allow it (aA, Website Settings, Microphone), then reload the page.'
         : n === 'NotFoundError' || n === 'NotReadableError' ? 'The microphone is busy or missing. Close other apps and try again.' : 'Could not start the microphone (' + (n || 'unknown') + ').');
@@ -1829,11 +1850,12 @@ function recorder() {   // returns { recB, playB, msg, dispose, active, stop, st
     if (playing) { stopMine(); show(); return; }   // a second tap stops it
     if (!url || state !== 'idle') return;
     var t0 = performance.now(); unlockSound(); cutSound(); stopMine();
-    if (mineBuf && AC) {   // through the same sound system as the model voice: it starts at once
+    if (mineBuf && AC && AC.state === 'running') {   // through the same sound system as the model voice: it starts at once (not while it is asleep: then the file is played)
       try {
         var n = AC.createBufferSource(); n.buffer = mineBuf; n.connect(AC.destination);
         n.onended = function () { if (mineNode === n) { mineNode = null; playing = false; show(); } };
-        mineNode = n; n.start(0); playing = true; show(); dbg('my voice started after ' + ms(t0) + ' (sound ' + AC.state + ')'); return;
+        mineNode = n; n.start(0); playing = true; show();
+        setTimeout(function () { if (mineNode === n) { mineNode = null; playing = false; show(); } }, (mineBuf.duration + 1) * 1000);   // never stuck on Playing dbg('my voice started after ' + ms(t0) + ' (sound ' + AC.state + ')'); return;
       } catch (e) { mineNode = null; }
     }
     if (!audio) { audio = new Audio(); audio.src = url; }
@@ -1845,7 +1867,7 @@ function recorder() {   // returns { recB, playB, msg, dispose, active, stop, st
   };
   show();
   return { recB: recB, playB: playB, msg: msg, active: function () { return state !== 'idle'; }, stop: stopRec, stopMine: stopMine,
-    dispose: function () { gone = true; RECORDING = false; mineBuf = null; try { if (mr && mr.state !== 'inactive') { mr.onstop = null; mr.stop(); } } catch (e) {} release(); stopMine(); if (url) URL.revokeObjectURL(url); url = null; } };
+    dispose: function () { gone = true; mineBuf = null; if (mr) { mr.onstop = null; mr.ondataavailable = null; try { if (mr.state !== 'inactive') mr.stop(); } catch (e) {} } finished = true; release(); stopMine(); if (url) URL.revokeObjectURL(url); url = null; } };
 }
 document.addEventListener('visibilitychange', function () { if (document.hidden) { if (curRec && curRec.active()) curRec.stop(); dropMic(); } });   // leaving the app ends a recording
 function learn(D, S, si, sn, done) {   // five cards: the picture and the English on the left, the sentence on the right (tap a character to write it)
@@ -1863,7 +1885,6 @@ function learn(D, S, si, sn, done) {   // five cards: the picture and the Englis
     warmMic();
     if (recSupported()) { var rec = recorder(); curRec = rec; sr.appendChild(rec.recB); sr.appendChild(rec.playB); rc.appendChild(rec.msg); }   // record me / my voice, next to listen again
     var r = E('div', 'row learnnav dock');
-    r.appendChild(E('p', 'sayit2', 'Now say it yourself! Tap 🎤 to record it. <span class="han nopoly">听完，自己跟着说一遍</span>'));   // the child says it, after hearing it
     var nb = E('button', 'btn', 'I said it ▶'); nb.type = 'button'; nb.appendChild(document.createTextNode(' ')); nb.appendChild(E('span', 'han nopoly', '我说了'));
     nb.onclick = function () { afterVoice(function () { i++; if (i < n) card(); else done(); }, nb); };
     if (i > 0) { var bk = E('button', 'btn ghost', '◀ Back'); bk.type = 'button'; bk.onclick = function () { afterVoice(function () { i--; card(); }, bk); }; r.appendChild(bk); }
@@ -1923,7 +1944,7 @@ function menu() {
   WEEKS.forEach(function (W) {
     app.appendChild(E('h3', 'weekh', W.title + ' <span class="han nopoly">' + W.zh + '</span>'));
     var ls = E('div', 'levels');
-    W.days.concat([W.review]).forEach(function (D) {
+    W.days.concat(W.review ? [W.review] : []).forEach(function (D) {
       var d = save.days[D.id], b = E('button', 'lv' + (d ? ' done' : '')); b.type = 'button';
       b.appendChild(E('span', 'n', d ? '✓' : D.e));
       var t = E('div'); t.appendChild(E('h3', null, D.title + ' <span class="han nopoly">' + D.zh + '</span>'));
@@ -2001,7 +2022,7 @@ function polyOpen(ch) {   // the box: every reading of the character, with words
   box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', ch + ': all readings');
   var x = E('button', 'ask-x', '✕'); x.type = 'button'; x.setAttribute('aria-label', 'Close');
   var shut = function () { navAt = Date.now(); o.remove(); document.removeEventListener('keydown', esc, true); };   // navAt: a double tap must not also tap what is under the cross
-  var esc = function (e) { if (e.key === 'Escape') shut(); };
+  var esc = function (e) { if (!o.isConnected) { document.removeEventListener('keydown', esc, true); return; } if (e.key === 'Escape') shut(); };
   x.onclick = shut; o.onclick = function (e) { if (e.target === o) shut(); }; document.addEventListener('keydown', esc, true);   // the cross, a tap beside the box, or Esc
   box.appendChild(x);
   box.appendChild(E('div', 'pbig han', ch));
