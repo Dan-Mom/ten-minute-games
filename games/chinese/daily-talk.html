@@ -881,7 +881,7 @@ button{-webkit-appearance:none;appearance:none}
   .big .btn{font-size:26px;min-height:64px}
   .big .bigspeak{min-width:76px;min-height:76px;font-size:36px}
 }
-@media (min-width:600px){.big .panel{min-height:calc(100vh - 300px);min-height:calc(100dvh - 300px)}}   /* the row of back buttons above takes some of the screen */
+@media (min-width:600px){.big .panel{min-height:calc(100vh - 330px);min-height:calc(100dvh - 330px)}}   /* the row of back buttons above takes some of the screen */
 @media (min-width:800px) and (max-height:860px){
   .big .panel{padding-top:10px;padding-bottom:12px}
   .big .sentline{font-size:70px;margin-bottom:4px}
@@ -977,6 +977,21 @@ button{-webkit-appearance:none;appearance:none}
 @media (min-width:700px){.big .hintslot{font-size:60px}.big .hintbtn{min-height:60px;font-size:24px}}
 @media (min-width:700px) and (max-height:800px){.big .hintslot{font-size:46px}.big .hintbtn{min-height:50px;font-size:20px}}
 @media (max-width:480px){.hintslot{font-size:34px}}
+/* the tabs of a day */
+.daytabs{display:none;gap:8px;flex-wrap:wrap;width:100%;max-width:1280px;margin:0 auto;padding:8px 16px 0}
+.daytabs.on{display:flex}
+.daytab{min-height:48px;padding:0 18px;border:3px solid var(--blue-s);background:#fff;color:var(--blue-d);border-radius:14px;font:800 19px var(--display);white-space:nowrap;box-shadow:0 3px 0 var(--blue-s)}
+.daytab.cur{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 3px 0 var(--blue-d)}
+.daytab.done::after{content:" ✓";color:var(--green)}
+.daytab.cur.done::after{color:#fff}
+@media (min-width:700px) and (max-height:800px){.daytabs{padding-top:5px}.daytab{min-height:42px;font-size:17px;padding:0 14px}}
+@media (max-width:480px){.daytab{min-height:42px;font-size:15px;padding:0 10px}}
+.stephead{display:none}   /* the part's name is on its tab */
+.barrow .rnd{font:800 15px var(--display);color:#b3261e;background:#ffe9e7;border-radius:999px;padding:2px 12px;white-space:nowrap}
+@media (min-width:700px){.big .many .tile{min-height:76px;font-size:42px;padding:2px 12px}.big .many .bline{min-height:92px}}
+@media (min-width:700px) and (max-height:860px){.big .many .tile{min-height:66px;font-size:36px}.big .many .bline{min-height:76px}}
+/* an upright iPad (700-799 px wide): the learn card's columns are narrow, so the type is smaller (the code review, 2026-11-22) */
+@media (min-width:700px) and (max-width:799px){.big .learnsent{font-size:64px}.big .learnsent.long{font-size:52px}.big .learnp .bigemoji{font-size:104px}.big .learnp .enq{font-size:32px}}
 </style>
 <style>
 /* Daily Talk: the sentences a family says every day, five a day. Each sentence has a picture, pinyin, English and one "star" character to learn.
@@ -987,6 +1002,7 @@ button{-webkit-appearance:none;appearance:none}
 <body>
 <header class="top"><h1>💬 Daily Talk <span class="han">日常对话</span></h1><span class="pill-slot" data-pill-slot></span><span class="stamps" id="stamps">💰 0¢</span></header>
 <nav class="navrow" aria-label="Where to go"><button class="navbtn" id="lvbtn" type="button">◀ All days <span class="han">全部</span></button><a class="navbtn" id="chbtn" href="../../index.html#chinese">◀ Chinese <span class="han">中文课</span></a><button class="navbtn pybtn" id="pybtn" type="button" aria-pressed="true">Pinyin <span class="han">拼音</span>: on</button></nav>
+<div class="daytabs" id="daytabs" role="tablist" aria-label="Parts of this day"></div>
 <div class="wrap" id="app"></div>
 <script>
 /* ---------- content: every sentence is our own ---------- */
@@ -1296,7 +1312,11 @@ if (!isObj(save)) save = {};
 function store() { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) { /* private mode: progress is just not kept */ } }
 if (!isObj(save.days)) save.days = {}; if (!isObj(save.at)) save.at = {};
 Object.keys(save.days).forEach(function (k) { var s = save.days[k] || {}; save.days[k] = { pts: Math.max(0, +s.pts || 0), of: Math.max(0, +s.of || 0) }; });   // numbers only: they are shown on the page
-Object.keys(save.at).forEach(function (k) { var s = save.at[k] || {}; save.at[k] = { s: Math.max(0, Math.floor(+s.s) || 0), pts: Math.max(0, +s.pts || 0), of: Math.max(0, +s.of || 0) }; });
+Object.keys(save.at).forEach(function (k) {
+  var s = save.at[k] || {}, sp = {};
+  if (isObj(s.sp)) Object.keys(s.sp).forEach(function (q) { var v = s.sp[q] || {}; sp[String(q).slice(0, 12)] = { pts: Math.max(0, +v.pts || 0), of: Math.max(0, +v.of || 0) }; });   // the result of each part of the day (numbers only)
+  save.at[k] = { s: Math.max(0, Math.floor(+s.s) || 0), pts: Math.max(0, +s.pts || 0), of: Math.max(0, +s.of || 0), sp: sp };
+});
 var UNIT = '¢', LADDER = [1, 0.5, 0.25, 0.1];
 function worth(round) { return LADDER[round - 1] || 0; }
 function fmt(x) { return String(Math.round(x * 100) / 100); }
@@ -1308,6 +1328,7 @@ showTotal();
 function setPinyin(on, keep) { save.nopy = !on; if (!keep) store(); document.body.classList.toggle('nopy', !on); var b = document.getElementById('pybtn'); if (b) { b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.innerHTML = 'Pinyin <span class="han nopoly">拼音</span>: ' + (on ? 'on' : 'off'); } }
 document.body.classList.toggle('nopy', !!save.nopy);
 (function () { var b = document.getElementById('pybtn'); if (b) { b.onclick = function () { setPinyin(!!save.nopy); }; setPinyin(!save.nopy, true); } })();   // at load nothing is written: the account script must not see a change that is not one
+function cutSound() { sayTok++; if (voiceDone) voiceDone(); stopSound(); if (pendBtn) pendBtn.classList.remove('waiting'); pending = pendBtn = null; }   // stops what is said now, and what waits to be said
 function sayThen(a, b, alive) {   // say a, and when it is over b (the English after the Chinese), unless the child moved on or tapped something else
   say(a);
   if (!b) return;
@@ -1468,6 +1489,7 @@ function qBuild(D, it) {   // tap the pieces in order
     var L = E('div', 'lcol'), R = E('div', 'rcol'); box.appendChild(L); box.appendChild(R);   // two halves on a wide screen: the question left, the answers right
     L.appendChild(txt('p', 'say', 'Build the sentence. Tap the pieces in order.'));
     L.appendChild(enLine(it, 'enq q'));
+    if (units.length >= 5) box.classList.add('many');   // five or more pieces: smaller tiles, so the card still fits
     var line = E('div', 'bline'), tiles = E('div', 'tiles'), put = [], done = false, btns = [];
     function tileHtml(i) { var h = E('span', 'han tl'); h.appendChild(txt('span', 'wp', up[i])); h.appendChild(txt('span', 'wh', units[i])); return h; }
     function redraw() {
@@ -1492,6 +1514,9 @@ function qBuild(D, it) {   // tap the pieces in order
 }
 
 /* ---------- a day: learn the sentences, then the questions ---------- */
+var TABLAB = { learn: '📖 Learn', listen: '👂 Hear', en: '💬 Say', answer: '↩️ Answer', star: '🔤 Find', build: '🧩 Build' };   // the tabs at the top of a day (the owner, 2026-11-22: the child picks the part to do)
+var tabsEl = document.getElementById('daytabs');
+function hideTabs() { if (tabsEl) tabsEl.classList.remove('on'); }
 var STEPS = [
   { key: 'learn', title: 'Learn the sentences', zh: '学句子' },
   { key: 'listen', title: 'Hear it, find the answer', zh: '听一听' },
@@ -1512,33 +1537,67 @@ function questionsOf(D, S) {
   return D.review ? out : shuffle(out);
 }
 function head(D, S, si, sn, k, kn, round, label, frac) {
-  if (curRec) { curRec.dispose(); curRec = null; }   // a recording is dropped when its card is left   // the top of every card: where we are in the day
-  var br = E('div', 'barrow'), bar = E('div', 'bar'); bar.appendChild(E('i')); bar.firstChild.style.width = Math.round(100 * (frac != null ? frac : (si + k / kn) / sn)) + '%'; br.appendChild(bar);
-  br.appendChild(txt('span', 'stepn', label || 'Step ' + (si + 1) + '/' + sn)); app.appendChild(br);
-  var p = E('div', 'stephead'); p.appendChild(document.createTextNode(S.title + ' ')); p.appendChild(E('span', 'han nopoly', S.zh));
-  if (round > 1) p.appendChild(txt('span', 'rnd', worth(round) ? ['', 'Second', 'Third', 'Fourth'][round - 1] + ' try · ' + fmt(worth(round)) + UNIT + ' each' : 'Practice · no cents'));
-  app.appendChild(p);
+  if (curRec) { curRec.dispose(); curRec = null; }   // a recording is dropped when its card is left
+  var f = frac != null ? frac : kn ? k / kn : 0;   // the bar: how far in this part
+  var br = E('div', 'barrow'), bar = E('div', 'bar'); bar.appendChild(E('i')); bar.firstChild.style.width = Math.round(100 * f) + '%'; br.appendChild(bar);
+  if (round > 1) br.appendChild(txt('span', 'rnd', worth(round) ? ['', 'Second', 'Third', 'Fourth'][round - 1] + ' try · ' + fmt(worth(round)) + UNIT + ' each' : 'Practice · no cents'));   // on the bar's own row: no extra row
+  br.appendChild(txt('span', 'stepn', label || 'Question ' + Math.min(k + 1, kn) + '/' + kn)); app.appendChild(br);
 }
 function openDay(D) {
   var at = save.at[D.id], done = save.days[D.id];
   var clear = clearBtn('🗑 Clear this day 清空这一天', D, 'Clear this day? 清空这一天？', 'This erases the score and the tick of this day, as if it had not been played.');
   if (at) return askBox(D.title + ': continue?', 'You stopped this day half way. Continue from where you were, or start the day again?',
-    [['▶ Continue 继续', function () { playDay(D, at.s, at.pts, at.of); }], ['↺ Start over 重新开始', function () { delete save.at[D.id]; store(); playDay(D, 0, 0, 0); }, true], clear]);
+    [['▶ Continue 继续', function () { playDay(D, at.s, at.pts, at.of, at.sp); }], ['↺ Start over 重新开始', function () { delete save.at[D.id]; store(); playDay(D, 0, 0, 0); }, true], clear]);
   if (done) return askBox(D.title + ': play again?', 'You finished this day. Your score now: <b>' + fmt(done.pts) + UNIT + ' of ' + done.of + UNIT + '</b>. Play it again and the new score takes its place, even if it is lower.',
     [['↺ Start over 重新开始', function () { playDay(D, 0, 0, 0); }], clear]);
   playDay(D, 0, 0, 0);
 }
-function playDay(D, from, pts, of) {
-  var steps = stepsOf(D), st = { s: from, pts: pts, of: of }; if (st.s >= steps.length) { st.s = 0; st.pts = 0; st.of = 0; }
+function playDay(D, from, pts, of, sp) {
+  var steps = stepsOf(D), st = { s: from, pts: pts, of: of, sp: {}, base: null, prev: null };
+  if (isObj(sp) && Object.keys(sp).length) st.sp = JSON.parse(JSON.stringify(sp));
+  else if (from > 0 && from < steps.length) steps.slice(0, from).forEach(function (S, i) { st.sp[S.key] = { pts: i === from - 1 ? pts : 0, of: i === from - 1 ? of : 0 }; });   // a save from before the tabs
+  if (st.s >= steps.length || st.s < 0) { st.s = 0; st.sp = {}; }
+  st.pts = 0; st.of = 0; Object.keys(st.sp).forEach(function (k) { st.pts += st.sp[k].pts; st.of += st.sp[k].of; });
   app.classList.add('big');
+  function allDone() { return steps.every(function (S) { return !!st.sp[S.key]; }); }
+  function persist() { var p = 0, o = 0; Object.keys(st.sp).forEach(function (k) { p += st.sp[k].pts; o += st.sp[k].of; }); save.at[D.id] = { s: st.s, pts: p, of: o, sp: JSON.parse(JSON.stringify(st.sp)) }; store(); }
+  function abandon() {   // leaving a part that was not finished: its cents so far are dropped, and an earlier result of it comes back
+    if (st.base) { st.pts = st.base.pts; st.of = st.base.of; if (st.prev) st.sp[steps[st.s].key] = st.prev; }
+    st.base = null; st.prev = null;
+  }
+  function tabs() {
+    if (!tabsEl) return; tabsEl.innerHTML = ''; tabsEl.classList.add('on');
+    steps.forEach(function (S, i) {
+      var b = E('button', 'daytab' + (i === st.s ? ' cur' : '') + (st.sp[S.key] ? ' done' : '')); b.type = 'button'; b.textContent = TABLAB[S.key] || S.title;
+      b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', i === st.s ? 'true' : 'false'); b.setAttribute('aria-label', S.title + ' ' + S.zh + (st.sp[S.key] ? ', done' : ''));
+      b.onclick = function () {   // at once: it stops the voice, it does not wait for it
+        var w = document.querySelector('.writepop, .polybox'); while (w) { w.remove(); w = document.querySelector('.writepop, .polybox'); } curWrite = null;
+        navAt = Date.now(); cutSound(); abandon(); st.s = i; next();
+      };
+      tabsEl.appendChild(b);
+    });
+  }
   function next() {
-    if (st.s >= steps.length) return finishDay();
-    save.at[D.id] = { s: st.s, pts: st.pts, of: st.of }; store();
     var S = steps[st.s];
-    if (S.key === 'learn') learn(D, S, st.s, steps.length, function () { st.s++; next(); });
-    else runQs(D, S, st, steps.length, questionsOf(D, S), 1, function () { st.s++; next(); });
+    st.prev = st.sp[S.key] || null;   // playing a finished part again: its new result replaces the old one
+    if (st.prev) { st.pts -= st.prev.pts; st.of -= st.prev.of; delete st.sp[S.key]; }
+    st.base = { pts: st.pts, of: st.of };
+    persist(); tabs();
+    if (S.key === 'learn') learn(D, S, st.s, steps.length, finishStep);
+    else runQs(D, S, st, steps.length, questionsOf(D, S), 1, finishStep);
+  }
+  function finishStep() {
+    var S = steps[st.s];
+    st.sp[S.key] = { pts: Math.round((st.pts - st.base.pts) * 100) / 100, of: st.of - st.base.of }; st.base = null; st.prev = null;
+    if (allDone()) return finishDay();
+    var j = -1, i;
+    for (i = st.s + 1; i < steps.length; i++) if (!st.sp[steps[i].key]) { j = i; break; }   // on to the next part not done yet
+    if (j < 0) for (i = 0; i < steps.length; i++) if (!st.sp[steps[i].key]) { j = i; break; }
+    st.s = j; next();
   }
   function finishDay() {
+    hideTabs();
+    var p0 = 0, o0 = 0; Object.keys(st.sp).forEach(function (k) { p0 += st.sp[k].pts; o0 += st.sp[k].of; }); st.pts = p0; st.of = o0;
     delete save.at[D.id]; save.days[D.id] = { pts: st.pts, of: st.of }; store(); showTotal();
     app.innerHTML = ''; var p = E('div', 'panel');
     p.appendChild(E('div', 'emoji', '🎉')); p.appendChild(E('h2', null, D.title + ' done!'));
@@ -1741,6 +1800,7 @@ function runQs(D, S, st, sn, qs, round, doneCb) {
 document.getElementById('lvbtn').onclick = function () { afterVoice(menu, this); };
 function menu() {
   if (curRec) { curRec.dispose(); curRec = null; }
+  hideTabs();
   app.classList.remove('big'); app.innerHTML = ''; showTotal();
   var h = E('div', 'hero'); h.appendChild(E('div', 'big', TALK.intro.emoji)); h.appendChild(E('h2', null, TALK.intro.title));
   h.appendChild(E('p', null, 'Five new sentences a day, about ten minutes. Look, listen, say it out loud, then play. Each answer right the first time earns 1¢; a missed one tried again earns 0.5¢, then 0.25¢, then 0.1¢. Tap 🔊 to hear. Tap a grey dotted character to see all its readings.'));
