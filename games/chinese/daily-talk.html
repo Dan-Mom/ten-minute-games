@@ -925,6 +925,26 @@ button{-webkit-appearance:none;appearance:none}
 .big .learnp .bigemoji{font-size:150px}
 .big .learnp .enq{font-size:44px}
 @media (min-width:700px) and (max-height:860px){.big .learnp .bigemoji{font-size:108px}.big .learnsent{font-size:80px}.big .learnsent.long{font-size:62px}.big .learnp .enq{font-size:36px}}
+/* the answer and the Next button stay on the screen (the owner, 2026-11-22: on an iPad with the browser bars showing, Next was below the screen after building a sentence) */
+.dock{position:sticky;bottom:0;z-index:4;background:rgba(255,255,255,.97);margin:6px -12px -12px;padding:4px 12px 12px;border-radius:0 0 22px 22px}
+.dock .fb{margin-top:4px}
+.dock .row{margin-top:4px}
+@media (min-width:700px) and (max-height:800px){   /* a short screen: landscape iPad with the browser bars showing */
+  .navrow{padding-top:6px}.navbtn{min-height:44px;font-size:17px;padding:0 16px}.navbtn.pybtn{font-size:16px}
+  .top{padding-top:6px;padding-bottom:6px}
+  .big .sentline{font-size:56px}.big .learnsent{font-size:64px}.big .learnsent.long{font-size:52px}.big .askline{font-size:46px}
+  .big .bigemoji,.big .learnp .bigemoji{font-size:80px}
+  .big .enq,.big .learnp .enq{font-size:28px}.big .enq.small{font-size:24px}
+  .big .opt.pic{width:112px;height:100px;font-size:60px}.big .opt{width:108px;height:94px;font-size:56px}
+  .big .opt.cn{font-size:34px;min-height:70px}
+  .big .tile{min-height:76px;font-size:40px}.big .bline{min-height:84px}
+  .big .btn{font-size:22px;min-height:54px}.big .learnnav .btn{min-height:54px;font-size:22px}
+  .big .bigspeak{min-width:64px;min-height:64px;font-size:30px}
+  .big .stephead{font-size:19px;margin-bottom:4px}
+  .big .panel{padding-top:8px}
+  .big .say{font-size:18px;margin-bottom:2px}
+}
+.qdock{min-height:100px}   /* room kept for the answer and Next, so the card does not jump when an answer is given */
 </style>
 <style>
 /* Daily Talk: the sentences a family says every day, five a day. Each sentence has a picture, pinyin, English and one "star" character to learn.
@@ -1578,7 +1598,7 @@ function learn(D, S, si, sn, done) {   // five cards: the picture and the Englis
     var sw = E('div', 'sentline learnsent' + (sentOf(it).length >= 7 ? ' long' : '')); sw.setAttribute('data-item', it.id); sw.appendChild(ruby(it, null, true)); rc.appendChild(sw);   // a long sentence is a little smaller so it still fits
     rc.appendChild(E('p', 'tapnote', 'Tap a character to write it ✍️ <span class="han nopoly">点一个字来写</span>'));
     var sr = E('div', 'row sayrow'); sr.appendChild(speakBtn(sentOf(it), true)); sr.appendChild(txt('span', 'sayit', 'Now say it out loud!')); rc.appendChild(sr);
-    var r = E('div', 'row learnnav');
+    var r = E('div', 'row learnnav dock');
     var nb = E('button', 'btn', 'I said it ▶'); nb.type = 'button'; nb.appendChild(document.createTextNode(' ')); nb.appendChild(E('span', 'han nopoly', '我说了'));
     nb.onclick = function () { afterVoice(function () { i++; if (i < n) card(); else done(); }, nb); };
     if (i > 0) { var bk = E('button', 'btn ghost', '◀ Back'); bk.type = 'button'; bk.onclick = function () { afterVoice(function () { i--; card(); }, bk); }; r.appendChild(bk); }
@@ -1595,7 +1615,7 @@ function runQs(D, S, st, sn, qs, round, doneCb) {
     if (k >= qs.length) return end();
     var q = qs[k]; app.innerHTML = '';
     head(D, S, st.s, sn, k, qs.length, round);
-    var panel = E('div', 'panel'), box = E('div', 'qbox two'), fb = E('div', 'fb'), nav = E('div', 'row'); panel.appendChild(box);
+    var panel = E('div', 'panel'), box = E('div', 'qbox two'), fb = E('div', 'fb'), nav = E('div', 'row'), dock = E('div', 'dock qdock'); panel.appendChild(box);
     q.render(box, function (ok, sayText) {
       beepPrep();   // the sound system is woken inside the tap
       if (round === 1) st.of += 1;
@@ -1605,9 +1625,9 @@ function runQs(D, S, st, sn, qs, round, doneCb) {
       afterPaint(function () { beep(ok); setTimeout(function () { if (!panel.isConnected) return; say(sayText); }, 250); });   // not over the next question after a quick Next
       var nb = E('button', 'btn', k + 1 < qs.length ? 'Next ▶' : 'Done ▶'); nb.type = 'button';
       nb.onclick = function () { afterVoice(function () { k++; show(); }, nb); }; nav.appendChild(nb);
-      panel.appendChild(nav);
+      dock.appendChild(nav);
     });
-    panel.appendChild(fb); app.appendChild(panel);
+    dock.appendChild(fb); panel.appendChild(dock); app.appendChild(panel);   // the dock (the answer and Next) stays at the bottom of the screen, even on a short one
     if (q.sayFirst) afterPaint(function () { say(q.sayFirst); });
   }
   function showTotalLive() { var t = total() - (save.days[D.id] ? save.days[D.id].pts : 0) + st.pts; document.getElementById('stamps').textContent = '💰 ' + fmt(t) + UNIT; }
