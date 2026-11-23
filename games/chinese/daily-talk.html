@@ -958,6 +958,18 @@ button{-webkit-appearance:none;appearance:none}
   .big .opt.picopt{min-height:80px}.big .picopt .pe{font-size:50px}.big .picopt .pt{font-size:26px}
 }
 @media (max-width:480px){.opt.picopt{min-height:72px}.picopt .pe{font-size:44px}.picopt .pt{font-size:21px}}
+/* "listen again" is a button with words; the prompt to speak sits with the button that moves on */
+.listenbtn{min-height:52px;font-size:20px}
+.sayit2{flex-basis:100%;margin:0 0 2px;text-align:center;font:800 20px var(--display);color:var(--blue-d)}
+.big .learnnav .sayit2{font-size:22px}
+@media (min-width:700px) and (max-height:800px){.big .listenbtn{min-height:48px;font-size:19px}.big .learnnav .sayit2{font-size:18px}}
+/* record me */
+.sayrow{flex-wrap:wrap;gap:8px}
+.recbtn,.recplay{min-height:52px;font-size:20px;padding:4px 16px}
+.recbtn.recording{background:#d6246e;border-color:#d6246e;color:#fff;box-shadow:0 5px 0 #9b1550}
+.recplay:disabled{opacity:.4}
+.recmsg{min-height:22px;margin:4px 0 0;font:700 16px/1.3 var(--body);color:var(--mute);text-align:center}
+@media (min-width:700px) and (max-height:800px){.big .recbtn,.big .recplay,.big .listenbtn{min-height:46px;font-size:17px;padding:2px 12px}.recmsg{font-size:14px;min-height:18px;margin-top:2px}}
 </style>
 <style>
 /* Daily Talk: the sentences a family says every day, five a day. Each sentence has a picture, pinyin, English and one "star" character to learn.
@@ -1489,7 +1501,8 @@ function questionsOf(D, S) {
   items.forEach(function (it) { out.push(S.key === 'listen' ? qListen(D, it) : S.key === 'en' ? qEn(D, it) : S.key === 'star' ? qStar(D, it) : qBuild(D, it)); });
   return D.review ? out : shuffle(out);
 }
-function head(D, S, si, sn, k, kn, round, label, frac) {   // the top of every card: where we are in the day
+function head(D, S, si, sn, k, kn, round, label, frac) {
+  if (curRec) { curRec.dispose(); curRec = null; }   // a recording is dropped when its card is left   // the top of every card: where we are in the day
   var br = E('div', 'barrow'), bar = E('div', 'bar'); bar.appendChild(E('i')); bar.firstChild.style.width = Math.round(100 * (frac != null ? frac : (si + k / kn) / sn)) + '%'; br.appendChild(bar);
   br.appendChild(txt('span', 'stepn', label || 'Step ' + (si + 1) + '/' + sn)); app.appendChild(br);
   var p = E('div', 'stephead'); p.appendChild(document.createTextNode(S.title + ' ')); p.appendChild(E('span', 'han nopoly', S.zh));
@@ -1611,6 +1624,49 @@ document.addEventListener('click', function (e) {   // before the grey-character
   writePopup(q.getAttribute('data-c'), byId(it.getAttribute('data-item')), +q.getAttribute('data-n'));
 }, true);
 document.addEventListener('keydown', function (e) { if ((e.key === 'Enter' || e.key === ' ') && e.target && e.target.classList && e.target.classList.contains('wch')) { e.preventDefault(); e.target.click(); } }, true);
+/* "Record me" (the owner, 2026-11-22): the child says the sentence after hearing it, the voice is recorded, and the child plays it back to compare with the model.
+   The recording lives only in this page's memory (never saved, never sent anywhere) and is dropped when the card is left. */
+var curRec = null;
+function recSupported() { return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder); }
+function recorder() {   // returns { recB, playB, msg, dispose }
+  var recB = E('button', 'btn ghost recbtn'), playB = E('button', 'btn ghost recplay', '▶ My voice'), msg = E('p', 'recmsg', 'Your voice is not saved or sent anywhere.');
+  recB.type = playB.type = 'button'; playB.disabled = true; playB.setAttribute('aria-label', 'Play my voice 我的声音');
+  var stream = null, mr = null, chunks = [], url = null, audio = null, timer = 0, state = 'idle', gone = false;
+  function show() { recB.textContent = state === 'rec' ? '⏹ Stop' : '🎤 Record me'; recB.setAttribute('aria-label', state === 'rec' ? 'Stop 停止' : 'Record me 跟读录音'); recB.classList.toggle('recording', state === 'rec'); playB.disabled = !url || state === 'rec'; }
+  function release() {   // let go of the microphone, and give iPad its normal sound back
+    clearTimeout(timer);
+    if (stream) { stream.getTracks().forEach(function (k) { try { k.stop(); } catch (e) {} }); stream = null; }
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+  }
+  function stopRec() { try { if (mr && mr.state !== 'inactive') mr.stop(); } catch (e) {} }
+  recB.onclick = function () {
+    unlockSound();
+    if (state === 'rec') return stopRec();
+    stopSound(); if (audio) try { audio.pause(); } catch (e) {}
+    try { if (navigator.audioSession) navigator.audioSession.type = 'play-and-record'; } catch (e) {}
+    msg.textContent = '';
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (s) {
+      if (gone || !recB.isConnected) { s.getTracks().forEach(function (k) { k.stop(); }); return; }
+      stream = s; chunks = [];
+      var type = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg'].filter(function (m) { return window.MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m); })[0];
+      try { mr = type ? new MediaRecorder(s, { mimeType: type }) : new MediaRecorder(s); } catch (e) { release(); msg.textContent = 'This browser cannot record.'; return; }
+      mr.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
+      mr.onstop = function () {
+        release(); state = 'idle';
+        if (!gone && chunks.length) { if (url) URL.revokeObjectURL(url); url = URL.createObjectURL(new Blob(chunks, { type: mr.mimeType || type || 'audio/mp4' })); msg.textContent = 'Tap ▶ to hear yourself, then 🔊 to hear the model.'; }
+        show();
+      };
+      mr.start(); state = 'rec'; msg.textContent = 'Say it now! Tap ⏹ when you are done.'; show();
+      timer = setTimeout(stopRec, 10000);   // never records for ever
+    }, function () { release(); state = 'idle'; msg.textContent = 'The microphone is off. Ask a grown-up to allow it for this page.'; show(); });
+  };
+  playB.onclick = function () {
+    if (!url) return; unlockSound(); stopSound(); if (audio) try { audio.pause(); } catch (e) {}
+    audio = new Audio(url); var p = audio.play(); if (p && p.catch) p.catch(function () { msg.textContent = 'Could not play it.'; });
+  };
+  show();
+  return { recB: recB, playB: playB, msg: msg, dispose: function () { gone = true; release(); try { if (mr && mr.state !== 'inactive') { mr.onstop = null; mr.stop(); } } catch (e) {} if (audio) try { audio.pause(); } catch (e) {} if (url) URL.revokeObjectURL(url); url = null; } };
+}
 function learn(D, S, si, sn, done) {   // five cards: the picture and the English on the left, the sentence on the right (tap a character to write it)
   var i = 0, n = D.items.length;
   function card() {
@@ -1621,8 +1677,11 @@ function learn(D, S, si, sn, done) {   // five cards: the picture and the Englis
     lc.appendChild(enLine(it, 'enq'));
     var sw = E('div', 'sentline learnsent' + (sentOf(it).length >= 7 ? ' long' : '')); sw.setAttribute('data-item', it.id); sw.appendChild(ruby(it, null, true)); rc.appendChild(sw);   // a long sentence is a little smaller so it still fits
     rc.appendChild(E('p', 'tapnote', 'Tap a character to write it ✍️ <span class="han nopoly">点一个字来写</span>'));
-    var sr = E('div', 'row sayrow'); sr.appendChild(speakBtn(sentOf(it), true, it.en)); sr.appendChild(txt('span', 'sayit', 'Now say it out loud!')); rc.appendChild(sr);
+    var sr = E('div', 'row sayrow'), lb = E('button', 'btn ghost listenbtn', '🔊 Listen again'); lb.setAttribute('aria-label', 'Listen again 再听一遍'); lb.type = 'button';   // the speaker only plays the sentence: it says so (the owner, 2026-11-22: "say it out loud" next to it was misleading)
+    lb.onclick = function () { unlockSound(); sayThen(sentOf(it), it.en, function () { return lb.isConnected; }); }; sr.appendChild(lb); rc.appendChild(sr);
+    if (recSupported()) { var rec = recorder(); curRec = rec; sr.appendChild(rec.recB); sr.appendChild(rec.playB); rc.appendChild(rec.msg); }   // record me / my voice, next to listen again
     var r = E('div', 'row learnnav dock');
+    r.appendChild(E('p', 'sayit2', 'Now say it yourself! Tap 🎤 to record it. <span class="han nopoly">听完，自己跟着说一遍</span>'));   // the child says it, after hearing it
     var nb = E('button', 'btn', 'I said it ▶'); nb.type = 'button'; nb.appendChild(document.createTextNode(' ')); nb.appendChild(E('span', 'han nopoly', '我说了'));
     nb.onclick = function () { afterVoice(function () { i++; if (i < n) card(); else done(); }, nb); };
     if (i > 0) { var bk = E('button', 'btn ghost', '◀ Back'); bk.type = 'button'; bk.onclick = function () { afterVoice(function () { i--; card(); }, bk); }; r.appendChild(bk); }
@@ -1671,6 +1730,7 @@ function runQs(D, S, st, sn, qs, round, doneCb) {
 /* ---------- the menu ---------- */
 document.getElementById('lvbtn').onclick = function () { afterVoice(menu, this); };
 function menu() {
+  if (curRec) { curRec.dispose(); curRec = null; }
   app.classList.remove('big'); app.innerHTML = ''; showTotal();
   var h = E('div', 'hero'); h.appendChild(E('div', 'big', TALK.intro.emoji)); h.appendChild(E('h2', null, TALK.intro.title));
   h.appendChild(E('p', null, 'Five new sentences a day, about ten minutes. Look, listen, say it out loud, then play. Each answer right the first time earns 1¢; a missed one tried again earns 0.5¢, then 0.25¢, then 0.1¢. Tap 🔊 to hear. Tap a grey dotted character to see all its readings.'));
