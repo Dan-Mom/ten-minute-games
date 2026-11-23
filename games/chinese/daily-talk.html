@@ -1002,6 +1002,9 @@ button{-webkit-appearance:none;appearance:none}
 .tzg,.tzg *{touch-action:none}
 .writepop{overscroll-behavior:contain}
 @media (min-width:700px) and (max-height:800px){.big .learnsent{font-size:64px}.big .learnsent.long{font-size:52px}.big .learnp .bigemoji{font-size:80px}.big .learnp .enq{font-size:28px}}
+.recbtn.starting{background:#fff3cd;border-color:#e8a317;color:#7a5200;box-shadow:0 5px 0 #e8a317;animation:pulse 1s ease-in-out infinite alternate}
+@keyframes pulse{from{opacity:1}to{opacity:.65}}
+@media (prefers-reduced-motion:reduce){.recbtn.starting{animation:none}}
 </style>
 <style>
 /* Daily Talk: the sentences a family says every day, five a day. Each sentence has a picture, pinyin, English and one "star" character to learn.
@@ -1740,10 +1743,11 @@ function recSupported() { return !!(navigator.mediaDevices && navigator.mediaDev
 function recorder() {   // returns { recB, playB, msg, dispose, active, stop, stopMine }
   var recB = E('button', 'btn ghost recbtn'), playB = E('button', 'btn ghost recplay', '▶ My voice'), msg = E('p', 'recmsg', 'Your voice is not saved or sent anywhere.');
   recB.type = playB.type = 'button'; playB.disabled = true; playB.setAttribute('aria-label', 'Play my voice 我的声音');
-  var stream = null, mr = null, chunks = [], url = null, audio = null, timer = 0, state = 'idle', gone = false, playing = false;   // state: idle, ask (waiting for the microphone), rec
+  var stream = null, mr = null, chunks = [], url = null, audio = null, timer = 0, state = 'idle', gone = false, playing = false, mineBuf = null, mineNode = null, tTap = 0, tStop = 0;
+  function ms(t0) { return Math.round(performance.now() - t0) + ' ms'; }   // state: idle, ask (waiting for the microphone), rec
   function show() {
-    recB.textContent = { idle: '🎤 Record me', ask: '🎤 Starting…', rec: '⏹ Stop', stopping: '⏳ Saving…' }[state] || '🎤 Record me';
-    recB.setAttribute('aria-label', state === 'rec' ? 'Stop 停止' : 'Record me 跟读录音'); recB.classList.toggle('recording', state === 'rec'); recB.disabled = state === 'ask' || state === 'stopping';
+    recB.textContent = { idle: '🎤 Record me', ask: '🎤 Getting ready…', rec: '⏹ Stop', stopping: '⏳ Saving…' }[state] || '🎤 Record me';
+    recB.setAttribute('aria-label', state === 'rec' ? 'Stop 停止' : 'Record me 跟读录音'); recB.classList.toggle('recording', state === 'rec'); recB.classList.toggle('starting', state === 'ask'); recB.disabled = state === 'ask' || state === 'stopping';
     playB.textContent = playing ? '⏸ Playing…' : '▶ My voice'; playB.disabled = !url || state !== 'idle';
   }
   function release() {   // let go of the microphone, and give iPad its normal sound back
@@ -1751,19 +1755,28 @@ function recorder() {   // returns { recB, playB, msg, dispose, active, stop, st
     if (stream) { stream.getTracks().forEach(function (k) { try { k.stop(); } catch (e) {} }); stream = null; }
     RECORDING = false; reviveSound();
   }
-  function stopRec() { try { if (mr && mr.state !== 'inactive') { state = 'stopping'; show(); mr.stop(); } } catch (e) {} }   // the button says so at once; the recording is finished a moment later
-  function stopMine() { if (audio) { try { audio.pause(); } catch (e) {} } playing = false; }
+  function stopRec() { try { if (mr && mr.state !== 'inactive') { state = 'stopping'; show(); tStop = performance.now(); mr.stop(); } } catch (e) {} }   // the button says so at once; the recording is finished a moment later
+  function stopMine() {
+    if (mineNode) { var n = mineNode; mineNode = null; try { n.onended = null; n.stop(0); } catch (e) {} }
+    if (audio) { try { audio.pause(); } catch (e) {} }
+    playing = false;
+  }
   function fail(text) { release(); state = 'idle'; msg.textContent = text; show(); }
   recB.onclick = function () {
     if (state === 'ask' || state === 'stopping') return;   // a second tap while Safari is asking must not open a second microphone
     unlockSound();
     if (state === 'rec') return stopRec();
-    cutSound(); stopMine();
+    cutSound(); stopMine(); tTap = performance.now();
     state = 'ask'; RECORDING = true; show();
-    try { if (navigator.audioSession) navigator.audioSession.type = 'play-and-record'; } catch (e) {}
     if (!recSupported()) return fail('This browser cannot record.');
-    msg.textContent = 'Tap Allow if Safari asks. Your voice is not saved or sent.';
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (s) {
+    msg.textContent = 'Getting the microphone ready… wait for the red button. (Tap Allow if Safari asks.)';
+    setTimeout(function () {   // after the button has been drawn: opening the microphone can hold the page for a moment
+      if (state !== 'ask') return;
+      // no echo cancelling, noise cutting or automatic gain: iPad then opens the plain microphone, which starts faster and does not turn the other sounds down
+      navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }).then(gotMic, noMic);
+    }, 30);
+    function gotMic(s) {
+      dbg('microphone ready after ' + ms(tTap));
       if (gone || !recB.isConnected) { s.getTracks().forEach(function (k) { k.stop(); }); state = 'idle'; release(); return; }
       if (stream) stream.getTracks().forEach(function (k) { try { k.stop(); } catch (e) {} });
       stream = s; chunks = [];
@@ -1773,9 +1786,10 @@ function recorder() {   // returns { recB, playB, msg, dispose, active, stop, st
         mr = type ? new MediaRecorder(s, { mimeType: type }) : new MediaRecorder(s);
         mr.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
         mr.onstop = function () {
-          release(); state = 'idle';
+          dbg('recording saved after ' + ms(tStop)); release(); state = 'idle'; mineBuf = null;
           if (!gone && chunks.length) { if (url) URL.revokeObjectURL(url); url = URL.createObjectURL(new Blob(chunks, { type: mr.mimeType || type || 'audio/mp4' })); audio = new Audio(); audio.preload = 'auto'; audio.src = url; audio.onended = audio.onpause = function () { playing = false; show(); }; try { audio.load(); } catch (e) {}   // ready before the tap
-          msg.textContent = 'Tap ▶ to hear yourself, then 🔊 to hear the model.'; }
+          msg.textContent = 'Tap ▶ to hear yourself, then 🔊 to hear the model.';
+          if (AC && AC.decodeAudioData && window.Blob && Blob.prototype.arrayBuffer) { var td = performance.now(), mine = url; new Blob(chunks).arrayBuffer().then(function (ab) { AC.decodeAudioData(ab, function (b) { if (url === mine) { mineBuf = b; dbg('my voice ready (decoded in ' + ms(td) + ')'); } }, function () { dbg('my voice could not be decoded: it will play from the file'); }); }); } }
           else if (!gone) msg.textContent = 'I did not hear anything. Tap 🎤 and try again.';
           show();
         };
@@ -1783,23 +1797,34 @@ function recorder() {   // returns { recB, playB, msg, dispose, active, stop, st
       } catch (e) { return fail('This browser cannot record.'); }
       state = 'rec'; msg.textContent = 'Say it now! Tap ⏹ when you are done.'; show(); dbg('recording ' + sessionInfo());
       timer = setTimeout(stopRec, 10000);   // never records for ever
-    }, function (err) {
+    }
+    function noMic(err) {
       var n = err && err.name;
       fail(n === 'NotAllowedError' || n === 'SecurityError' ? 'The microphone is off for this page. Ask a grown-up to allow it (aA, Website Settings, Microphone), then reload the page.'
         : n === 'NotFoundError' || n === 'NotReadableError' ? 'The microphone is busy or missing. Close other apps and try again.' : 'Could not start the microphone.');
-    });
+    }
   };
   playB.onclick = function () {
     if (playing) { stopMine(); show(); return; }   // a second tap stops it
-    if (!url || state !== 'idle') return; unlockSound(); cutSound(); stopMine();
-    if (!audio) { audio = new Audio(); audio.src = url; audio.onended = audio.onpause = function () { playing = false; show(); }; }
+    if (!url || state !== 'idle') return;
+    var t0 = performance.now(); unlockSound(); cutSound(); stopMine();
+    if (mineBuf && AC) {   // through the same sound system as the model voice: it starts at once
+      try {
+        var n = AC.createBufferSource(); n.buffer = mineBuf; n.connect(AC.destination);
+        n.onended = function () { if (mineNode === n) { mineNode = null; playing = false; show(); } };
+        mineNode = n; n.start(0); playing = true; show(); dbg('my voice started after ' + ms(t0) + ' (sound ' + AC.state + ')'); return;
+      } catch (e) { mineNode = null; }
+    }
+    if (!audio) { audio = new Audio(); audio.src = url; }
+    audio.onended = audio.onpause = function () { playing = false; show(); };
     try { audio.currentTime = 0; } catch (e) {}
     playing = true; show();   // the button changes at once
     var p = audio.play(); if (p && p.catch) p.catch(function () { playing = false; msg.textContent = 'Could not play it.'; show(); });
+    dbg('my voice played from the file, asked after ' + ms(t0));
   };
   show();
   return { recB: recB, playB: playB, msg: msg, active: function () { return state !== 'idle'; }, stop: stopRec, stopMine: stopMine,
-    dispose: function () { gone = true; RECORDING = false; try { if (mr && mr.state !== 'inactive') { mr.onstop = null; mr.stop(); } } catch (e) {} release(); stopMine(); if (url) URL.revokeObjectURL(url); url = null; } };
+    dispose: function () { gone = true; RECORDING = false; mineBuf = null; try { if (mr && mr.state !== 'inactive') { mr.onstop = null; mr.stop(); } } catch (e) {} release(); stopMine(); if (url) URL.revokeObjectURL(url); url = null; } };
 }
 document.addEventListener('visibilitychange', function () { if (document.hidden && curRec && curRec.active()) curRec.stop(); });   // leaving the app ends a recording
 function learn(D, S, si, sn, done) {   // five cards: the picture and the English on the left, the sentence on the right (tap a character to write it)
