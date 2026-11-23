@@ -1142,7 +1142,9 @@ function speaking() {   // is a recording still being said? (an interrupted or p
   if (srcNode) return !!AC && AC.state === 'running';
   return !!player && !player.paused && !player.ended;
 }
+var sayTok = 0;   // goes up with every say(): a line waiting its turn (the English after the Chinese) is dropped when something else was said meanwhile
 function say(t) {
+  sayTok++;
   if (voiceDone) voiceDone();                   // the one before is over (cut off by this one)
   stopSound();
   var k = vkey(t);
@@ -1274,6 +1276,15 @@ showTotal();
 function setPinyin(on, keep) { save.nopy = !on; if (!keep) store(); document.body.classList.toggle('nopy', !on); var b = document.getElementById('pybtn'); if (b) { b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.innerHTML = 'Pinyin <span class="han nopoly">拼音</span>: ' + (on ? 'on' : 'off'); } }
 document.body.classList.toggle('nopy', !!save.nopy);
 (function () { var b = document.getElementById('pybtn'); if (b) { b.onclick = function () { setPinyin(!!save.nopy); }; setPinyin(!save.nopy, true); } })();   // at load nothing is written: the account script must not see a change that is not one
+function sayThen(a, b, alive) {   // say a, and when it is over b (the English after the Chinese), unless the child moved on or tapped something else
+  say(a);
+  if (!b) return;
+  var my = sayTok, w = voiceWait;
+  if (w) w.then(function () { if (my === sayTok && (!alive || alive())) say(b); });
+}
+function enLine(it, cls) {   // the English of a sentence: tap it to hear it again (the English is read out too: the owner, 2026-11-22)
+  var e = txt('div', cls, cls.indexOf('small') >= 0 ? '“' + it.en + '”' : it.en); e.onclick = function () { unlockSound(); say(it.en); }; e.style.cursor = 'pointer'; return e;
+}
 function txt(tag, cls, t) { var e = E(tag, cls); e.textContent = t; return e; }   // plain text from the data, never read as HTML
 
 /* ---------- the data: weeks, days, sentences ---------- */
@@ -1328,7 +1339,7 @@ function ruby(it, blank, tap) {   // the sentence with its pinyin over every wor
   if (it.end) { var last = s.lastChild, nb = E('span', 'nbw'); s.replaceChild(nb, last); nb.appendChild(last); nb.appendChild(txt('span', 'wend', it.end)); }   // the mark never wraps alone
   return s;
 }
-function speakBtn(t, big) { var b = E('button', 'speak' + (big ? ' bigspeak' : ''), '🔊'); b.type = 'button'; b.setAttribute('aria-label', 'Listen'); b.onclick = function () { unlockSound(); say(t); }; return b; }   // a tap is always a valid moment to wake the sound (iPad)
+function speakBtn(t, big, en) { var b = E('button', 'speak' + (big ? ' bigspeak' : ''), '🔊'); b.type = 'button'; b.setAttribute('aria-label', 'Listen'); b.onclick = function () { unlockSound(); if (en) sayThen(t, en, function () { return b.isConnected; }); else say(t); }; return b; }   // a tap is always a valid moment to wake the sound (iPad)
 function pick2(from, exclude) {   // two other sentences, never the one asked about, its partner in a question and answer, or one with the same picture
   var out = [], ban = {}; exclude.forEach(function (x) { ban[x.id] = 1; if (x.e) ban['e' + x.e] = 1; });
   shuffle(from).forEach(function (x) { if (out.length < 2 && !ban[x.id] && !ban['e' + x.e]) out.push(x); });
@@ -1363,10 +1374,10 @@ function qListen(D, it) {   // the voice says a sentence: pick its picture
   } };
 }
 function qEn(D, it) {   // an English line: pick the Chinese sentence
-  return { texts: [sentOf(it)], render: function (box, answer) {
+  return { first: [it.en], texts: [sentOf(it), it.en], render: function (box, answer) {
     var L = E('div', 'lcol'), R = E('div', 'rcol'); box.appendChild(L); box.appendChild(R);   // two halves on a wide screen: the question left, the answers right
     L.appendChild(txt('p', 'say', 'How do you say it in Chinese?'));
-    L.appendChild(txt('div', 'enq', '“' + it.en + '”'));
+    L.appendChild(enLine(it, 'enq q'));
     var opts = E('div', 'opts col'), right = null, done = false;
     shuffle([it].concat(others(D, it, mateOf(D, it)))).forEach(function (x) {
       var b = E('button', 'opt wide cn'); b.type = 'button'; b.appendChild(ruby(x));
@@ -1379,11 +1390,11 @@ function qEn(D, it) {   // an English line: pick the Chinese sentence
 }
 function qAnswer(D, it, p) {   // someone says a sentence: pick the right thing to answer
   var a = byId(p.a), ban = {}; (p.x || []).forEach(function (id) { ban[id] = 1; });
-  return { sayFirst: sentOf(it), texts: [sentOf(it), sentOf(a)], render: function (box, answer) {
+  return { first: [sentOf(it), it.en], texts: [sentOf(it), sentOf(a), it.en], render: function (box, answer) {
     var L = E('div', 'lcol'), R = E('div', 'rcol'); box.appendChild(L); box.appendChild(R);   // two halves on a wide screen: the question left, the answers right
     L.appendChild(txt('p', 'say', 'Someone says this to you. What do you answer?'));
-    var q = E('div', 'askline'); q.appendChild(speakBtn(sentOf(it))); q.appendChild(ruby(it)); L.appendChild(q);
-    L.appendChild(txt('div', 'enq small', '“' + it.en + '”'));
+    var q = E('div', 'askline'); q.appendChild(speakBtn(sentOf(it), false, it.en)); q.appendChild(ruby(it)); L.appendChild(q);
+    L.appendChild(enLine(it, 'enq small'));
     var pool = poolOf(D).filter(function (x) { return x !== it && x !== a && !ban[x.id] && x.day !== undefined; }), opts = E('div', 'opts col'), right = null, done = false;
     var wrong = pick2(pool, [it, a].concat(pool.filter(function (x) { return x.e === a.e || x.e === it.e; })));
     shuffle([a].concat(wrong)).forEach(function (x) {
@@ -1397,11 +1408,11 @@ function qAnswer(D, it, p) {   // someone says a sentence: pick the right thing 
 }
 function qStar(D, it) {   // the sentence with its star character hidden: pick the character
   var c = it.star.c;
-  return { texts: [sentOf(it)], render: function (box, answer) {
+  return { first: [it.en], texts: [sentOf(it), it.en], render: function (box, answer) {
     var L = E('div', 'lcol'), R = E('div', 'rcol'); box.appendChild(L); box.appendChild(R);   // two halves on a wide screen: the question left, the answers right
     L.appendChild(E('p', 'say', 'Which character is missing?<span class="pyhelp"> The pinyin helps.</span>'));
     var line = E('div', 'sentline'); var r = ruby(it, c); line.appendChild(r); L.appendChild(line);
-    L.appendChild(txt('div', 'enq small', '“' + it.en + '”'));
+    L.appendChild(enLine(it, 'enq small'));
     var opts = E('div', 'opts'), right = null, done = false;
     shuffle([c].concat(it.no)).forEach(function (x) {
       var b = E('button', 'opt'); b.type = 'button'; b.appendChild(txt('span', 'han nopoly', x));   // nopoly: a grey dotted answer would give itself away
@@ -1418,10 +1429,10 @@ function qStar(D, it) {   // the sentence with its star character hidden: pick t
 }
 function qBuild(D, it) {   // tap the pieces in order
   var units = it.t || it.w, up = it.tp || it.p;
-  return { texts: [sentOf(it)], render: function (box, answer) {
+  return { first: [it.en], texts: [sentOf(it), it.en], render: function (box, answer) {
     var L = E('div', 'lcol'), R = E('div', 'rcol'); box.appendChild(L); box.appendChild(R);   // two halves on a wide screen: the question left, the answers right
     L.appendChild(txt('p', 'say', 'Build the sentence. Tap the pieces in order.'));
-    L.appendChild(txt('div', 'enq', '“' + it.en + '”'));
+    L.appendChild(enLine(it, 'enq q'));
     var line = E('div', 'bline'), tiles = E('div', 'tiles'), put = [], done = false, btns = [];
     function tileHtml(i) { var h = E('span', 'han tl'); h.appendChild(txt('span', 'wp', up[i])); h.appendChild(txt('span', 'wh', units[i])); return h; }
     function redraw() {
@@ -1594,17 +1605,17 @@ function learn(D, S, si, sn, done) {   // five cards: the picture and the Englis
     head(D, S, si, sn, i, n, 1, 'Sentence ' + (i + 1) + '/' + n, (i + 1) / n);   // the bar is the five sentences
     var p = E('div', 'panel learnp'), two = E('div', 'two'), lc = E('div', 'lcol'), rc = E('div', 'rcol'); two.appendChild(lc); two.appendChild(rc); p.appendChild(two);
     lc.appendChild(E('div', 'emoji bigemoji', it.e));
-    lc.appendChild(txt('div', 'enq', it.en));
+    lc.appendChild(enLine(it, 'enq'));
     var sw = E('div', 'sentline learnsent' + (sentOf(it).length >= 7 ? ' long' : '')); sw.setAttribute('data-item', it.id); sw.appendChild(ruby(it, null, true)); rc.appendChild(sw);   // a long sentence is a little smaller so it still fits
     rc.appendChild(E('p', 'tapnote', 'Tap a character to write it ✍️ <span class="han nopoly">点一个字来写</span>'));
-    var sr = E('div', 'row sayrow'); sr.appendChild(speakBtn(sentOf(it), true)); sr.appendChild(txt('span', 'sayit', 'Now say it out loud!')); rc.appendChild(sr);
+    var sr = E('div', 'row sayrow'); sr.appendChild(speakBtn(sentOf(it), true, it.en)); sr.appendChild(txt('span', 'sayit', 'Now say it out loud!')); rc.appendChild(sr);
     var r = E('div', 'row learnnav dock');
     var nb = E('button', 'btn', 'I said it ▶'); nb.type = 'button'; nb.appendChild(document.createTextNode(' ')); nb.appendChild(E('span', 'han nopoly', '我说了'));
     nb.onclick = function () { afterVoice(function () { i++; if (i < n) card(); else done(); }, nb); };
     if (i > 0) { var bk = E('button', 'btn ghost', '◀ Back'); bk.type = 'button'; bk.onclick = function () { afterVoice(function () { i--; card(); }, bk); }; r.appendChild(bk); }
     r.appendChild(nb); p.appendChild(r); app.appendChild(p);
-    warm(D.items.map(sentOf).concat(D.items.reduce(function (a, x) { return a.concat(x.w); }, [])));
-    afterPaint(function () { say(sentOf(it)); });
+    warm(D.items.map(sentOf).concat(D.items.map(function (x) { return x.en; }), D.items.reduce(function (a, x) { return a.concat(x.w); }, [])));
+    afterPaint(function () { sayThen(sentOf(it), it.en, function () { return p.isConnected; }); });   // the Chinese, then the English, so the child can listen without looking
   }
   card();
 }
@@ -1629,6 +1640,7 @@ function runQs(D, S, st, sn, qs, round, doneCb) {
     });
     dock.appendChild(fb); panel.appendChild(dock); app.appendChild(panel);   // the dock (the answer and Next) stays at the bottom of the screen, even on a short one
     if (q.sayFirst) afterPaint(function () { say(q.sayFirst); });
+    if (q.first) afterPaint(function () { sayThen(q.first[0], q.first[1], function () { return panel.isConnected; }); });   // the Chinese, then the English (or just the English)
   }
   function showTotalLive() { var t = total() - (save.days[D.id] ? save.days[D.id].pts : 0) + st.pts; document.getElementById('stamps').textContent = '💰 ' + fmt(t) + UNIT; }
   function end() {
