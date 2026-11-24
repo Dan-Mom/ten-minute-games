@@ -1206,6 +1206,7 @@ function speaking() {   // is a recording still being said? (an interrupted or p
 }
 var sayTok = 0;   // goes up with every say(): a line waiting its turn (the English after the Chinese) is dropped when something else was said meanwhile
 var RECORDING = false, recOwner = null;   // recOwner: the recorder that opened the microphone; a late callback of an older one must not undo it
+var MINE_WEB = false;   // off: "My voice" plays from the recorded file in an <audio> player, as in the version before it was played through Web Audio (the owner heard a big echo with Web Audio, 2026-11-23)
 var KEEP_MIC = false;   // off: the microphone is opened at the tap and let go after each take, as in the version that worked on the iPad (keeping it ready was not confirmed on a real iPad)
 var WARM = null, micOK = false;   // the microphone, kept ready while the learn cards are open (opening it at the tap took seconds on iPad), once this page has been allowed
 try { if (navigator.permissions && navigator.permissions.query) navigator.permissions.query({ name: 'microphone' }).then(function (p) { if (p.state === 'granted') micOK = true; }, function () {}); } catch (e) {}
@@ -1793,7 +1794,7 @@ function recorder() {   // returns { recB, playB, msg, dispose, active, stop, st
       url = URL.createObjectURL(new Blob(chunks, { type: (mr && mr.mimeType) || takeType || 'audio/mp4' }));
       audio = new Audio(); audio.preload = 'auto'; audio.src = url; audio.onended = audio.onpause = function () { playing = false; show(); }; try { audio.load(); } catch (e) {}   // ready before the tap
       msg.textContent = 'Tap ▶ to hear yourself, then 🔊 to hear the model.';
-      if (AC && AC.decodeAudioData && window.Blob && Blob.prototype.arrayBuffer) { var td = performance.now(), mine = url; new Blob(chunks).arrayBuffer().then(function (ab) { AC.decodeAudioData(ab, function (b) { if (url === mine) { mineBuf = b; dbg('my voice ready (decoded in ' + ms(td) + ')'); } }, function () { dbg('my voice could not be decoded: it will play from the file'); }); }); }
+      if (MINE_WEB && AC && AC.decodeAudioData && window.Blob && Blob.prototype.arrayBuffer) { var td = performance.now(), mine = url; new Blob(chunks).arrayBuffer().then(function (ab) { AC.decodeAudioData(ab, function (b) { if (url === mine) { mineBuf = b; dbg('my voice ready (decoded in ' + ms(td) + ')'); } }, function () { dbg('my voice could not be decoded: it will play from the file'); }); }); }
     } else if (!gone) msg.textContent = 'I did not hear anything. Tap 🎤 and try again.';
     show();
   }
@@ -1850,7 +1851,7 @@ function recorder() {   // returns { recB, playB, msg, dispose, active, stop, st
     if (playing) { stopMine(); show(); return; }   // a second tap stops it
     if (!url || state !== 'idle') return;
     var t0 = performance.now(); unlockSound(); cutSound(); stopMine();
-    if (mineBuf && AC && AC.state === 'running') {   // through the same sound system as the model voice: it starts at once (not while it is asleep: then the file is played)
+    if (MINE_WEB && mineBuf && AC && AC.state === 'running') {   // through the same sound system as the model voice: it starts at once (not while it is asleep: then the file is played)
       try {
         var n = AC.createBufferSource(); n.buffer = mineBuf; n.connect(AC.destination);
         n.onended = function () { if (mineNode === n) { mineNode = null; playing = false; show(); } };
