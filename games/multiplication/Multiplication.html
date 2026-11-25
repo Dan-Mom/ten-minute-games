@@ -469,7 +469,6 @@
     --paper:#FBF7EE;
     --ink:#2E2E52;
     --card-shadow: 0 4px 0 rgba(46,46,82,0.18);
-    --lock:#C9C4B6;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
@@ -501,14 +500,7 @@
     background:#fff; border:3px solid var(--ink); border-radius:18px;
     box-shadow:var(--card-shadow);
   }
-  /* ---- HOME ---- */
-  .home-card{ padding:32px 28px; text-align:center; }
-  .home-card p.sub{ font-size:16px; opacity:0.75; margin:6px 0 22px; }
-  select, .name-input{
-    font-family:'Nunito',sans-serif; font-weight:700; font-size:18px;
-    padding:12px 16px; border-radius:12px; border:3px solid var(--ink);
-    width:100%; max-width:340px; background:#fff; color:var(--ink);
-  }
+  /* ---- BUTTONS ---- */
   .btn{
     font-family:'Baloo 2',cursive; font-weight:700; font-size:18px;
     border:3px solid var(--ink); border-radius:14px; padding:12px 26px;
@@ -553,9 +545,28 @@
   .quiz-card{ padding:28px; }
   .quiz-layout{ display:flex; gap:22px; align-items:stretch; }
   .numpad-panel{ flex:0 0 230px; }
+  .blocks-panel{ flex:1.25; min-width:0; text-align:center; display:flex; flex-direction:column; justify-content:center; }
+  .blocks-panel svg{ display:block; width:100%; height:220px; }
+  .blocks-panel .tray{ fill:#FFF6DC; stroke:var(--ink); stroke-width:1; }
+  .blocks-panel .block{ fill:#6EC6E8; stroke:var(--ink); stroke-width:.8; }
+  .blocks-panel text{ font:800 11px 'Nunito',sans-serif; fill:#6B6B85; text-anchor:middle; }
+  .blocks-note{ font-weight:800; font-size:18px; margin-top:8px; }
   .question-panel{ flex:1; text-align:center; display:flex; flex-direction:column; justify-content:center; }
+  @media (max-width:900px){
+    .quiz-card{ padding:20px; }
+    .quiz-layout{ gap:14px; }
+    .numpad-panel{ flex-basis:190px; }
+    .question-panel .question{ font-size:42px; }
+  }
   @media (max-width:680px){
     .quiz-layout{ flex-direction:column-reverse; }
+    .blocks-panel, .question-panel{ flex:none; }
+    .blocks-panel svg{ height:96px; }
+    .blocks-note{ font-size:15px; margin-top:2px; }
+    .question-panel .feedback{ margin-top:6px; }
+    .question-panel .redo-note{ margin-top:0; }
+    .question-panel .question{ margin-bottom:8px; }
+    .question-panel .row{ margin-top:8px; }
     .numpad-panel{ flex:none; width:100%; max-width:320px; margin:0 auto; }
   }
   .numpad{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
@@ -565,14 +576,15 @@
     background:#fff; color:var(--ink); cursor:pointer;
     box-shadow:0 3px 0 rgba(46,46,82,0.25);
   }
+  @media (max-width:680px){ .numpad button{ padding:8px 0; } }
   .numpad button:active{ transform:translateY(2px); box-shadow:0 1px 0 rgba(46,46,82,0.25); }
   .numpad button.clear{ background:#FBD9DC; font-size:16px; }
   .numpad button.back{ background:#FFE8B8; font-size:20px; }
-  .question{ font-family:'Baloo 2',cursive; font-size:clamp(38px,7vw,58px); margin-bottom:20px; }
+  .question{ font-family:'Baloo 2',cursive; font-size:clamp(38px,7vw,58px); margin-bottom:20px; white-space:nowrap; }
   .answer-display{
     font-family:'Baloo 2',cursive; font-size:40px; font-weight:700; letter-spacing:6px;
     min-height:70px; border:3px solid var(--ink); border-radius:14px; background:#fff;
-    display:flex; align-items:center; justify-content:center; margin:0 auto; max-width:220px;
+    display:flex; align-items:center; justify-content:center; margin:0 auto; width:100%; max-width:200px;
   }
   .answer-display.empty{ color:#B8B2A0; }
   .answer-display.correct{ background:#DDF2C8; border-color:#5B8A2B; }
@@ -631,7 +643,6 @@
   @keyframes dz-twinkle{ from{ opacity:.35; } to{ opacity:.65; } }
   .dz-card h2,.dz-card h3{ color:#fff; }
   .dz-card p{ margin:8px 0; line-height:1.45; }
-  .dz-tag{ background:#0E1B4D; color:#fff; border-color:var(--ink); }
   .dz-blue{ color:#7FD6FF; font-weight:800; }
   .dz-pinkt{ color:#FF9CC4; font-weight:800; }
   .dz-trick b{ display:block; }
@@ -847,13 +858,9 @@
   /* who is playing (the Dozen Galaxy app's first screen) */
   .dz-who{ max-width:560px; margin:0 auto; text-align:center; }
   .dz-whogrid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); grid-auto-rows:1fr; gap:10px; margin:14px 0; }
-  .dz-whogrid:empty{ display:none; }
   .dz-whobtn{ min-height:72px; padding:8px; display:flex; align-items:center; justify-content:center; gap:8px; font-family:'Baloo 2',cursive; font-weight:700; font-size:20px; color:#fff; background:#1B2A6B; border:3px solid #8FA2FF; border-radius:14px; cursor:pointer; overflow-wrap:anywhere; touch-action:manipulation; }
   .dz-whobtn:hover{ background:#24369A; }
   .dz-whobtn .e{ font-size:32px; line-height:1; } .dz-whobtn{ flex-direction:column; gap:2px; min-height:104px; white-space:nowrap; } .dz-whobtn small{ font-size:14px; font-weight:700; }
-  .dz-whoform{ margin-top:14px; display:flex; flex-direction:column; gap:10px; align-items:center; }
-  .dz-whoform .name-input{ max-width:320px; }
-  .dz-whomsg{ min-height:22px; margin:0; font-weight:800; color:#FFD0A8; }
   .dz-sr{ position:fixed; left:0; bottom:0; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
   @media (prefers-reduced-motion: reduce){
     .dz-card::before,.dz-avatar,.dz-tray .dz-g-blue,.dz-tray .dz-g-pink,.dz-bigstars .pop{ animation:none !important; }
@@ -877,14 +884,9 @@
 
 <script>
 /* =========================================================
-   CONFIG — edit these two things before publishing
+   CONFIG
    ========================================================= */
-// 1) If the Google Sheet roster can't be reached (offline, or no URL set below),
-//    this fallback list is shown instead. Leave it empty so only names kids
-//    have actually added themselves show up.
-
-// 2) Paste your deployed Google Apps Script Web App URL here (see SETUP.md).
-//    Leave blank ("") to run in local-only mode with no dashboard sync.
+// The Google Apps Script Web App URL (see SETUP.md). Blank ("") = local-only, no dashboard sync; the site build always blanks it.
 const APPS_SCRIPT_URL = "";   /* sync is off in the public copy */
 
 /* =========================================================
@@ -1121,32 +1123,36 @@ function textColorFor(hex){
   const luminance = (0.299*r + 0.587*g + 0.114*b) / 255;
   return luminance < 0.5 ? "#FBF7EE" : "#2E2E52";
 }
+/* Money: every answer right the first time earns 1¢, and the best try at a round counts. Saved progress keeps the older unit, levelPoints (round × 10 for each right answer), so
+   everything a child has already earned counts; only what is shown is in cents. */
+function centsFor(n, points){ return Math.min(QUESTIONS_PER_LEVEL, Math.round((Number(points)||0)/(n*10))); }
+function totalCents(rec){ return Object.keys(rec.levelPoints).reduce((sum,n)=>sum+centsFor(n, rec.levelPoints[n]), 0); }
+function fmtMoney(cents){ return cents < 100 ? cents+"¢" : "$"+(cents/100).toFixed(2); }
 function renderLevels(){
   const app = document.getElementById("app");
   const rec = session.rec;
   const cards = LEVELS.map(lv=>{
     const done = rec.levelBestTimes[lv.n]!=null;
+    const cents = centsFor(lv.n, rec.levelPoints[lv.n]);
     const cls = done ? "lvl-card done" : "lvl-card";
-    const pointsPerCorrect = lv.n * 10;
     const textColor = textColorFor(lv.color);
     const borderColor = textColor === "#FBF7EE" ? "#FBF7EE" : "var(--ink)";
     const inner = `<div><div class="num">${lv.n}</div><div class="label">${lv.label}</div></div>
-         <div class="time">${done ? "best "+fmtTime(rec.levelBestTimes[lv.n])+" · "+(Number(rec.levelPoints[lv.n])||0)+" pts" : pointsPerCorrect+" pts/answer"}</div>`;
+         <div class="time">${done ? "best "+fmtTime(rec.levelBestTimes[lv.n])+" · "+fmtMoney(cents) : cents ? fmtMoney(cents)+" so far" : "up to "+fmtMoney(QUESTIONS_PER_LEVEL)}</div>`;
     return `<div class="${cls}" role="button" tabindex="0" aria-label="Round ${lv.n}, ${lv.label}" style="background:${lv.color}; color:${textColor}; border-color:${borderColor};" data-level="${lv.n}">${inner}</div>`;
   }).join("");
 
   const completedCount = Object.keys(rec.levelBestTimes).length;
   const totalTime = Object.values(rec.levelBestTimes).reduce((a,b)=>a+b,0);
-  const totalPoints = Object.values(rec.levelPoints).reduce((a,b)=>a+b,0);
   app.innerHTML = `
     <div class="levels-header">
       <div class="who">Hi, ${esc(session.name)}! 👋</div>
       <div class="row" style="margin-top:0;">
         <div class="totalpill">${completedCount}/${TOTAL_LEVELS} rounds · ${fmtTime(totalTime)}</div>
-        <div class="totalpill" style="background:#F2A559;color:var(--ink);">⭐ ${totalPoints} pts</div>
+        <div class="totalpill" style="background:#F2A559;color:var(--ink);">💰 ${fmtMoney(totalCents(rec))}</div>
       </div>
     </div>
-    <p class="sub" style="margin:0 0 16px;">Play any round, in any order — higher rounds earn more points per answer.</p>
+    <p class="sub" style="margin:0 0 16px;">Play any round, in any order. Each answer right the first time earns 1¢, and your best try at each round counts.</p>
     ${dzPromoHtml()}
     <div class="grid">${cards}</div>
     <div class="row">
@@ -1203,6 +1209,23 @@ function updateAnswerDisplay(){
   disp.classList.toggle("empty", session.currentAnswer==="");
   if(checkBtn) checkBtn.disabled = session.currentAnswer === "";
 }
+/* The picture of a × b: b groups with a blocks in each (2 × 3 = 3 groups of 2). Each group is one column, so the same
+   picture also reads as a rows of b, which is how Block City shows a × b. */
+function blocksHtml(a, b){
+  const tray = 14, gap = 4, step = 12;                   // in picture units; a block is 10 × 10
+  const w = Math.max(b*(tray+gap)-gap, 0), h = Math.max(a,1)*step+2;   // an empty group (0 blocks) still shows its tray
+  const vw = Math.max(w+2, 92), vh = Math.max(h+2, 76);  // a small fact is not blown up to giant blocks
+  let shapes = b === 0 ? `<text x="0" y="${h/2+4}">no groups</text>` : "";
+  for(let g=0; g<b; g++){
+    const x = g*(tray+gap);
+    shapes += `<rect class="tray" x="${x}" y="0" width="${tray}" height="${h}" rx="3"/>`;
+    for(let k=0; k<a; k++) shapes += `<rect class="block" x="${x+2}" y="${2+k*step}" width="10" height="10" rx="2"/>`;
+  }
+  return `<div class="blocks-panel">
+          <svg viewBox="${(w-vw)/2} ${(h-vh)/2} ${vw} ${vh}" aria-hidden="true">${shapes}</svg>
+          <div class="blocks-note">${b} group${b===1?"":"s"} of ${a}</div>
+        </div>`;
+}
 function renderQuiz(){
   const app = document.getElementById("app");
   const lv = session.level;
@@ -1210,11 +1233,11 @@ function renderQuiz(){
   const answered = total - session.queue.length;
   const pct = Math.min(100, Math.round((answered/total)*100));
   const item = session.queue[0];
-  const roundNote = session.round > 1 ? `Try ${session.round} — practicing what you missed · ` : "";
+  const roundNote = session.round > 1 ? `Try ${session.round} · ` : "";
   const numpadButtons = [7,8,9,4,5,6,1,2,3].map(d=>`<button data-digit="${d}">${d}</button>`).join("");
   app.innerHTML = `
     <div class="quiz-top">
-      <div class="lvl-tag" style="background:${lv.color}; color:${textColorFor(lv.color)};">Round ${lv.n} · ${lv.label} · ${lv.n*10} pts/answer</div>
+      <div class="lvl-tag" style="background:${lv.color}; color:${textColorFor(lv.color)};">Round ${lv.n} · ${lv.label} · up to ${fmtMoney(QUESTIONS_PER_LEVEL)}</div>
       <div class="row" style="margin-top:0; gap:12px;">
         <div class="timer" id="timerBox" style="${hideTimer?"display:none":""}">⏱ <span id="timerVal">${fmtTime(elapsedSec())}</span></div>
         <button class="btn secondary small" id="timerToggle" aria-pressed="${hideTimer}">${hideTimer?"Show timer":"Hide timer"}</button>
@@ -1229,17 +1252,18 @@ function renderQuiz(){
             ${numpadButtons}
             <button class="clear" data-action="clear">Clear</button>
             <button data-digit="0">0</button>
-            <button class="back" data-action="back">⌫</button>
+            <button class="back" data-action="back" aria-label="Delete">⌫</button>
           </div>
         </div>
+        ${blocksHtml(item.a, item.b)}
         <div class="question-panel">
           <div class="question">${item.a} × ${item.b} = ?</div>
           <div class="answer-display empty" id="answerDisplay">?</div>
-          <div class="row" style="margin-top:16px;">
+          <div class="row">
             <button class="btn" id="submitBtn" disabled>Check ✓</button>
           </div>
-          <div class="feedback" id="feedback"></div>
-          <div class="redo-note">${roundNote}${answered} of ${total} answered this try · ${session.correctThisRound} correct</div>
+          <div class="feedback" id="feedback" role="status"></div>
+          <div class="redo-note">${roundNote}${answered} of ${total} done · ${session.correctThisRound} correct</div>
         </div>
       </div>
     </div>`;
@@ -1276,7 +1300,7 @@ function renderGiveUpConfirm(){
   app.innerHTML = `
     <div class="card result-card">
       <h2>Stop this round?</h2>
-      <p>You're on Round ${lv.n} · ${lv.label}. If you stop now, this attempt won't be saved — but any earlier best times and points stay safe.</p>
+      <p>You're on Round ${lv.n} · ${lv.label}. ${session.round > 1 ? "The money you earned stays yours, but this try won't set a best time." : "If you stop now, the money from this try won't be saved, but your earlier best times and money stay safe."}</p>
       <div class="row">
         <button class="btn" id="keepGoingBtn">No, keep going</button>
         <button class="btn secondary" id="confirmGiveUpBtn">Yes, stop and go back</button>
@@ -1286,7 +1310,11 @@ function renderGiveUpConfirm(){
     resumeClock();
     if(session.advancePending) quizAdvance(); else renderQuiz();
   });
-  document.getElementById("confirmGiveUpBtn").addEventListener("click", ()=>{ session.advancePending = false; renderLevels(); });
+  document.getElementById("confirmGiveUpBtn").addEventListener("click", ()=>{
+    session.advancePending = false;
+    if(session.round > 1){ keepBestPoints(session.rec, lv.n); saveKidRecord(session.name, session.rec); }   // the first tries are all done, so their money counts
+    renderLevels();
+  });
 }
 function submitAnswer(){
   const disp = document.getElementById("answerDisplay");
@@ -1299,10 +1327,10 @@ function submitAnswer(){
     disp.classList.add("correct");
     if(item.firstTry){
       session.pointsThisLevel += session.level.n * 10;
-      fb.textContent = `Correct! +${session.level.n*10} pts`; fb.className="feedback ok";
-    } else {
-      fb.textContent = "Correct!"; fb.className="feedback ok";
     }
+    const n = session.level.n;
+    const earned = item.firstTry && centsFor(n, session.pointsThisLevel) > centsFor(n, session.rec.levelPoints[n]);   // a replay adds money only past the best try
+    fb.textContent = earned ? "Correct! +1¢" : "Correct!"; fb.className="feedback ok";
     session.correctThisRound++;
     session.queue.shift();
   } else {
@@ -1311,7 +1339,7 @@ function submitAnswer(){
     session.mistakesThisLevel++;
     session.mistakesLog.push({
       a: item.a, b: item.b, correct: item.answer,
-      given: session.currentAnswer === "" ? "(left blank)" : session.currentAnswer,
+      given: session.currentAnswer,
       round: session.round
     });
     item.firstTry = false;
@@ -1350,9 +1378,6 @@ function renderRoundReview(){
         <button class="btn" id="retryYes">Yes, try again</button>
         <button class="btn secondary" id="retryNo">No, I'm done</button>
       </div>
-      <div class="row">
-        <button class="btn secondary small" id="giveUpBtnRound">Give up on this round ✕</button>
-      </div>
     </div>`;
   document.getElementById("retryYes").addEventListener("click", ()=>{
     session.queue = session.missedQueue;
@@ -1364,10 +1389,9 @@ function renderRoundReview(){
     renderQuiz();
   });
   document.getElementById("retryNo").addEventListener("click", finishLevel);
-  document.getElementById("giveUpBtnRound").addEventListener("click", ()=>{
-    clearInterval(session.timerHandle);
-    renderLevels();
-  });
+}
+function keepBestPoints(rec, n){
+  if(rec.levelPoints[n]==null || session.pointsThisLevel > rec.levelPoints[n]) rec.levelPoints[n] = session.pointsThisLevel;
 }
 function finishLevel(){
   clearInterval(session.timerHandle);
@@ -1381,9 +1405,7 @@ function finishLevel(){
   const hadBest = rec.levelBestTimes[n]!=null;
   const isNewBestTime = resolved && (rec.levelBestTimes[n]==null || timeSec < rec.levelBestTimes[n]);
   if(isNewBestTime) rec.levelBestTimes[n] = timeSec;
-  if(rec.levelPoints[n]==null || session.pointsThisLevel > rec.levelPoints[n]){
-    rec.levelPoints[n] = session.pointsThisLevel;
-  }
+  keepBestPoints(rec, n);
 
   const nowFullyDone = Object.keys(rec.levelBestTimes).length === TOTAL_LEVELS;
   const justCompletedAll = !wasFullyDone && nowFullyDone;
@@ -1408,7 +1430,7 @@ function finishLevel(){
     timestamp:new Date().toISOString()
   });
 
-  renderLevelComplete(timeSec, n, isNewBestTime, nowFullyDone, totalTimeSoFar, totalPointsSoFar, resolved);
+  renderLevelComplete(timeSec, n, isNewBestTime, justCompletedAll, totalTimeSoFar, resolved);
 }
 function mistakesListHtml(onlyRound){
   let entries = session.mistakesLog || [];
@@ -1426,8 +1448,8 @@ function mistakesListHtml(onlyRound){
     <div class="mistakes-list">${rows}</div>
   </div>`;
 }
-function renderLevelComplete(timeSec, n, isNewBestTime, nowFullyDone, totalTimeSoFar, totalPointsSoFar, resolved){
-  if(nowFullyDone && resolved){ renderAllComplete(totalTimeSoFar, totalPointsSoFar); return; }
+function renderLevelComplete(timeSec, n, isNewBestTime, justCompletedAll, totalTimeSoFar, resolved){
+  if(justCompletedAll){ renderAllComplete(totalTimeSoFar); return; }
   const app = document.getElementById("app");
   const rec = session.rec;
   const completedCount = Object.keys(rec.levelBestTimes).length;
@@ -1435,11 +1457,12 @@ function renderLevelComplete(timeSec, n, isNewBestTime, nowFullyDone, totalTimeS
     <div class="card result-card">
       <h2>${resolved ? "Round "+n+" complete! 🎉" : "Round "+n+": good practice! 💪"}</h2>
       <div class="big">${fmtTime(timeSec)}</div>
-      ${resolved ? "" : '<p class="sub">Answer every question right to set a best time for this round.</p>'}
+      <p class="sub">Your best try counts: ${fmtMoney(centsFor(n, rec.levelPoints[n]))} for this round.</p>
+      ${rec.levelBestTimes[n]!=null ? "" : '<p class="sub">Answer every question right to set a best time for this round.</p>'}
       <div class="stat-row">
-        <div class="stat"><div class="n">⭐ ${session.pointsThisLevel}</div><div class="l">points earned</div></div>
+        <div class="stat"><div class="n">💰 ${fmtMoney(centsFor(n, session.pointsThisLevel))}</div><div class="l">this try</div></div>
         <div class="stat"><div class="n">${session.mistakesThisLevel}</div><div class="l">retries needed</div></div>
-        <div class="stat"><div class="n">${isNewBestTime?"⭐":"—"}</div><div class="l">${isNewBestTime?"new best time!":(resolved?"best time stands":"no best time yet")}</div></div>
+        <div class="stat"><div class="n">${isNewBestTime?"⭐":"—"}</div><div class="l">${isNewBestTime?"new best time!":(rec.levelBestTimes[n]!=null?"best time stands":"no best time yet")}</div></div>
       </div>
       ${mistakesListHtml()}
       <p class="sub" style="margin-bottom:0;">${completedCount}/${TOTAL_LEVELS} rounds completed · pick any round next</p>
@@ -1453,7 +1476,7 @@ function renderLevelComplete(timeSec, n, isNewBestTime, nowFullyDone, totalTimeS
   dzWireOpen();
   document.getElementById("againBtn").addEventListener("click", ()=>startLevel(n));
 }
-function renderAllComplete(totalTimeSoFar, totalPointsSoFar){
+function renderAllComplete(totalTimeSoFar){
   const app = document.getElementById("app");
   const rec = session.rec;
   app.innerHTML = `
@@ -1461,10 +1484,9 @@ function renderAllComplete(totalTimeSoFar, totalPointsSoFar){
       <h2>All 600 questions done, ${esc(session.name)}! 🏆</h2>
       <div class="big">${fmtTime(totalTimeSoFar)}</div>
       <div class="stat-row">
-        <div class="stat"><div class="n">⭐ ${totalPointsSoFar}</div><div class="l">total points</div></div>
-        <div class="stat"><div class="n">${rec.timesFullyCompleted}</div><div class="l">times all-completed</div></div>
+        <div class="stat"><div class="n">💰 ${fmtMoney(totalCents(rec))}</div><div class="l">total earned</div></div>
       </div>
-      <p>Both your best time and your points can still improve — replay any round to try and beat them.</p>
+      <p>Both your best time and your money can still improve — replay any round to try and beat them.</p>
       ${mistakesListHtml()}
       <div class="row">
         <button class="btn" id="mapBtn2">Round map</button>

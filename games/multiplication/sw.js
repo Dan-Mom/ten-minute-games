@@ -11,7 +11,7 @@
  * replaces the one stored copy of that page, so every address of it opens the newest copy when offline.
  */
 const CACHE_PREFIX = "ttc-cache-";
-const CACHE_NAME = CACHE_PREFIX + "20261114a";
+const CACHE_NAME = CACHE_PREFIX + "20261121a";
 
 const PRECACHE_URLS = [
   "./Multiplication.html",
