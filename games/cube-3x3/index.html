@@ -573,6 +573,15 @@ button:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
 .note{font-size:16px;color:#5e4500;background:var(--gold-s);border-radius:10px;padding:6px 10px;margin:6px 0}
 .think{font-size:16px;color:#135c2c;background:var(--good-s);border-radius:10px;padding:6px 10px;margin:6px 0}
 .sheetpage{display:grid;gap:12px}
+.keyline{margin-top:8px;display:flex;flex-wrap:wrap;align-items:center;gap:2px 12px;background:#f7f4ff;border:1px solid var(--line);border-radius:12px;padding:4px 6px 4px 12px;font-size:14px;color:var(--mute)}
+.keyline .kt{font-weight:800;color:var(--ink);margin-right:2px}
+.keyline b{font:800 16px/1 ui-monospace,Menlo,Consolas,monospace;color:var(--ink);margin-right:2px}
+.keyline .btn{margin-left:auto}
+.keyline-m{display:none}
+@media (max-width:899px), (max-height:500px){ .stagecard .keyline{display:none} .keyline-m{display:flex} }
+@media print{ .keyline{display:none!important} }
+.tips{margin:6px 0 12px;padding-left:22px}
+.tips li{margin:6px 0}
 .keytable{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
 .sheet .ctrl .btn.small{min-width:44px}
 .sheet .x{min-width:44px}
@@ -631,6 +640,7 @@ button:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
         <div class="stage" id="stage" role="group"><div class="scene" id="scene"></div></div>
         <div class="stagebar"><span class="draghint" data-t="drag"></span><button class="btn small" id="resetView" data-t="resetView"></button></div>
         <div class="lights" id="lights"></div>
+        <div class="keyline" id="keyline"></div>
       </div>
       <div class="card panel" id="panel"></div>
     </div>
@@ -1264,11 +1274,12 @@ function applyStatic() {
 }
 function setLang(l) {
   if (l === LANG.cur) return;
+  setTimeout(drawKeyline, 0);
   LANG.cur = l; try { localStorage.setItem(LANG_KEY, l); } catch (e) {}
   applyStatic(); renderPrint();
   if (!$("#home").hidden) renderHome();
   if (!$("#play").hidden && P.L) { drawLights(); renderPanel(); }
-  if (!$("#modal").hidden) { if (modalKind === "cards") openCards(cardsAt); else if (modalKind === "win") showWin(); }
+  if (!$("#modal").hidden) { if (modalKind === "cards") openCards(cardsAt); else if (modalKind === "win") showWin(); else if (modalKind === "key") openKeyHelp(); }
 }
 document.querySelector(".langs").addEventListener("click", e => { const b = e.target.closest("[data-lang]"); if (b) setLang(b.dataset.lang); });
 
@@ -1394,6 +1405,29 @@ function stepCardHTML(st) {
     <div class="think">${T("💭 想一想：", "💭 Think: ")}${esc(tr(st.think))}</div></div>`;
 }
 const KEY_TOKS = ["R", "R'", "L", "L'", "U", "U'", "F", "F'", "B", "B'", "D", "D'", "y", "y'"];
+/* the letter key: one line under the cube, and a window with how to remember it */
+const KEY_LINE = [["R", "右|right"], ["L", "左|left"], ["U", "顶（上）|top (Up)"], ["D", "底（下）|bottom (Down)"], ["F", "前|front"], ["B", "后|back"], ["'", "反过来|the other way"], ["2", "转两下|twice"]];
+const KEY_TIPS = [
+  "字母就是那一面英文的第一个字母：Right 右、Left 左、Up 上、Down 下、Front 前、Back 后。|Each letter is the first letter of the side's name: Right, Left, Up, Down, Front, Back.",
+  "只有字母：正对着那一面看，像钟表的指针一样转（顺时针）。|Just the letter: look straight at that side and turn it the way a clock's hands go (clockwise).",
+  "带一撇（'）：反过来转，读作“R 撇”。撇就是“撤回”：做完 R 再做 R'，魔方就回到原样。|A mark (') after it: turn it the other way. Say it as R prime. The mark means undo: R and then R' puts the cube back.",
+  "带 2：转两下，也就是半圈，往哪边转都一样。|A 2 after it: turn it twice, half a turn. Either way gives the same result.",
+  "从前面看最好记：R 是右边往上，R' 往下。L 是 R 的镜子：L 往下，L' 往上。U 是顶层往左，U' 往右。D 是 U 的镜子：D 往右，D' 往左。F 像方向盘往右打。|Easiest seen from the front: R takes the right side up, R' down. L is R's mirror: L goes down, L' up. U takes the top layer left, U' right. D is U's mirror: D goes right, D' left. F turns like a steering wheel going right.",
+  "用手记：两只手拿着魔方，右手腕往上翻是 R，往下翻是 R'；左手腕往下翻是 L，往上翻是 L'。|Remember it with your hands: hold the cube in both hands. Flip your right wrist up for R and down for R'. Flip your left wrist down for L and up for L'."
+];
+function keylineHTML() {
+  return `<span class="kt">${esc(T("字母口令", "Letter key"))}</span>` + KEY_LINE.map(([k, w]) => `<span><b>${esc(k)}</b>${esc(tr(w))}</span>`).join("") +
+    `<button class="btn small keyhow">${esc(T("怎么记？", "Memory tips"))}</button>`;
+}
+function drawKeyline() { const box = $("#keyline"); if (box) box.innerHTML = keylineHTML(); }
+function openKeyHelp() {
+  openModal(`<button class="btn small x" data-close aria-label="${esc(tr(UI.close))}">✕</button>
+    <h2 style="color:var(--brand);margin-bottom:6px">${esc(T("字母口令怎么记", "How to remember the letters"))}</h2>
+    <p class="draghint" style="margin:0">${esc(T("全世界的魔方书、视频和比赛，用的都是这一套字母。", "Cube books, videos and competitions all over the world use these same letters."))}</p>
+    <ol class="tips">${KEY_TIPS.map(x => `<li>${esc(tr(x))}</li>`).join("")}</ol>
+    ${keyHTML()}
+    <p class="draghint" style="margin:8px 0 0">${esc(T("小写的 y：转整个魔方，不是只转一层。", "A lowercase y turns the whole cube, not just one layer."))}</p>`, "key");
+}
 function keyHTML() {
   return `<div class="keytable">${KEY_TOKS.map(t => `<div class="key"><span class="l">${esc(t)}</span><span>${esc(tokLong(t))} ${MOVE_TXT[t][2]}</span></div>`).join("")}</div>`;
 }
@@ -1476,6 +1510,8 @@ function playToks(toks, done) {
   st.addEventListener("pointerup", e => { const was = d; d = null; if (was && !was.moved) { try { tapAt(document.elementFromPoint(e.clientX, e.clientY)); } catch (_) {} } });
   st.addEventListener("pointercancel", () => { d = null; });
 })();
+$("#keyline").addEventListener("click", e => { if (e.target.closest(".keyhow")) openKeyHelp(); });
+drawKeyline();
 $("#resetView").onclick = () => { V.rx = -26; V.ry = -36; $("#scene").style.transform = `rotateX(${V.rx}deg) rotateY(${V.ry}deg)`; };
 let resizeT; window.addEventListener("resize", () => { clearTimeout(resizeT); resizeT = setTimeout(() => { if (!V.busy && !$("#play").hidden) draw(); }, 150); });
 
@@ -1584,6 +1620,7 @@ function renderPanel() {
   const fb = fbText();
   if (fb) h += `<div class="fb ${P.fbKind || "hint"}" role="status">${fb}</div>`;
   if (t.k === "info" || done) h += `<div class="ctrl"><button class="btn main" id="next">${esc(tr(P.ti + 1 >= L.tasks.length ? UI.finish : UI.next))}</button></div>`;
+  h += `<div class="keyline keyline-m">${keylineHTML()}</div>`;
   $("#panel").innerHTML = h;
   if (P.pulse) { const b = $("#panel").querySelector(`[data-act="${CSS.escape(P.pulse)}"]`); if (b) b.classList.add("pulse"); }
   setButtons(!V.busy);
@@ -1598,6 +1635,7 @@ $("#panel").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b || b.disabled) return;
   if (b.id === "back") { V.run++; show("home"); return; }
   if (b.id === "cards") { openCards(); return; }
+  if (b.classList.contains("keyhow")) { openKeyHelp(); return; }
   if (b.id === "next") { nextTask(); return; }
   if (V.busy) return;
   if (b.id === "undo") { const a = P.hist.pop(); if (a) { applyAlg(V.cube, invertSeq(expand(a))); P.pulse = null; P.hint = 0; say(""); draw(); renderPanel(); } return; }
@@ -1750,7 +1788,7 @@ function showWin() {
 function burst() { if (reduceMotion) return; const em = ["⭐", "🎉", "✨", "🟨", "🟩", "🟥", "🟦"]; for (let i = 0; i < 26; i++) { const s = document.createElement("span"); s.className = "burst"; s.textContent = em[i % em.length]; s.style.left = 50 + (Math.random() - .5) * 20 + "vw"; s.style.top = "40vh"; s.style.setProperty("--dx", (Math.random() - .5) * 90 + "vw"); s.style.setProperty("--dy", (Math.random() - .7) * 70 + "vh"); document.body.appendChild(s); setTimeout(() => s.remove(), 1500); } }
 let modalFrom = null;
 function openModal(html, kind) { if ($("#modal").hidden) modalFrom = document.activeElement; modalKind = kind || ""; $("#sheet").innerHTML = html; $("#modal").hidden = false; try { $("#sheet").focus({ preventScroll: true }); } catch (e) {} }
-function closeModal() { $("#modal").hidden = true; modalKind = ""; $("#sheet").innerHTML = ""; try { if (modalFrom && document.contains(modalFrom)) modalFrom.focus({ preventScroll: true }); } catch (e) {} }
+function closeModal() { $("#modal").hidden = true; modalKind = ""; $("#sheet").innerHTML = ""; try { const f = modalFrom && document.contains(modalFrom) ? modalFrom : document.querySelector(".keyhow"); if (f) f.focus({ preventScroll: true }); } catch (e) {} }
 $("#modal").addEventListener("click", e => {
   if (e.target.id === "modal" || e.target.closest("[data-close]")) { closeModal(); return; }
   const g = e.target.closest("[data-goto]"); if (g) { closeModal(); openLevel(+g.dataset.goto); return; }
