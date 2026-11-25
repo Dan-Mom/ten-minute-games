@@ -539,6 +539,12 @@ button:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
 .sq{border:2px solid var(--line);background:#fff;border-radius:12px;min-width:74px;min-height:70px;padding:4px 6px;display:grid;place-items:center;text-align:center;line-height:1.15}
 .sq .l{font:800 24px/1 ui-monospace,Menlo,Consolas,monospace}
 .sq .w{font-size:13px;color:var(--mute)}
+.demonow{display:grid;justify-items:start;gap:2px;background:var(--brand-s);border-radius:14px;padding:8px 14px}
+.demonow small{color:var(--mute);font-size:15px}
+.demonow .l{font:800 34px/1.1 ui-monospace,Menlo,Consolas,monospace;color:var(--brand)}
+.demonow .w{font-size:20px;font-weight:700}
+.pic .demo{margin-top:4px}
+.seq .sq.gap{margin-left:14px}
 .sq.now{border-color:var(--brand);background:var(--brand-s);box-shadow:0 0 0 3px var(--brand-s)}
 .sq.past{opacity:.4}
 .sq:disabled{cursor:default}
@@ -1051,7 +1057,7 @@ function setLang(l) {
   LANG.cur = l; try { localStorage.setItem(LANG_KEY, l); } catch (e) {}
   applyStatic(); renderPrint();
   if (!$("#home").hidden) renderHome();
-  if (!$("#play").hidden && P.L) { drawLights(); renderPanel(); }
+  if (!$("#play").hidden) { drawLights(); if (DM.on) renderDemo(); else if (P.L) renderPanel(); }
   if (!$("#modal").hidden) { if (modalKind === "cards") openCards(cardsAt); else if (modalKind === "win") showWin(); else if (modalKind === "key") openKeyHelp(); }
 }
 document.querySelector(".langs").addEventListener("click", e => { const b = e.target.closest("[data-lang]"); if (b) setLang(b.dataset.lang); });
@@ -1161,9 +1167,10 @@ function picCaption(p, cube) {
   }
   return "";
 }
-function picHTML(p) {
+function picHTML(p, si, pi) {
   const c = picCube(p), hl = p.capFn === "corner" ? pieceAt(c, [c.h, c.h, c.h]).id : null;
-  return `<figure class="pic" style="margin:0">${cubeSVG(c, p.view, DIM[p.dim], hl)}<figcaption>${esc(picCaption(p, c))}</figcaption></figure>`;
+  const watch = si != null && (p.script || p.demo) ? `<button class="btn small demo noprint" data-demo="${si}:${pi}">▶ ${esc(T("看演示", "Watch it"))}</button>` : "";
+  return `<figure class="pic" style="margin:0">${cubeSVG(c, p.view, DIM[p.dim], hl)}<figcaption>${esc(picCaption(p, c))}</figcaption>${watch}</figure>`;
 }
 function formulaHTML(f) {
   const toks = parseAlg(FORMULA[f]);
@@ -1172,7 +1179,7 @@ function formulaHTML(f) {
 function stepCardHTML(st) {
   const moves = st.formulas.length ? T("公式：", "Moves: ") + st.formulas.map(f => esc(tr(FORMULA_NAME[f]))).join(T("、", ", ")) : T("不用公式", "No moves to learn");
   return `<div class="stepcard"><h3>${T("第 " + st.n + " 步", "Step " + st.n)} · ${esc(tr(st.name))}<small>${moves}</small></h3>
-    <div class="pics">${st.pics.map(picHTML).join("")}</div>
+    <div class="pics">${st.pics.map((p, pi) => picHTML(p, st.n - 1, pi)).join("")}</div>
     <ol>${st.look.map(x => `<li>${esc(tr(x))}</li>`).join("")}</ol>
     ${st.formulas.map(formulaHTML).join("")}
     ${st.note ? `<div class="note">${T("🧩 卡住了：", "🧩 Stuck: ")}${esc(tr(st.note))}</div>` : ""}
@@ -1224,7 +1231,8 @@ function renderPrint() {
 }
 
 /* ---------- the 3D cube on the screen ---------- */
-const V = { cube: makeCube(2), rx: -26, ry: -36, S: 50, els: [], dim: null, hl: null, run: 0, busy: false };
+const CUBE_N = 2;
+const V = { cube: makeCube(CUBE_N), rx: -26, ry: -36, S: 50, els: [], dim: null, hl: null, run: 0, busy: false };
 const FACE_TF = { "1,0,0": "rotateY(90deg)", "-1,0,0": "rotateY(-90deg)", "0,1,0": "rotateX(90deg)", "0,-1,0": "rotateX(-90deg)", "0,0,1": "", "0,0,-1": "rotateY(180deg)" };
 /* The camera distance grows with the cube (about 8 cube-widths away), so a big cube on an iPad is not stretched by a close-up perspective. */
 function sizeCube() {
@@ -1254,7 +1262,7 @@ function draw() {
 function rotCss(axis, deg) { const a = [0, 0, 0]; a[axis] = 1; return `rotate3d(${a[0]}, ${-a[1]}, ${a[2]}, ${-deg}deg)`; }
 const reduceMotion = (() => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } })();
 function animateTok(tok, done) {
-  const info = tokInfo(tok); let dur = info.whole ? 420 : 300; if (Math.abs(info.q) === 2) dur *= 1.5; if (reduceMotion) dur = 80;
+  const info = tokInfo(tok); let dur = (info.whole ? 420 : 300) * (V.slow || 1); if (Math.abs(info.q) === 2) dur *= 1.5; if (reduceMotion) dur = 80;
   const movers = []; V.cube.c.forEach((cb, i) => { if (info.whole || cb.p[info.axis] * info.sign > 0) movers.push([V.els[i], baseTf(cb)]); });
   const t0 = performance.now(), run = V.run;
   const step = now => {
@@ -1291,7 +1299,7 @@ let resizeT; window.addEventListener("resize", () => { clearTimeout(resizeT); re
 /* the three lights under the cube: how many steps are finished */
 function drawLights() {
   const box = $("#lights");
-  if (!P.L || P.L.id === 1) { box.hidden = true; return; }
+  if (!P.L || P.L.id === 1 || (typeof DM !== "undefined" && DM.on && DM.from !== "level")) { box.hidden = true; return; }
   box.hidden = false;
   const k = stage2(V.cube);
   box.innerHTML = STEPS.map((s, i) => `<div class="light ${i < k ? "on" : ""}"><b>${i < k ? "✓" : s.n}</b>${esc(tr(LIGHT[i]))}</div>`).join("");
@@ -1300,7 +1308,8 @@ function drawLights() {
 /* ---------- play ---------- */
 const P = { L: null, ti: 0, task: null, start: null, hist: [], spec: null, state: "", hint: 0, reveals: 0, fb: "", pulse: null, wrong: {}, scr: [] };
 const randSeed = () => (Math.random() * 1e9) >>> 0;
-function show(name) { for (const id of ["home", "play", "print"]) $("#" + id).hidden = id !== name; if (name === "home") renderHome(); if (name === "print") renderPrint(); window.scrollTo(0, 0); }
+function show(name) {
+  if (DM.on && name !== "play") { DM.on = false; DM.playing = false; V.slow = 1; V.run++; V.busy = false; } for (const id of ["home", "play", "print"]) $("#" + id).hidden = id !== name; if (name === "home") renderHome(); if (name === "print") renderPrint(); window.scrollTo(0, 0); }
 function renderHome() {
   $("#starTotal").textContent = "⭐ " + totalStars();
   const next = (LEVELS.find(L => !(SAVE.lv[L.id] || {}).done) || {}).id;
@@ -1377,7 +1386,7 @@ function renderPanel() {
   const L = P.L, t = P.task, done = P.state === "done";
   let h = `<div class="phead"><button class="btn small" id="back">${esc(tr(UI.levels))}</button><h2>${esc(T("第 " + L.id + " 关", "Level " + L.id))} · ${esc(tr(L.name))}</h2>${L.id > 1 ? `<button class="btn small" id="cards">${esc(tr(UI.cards))}</button>` : ""}</div>${dotsHTML()}`;
   h += `<div class="say">${tr(t.t)}</div>`;
-  if (t.pics) h += `<div class="pics">${t.pics.map(picHTML).join("")}</div>`;
+  if (t.pics) h += `<div class="pics">${t.pics.map(p => picHTML(p)).join("")}</div>`;
   if (t.k === "ask") h += `<div class="opts">${t.opts.map((o, i) => `<button class="opt ${P.wrong[i] ? "no" : ""} ${done && i === t.ans ? "yes" : ""}" data-opt="${i}" ${done ? "disabled" : ""}>${esc(tr(o))}</button>`).join("")}</div>`;
   if (t.k === "guided") {
     h += `<div class="seq">${P.seq.map((tok, i) => `<button class="sq ${i < P.gi ? "past" : i === P.gi && !done ? "now" : ""}" data-sq="${i}" ${i !== P.gi || done ? "disabled" : ""}><span class="l">${esc(tok)}</span><span class="w">${esc(tokWords(tok))}</span></button>`).join("")}</div>`;
@@ -1398,14 +1407,110 @@ function renderPanel() {
   if (P.pulse) { const b = $("#panel").querySelector(`[data-act="${CSS.escape(P.pulse)}"]`); if (b) b.classList.add("pulse"); }
   setButtons(!V.busy);
 }
-function setButtons(on) { document.querySelectorAll("#panel .mv, #panel #undo, #panel #restart, #panel #hint").forEach(b => { if (b.id === "undo") b.disabled = !on || !P.hist.length; else b.disabled = !on; }); document.querySelectorAll("#panel .sq.now").forEach(b => { b.disabled = !on; }); }
+function setButtons(on) { document.querySelectorAll("#panel .mv, #panel #undo, #panel #restart, #panel #hint, #panel #cards").forEach(b => { if (b.id === "undo") b.disabled = !on || !P.hist.length; else b.disabled = !on; }); document.querySelectorAll("#panel .sq.now").forEach(b => { b.disabled = !on; }); }
 function say(msg, kind) { P.fb = msg; P.fbKind = kind; }
 function succeed(msg) {
   P.state = "done"; P.pulse = null; V.hl = null; draw();
   say(msg || "做到了！|You did it!", "good"); renderPanel();
 }
+/* ---------- watch a step: the cube on the screen plays the step's example, one turn at a time ---------- */
+const DM = { back: null, scroll: 0, on: false, si: 0, pi: 0, seq: [], i: 0, playing: false, from: "", saved: null, fast: false, start: null };
+function demoSeq(script) {
+  const out = [], units = String(script).trim().split(/\s+/).filter(Boolean), count = {}, seen = {};
+  units.forEach(u => { if (FORMULA[u]) count[u] = (count[u] || 0) + 1; });
+  const anyF = Object.keys(count).length > 0;
+  for (const u of units) {
+    const first = out.length;
+    if (FORMULA[u]) { seen[u] = (seen[u] || 0) + 1; for (const t of parseAlg(FORMULA[u])) out.push({ t, f: u, k: seen[u], n: count[u] }); }
+    else for (const t of parseAlg(u)) out.push({ t, setup: anyF });
+    if (first && out[first]) out[first].gap = true;
+  }
+  return out;
+}
+const demoPic = (si, pi) => { const p = STEPS[si].pics[pi]; return p.demo || p; };
+function openDemo(si, pi, from) {
+  const p = demoPic(si, pi);
+  if (!DM.on) DM.saved = from === "level" ? { cube: cloneCube(V.cube), dim: V.dim, hl: V.hl, P: { hist: P.hist.slice(), gi: P.gi, state: P.state, fb: P.fb, fbKind: P.fbKind, pulse: P.pulse, hint: P.hint } } : null;
+  if (!DM.on) DM.scroll = window.scrollY || 0;
+  DM.on = true; DM.si = si; DM.pi = pi; DM.from = from; DM.i = 0; DM.playing = false; DM.back = null;
+  V.run++; V.busy = false; V.slow = DM.fast ? 1 : 2.2;
+  const c = makeCube(CUBE_N); if (p.pre) run(c, p.pre); applyAlg(c, invertSeq(expand(p.script)));
+  DM.start = c; V.cube = cloneCube(c); V.dim = DIM[p.dim] || null; V.hl = null; DM.seq = demoSeq(p.script);
+  if (!$("#modal").hidden) closeModal();
+  if ($("#play").hidden) { for (const id of ["home", "play", "print"]) $("#" + id).hidden = id !== "play"; window.scrollTo(0, 0); }
+  draw(); renderDemo();
+  try { $("#demoBack").focus({ preventScroll: true }); } catch (e) {}
+}
+function demoMoveWords(s) {
+  const b = s.t.replace(/2$/, ""), m = MOVE_TXT[b];
+  return tokLong(s.t) + (m && !/2$/.test(s.t) ? " " + m[2] : "");
+}
+function renderDemo() {
+  const st = STEPS[DM.si], p = demoPic(DM.si, DM.pi), cur = DM.seq[DM.i], done = DM.i >= DM.seq.length;
+  let h = `<div class="phead"><button class="btn small" id="demoBack">${esc(DM.from === "level" ? T("← 回到这一题", "← Back to the question") : T("← 回去", "← Back"))}</button><h2>${esc(T("第 " + st.n + " 步", "Step " + st.n))} · ${esc(tr(st.name))} · ${esc(T("演示", "Demo"))}</h2></div>`;
+  h += `<div class="say">${esc(picCaption(p, DM.start))}</div>`;
+  if (DM.back) {
+    h += `<div class="demonow"><small>${esc(T("退回一下", "Undoing one turn"))}</small><span class="l">${esc(DM.back)}</span><span class="w">${esc(demoMoveWords({ t: DM.back }))}</span></div>`;
+  } else if (!done) {
+    h += `<div class="demonow"><small>${esc(T(DM.i ? "下一下" : "第一下", DM.i ? "Next turn" : "First turn"))}${cur.f ? " · " + esc(tr(FORMULA_NAME[cur.f])) + (cur.n > 1 ? esc(T("（第 " + cur.k + " 遍，共 " + cur.n + " 遍）", " (time " + cur.k + " of " + cur.n + ")")) : "") : ""}</small>
+      <span class="l">${esc(cur.t)}</span><span class="w">${esc(demoMoveWords(cur))}</span></div>`;
+  } else h += `<div class="fb good" role="status">${esc(T("做完了！这一步就是这样。可以拿真魔方跟着做一遍。", "Done! That's this step. Try it along on a real cube."))}</div>`;
+  const seqHTML = `<div class="seq">${DM.seq.map((s, i) => `<span class="sq ${i < DM.i ? "past" : i === DM.i ? "now" : ""}${s.gap ? " gap" : ""}"><span class="l">${esc(s.t)}</span><span class="w">${esc((s.setup ? T("摆好 ", "set up ") : "") + tokWords(s.t))}</span></span>`).join("")}</div>`;
+  h += `<div class="ctrl">
+    <button class="btn small" id="demoPrev" ${DM.i ? "" : "disabled"}>⏮ ${esc(T("上一下", "Back one"))}</button>
+    <button class="btn main" id="demoPlay">${DM.playing ? "⏸ " + esc(T("暂停", "Pause")) : "▶ " + esc(T(done ? "再看一遍" : "播放", done ? "Watch again" : "Play"))}</button>
+    <button class="btn small" id="demoNext" ${done ? "disabled" : ""}>${esc(T("下一下", "Next one"))} ⏭</button>
+    <button class="btn small" id="demoRestart">⟲ ${esc(T("从头", "From the start"))}</button>
+    <button class="btn small" id="demoSpeed">${esc(DM.fast ? T("🐢 慢一点", "🐢 Slower") : T("🐇 快一点", "🐇 Faster"))}</button></div>`;
+  h += seqHTML;
+  h += `<div class="draghint">${esc(T("一边看，一边拿真魔方跟着转。拖动屏幕上的魔方可以换个角度看。", "Watch, and turn a real cube along with it. Drag the cube on the screen to see it from another side."))}</div>`;
+  h += `<div class="keyline keyline-m">${keylineHTML()}</div>`;
+  $("#panel").innerHTML = h;
+  if (V.busy) document.querySelectorAll("#demoPrev, #demoNext, #demoRestart").forEach(b => { b.disabled = true; });
+}
+function demoStep(dir) {
+  if (V.busy) return;
+  if (dir > 0 && DM.i >= DM.seq.length) { DM.playing = false; renderDemo(); return; }
+  if (dir < 0 && DM.i === 0) return;
+  const tok = dir > 0 ? DM.seq[DM.i].t : invertTok(DM.seq[DM.i - 1].t);
+  V.busy = true; DM.back = dir < 0 ? tok : null; renderDemo();
+  const run = V.run;
+  animateTok(tok, () => {
+    if (V.run !== run) return;
+    V.busy = false; DM.back = null; DM.i += dir;
+    if (DM.i >= DM.seq.length) DM.playing = false;
+    renderDemo();
+    if (DM.playing && dir > 0) setTimeout(() => { if (DM.on && DM.playing && V.run === run) demoStep(1); }, DM.fast ? 150 : 650);
+  });
+}
+function demoRestart() { V.run++; V.busy = false; DM.i = 0; V.cube = cloneCube(DM.start); draw(); }
+function closeDemo() {
+  DM.on = false; DM.playing = false; V.run++; V.busy = false; V.slow = 1;
+  if (DM.from === "level" && DM.saved && P.L) {
+    const s = DM.saved; V.cube = s.cube; V.dim = s.dim; V.hl = s.hl; Object.assign(P, s.P); draw(); renderPanel();
+    try { const c = $("#cards"); if (c) c.focus({ preventScroll: true }); } catch (e) {}
+  } else if (DM.from === "print") { const y = DM.scroll; show("print"); window.scrollTo(0, y); } else show("home");
+  DM.saved = null;
+}
+function demoClick(b) {
+  if (b.id === "demoBack") { closeDemo(); return; }
+  if (b.classList.contains("keyhow")) { openKeyHelp(); return; }
+  if (b.id === "demoSpeed") { DM.fast = !DM.fast; V.slow = DM.fast ? 1 : 2.2; renderDemo(); return; }
+  if (b.id === "demoRestart") { DM.playing = false; demoRestart(); renderDemo(); return; }
+  if (b.id === "demoPlay") {
+    if (DM.playing) { DM.playing = false; renderDemo(); return; }
+    if (DM.i >= DM.seq.length) demoRestart();
+    DM.playing = true; renderDemo(); demoStep(1); return;
+  }
+  if (V.busy) return;
+  if (b.id === "demoNext") { DM.playing = false; demoStep(1); return; }
+  if (b.id === "demoPrev") { DM.playing = false; demoStep(-1); return; }
+}
+$("#print").addEventListener("click", e => { const dm = e.target.closest("[data-demo]"); if (dm) { const [si, pi] = dm.dataset.demo.split(":").map(Number); openDemo(si, pi, "print"); } });
+
 $("#panel").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b || b.disabled) return;
+  if (DM.on) { demoClick(b); return; }
   if (b.id === "back") { V.run++; show("home"); return; }
   if (b.id === "cards") { openCards(); return; }
   if (b.classList.contains("keyhow")) { openKeyHelp(); return; }
@@ -1445,6 +1550,7 @@ const KIND = ["", "", "", "角块|corner"], A_KIND = ["", "", "", "a corner"];
 const COLOR_ORDER = "WYGRBO";      /* white first, as the task words say it ("white-green edge") */
 const colsOf = cb => cb.st.map(s => s.c).sort((a, b) => COLOR_ORDER.indexOf(a) - COLOR_ORDER.indexOf(b)).map(c => tr(COLOR_NAME[c])).join(T("·", "-"));
 function tapAt(el) {
+  if (DM.on) return;
   const t = P.task; if (!t || P.state === "done" || (t.k !== "tap" && t.k !== "find")) return;
   const cel = el && el.closest ? el.closest(".cubie") : null; if (!cel) return;
   const cb = pieceById(V.cube, +cel.dataset.cid); if (!cb) return;
@@ -1551,7 +1657,8 @@ $("#modal").addEventListener("click", e => {
   if (e.target.id === "modal" || e.target.closest("[data-close]")) { closeModal(); return; }
   const g = e.target.closest("[data-goto]"); if (g) { closeModal(); openLevel(+g.dataset.goto); return; }
   if (e.target.closest("[data-home]")) { closeModal(); show("home"); return; }
-  const t = e.target.closest("[data-step]"); if (t) { openCards(+t.dataset.step); }
+  const t = e.target.closest("[data-step]"); if (t) { openCards(+t.dataset.step); return; }
+  const dm = e.target.closest("[data-demo]"); if (dm && !V.busy) { const [si, pi] = dm.dataset.demo.split(":").map(Number); openDemo(si, pi, P.L && !$("#play").hidden ? "level" : "home"); }
 });
 document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#modal").hidden) closeModal(); });
 function openCards(n) {
