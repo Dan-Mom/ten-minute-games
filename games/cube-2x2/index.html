@@ -549,8 +549,8 @@ button:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
 .demoline b{color:var(--brand);font-size:15px}
 .wholedemo{margin:6px 0 2px}
 /* on a phone the cube is above the panel: the demo buttons stay at the bottom of the screen while the words scroll */
-@media (max-width:899px){ .democtrl{position:sticky;bottom:0;z-index:2;background:var(--card);padding:6px 0;margin:0 -4px;box-shadow:0 -6px 10px -8px rgba(42,33,64,.35);flex-wrap:nowrap;gap:6px}
-  .democtrl .btn{flex:1 1 0;min-width:0;padding-left:4px;padding-right:4px} .democtrl #demoPlay{flex:2 1 0} .democtrl .tx{display:none} }
+@media (max-width:899px){ .panel>.ctrl.democtrl{order:1} .ctrl.democtrl{position:sticky;bottom:0;z-index:2;background:var(--card);padding:6px 0;margin:0 -4px;box-shadow:0 -6px 10px -8px rgba(42,33,64,.35);flex-wrap:nowrap;gap:6px}
+  .ctrl.democtrl .btn{flex:1 1 0;min-width:0;padding-left:4px;padding-right:4px} .democtrl #demoPlay{flex:2 1 0} .democtrl .tx{display:none} }
 .sq.now{border-color:var(--brand);background:var(--brand-s);box-shadow:0 0 0 3px var(--brand-s)}
 .sq.past{opacity:.4}
 .sq:disabled{cursor:default}
@@ -781,9 +781,19 @@ function frame(cube) {
   f["0,-1,0"] = "W"; f["0,1,0"] = "Y";
   return { f, anchor: anchor ? anchor.id : null };
 }
-/* call keepMap(cube) just before each move (and keepMap(null) for a new question) */
+/* call keepMap(cube) just before each move (and keepMap(null) for a new question). It is sticky: the map corner only
+   changes when the old one is no longer white-down at the bottom, or when at least 2 placed corners agree on a new one,
+   so a move made by hand and turned back never swaps the map. getMap/setMap let the page put it back exactly on undo. */
 let MAP_ID = null;
-function keepMap(cube) { MAP_ID = cube ? frame(cube).anchor : null; }
+function keepMap(cube) {
+  if (!cube) { MAP_ID = null; return; }
+  const a = frame(cube).anchor, old = MAP_ID != null ? pieceById(cube, MAP_ID) : null;
+  const oldDown = old && old.p[1] < 0 && veq(facing(old, "W"), DOWN);
+  if (MAP_ID == null || oldDown || a == null) { MAP_ID = a; return; }
+  const fa = frameFrom(pieceById(cube, a));
+  if (whiteCorners(cube).filter(cb => cb.p[1] < 0 && veq(facing(cb, "W"), DOWN) && cb.st.every(s => fa[vkey(s.n)] === s.c)).length > 1) MAP_ID = a;
+}
+const getMap = () => MAP_ID, setMap = id => { MAP_ID = id == null ? null : id; };
 function frameFrom(a) {
   const f = {}, sx = sideOf(a, 0), sz = sideOf(a, 2);
   f[vkey(sx.n)] = sx.c; f[vkey(sx.n.map(v => -v || 0))] = OPP[sx.c]; f[vkey(sz.n)] = sz.c; f[vkey(sz.n.map(v => -v || 0))] = OPP[sz.c];
@@ -873,7 +883,10 @@ function nextStep2(cube) {
   const ku = countTurns(cube, "U", c => headlightSides(c).some(v => veq(v, [0, 0, -1])));
   return ku ? { step: 3, act: turnTok("U", ku), code: "ap-turn", twice: ku === 2 } : { step: 3, act: "aperm", code: "ap-back" };
 }
-function solveTo2(cube, k, allowed) {
+function solveTo2(cube, k, allowed) {      /* uses the map memory while it works, and leaves it as it was */
+  const keep = MAP_ID; try { return solveTo2_(cube, k, allowed); } finally { MAP_ID = keep; }
+}
+function solveTo2_(cube, k, allowed) {
   const acts = [];
   for (let guard = 0; guard < 300; guard++) {
     if (stage2(cube) >= k) return acts;
@@ -912,7 +925,7 @@ function makePuzzle2(spec, seed) {
   return null;
 }
 /*METHOD-END*/
-if (typeof module !== "undefined") module.exports = { makeCube, applyTok, applyAlg, parseAlg, invertSeq, isSolved, tokInfo, FORMULA, expand, cloneCube, run, veq, vkey, has, facing, pieceById, pieceAt, frame, keepMap, starter, isHome, homeSlot, yellowUp, stage2, countTurns, headlightSides, nextStep2, solveTo2, rng32, scrambled2, baseState2, makePuzzle2, whiteCorners };
+if (typeof module !== "undefined") module.exports = { makeCube, applyTok, applyAlg, parseAlg, invertSeq, isSolved, tokInfo, FORMULA, expand, cloneCube, run, veq, vkey, has, facing, pieceById, pieceAt, frame, keepMap, getMap, setMap, starter, isHome, homeSlot, yellowUp, stage2, countTurns, headlightSides, nextStep2, solveTo2, rng32, scrambled2, baseState2, makePuzzle2, whiteCorners };
 </script>
 <script>
 /* 2x2 Cube Quest: the three steps (for the step cards and the printed page) and the levels.
@@ -953,7 +966,7 @@ const STEPS = [
            "后面的白色角块，看已经放好的：每个角块的家，是侧面颜色能和旁边对上的那个底角。|For the next white corners, look at the ones already placed: each corner's home is the bottom corner where its side colors match its neighbors.",
            "转整个魔方，让家在右前方。转顶层，把角块放到家的正上方。|Turn the whole cube so the home is at the front right. Turn the top layer to put the corner right above its home.",
            "看白色朝哪边。朝右：做右手公式。朝前：做勾上回下。朝上：先做翻身公式，白色就转到右边了，再做右手公式。|Look where white faces. Right: do the right-hand move. Front: do the hook move. Up: do the flip move first, so white turns to the right, then the right-hand move.",
-           "（三阶魔方里，这一步叫“白色角块”。这三个公式在三阶上也能用。三阶闯关里把右手公式叫“万能公式”，只用它一个，重复做到角块回家。）|(On the 3x3 this step is called “White corners”, and these three moves work there too. 3x3 Cube Quest calls the right-hand move the “magic move” and just repeats it until the corner is home.)"],
+           "（三阶魔方里，这一步叫“白色角块”。这三个公式在三阶上也能用。“三阶魔方闯关”里把右手公式叫“万能公式”，只用这一个公式，一直重复，直到角块回家。）|(On the 3x3 this step is called “White corners”, and these three moves work there too. 3x3 Cube Quest calls the right-hand move the “magic move” and just repeats it until the corner is home.)"],
     note: "角块在底层放错了地方？把它放在右前下，做一遍右手公式，它就到顶层了。角块在家里，可是方向不对？也看白色：朝右做右手公式，朝前做勾上回下。|A corner in the wrong place on the bottom? Hold it at the bottom front right and do the right-hand move once. It pops up to the top layer. A corner home but turned the wrong way? Look at white again: facing right, the right-hand move; facing front, the hook move.",
     think: "二阶魔方没有中心块。所以第一个角块就是“地图”：其他角块都跟着它找家。勾上回下，就是右手公式倒过来做。|A 2x2 has no centers. So the first corner becomes your map: every other corner finds its home from it. The hook move is the right-hand move done backwards.",
     pics: [{ script: "sexy", dim: "white", capFn: "corner", lines: [4] }, { script: "gou", dim: "white", capFn: "corner", lines: [4] }, { script: "fan sexy", dim: "white", capFn: "corner", lines: [4, 4] }],
@@ -1373,7 +1386,7 @@ function scrambleFaces(n) {
   return out;
 }
 function startTask() {
-  keepMap(null); V.run++; V.busy = false; V.hl = null; P.wrong = {};
+  V.run++; V.busy = false; V.hl = null; P.wrong = {};
   const L = P.L, task = (P.task = L.tasks[P.ti]);
   P.hist = []; P.hint = 0; P.fb = ""; P.pulse = null; P.state = "go"; P.spec = null; P.gi = 0;
   V.dim = null;
@@ -1392,7 +1405,7 @@ function startTask() {
     P.start = heldSolved();
     if (task.k === "info" || task.k === "ask" || task.k === "loop") V.dim = L.id > 1 ? DIM[L.dim] : null;
   }
-  V.cube = cloneCube(P.start);
+  V.cube = cloneCube(P.start); keepMap(null); P.maps = [];
   draw(); renderPanel();
   const s = lvSave(L.id); if (!s.done) { s.at = P.ti; save(); }
 }
@@ -1589,15 +1602,15 @@ $("#panel").addEventListener("click", e => {
   if (b.classList.contains("keyhow")) { openKeyHelp(); return; }
   if (b.id === "next") { nextTask(); return; }
   if (V.busy) return;
-  if (b.id === "undo") { const a = P.hist.pop(); if (a) { keepMap(V.cube); applyAlg(V.cube, invertSeq(expand(a))); P.pulse = null; P.hint = 0; say(""); draw(); renderPanel(); } return; }
-  if (b.id === "restart") { keepMap(null); V.cube = cloneCube(P.start); P.hist = []; P.gi = 0; P.pulse = null; P.hint = 0; V.hl = null; say(""); draw(); renderPanel(); return; }
+  if (b.id === "undo") { const a = P.hist.pop(); if (a) { setMap(P.maps.pop()); applyAlg(V.cube, invertSeq(expand(a))); P.pulse = null; P.hint = 0; say(""); draw(); renderPanel(); } return; }
+  if (b.id === "restart") { keepMap(null); P.maps = []; V.cube = cloneCube(P.start); P.hist = []; P.gi = 0; P.pulse = null; P.hint = 0; V.hl = null; say(""); draw(); renderPanel(); return; }
   if (b.id === "hint") { giveHint(); return; }
   if (b.dataset.act) { doAct(b.dataset.act); return; }
   if (b.dataset.sq != null) { const i = +b.dataset.sq; if (i !== P.gi) return; P.gi++; renderPanel(); playToks([P.seq[i]], () => { if (P.gi >= P.seq.length) { succeed(goalNow() ? "做到了！公式做完，这一块就回家了。|You did it! The move is done and the piece is home." : "公式做完了。|The move is done."); } else renderPanel(); }); return; }
   if (b.dataset.opt != null) { answer(+b.dataset.opt); return; }
 });
 function doAct(a) {
-  keepMap(V.cube); P.hist.push(a); P.pulse = null; V.hl = null; P.hint = 0; say(""); renderPanel();
+  keepMap(V.cube); P.maps.push(getMap()); P.hist.push(a); P.pulse = null; V.hl = null; P.hint = 0; say(""); renderPanel();
   playToks(expand(a), afterAct);
 }
 function afterAct() {
@@ -1606,7 +1619,7 @@ function afterAct() {
     const n = P.hist.length;
     const k = stage2(V.cube);
     const msg = t.k === "undo" ? "对！魔方回到原样了。|Yes! The cube is back to how it was."
-      : t.k === "loop" ? () => T("回来了！做了 " + n + " 遍" + tr(FORMULA_NAME[t.act]) + "，魔方变回原样。", "It's back! After " + n + " presses of the " + tr(FORMULA_NAME[t.act]) + ", the cube is the way it was again.")
+      : t.k === "loop" ? () => T("回来了！做了 " + n + " 遍" + tr(FORMULA_NAME[t.act]) + "，魔方变回原样。", "It's back! After " + n + " presses of the " + tr(FORMULA_NAME[t.act]).toLowerCase() + ", the cube is the way it was again.")
       : t.full ? "🎉 整个魔方拼好了！你自己做完了三步。|🎉 The whole cube is solved! You did all three steps yourself."
       : P.L.goal === 1 && P.L.id === 4 ? "白色一层做好了！侧面的颜色也都对上了。|The white layer is done, and the side colors all match!"
       : P.L.id > 1 ? () => T("做到了！现在做好了 " + k + " 步。", "You did it! " + k + (k === 1 ? " step is" : " steps are") + " done now.") : "做到了！|You did it!";
