@@ -545,29 +545,50 @@
   .quiz-card{ padding:28px; }
   .quiz-layout{ display:flex; gap:22px; align-items:stretch; }
   .numpad-panel{ flex:0 0 230px; }
-  .blocks-panel{ flex:1.25; min-width:0; text-align:center; display:flex; flex-direction:column; justify-content:center; }
-  .blocks-panel svg{ display:block; width:100%; height:220px; }
-  .blocks-panel .tray{ fill:#FFF6DC; stroke:var(--ink); stroke-width:1; }
-  .blocks-panel .block{ fill:#6EC6E8; stroke:var(--ink); stroke-width:.8; }
-  .blocks-panel text{ font:800 11px 'Nunito',sans-serif; fill:#6B6B85; text-anchor:middle; }
+  .wrap:has(.quiz-card){ max-width:1120px; }          /* the quiz page is wider, so the block picture can be big */
+  .blocks-panel{ flex:1; min-width:0; text-align:center; display:flex; flex-direction:column; }
+  .blocks-box{ flex:1; min-height:220px; position:relative; }
+  .blocks-box svg{ position:absolute; inset:0; width:100%; height:100%; overflow:visible; }
+  .blocks-box .tray{ fill:#FFF6DC; stroke:var(--ink); stroke-width:1.5px; }
+  .blocks-box .block{ fill:#6EC6E8; stroke:var(--ink); stroke-width:1.5px; }
+  .blocks-box text{ font:800 18px 'Nunito',sans-serif; fill:#6B6B85; text-anchor:middle; dominant-baseline:middle; }
   .blocks-note{ font-weight:800; font-size:18px; margin-top:8px; }
-  .question-panel{ flex:1; text-align:center; display:flex; flex-direction:column; justify-content:center; }
+  .question-panel{ flex:0 0 300px; text-align:center; display:flex; flex-direction:column; justify-content:center; }
+  @media (max-width:1100px){
+    .question-panel{ flex-basis:260px; }
+    .question-panel .question{ font-size:50px; }
+  }
   @media (max-width:900px){
     .quiz-card{ padding:20px; }
     .quiz-layout{ gap:14px; }
     .numpad-panel{ flex-basis:190px; }
+    .question-panel{ flex-basis:240px; }
     .question-panel .question{ font-size:42px; }
   }
+  /* an upright tablet: the equation, answer and Check in one line on top; below it the keypad, and the picture beside it */
+  @media (orientation:portrait) and (min-width:681px){
+    .quiz-layout{ display:grid; grid-template-columns:230px 1fr; grid-template-areas:"q q" "pad pic"; gap:18px; }
+    .numpad-panel{ grid-area:pad; }
+    .blocks-panel{ grid-area:pic; }
+    .blocks-box{ min-height:max(220px, calc(100vh - 720px)); }     /* a tall iPad gives the picture its extra height */
+    .question-panel{ grid-area:q; flex-direction:row; flex-wrap:wrap; justify-content:center; align-items:center; column-gap:20px; }
+    .question-panel .question{ margin:0; width:230px; }             /* a fixed width, so the answer box never moves */
+    .question-panel .answer-display{ margin:0; width:170px; }
+    .numpad-panel .numpad button{ padding:22px 0; }      /* taller keys; this rule comes before the keypad's own, so it names the panel too */
+    .question-panel .row{ margin:0; }
+    .question-panel .feedback, .question-panel .redo-note{ flex-basis:100%; margin-top:4px; }
+  }
+  /* phones: equation on top, the picture across the card, the keypad below */
   @media (max-width:680px){
     .quiz-layout{ flex-direction:column-reverse; }
     .blocks-panel, .question-panel{ flex:none; }
-    .blocks-panel svg{ height:96px; }
+    .blocks-box{ flex:none; min-height:0; height:150px; }
+    .numpad-panel{ flex:none; width:100%; max-width:320px; margin:0 auto; }
     .blocks-note{ font-size:15px; margin-top:2px; }
     .question-panel .feedback{ margin-top:6px; }
     .question-panel .redo-note{ margin-top:0; }
     .question-panel .question{ margin-bottom:8px; }
     .question-panel .row{ margin-top:8px; }
-    .numpad-panel{ flex:none; width:100%; max-width:320px; margin:0 auto; }
   }
   .numpad{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
   .numpad button{
@@ -1209,22 +1230,52 @@ function updateAnswerDisplay(){
   disp.classList.toggle("empty", session.currentAnswer==="");
   if(checkBtn) checkBtn.disabled = session.currentAnswer === "";
 }
-/* The picture of a × b: b groups with a blocks in each (2 × 3 = 3 groups of 2). Each group is one column, so the same
-   picture also reads as a rows of b, which is how Block City shows a × b. */
+/* The picture of a × b: b groups with a blocks in each (2 × 3 = 3 groups of 2). Each group is a column of blocks in its own tray.
+   The picture fills the space it has (the owner: big blocks, so counting is easy on the eyes). The groups wrap into 2 or more rows only
+   when that makes each block clearly bigger (by a quarter, or when one row is under 30px), so near questions keep the same shape.
+   With one row it also reads as a rows of b, like Block City. */
+const BLOCK_MAX = 48;                                    // px: a small fact is not blown up to giant blocks
+let blocksWatch = null;
 function blocksHtml(a, b){
-  const tray = 14, gap = 4, step = 12;                   // in picture units; a block is 10 × 10
-  const w = Math.max(b*(tray+gap)-gap, 0), h = Math.max(a,1)*step+2;   // an empty group (0 blocks) still shows its tray
-  const vw = Math.max(w+2, 92), vh = Math.max(h+2, 76);  // a small fact is not blown up to giant blocks
-  let shapes = b === 0 ? `<text x="0" y="${h/2+4}">no groups</text>` : "";
-  for(let g=0; g<b; g++){
-    const x = g*(tray+gap);
-    shapes += `<rect class="tray" x="${x}" y="0" width="${tray}" height="${h}" rx="3"/>`;
-    for(let k=0; k<a; k++) shapes += `<rect class="block" x="${x+2}" y="${2+k*step}" width="10" height="10" rx="2"/>`;
-  }
   return `<div class="blocks-panel">
-          <svg viewBox="${(w-vw)/2} ${(h-vh)/2} ${vw} ${vh}" aria-hidden="true">${shapes}</svg>
+          <div class="blocks-box" data-a="${a}" data-b="${b}" aria-hidden="true"></div>
           <div class="blocks-note">${b} group${b===1?"":"s"} of ${a}</div>
         </div>`;
+}
+function drawBlocks(box){
+  const a = +box.dataset.a, b = +box.dataset.b, W = box.clientWidth, H = box.clientHeight;
+  if(!W || !H) return;
+  const svg = (vb, body)=>`<svg viewBox="${vb}">${body}</svg>`;
+  if(b === 0){ box.innerHTML = svg(`0 0 ${W} ${H}`, `<text x="${W/2}" y="${H/2}">no groups</text>`); return; }
+  // sizes in blocks: a block is 1, with PAD inside the tray, GAP between blocks, GX / GY between trays
+  const PAD = 0.15, GAP = 0.15, GX = 0.4, GY = 0.6, n = Math.max(a, 1);   // an empty group (0 blocks) still shows its tray
+  const gw = 1 + 2*PAD, gh = n + (n-1)*GAP + 2*PAD;
+  let best = null;
+  for(let rows = 1; rows <= b; rows++){
+    const cols = Math.ceil(b/rows);
+    if(rows > 1 && Math.ceil(b/(rows-1)) === cols) continue;          // same columns as fewer rows: no gain
+    const wu = cols*gw + (cols-1)*GX, hu = rows*gh + (rows-1)*GY, u = Math.min(W/wu, H/hu, BLOCK_MAX);
+    if(!best || u > best.u*(best.u >= 30 ? 1.25 : 1.01)) best = { rows, cols, wu, hu, u };
+  }
+  let body = "";
+  for(let r = 0; r < best.rows; r++){
+    const inRow = Math.floor(b/best.rows) + (r < b % best.rows ? 1 : 0);   // rows as even as possible, longer ones first
+    const x0 = (best.cols - inRow)*(gw + GX)/2, y = r*(gh + GY);
+    for(let i = 0; i < inRow; i++){
+      const x = x0 + i*(gw + GX);
+      body += `<rect class="tray" x="${x}" y="${y}" width="${gw}" height="${gh}" rx="0.25" vector-effect="non-scaling-stroke"/>`;
+      for(let k = 0; k < a; k++) body += `<rect class="block" x="${x+PAD}" y="${y+PAD+k*(1+GAP)}" width="1" height="1" rx="0.15" vector-effect="non-scaling-stroke"/>`;
+    }
+  }
+  const vw = W/best.u, vh = H/best.u;                    // one picture unit = best.u screen pixels, centred in the box
+  box.innerHTML = svg(`${(best.wu-vw)/2} ${(best.hu-vh)/2} ${vw} ${vh}`, body);
+}
+function watchBlocks(){
+  const box = document.querySelector(".blocks-box");
+  if(blocksWatch) blocksWatch.disconnect();
+  if(!box) return;
+  drawBlocks(box);
+  if(window.ResizeObserver){ blocksWatch = new ResizeObserver(()=>{ if(box.isConnected) drawBlocks(box); else blocksWatch.disconnect(); }); blocksWatch.observe(box); }   // turning the iPad, fonts arriving
 }
 function renderQuiz(){
   const app = document.getElementById("app");
@@ -1291,6 +1342,7 @@ function renderQuiz(){
     updateAnswerDisplay();
   });
   document.getElementById("submitBtn").addEventListener("click", submitAnswer);
+  watchBlocks();
 }
 function renderGiveUpConfirm(){
   pauseClock();
