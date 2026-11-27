@@ -529,8 +529,7 @@
     min-height:110px; display:flex; flex-direction:column; justify-content:space-between;
     cursor:pointer; box-shadow:var(--card-shadow); position:relative; overflow:hidden;
   }
-  .lvl-card .num{ font-family:'Baloo 2',cursive; font-weight:800; font-size:22px; }
-  .lvl-card .label{ font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.4px; opacity:0.85;}
+  .lvl-card .label{ font-family:'Baloo 2',cursive; font-size:20px; font-weight:800; line-height:1.15; padding-right:16px; }
   .lvl-card .time{ font-family:'DM Mono',monospace; font-size:13px; margin-top:4px; }
   .lvl-card.done::after{
     content:"✓"; position:absolute; top:8px; right:10px; font-weight:800; font-size:16px;
@@ -928,13 +927,13 @@ const LEVELS = [
   {n:10, tables:[12], label:"12x table",       color:"#9BCB6B"},
   {n:11, tables:[7],  label:"7x table",        color:"#F5D949"},
   {n:12, tables:[8],  label:"8x table",        color:"#6EC6E8"},
-  {n:13, tables:[1,2,5,10],               label:"Mix: easy 4",   color:"#8EC6D9"},
-  {n:14, tables:[3,4,11,12],              label:"Mix: 3,4,11,12",color:"#D9A5D6"},
+  {n:13, tables:[1,2,5,10],               label:"Mix: 1, 2, 5, 10",color:"#8EC6D9"},
+  {n:14, tables:[3,4,11,12],              label:"Mix: 3, 4, 11, 12",color:"#D9A5D6"},
   {n:15, tables:[6,9],                    label:"Mix: 6 & 9",    color:"#A9D98E"},
   {n:16, tables:[7,8],                    label:"Mix: 7 & 8",    color:"#F2C15C"},
-  {n:17, tables:[1,2,3,4,5,6,9,10,11,12], label:"Mix: 10 tables",color:"#E88A6B"},
-  {n:18, tables:[1,2,3,4,5,6,7,8,9,10,11,12], label:"All 12 tables", color:"#5B7FE0"},
-  {n:19, tables:[1,2,3,4,5,6,7,8,9,10,11,12], label:"All 12, again", color:"#E0527F"},
+  {n:17, tables:[1,2,3,4,5,6,9,10,11,12], label:"Mix: all but 7 & 8",color:"#E88A6B"},
+  {n:18, tables:[1,2,3,4,5,6,7,8,9,10,11,12], label:"All tables",     color:"#5B7FE0"},
+  {n:19, tables:[1,2,3,4,5,6,7,8,9,10,11,12], label:"All tables, again",color:"#E0527F"},
   {n:20, tables:[1,2,3,4,5,6,7,8,9,10,11,12], label:"Final Boss",     color:"#2E2E52"},
 ];
 const QUESTIONS_PER_LEVEL = 30;
@@ -1158,9 +1157,9 @@ function renderLevels(){
     const cls = done ? "lvl-card done" : "lvl-card";
     const textColor = textColorFor(lv.color);
     const borderColor = textColor === "#FBF7EE" ? "#FBF7EE" : "var(--ink)";
-    const inner = `<div><div class="num">${lv.n}</div><div class="label">${lv.label}</div></div>
+    const inner = `<div class="label">${lv.label}</div>
          <div class="time">${done ? "best "+fmtTime(rec.levelBestTimes[lv.n])+" · "+fmtMoney(cents) : cents ? fmtMoney(cents)+" so far" : "up to "+fmtMoney(QUESTIONS_PER_LEVEL)}</div>`;
-    return `<div class="${cls}" role="button" tabindex="0" aria-label="Round ${lv.n}, ${lv.label}" style="background:${lv.color}; color:${textColor}; border-color:${borderColor};" data-level="${lv.n}">${inner}</div>`;
+    return `<div class="${cls}" role="button" tabindex="0" style="background:${lv.color}; color:${textColor}; border-color:${borderColor};" data-level="${lv.n}">${inner}</div>`;
   }).join("");
 
   const completedCount = Object.keys(rec.levelBestTimes).length;
@@ -1288,7 +1287,7 @@ function renderQuiz(){
   const numpadButtons = [7,8,9,4,5,6,1,2,3].map(d=>`<button data-digit="${d}">${d}</button>`).join("");
   app.innerHTML = `
     <div class="quiz-top">
-      <div class="lvl-tag" style="background:${lv.color}; color:${textColorFor(lv.color)};">Round ${lv.n} · ${lv.label} · up to ${fmtMoney(QUESTIONS_PER_LEVEL)}</div>
+      <div class="lvl-tag" style="background:${lv.color}; color:${textColorFor(lv.color)};">${lv.label} · up to ${fmtMoney(QUESTIONS_PER_LEVEL)}</div>
       <div class="row" style="margin-top:0; gap:12px;">
         <div class="timer" id="timerBox" style="${hideTimer?"display:none":""}">⏱ <span id="timerVal">${fmtTime(elapsedSec())}</span></div>
         <button class="btn secondary small" id="timerToggle" aria-pressed="${hideTimer}">${hideTimer?"Show timer":"Hide timer"}</button>
@@ -1352,7 +1351,7 @@ function renderGiveUpConfirm(){
   app.innerHTML = `
     <div class="card result-card">
       <h2>Stop this round?</h2>
-      <p>You're on Round ${lv.n} · ${lv.label}. ${session.round > 1 ? "The money you earned stays yours, but this try won't set a best time." : "If you stop now, the money from this try won't be saved, but your earlier best times and money stay safe."}</p>
+      <p>You're playing: ${lv.label}. ${session.round > 1 ? "The money you earned stays yours, but this try won't set a best time." : "If you stop now, the money from this try won't be saved, but your earlier best times and money stay safe."}</p>
       <div class="row">
         <button class="btn" id="keepGoingBtn">No, keep going</button>
         <button class="btn secondary" id="confirmGiveUpBtn">Yes, stop and go back</button>
@@ -1507,7 +1506,7 @@ function renderLevelComplete(timeSec, n, isNewBestTime, justCompletedAll, totalT
   const completedCount = Object.keys(rec.levelBestTimes).length;
   app.innerHTML = `
     <div class="card result-card">
-      <h2>${resolved ? "Round "+n+" complete! 🎉" : "Round "+n+": good practice! 💪"}</h2>
+      <h2>${session.level.label} · ${resolved ? "complete! 🎉" : "good practice! 💪"}</h2>
       <div class="big">${fmtTime(timeSec)}</div>
       <p class="sub">Your best try counts: ${fmtMoney(centsFor(n, rec.levelPoints[n]))} for this round.</p>
       ${rec.levelBestTimes[n]!=null ? "" : '<p class="sub">Answer every question right to set a best time for this round.</p>'}
