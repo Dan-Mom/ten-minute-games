@@ -1005,6 +1005,31 @@ button{-webkit-appearance:none;appearance:none}
 .recbtn.starting{background:#fff3cd;border-color:#e8a317;color:#7a5200;box-shadow:0 5px 0 #e8a317;animation:pulse 1s ease-in-out infinite alternate}
 @keyframes pulse{from{opacity:1}to{opacity:.65}}
 @media (prefers-reduced-motion:reduce){.recbtn.starting{animation:none}}
+/* the English under each word (the owner, 2026-11-27: "so everyone knows which Chinese and English words match"): small, centred under its word. It is NOT
+   pinyin (.wg, not .wp), so the pinyin switch leaves it on. A gloss wider than its word widens the word's box, so glosses never overlap; the sentence wraps by word boxes. */
+.wg{display:block;font-family:var(--body);font-weight:700;font-size:max(14px,.28em);line-height:1.25;color:#9a4a12;white-space:nowrap;letter-spacing:0;margin-top:.08em;padding:0 .12em}
+.sent.gl .wd{margin:0 .12em}
+.wendg{display:inline-flex;flex-direction:column;align-items:flex-start}
+.wendg .wem{display:block;line-height:1.15}
+.wendg .wg{visibility:hidden}
+.tl .wg{font-size:max(13px,.3em)}
+.sent.gl .poly,.bline.glb .poly{display:inline-block;line-height:1}   /* the dotted line under a grey character sits right under it, clear of the English */
+.bline.glb .tile{padding:2px 6px}   /* a built sentence with its English: the tiles hardly grow, so Next stays on a short screen */
+.bline.glb .tl .wp,.bline.glb .tl .wh{line-height:1.02}
+.bline.glb .tl .wg{line-height:1.1;margin-top:3px;padding:0}
+.bwg{flex-basis:100%;text-align:center;font-size:22px;margin:0}
+.opt.cn .sent.gl{line-height:1.05}
+.opt.cn.long .sent.gl{font-size:.86em}.opt.cn.long.longer .sent.gl{font-size:.74em}   /* an answer that still takes two lines with its English: smaller, so three long answers fit an upright iPad */
+/* a sentence with its English under the words that still takes two lines is set a little smaller (fitSent) */
+.sentline.long.longer{font-size:36px}
+@media (min-width:700px){.big .sentline.long.longer{font-size:52px}}
+@media (min-width:700px) and (max-height:800px){.big .sentline.long.longer{font-size:44px}}
+.hintslot.long{font-size:30px}.hintslot.long.longer{font-size:26px}   /* the Hear-it reveal in a narrow column */
+@media (min-width:700px){.big .hintslot.long{font-size:48px}.big .hintslot.long.longer{font-size:40px}}
+@media (min-width:700px) and (max-height:800px){.big .hintslot.long{font-size:40px}.big .hintslot.long.longer{font-size:34px}}
+.askline.long{font-size:30px}.askline.long.longer{font-size:26px}   /* the question of "what do you answer" with its English under the words */
+@media (min-width:700px){.big .askline.long{font-size:48px}.big .askline.long.longer{font-size:40px}}
+@media (min-width:700px) and (max-height:800px){.big .askline.long{font-size:40px}.big .askline.long.longer{font-size:34px}}
 </style>
 <style>
 /* Daily Talk: the sentences a family says every day, five a day. Each sentence has a picture, pinyin, English and one "star" character to learn.
@@ -1020,7 +1045,7 @@ button{-webkit-appearance:none;appearance:none}
 <script>
 /* ---------- content: every sentence is our own ---------- */
 var TALK = { id: 'daily-talk', voice: 'daily-voice', intro: { emoji: '💬', title: 'Daily Talk 日常对话' } };
-/* a sentence: w = its words, p = the pinyin of each word, end = the punctuation, en = English, e = a picture (one emoji, different for each sentence of a day),
+/* a sentence: w = its words, p = the pinyin of each word, g = the English of each word (shown small under it; one per word, the same length as w), end = the punctuation, en = English, e = a picture (one emoji, different for each sentence of a day),
    star = the one character to learn, no = two characters that do not fit in its place (for "find the star character"),
    t and tp = the pieces for building, only when the sentence is a single word. pairs = a question and its answer (x = sentences that would also answer it). */
 var WEEKS = [{
@@ -1030,47 +1055,47 @@ var WEEKS = [{
     { id: 'd1', title: 'Day 1: Waking up', zh: '起床', e: '🌅',
       pairs: [{ q: 'd1.3', a: 'd1.4' }],
       items: [
-        { w: ['早上', '好'], p: ['zǎoshang', 'hǎo'], end: '！', en: 'Good morning!', e: '🌅', star: { c: '好', py: 'hǎo', en: 'good' }, no: ['大', '月'] },
-        { w: ['我', '起床', '了'], p: ['wǒ', 'qǐchuáng', 'le'], end: '。', en: "I'm up! (I got out of bed.)", e: '⏰', star: { c: '我', py: 'wǒ', en: 'I, me' }, no: ['石', '鱼'] },
-        { w: ['你', '睡', '得', '好', '吗'], p: ['nǐ', 'shuì', 'de', 'hǎo', 'ma'], end: '？', en: 'Did you sleep well?', e: '🛌', star: { c: '你', py: 'nǐ', en: 'you' }, no: ['车', '石'] },
-        { w: ['我', '睡', '得', '很', '好'], p: ['wǒ', 'shuì', 'de', 'hěn', 'hǎo'], end: '。', en: 'I slept very well.', e: '😊', star: { c: '很', py: 'hěn', en: 'very' }, no: ['月', '门'] },
-        { w: ['我', '要', '刷牙'], p: ['wǒ', 'yào', 'shuāyá'], end: '。', en: "I'm going to brush my teeth.", e: '🦷', star: { c: '要', py: 'yào', en: 'want; going to' }, no: ['月', '鸟'] }
+        { w: ['早上', '好'], p: ['zǎoshang', 'hǎo'], g: ['morning', 'good'], end: '！', en: 'Good morning!', e: '🌅', star: { c: '好', py: 'hǎo', en: 'good' }, no: ['大', '月'] },
+        { w: ['我', '起床', '了'], p: ['wǒ', 'qǐchuáng', 'le'], g: ['I', 'get up', '(now)'], end: '。', en: "I'm up! (I got out of bed.)", e: '⏰', star: { c: '我', py: 'wǒ', en: 'I, me' }, no: ['石', '鱼'] },
+        { w: ['你', '睡', '得', '好', '吗'], p: ['nǐ', 'shuì', 'de', 'hǎo', 'ma'], g: ['you', 'sleep', '(how)', 'well', '?'], end: '？', en: 'Did you sleep well?', e: '🛌', star: { c: '你', py: 'nǐ', en: 'you' }, no: ['车', '石'] },
+        { w: ['我', '睡', '得', '很', '好'], p: ['wǒ', 'shuì', 'de', 'hěn', 'hǎo'], g: ['I', 'sleep', '(how)', 'very', 'well'], end: '。', en: 'I slept very well.', e: '😊', star: { c: '很', py: 'hěn', en: 'very' }, no: ['月', '门'] },
+        { w: ['我', '要', '刷牙'], p: ['wǒ', 'yào', 'shuāyá'], g: ['I', 'am going to', 'brush teeth'], end: '。', en: "I'm going to brush my teeth.", e: '🦷', star: { c: '要', py: 'yào', en: 'want; going to' }, no: ['月', '鸟'] }
       ] },
     { id: 'd2', title: 'Day 2: Getting ready', zh: '穿衣服', e: '👕',
       pairs: [{ q: 'd2.4', a: 'd2.5' }],
       items: [
-        { w: ['我', '要', '洗脸'], p: ['wǒ', 'yào', 'xǐliǎn'], end: '。', en: "I'm going to wash my face.", e: '🧼', star: { c: '洗', py: 'xǐ', en: 'wash' }, no: ['石', '车'] },
-        { w: ['我', '要', '穿', '衣服'], p: ['wǒ', 'yào', 'chuān', 'yīfu'], end: '。', en: "I'm going to put on my clothes.", e: '👕', star: { c: '衣', py: 'yī', en: 'clothes' }, no: ['山', '水'] },
-        { w: ['我', '自己', '穿', '鞋'], p: ['wǒ', 'zìjǐ', 'chuān', 'xié'], end: '。', en: 'I put on my shoes myself.', e: '👟', star: { c: '自', py: 'zì', en: 'self' }, no: ['月', '鸟'] },
-        { w: ['我的', '书包', '在', '哪儿'], p: ['wǒ de', 'shūbāo', 'zài', 'nǎr'], end: '？', en: 'Where is my schoolbag?', e: '🤷', star: { c: '书', py: 'shū', en: 'book' }, no: ['日', '木'] },
-        { w: ['书包', '在', '这儿'], p: ['shūbāo', 'zài', 'zhèr'], end: '。', en: 'The schoolbag is here.', e: '🎒', star: { c: '在', py: 'zài', en: 'be at; in' }, no: ['大', '石'] }
+        { w: ['我', '要', '洗脸'], p: ['wǒ', 'yào', 'xǐliǎn'], g: ['I', 'am going to', 'wash face'], end: '。', en: "I'm going to wash my face.", e: '🧼', star: { c: '洗', py: 'xǐ', en: 'wash' }, no: ['石', '车'] },
+        { w: ['我', '要', '穿', '衣服'], p: ['wǒ', 'yào', 'chuān', 'yīfu'], g: ['I', 'am going to', 'put on', 'clothes'], end: '。', en: "I'm going to put on my clothes.", e: '👕', star: { c: '衣', py: 'yī', en: 'clothes' }, no: ['山', '水'] },
+        { w: ['我', '自己', '穿', '鞋'], p: ['wǒ', 'zìjǐ', 'chuān', 'xié'], g: ['I', 'myself', 'put on', 'shoes'], end: '。', en: 'I put on my shoes myself.', e: '👟', star: { c: '自', py: 'zì', en: 'self' }, no: ['月', '鸟'] },
+        { w: ['我的', '书包', '在', '哪儿'], p: ['wǒ de', 'shūbāo', 'zài', 'nǎr'], g: ['my', 'schoolbag', 'is', 'where'], end: '？', en: 'Where is my schoolbag?', e: '🤷', star: { c: '书', py: 'shū', en: 'book' }, no: ['日', '木'] },
+        { w: ['书包', '在', '这儿'], p: ['shūbāo', 'zài', 'zhèr'], g: ['schoolbag', 'is', 'here'], end: '。', en: 'The schoolbag is here.', e: '🎒', star: { c: '在', py: 'zài', en: 'be at; in' }, no: ['大', '石'] }
       ] },
     { id: 'd3', title: 'Day 3: Eating', zh: '吃饭', e: '🍚',
       pairs: [{ q: 'd3.3', a: 'd3.4', x: ['d3.1', 'd3.5'] }],
       items: [
-        { w: ['我', '饿', '了'], p: ['wǒ', 'è', 'le'], end: '。', en: "I'm hungry.", e: '🤤', star: { c: '饿', py: 'è', en: 'hungry' }, no: ['石', '车'] },
-        { w: ['开饭', '了'], p: ['kāifàn', 'le'], end: '！', en: "Time to eat! (Dinner's ready!)", e: '🍚', star: { c: '饭', py: 'fàn', en: 'rice; meal' }, no: ['月', '日'] },
-        { w: ['你', '想', '吃', '什么'], p: ['nǐ', 'xiǎng', 'chī', 'shénme'], end: '？', en: 'What would you like to eat?', e: '🍴', star: { c: '吃', py: 'chī', en: 'eat' }, no: ['车', '月'] },
-        { w: ['我', '想', '吃', '面条'], p: ['wǒ', 'xiǎng', 'chī', 'miàntiáo'], end: '。', en: "I'd like noodles.", e: '🍜', star: { c: '面', py: 'miàn', en: 'noodles; face' }, no: ['鸟', '云'] },
-        { w: ['我', '吃饱', '了'], p: ['wǒ', 'chībǎo', 'le'], end: '。', en: "I'm full.", e: '😌', star: { c: '饱', py: 'bǎo', en: 'full (of food)' }, no: ['车', '门'] }
+        { w: ['我', '饿', '了'], p: ['wǒ', 'è', 'le'], g: ['I', 'hungry', '(now)'], end: '。', en: "I'm hungry.", e: '🤤', star: { c: '饿', py: 'è', en: 'hungry' }, no: ['石', '车'] },
+        { w: ['开饭', '了'], p: ['kāifàn', 'le'], g: ['start the meal', '(now)'], end: '！', en: "Time to eat! (Dinner's ready!)", e: '🍚', star: { c: '饭', py: 'fàn', en: 'rice; meal' }, no: ['月', '日'] },
+        { w: ['你', '想', '吃', '什么'], p: ['nǐ', 'xiǎng', 'chī', 'shénme'], g: ['you', 'would like to', 'eat', 'what'], end: '？', en: 'What would you like to eat?', e: '🍴', star: { c: '吃', py: 'chī', en: 'eat' }, no: ['车', '月'] },
+        { w: ['我', '想', '吃', '面条'], p: ['wǒ', 'xiǎng', 'chī', 'miàntiáo'], g: ['I', 'would like to', 'eat', 'noodles'], end: '。', en: "I'd like noodles.", e: '🍜', star: { c: '面', py: 'miàn', en: 'noodles; face' }, no: ['鸟', '云'] },
+        { w: ['我', '吃饱', '了'], p: ['wǒ', 'chībǎo', 'le'], g: ['I', 'eat till full', '(now)'], end: '。', en: "I'm full.", e: '😌', star: { c: '饱', py: 'bǎo', en: 'full (of food)' }, no: ['车', '门'] }
       ] },
     { id: 'd4', title: 'Day 4: Please and thank you', zh: '请和谢谢', e: '🙏',
       pairs: [{ q: 'd4.2', a: 'd4.3', x: ['d4.5'] }, { q: 'd4.4', a: 'd4.5' }],
       items: [
-        { w: ['请', '给', '我', '一杯', '水'], p: ['qǐng', 'gěi', 'wǒ', 'yì bēi', 'shuǐ'], end: '。', en: 'Please give me a glass of water.', e: '💧', star: { c: '水', py: 'shuǐ', en: 'water' }, no: ['石', '月'] },
-        { w: ['谢谢'], p: ['xièxie'], t: ['谢', '谢'], tp: ['xiè', 'xie'], end: '！', en: 'Thank you!', e: '🙏', star: { c: '谢', py: 'xiè', en: 'thank' }, no: ['石', '车'] },
-        { w: ['不', '客气'], p: ['bú', 'kèqi'], end: '。', en: "You're welcome.", e: '🤗', star: { c: '不', py: 'bù (bú here)', en: 'not; no' }, no: ['月', '石'] },
-        { w: ['对不起'], p: ['duìbuqǐ'], t: ['对', '不', '起'], tp: ['duì', 'bu', 'qǐ'], end: '。', en: "I'm sorry.", e: '😔', star: { c: '对', py: 'duì', en: 'right; toward' }, no: ['月', '鸟'] },
-        { w: ['没', '关系'], p: ['méi', 'guānxi'], end: '。', en: "It's OK. (No problem.)", e: '🤝', star: { c: '没', py: 'méi', en: 'not have' }, no: ['月', '石'] }
+        { w: ['请', '给', '我', '一杯', '水'], p: ['qǐng', 'gěi', 'wǒ', 'yì bēi', 'shuǐ'], g: ['please', 'give', 'me', 'a glass of', 'water'], end: '。', en: 'Please give me a glass of water.', e: '💧', star: { c: '水', py: 'shuǐ', en: 'water' }, no: ['石', '月'] },
+        { w: ['谢谢'], p: ['xièxie'], g: ['thank you'], t: ['谢', '谢'], tp: ['xiè', 'xie'], end: '！', en: 'Thank you!', e: '🙏', star: { c: '谢', py: 'xiè', en: 'thank' }, no: ['石', '车'] },
+        { w: ['不', '客气'], p: ['bú', 'kèqi'], g: ["don't", 'be polite'], end: '。', en: "You're welcome.", e: '🤗', star: { c: '不', py: 'bù (bú here)', en: 'not; no' }, no: ['月', '石'] },
+        { w: ['对不起'], p: ['duìbuqǐ'], g: ['sorry'], t: ['对', '不', '起'], tp: ['duì', 'bu', 'qǐ'], end: '。', en: "I'm sorry.", e: '😔', star: { c: '对', py: 'duì', en: 'right; toward' }, no: ['月', '鸟'] },
+        { w: ['没', '关系'], p: ['méi', 'guānxi'], g: ['no', 'problem'], end: '。', en: "It's OK. (No problem.)", e: '🤝', star: { c: '没', py: 'méi', en: 'not have' }, no: ['月', '石'] }
       ] },
     { id: 'd5', title: 'Day 5: Bedtime', zh: '睡觉', e: '🌙',
       pairs: [],
       items: [
-        { w: ['我', '累', '了'], p: ['wǒ', 'lèi', 'le'], end: '。', en: "I'm tired.", e: '😩', star: { c: '累', py: 'lèi', en: 'tired' }, no: ['石', '车'] },
-        { w: ['我', '想', '睡觉'], p: ['wǒ', 'xiǎng', 'shuìjiào'], end: '。', en: 'I want to go to sleep.', e: '😴', star: { c: '睡', py: 'shuì', en: 'sleep' }, no: ['石', '鸟'] },
-        { w: ['请', '关灯'], p: ['qǐng', 'guāndēng'], end: '。', en: 'Please turn off the light.', e: '💡', star: { c: '灯', py: 'dēng', en: 'light; lamp' }, no: ['月', '石'] },
-        { w: ['晚安'], p: ['wǎn’ān'], t: ['晚', '安'], tp: ['wǎn', 'ān'], end: '！', en: 'Good night!', e: '🌙', star: { c: '安', py: 'ān', en: 'peaceful; safe' }, no: ['月', '石'] },
-        { w: ['明天', '见'], p: ['míngtiān', 'jiàn'], end: '！', en: 'See you tomorrow!', e: '👋', star: { c: '见', py: 'jiàn', en: 'see; meet' }, no: ['石', '月'] }
+        { w: ['我', '累', '了'], p: ['wǒ', 'lèi', 'le'], g: ['I', 'tired', '(now)'], end: '。', en: "I'm tired.", e: '😩', star: { c: '累', py: 'lèi', en: 'tired' }, no: ['石', '车'] },
+        { w: ['我', '想', '睡觉'], p: ['wǒ', 'xiǎng', 'shuìjiào'], g: ['I', 'want to', 'go to sleep'], end: '。', en: 'I want to go to sleep.', e: '😴', star: { c: '睡', py: 'shuì', en: 'sleep' }, no: ['石', '鸟'] },
+        { w: ['请', '关灯'], p: ['qǐng', 'guāndēng'], g: ['please', 'turn off the light'], end: '。', en: 'Please turn off the light.', e: '💡', star: { c: '灯', py: 'dēng', en: 'light; lamp' }, no: ['月', '石'] },
+        { w: ['晚安'], p: ['wǎn’ān'], g: ['good night'], t: ['晚', '安'], tp: ['wǎn', 'ān'], end: '！', en: 'Good night!', e: '🌙', star: { c: '安', py: 'ān', en: 'peaceful; safe' }, no: ['月', '石'] },
+        { w: ['明天', '见'], p: ['míngtiān', 'jiàn'], g: ['tomorrow', 'see you'], end: '！', en: 'See you tomorrow!', e: '👋', star: { c: '见', py: 'jiàn', en: 'see; meet' }, no: ['石', '月'] }
       ] }
   ]
 }];
@@ -1394,6 +1419,7 @@ WEEKS.forEach(function (W) {
     D.items.forEach(function (it) {
       var s = it.w.join('');
       if (it.w.length !== it.p.length) console.error('Daily Talk: words and pinyin differ in ' + it.id);
+      if (!Array.isArray(it.g) || it.g.length !== it.w.length || it.g.some(function (x) { return typeof x !== 'string' || !x.trim(); })) console.error('Daily Talk: the English under each word (g) is missing or does not match the words in ' + it.id);
       if (s.indexOf(it.star.c) < 0) console.error('Daily Talk: the star character is not in ' + it.id);
       if (!it.no || it.no.length !== 2 || it.no.some(function (c) { return s.indexOf(c) >= 0; })) console.error('Daily Talk: the two wrong characters of ' + it.id + ' are missing or in the sentence');
       if (it.t && (!it.tp || it.t.length !== it.tp.length || it.t.join('') !== s)) console.error('Daily Talk: pieces, their pinyin or their sum differ in ' + it.id);
@@ -1446,6 +1472,21 @@ function ruby(it, blank, tap) {   // the sentence with its pinyin over every wor
   if (it.end) { var last = s.lastChild, nb = E('span', 'nbw'); s.replaceChild(nb, last); nb.appendChild(last); nb.appendChild(txt('span', 'wend', it.end)); }   // the mark never wraps alone
   return s;
 }
+/* the English of each word, small, under the word (the owner, 2026-11-27: "so everyone knows which Chinese and English words match"). It is not pinyin
+   (class .wg, not .wp: the pinyin switch leaves it on) and it is not read aloud. Shown on the learn card, and on a question only once it is answered. */
+function gloss(s, it) {   // s = a sentence made by ruby(it)
+  if (!s || !it.g || s.classList.contains('gl')) return s;
+  s.classList.add('gl');
+  s.querySelectorAll('.wd').forEach(function (d, n) { d.appendChild(txt('span', 'wg', it.g[n] || '')); });
+  var m = s.querySelector('.wend'); if (m) { var t = m.textContent; m.textContent = ''; m.classList.add('wendg'); m.appendChild(txt('span', 'wem', t)); m.appendChild(txt('span', 'wg', ' ')); }   // the mark stays level with the characters
+  return s;
+}
+function fitSent(s) {   // a sentence with its English under the words is wider: when it takes two lines, a smaller size is tried (the word boxes wrap, never overlap)
+  var box = s && s.closest('.sentline, .hintslot, .askline, .opt.cn'); if (!box) return;
+  function rows() { var t = {}; s.querySelectorAll('.wd').forEach(function (d) { t[Math.round(d.offsetTop / 8)] = 1; }); return Object.keys(t).length; }
+  if (rows() > 1 && !box.classList.contains('long')) box.classList.add('long');
+  if (rows() > 1) box.classList.add('longer');
+}
 function speakBtn(t, big, en) { var b = E('button', 'speak' + (big ? ' bigspeak' : ''), '🔊'); b.type = 'button'; b.setAttribute('aria-label', 'Listen'); b.onclick = function () { unlockSound(); if (en) sayThen(t, en, function () { return b.isConnected; }); else say(t); }; return b; }   // a tap is always a valid moment to wake the sound (iPad)
 function pick2(from, exclude) {   // two other sentences, never the one asked about, its partner in a question and answer, or one with the same picture
   var out = [], ban = {}; exclude.forEach(function (x) { ban[x.id] = 1; if (x.e) ban['e' + x.e] = 1; });
@@ -1477,22 +1518,27 @@ function qListen(D, it) {   // the voice says a sentence: pick its picture
     shuffle([it].concat(others(D, it, mateOf(D, it)))).forEach(function (x) {   // each answer: its picture and its English, one under the other (the owner, 2026-11-22: pictures alone are too hard to guess)
       var b = E('button', 'opt wide picopt'); b.type = 'button'; b.appendChild(txt('span', 'pe', x.e)); b.appendChild(txt('span', 'pt', x.en));
       if (x === it) right = b;
-      b.onclick = function () { if (done) return; done = true; var ok = x === it; answerFx(b, ok, right); answer(ok, sentOf(it)); };
+      b.onclick = function () {
+        if (done) return; done = true; var ok = x === it; answerFx(b, ok, right);
+        slot.innerHTML = ''; slot.appendChild(gloss(ruby(it), it)); fitSent(slot.firstChild); hb.disabled = true;   // once answered, the Chinese shows, with the English under each word (the owner, 2026-11-27)
+        answer(ok, sentOf(it));
+      };
       opts.appendChild(b);
     });
     R.appendChild(opts);
   } };
 }
+function glossAll(opts, list) { opts.querySelectorAll('.opt.cn').forEach(function (b, n) { fitSent(gloss(b.querySelector('.sent'), list[n])); }); }   // after an answer: the English under the words of EVERY Chinese answer (the owner, 2026-11-27)
 function qEn(D, it) {   // an English line: pick the Chinese sentence
   return { first: [it.en], texts: [sentOf(it), it.en], render: function (box, answer) {
     var L = E('div', 'lcol'), R = E('div', 'rcol'); box.appendChild(L); box.appendChild(R);   // two halves on a wide screen: the question left, the answers right
     L.appendChild(txt('p', 'say', 'How do you say it in Chinese?'));
     L.appendChild(enLine(it, 'enq q'));
-    var opts = E('div', 'opts col'), right = null, done = false;
-    shuffle([it].concat(others(D, it, mateOf(D, it)))).forEach(function (x) {
+    var opts = E('div', 'opts col'), right = null, done = false, list = shuffle([it].concat(others(D, it, mateOf(D, it))));
+    list.forEach(function (x) {
       var b = E('button', 'opt wide cn'); b.type = 'button'; b.appendChild(ruby(x));
       if (x === it) right = b;
-      b.onclick = function () { if (done) return; done = true; var ok = x === it; answerFx(b, ok, right); answer(ok, sentOf(it)); };
+      b.onclick = function () { if (done) return; done = true; var ok = x === it; answerFx(b, ok, right); glossAll(opts, list); answer(ok, sentOf(it)); };
       opts.appendChild(b);
     });
     R.appendChild(opts);
@@ -1503,14 +1549,15 @@ function qAnswer(D, it, p) {   // someone says a sentence: pick the right thing 
   return { first: [sentOf(it), it.en], texts: [sentOf(it), sentOf(a), it.en], render: function (box, answer) {
     var L = E('div', 'lcol'), R = E('div', 'rcol'); box.appendChild(L); box.appendChild(R);   // two halves on a wide screen: the question left, the answers right
     L.appendChild(txt('p', 'say', 'Someone says this to you. What do you answer?'));
-    var q = E('div', 'askline'); q.appendChild(speakBtn(sentOf(it), false, it.en)); q.appendChild(ruby(it)); L.appendChild(q);
+    var q = E('div', 'askline'), qs = ruby(it); q.appendChild(speakBtn(sentOf(it), false, it.en)); q.appendChild(qs); L.appendChild(q);
     L.appendChild(enLine(it, 'enq small'));
     var pool = poolOf(D).filter(function (x) { return x !== it && x !== a && !ban[x.id] && x.day !== undefined; }), opts = E('div', 'opts col'), right = null, done = false;
     var wrong = pick2(pool, [it, a].concat(pool.filter(function (x) { return x.e === a.e || x.e === it.e; })));
-    shuffle([a].concat(wrong)).forEach(function (x) {
+    var list = shuffle([a].concat(wrong));
+    list.forEach(function (x) {
       var b = E('button', 'opt wide cn'); b.type = 'button'; b.appendChild(ruby(x));
       if (x === a) right = b;
-      b.onclick = function () { if (done) return; done = true; var ok = x === a; answerFx(b, ok, right); answer(ok, sentOf(a)); };
+      b.onclick = function () { if (done) return; done = true; var ok = x === a; answerFx(b, ok, right); gloss(qs, it); fitSent(qs); glossAll(opts, list); answer(ok, sentOf(a)); };
       opts.appendChild(b);
     });
     R.appendChild(opts);
@@ -1529,7 +1576,7 @@ function qStar(D, it) {   // the sentence with its star character hidden: pick t
       if (x === c) right = b;
       b.onclick = function () {
         if (done) return; done = true; var ok = x === c; answerFx(b, ok, right);
-        var whole = ruby(it); line.replaceChild(whole, r); if (ok) whole.classList.add('right');
+        var whole = gloss(ruby(it), it); line.replaceChild(whole, r); if (ok) whole.classList.add('right'); fitSent(whole);
         answer(ok, sentOf(it));
       };
       opts.appendChild(b);
@@ -1554,6 +1601,11 @@ function qBuild(D, it) {   // tap the pieces in order
       if (put.length === units.length && !done) {
         done = true; var ok = put.every(function (i, n) { return units[i] === units[orderIdx(n)]; });
         line.classList.add(ok ? 'ok' : 'no'); if (!ok) { put = units.map(function (u, n) { return n; }); redraw(); line.classList.add('no'); }
+        if (it.g) {   // built: the English under each word (a one-word sentence built from its characters: the English of the whole word, under the line)
+          line.classList.add('glb');
+          if (it.t) line.appendChild(txt('span', 'wg bwg', it.g[0]));
+          else line.querySelectorAll('.tile .tl').forEach(function (h, n) { h.appendChild(txt('span', 'wg', it.g[n] || '')); });
+        }
         answer(ok, sentOf(it));
       }
     }
@@ -1879,7 +1931,7 @@ function learn(D, S, si, sn, done) {   // five cards: the picture and the Englis
     var p = E('div', 'panel learnp'), two = E('div', 'two'), lc = E('div', 'lcol'), rc = E('div', 'rcol'); two.appendChild(lc); two.appendChild(rc); p.appendChild(two);
     lc.appendChild(E('div', 'emoji bigemoji', it.e));
     lc.appendChild(enLine(it, 'enq'));
-    var sw = E('div', 'sentline learnsent' + (sentOf(it).length >= 7 ? ' long' : '')); sw.setAttribute('data-item', it.id); sw.appendChild(ruby(it, null, true)); rc.appendChild(sw);   // a long sentence is a little smaller so it still fits
+    var sw = E('div', 'sentline learnsent' + (sentOf(it).length >= 7 ? ' long' : '')); sw.setAttribute('data-item', it.id); sw.appendChild(gloss(ruby(it, null, true), it)); rc.appendChild(sw);   // a long sentence is a little smaller so it still fits
     rc.appendChild(E('p', 'tapnote', 'Tap a character to write it ✍️ <span class="han nopoly">点一个字来写</span>'));
     var sr = E('div', 'row sayrow'), lb = E('button', 'btn ghost listenbtn', '🔊 Listen again'); lb.setAttribute('aria-label', 'Listen again 再听一遍'); lb.type = 'button';   // the speaker only plays the sentence: it says so (the owner, 2026-11-22: "say it out loud" next to it was misleading)
     lb.onclick = function () { unlockSound(); sayThen(sentOf(it), it.en, function () { return lb.isConnected; }); }; sr.appendChild(lb); rc.appendChild(sr);
@@ -1889,7 +1941,7 @@ function learn(D, S, si, sn, done) {   // five cards: the picture and the Englis
     var nb = E('button', 'btn', 'I said it ▶'); nb.type = 'button'; nb.appendChild(document.createTextNode(' ')); nb.appendChild(E('span', 'han nopoly', '我说了'));
     nb.onclick = function () { afterVoice(function () { i++; if (i < n) card(); else done(); }, nb); };
     if (i > 0) { var bk = E('button', 'btn ghost', '◀ Back'); bk.type = 'button'; bk.onclick = function () { afterVoice(function () { i--; card(); }, bk); }; r.appendChild(bk); }
-    r.appendChild(nb); p.appendChild(r); app.appendChild(p);
+    r.appendChild(nb); p.appendChild(r); app.appendChild(p); fitSent(sw.firstChild);
     it.w.join('').split('').forEach(function (ch) { strokesOf(ch).catch(function () {}); });   // so the writing box opens at once, even on slow Wi-Fi
     warm(D.items.map(sentOf).concat(D.items.map(function (x) { return x.en; }), D.items.reduce(function (a, x) { return a.concat(x.w); }, [])));
     afterPaint(function () { sayThen(sentOf(it), it.en, function () { return p.isConnected; }); });   // the Chinese, then the English, so the child can listen without looking
