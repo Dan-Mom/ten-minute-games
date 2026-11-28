@@ -680,10 +680,14 @@ button.ap.tapme{box-shadow:0 0 0 3px #f4b183}
   function vkey(t) { t = String(t).replace(/＿/g, '').trim(); var h = 0x811c9dc5; for (var i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
   /* keep = true (the mute button): stop the sound but let a waiting step move on with its safety timer */
   function hush(keep) {
-    if (!keep) { clearTimeout(endTimer); waitFin = null; if (player) player.onended = null; }
+    if (!keep) { clearTimeout(endTimer); waitFin = null; if (player) player.onended = player.onplaying = player.onerror = null; }
     if (player) try { player.pause(); } catch (e) {}
   }
-  /* then (optional) runs when the sentence has finished, or after a safe wait if the sound is off or blocked */
+  /* (re)start the safety timer of the step that is waiting for a line */
+  function waitFor(ms) { clearTimeout(endTimer); if (waitFin) endTimer = setTimeout(waitFin, ms); }
+  /* then (optional) runs when the sentence has finished, or after a safe wait if the sound is off, missing or blocked.
+     With a recording the step waits for its end: a timer from the written text was too short for spoken signs
+     ("23 + 14 = 37" is "23 plus 14 equals 37"), so before 2026-11-27 the next question cut off the answer. */
   function say(t, then, replay) {
     lastSay = t;
     // 🔊 while a step is waiting for a line: the step keeps waiting and moves on after the replay (before 2026-11-07 the wait was lost and the round froze).
@@ -692,17 +696,18 @@ button.ap.tapme{box-shadow:0 0 0 3px #f4b183}
     hush();
     if (!fin && then) { var s = screen; fin = function () { if (fin.done) return; fin.done = true; clearTimeout(endTimer); if (s === screen) then(); }; }
     waitFin = fin;
-    if (fin) endTimer = setTimeout(fin, voiceOn ? 1000 + t.length * 95 : 700);
-    if (!voiceOn || !t) return;
-    var k = vkey(t);
-    if (VKEYS && !VKEYS[k]) return;                 // no recording for this line: stay quiet (the safe wait above still moves things on)
+    var quiet = 1000 + t.length * 95, k = voiceOn && t ? vkey(t) : '';
+    if (!k || (VKEYS && !VKEYS[k])) return waitFor(voiceOn ? quiet : 700);   // voice off, or no recording for this line: stay quiet
+    waitFor(5000);                                  // the most a recording may take to start; once it plays, the wait is its own length
     if (!player) player = new Audio();               // one player, reused, so iPad allows it to keep playing after the first tap
     player.src = 'voice/' + k + '.mp3';              // tried even before keys.json has arrived (every line has a recording)
-    player.onended = fin;                             // a recording that fails to load leaves it to the safety timer, as before
-    var p = player.play(); if (p && p.catch) p.catch(function () {});   // interrupted or blocked: stay quiet (🔊 replays it)
+    player.onended = fin;
+    player.onplaying = fin && function () { var left = player.duration - player.currentTime; waitFor(isFinite(left) ? left * 1000 + 1000 : 8000); };
+    player.onerror = fin && function () { waitFor(quiet); };   // a recording that fails to load: the quiet wait, as before
+    var p = player.play(); if (p && p.catch) p.catch(function (e) { if (fin && waitFin === fin && e && e.name === 'NotAllowedError') waitFor(quiet); });   // blocked: stay quiet (🔊 replays it)
   }
   document.getElementById('snd').onclick = function () { var v = voiceOn; voiceOn = true; say(lastSay, null, true); voiceOn = v; };
-  document.getElementById('mute').onclick = function () { voiceOn = !voiceOn; this.textContent = voiceOn ? '🗣️' : '🔇'; this.setAttribute('aria-label', voiceOn ? 'Turn the voice off' : 'Turn the voice on'); if (!voiceOn) hush(true); };
+  document.getElementById('mute').onclick = function () { voiceOn = !voiceOn; this.textContent = voiceOn ? '🗣️' : '🔇'; this.setAttribute('aria-label', voiceOn ? 'Turn the voice off' : 'Turn the voice on'); if (!voiceOn) { hush(true); waitFor(700); } };
   var ctx = null;
   function plop(f, len) {
     try {
@@ -1144,10 +1149,10 @@ button.ap.tapme{box-shadow:0 0 0 3px #f4b183}
   if (slot) return;   // in a top bar: nothing to move around
   /* The lessons keep their own buttons along the screen edges (Previous / Next in a footer, controls in a header), so a pill nailed to
      one corner always sat on top of something. Keep the pill 44px tall (easy to tap) and, whenever the page layout changes, put it in
-     whichever of six edge spots does not cover a button, link or field (spots tried in this order: bottom-centre, bottom-left,
-     bottom-right, top-centre, top-left, top-right). Buttons that are always on screen (fixed or sticky) count much more than ones
-     that scroll away. It does not move during scrolling; once scrolling stops it moves only if its spot now covers something. */
-  var SPOTS = ['bc', 'bl', 'br', 'tc', 'tl', 'tr'], cur = '', timer = 0, room = false;
+     whichever of six edge spots does not cover a button, link or field, or words (spots tried in this order: bottom-centre, bottom-left,
+     bottom-right, top-centre, top-left, top-right). Buttons that are always on screen (fixed or sticky) count most, then ones that
+     scroll away, then words (2026-11-27: the pill sat on the Times Tables title, because words did not count). It does not move during scrolling; once scrolling stops it moves only if its spot now covers something. */
+  var SPOTS = ['bc', 'bl', 'br', 'tc', 'tl', 'tr'], cur = '', timer = 0, room = false, topRoom = false;
   /* On a phone the two wide pills (about 300px) covered something in every spot, for example "Begin" on a lesson's first screen.
      Below 560px wide they become two round 48px buttons (🏠 and 🔄, still easy to tap; the words stay for screen readers),
      and the page gets room at the bottom so it can always scroll clear of them. */
@@ -1190,15 +1195,39 @@ button.ap.tapme{box-shadow:0 0 0 3px #f4b183}
         if (t && !e.contains(t)) continue;   /* hidden behind something else right now (for example scrolled under the footer): not a button the pill can cover */
         items.push({ r: r, hard: fixedish(e) });
       }
+      var boxes = {};
+      SPOTS.forEach(function (s) { put(s); boxes[s] = a.getBoundingClientRect(); });
+      function over(q, b) { return q.left < b.right - 1 && q.right > b.left + 1 && q.top < b.bottom - 1 && q.bottom > b.top + 1; }
+      function nearSpot(q) { return SPOTS.some(function (s) { return over(q, boxes[s]); }); }
+      /* Words count too (a title, a line of instructions): only the lines of text that are on screen near one of the spots, and not hidden behind something else. */
+      var tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null), n;
+      while ((n = tw.nextNode())) {
+        var pe = n.parentElement; if (!pe || !/\S/.test(n.nodeValue) || a.contains(pe) || /^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE)$/.test(pe.tagName) || !nearSpot(pe.getBoundingClientRect())) continue;
+        var rg = document.createRange(); rg.selectNodeContents(n); var rs = rg.getClientRects();
+        for (j = 0; j < rs.length; j++) {
+          var q = rs[j]; if (q.width < 2 || q.height < 2 || q.bottom <= 0 || q.top >= H || !nearSpot(q)) continue;
+          var tp = document.elementFromPoint(Math.min(Math.max(q.left + q.width / 2, 0), W - 1), Math.min(Math.max(q.top + q.height / 2, 0), H - 1));
+          if (tp && (tp === pe || pe.contains(tp) || tp.contains(pe))) items.push({ r: q, text: true });
+        }
+      }
       var res = {};
       SPOTS.forEach(function (s) {
-        put(s); var b = a.getBoundingClientRect(), hard = 0, soft = 0;
-        items.forEach(function (it) { var q = it.r; if (q.left < b.right - 1 && q.right > b.left + 1 && q.top < b.bottom - 1 && q.bottom > b.top + 1) { if (it.hard) hard++; else soft++; } });
-        res[s] = { hard: hard, soft: soft };
+        var b = boxes[s], hard = 0, soft = 0, text = 0;
+        items.forEach(function (it) { if (over(it.r, b)) { if (it.text) text++; else if (it.hard) hard++; else soft++; } });
+        res[s] = { hard: hard, soft: soft, text: text };
       });
+      function free(x) { return x.hard + x.soft + x.text === 0; }
       var best = '', c = res[cur];
-      for (j = 0; j < SPOTS.length; j++) { var x = res[SPOTS[j]]; if (!best || x.hard < res[best].hard || (x.hard === res[best].hard && x.soft < res[best].soft)) best = SPOTS[j]; }
-      if (!(c && c.hard === 0 && (c.soft === 0 || res[best].hard > 0 || res[best].soft > 0))) cur = best;
+      for (j = 0; j < SPOTS.length; j++) { var x = res[SPOTS[j]], y = res[best]; if (!best || x.hard < y.hard || (x.hard === y.hard && (x.soft < y.soft || (x.soft === y.soft && x.text < y.text)))) best = SPOTS[j]; }
+      /* Nothing is free at the top of the page (the title fills the top, the content the bottom): make a strip of room above the page once, and the buttons sit in it. */
+      if (!free(res[best]) && !topRoom && (window.scrollY || 0) < 4) {
+        topRoom = true;
+        document.body.style.paddingTop = 'calc(' + (getComputedStyle(document.body).paddingTop || '0px') + ' + ' + Math.ceil(boxes.tc.height + 16) + 'px)';
+        a.style.pointerEvents = ''; place(); return;
+      }
+      /* Stay put (no jumping about) while the spot covers nothing; or only words and no spot is free; or scrolling buttons and every spot covers buttons. */
+      var bb = res[best];
+      if (!(c && c.hard === 0 && (free(c) || (c.soft === 0 ? !free(bb) : bb.hard + bb.soft > 0)))) cur = best;
       put(cur); a.style.pointerEvents = '';
     } catch (e) { put(cur || 'bl'); a.style.pointerEvents = ''; }
   }

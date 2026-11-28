@@ -876,11 +876,6 @@
     .dz-fname{ display:none; }
   }
   /* who is playing (the Dozen Galaxy app's first screen) */
-  .dz-who{ max-width:560px; margin:0 auto; text-align:center; }
-  .dz-whogrid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); grid-auto-rows:1fr; gap:10px; margin:14px 0; }
-  .dz-whobtn{ min-height:72px; padding:8px; display:flex; align-items:center; justify-content:center; gap:8px; font-family:'Baloo 2',cursive; font-weight:700; font-size:20px; color:#fff; background:#1B2A6B; border:3px solid #8FA2FF; border-radius:14px; cursor:pointer; overflow-wrap:anywhere; touch-action:manipulation; }
-  .dz-whobtn:hover{ background:#24369A; }
-  .dz-whobtn .e{ font-size:32px; line-height:1; } .dz-whobtn{ flex-direction:column; gap:2px; min-height:104px; white-space:nowrap; } .dz-whobtn small{ font-size:14px; font-weight:700; }
   .dz-sr{ position:fixed; left:0; bottom:0; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
   @media (prefers-reduced-motion: reduce){
     .dz-card::before,.dz-avatar,.dz-tray .dz-g-blue,.dz-tray .dz-g-pink,.dz-bigstars .pop{ animation:none !important; }
@@ -948,14 +943,13 @@ let hideTimer = false; try{ hideTimer = localStorage.getItem(HIDE_TIMER_KEY) ===
 
 /* Five-Minute Thinkers passport: when the site opens this game with ?profile=<animal>, that animal is the player (no name is asked)
    and every finished level is reported as a learning event: queued in localStorage and sent to the site that opened us (same schema as the lessons).
-   ?profile=guest ("Just looking"): nothing is stored at all and no name is asked; progress lives only in this page (FMT.guest, session.guest).
-   fixed = the address decided who is playing, so the game offers no "Switch kid". */
+   ?profile=guest ("Just looking"): nothing is stored at all and no name is asked; progress lives only in this page (FMT.guest, session.guest). */
 const FMT = (()=>{ try{
   const q = new URLSearchParams(location.search); let p = q.get("profile"), h = q.get("host"), o = null;
   const guest = p === "guest";
   p = p && /^[A-Za-z0-9_.-]{1,40}$/.test(p) && !guest && !/^(__proto__|constructor|prototype)$/i.test(p) ? p : null;
   try{ o = h ? new URL(h).origin : null; }catch(e){ o = null; }
-  return { profile:p, guest:guest, fixed:!!p || guest, host:/^https?:/.test(o||"") ? o : null, session:Math.random().toString(36).slice(2,10) };
+  return { profile:p, guest:guest, host:/^https?:/.test(o||"") ? o : null, session:Math.random().toString(36).slice(2,10) };
 }catch(e){ return {}; } })();
 /* Dozen Galaxy opens straight away when the page is opened under the name dozen-galaxy.html (the site's Dozen Galaxy card and the Dozen Galaxy home-screen app) or with ?go=dozen on the address. */
 const DZ_DIRECT = (()=>{ try{ return /\/dozen-galaxy(\.html)?\/?$/i.test(location.pathname) || new URLSearchParams(location.search).get("go") === "dozen"; }catch(e){ return false; } })();
@@ -1065,68 +1059,35 @@ function makeLevelQueue(level){
   return q;
 }
 
-/* =========================================================
-   RENDER: WHO'S PLAYING. A child taps an animal and never types anything about themselves.
-   ========================================================= */
-const LOCAL_ROSTER_KEY = "mathfacts_local_roster_v1";   // only read to clear it: older versions kept typed names here
-const TT_ANIMALS = [{e:"🦁",n:"Lion"},{e:"🦊",n:"Fox"},{e:"🐼",n:"Panda"},{e:"🦉",n:"Owl"},{e:"🐸",n:"Frog"},{e:"🐧",n:"Penguin"}];
-function ttIsPlayerName(n){ return TT_ANIMALS.some(a=>a.n === n) || /^Player \d+$/.test(n); }
-function ttTypedNames(){ const all = readStoredAll(); return all ? Object.keys(all).filter(n=>!ttIsPlayerName(n)) : []; }
-/* Older versions asked a child to type a name, and it was kept as the label on their progress. Progress moves to a free animal so nothing is lost, and the name itself is removed. */
-function ttRetireTypedNames(){
-  const all = readStoredAll(), typed = ttTypedNames();
-  if(all && typed.length){
-    const free = TT_ANIMALS.map(a=>a.n).filter(n=>!dzOwn(all, n)), empty = JSON.stringify(freshKidRecord());
-    let k = 1;
-    typed.forEach(n=>{
-      const rec = all[n];
-      delete all[n];
-      if(JSON.stringify(rec) === empty) return;              // typed but never played: nothing to keep
-      let to = free.shift();
-      while(!to){ const c = "Player " + (k++); if(!dzOwn(all, c)) to = c; }
-      all[to] = rec;
-    });
-    if(!saveAllProgress(all)) return;
-  }
-  try{ localStorage.removeItem(LOCAL_ROSTER_KEY); }catch(e){}
-}
 
-async function fetchRemoteProgress(name){
-  if(!APPS_SCRIPT_URL) return null;
-  try{
-    const res = await fetch(APPS_SCRIPT_URL + "?action=progress&name=" + encodeURIComponent(name));
-    return await res.json(); // { levelBestTimes:{n:sec}, levelPoints:{n:pts} }
-  }catch(e){
-    return null;
+/* =========================================================
+   WHO'S PLAYING: the player picked on the site's home page (a child's nickname, or Just looking). The site keeps a separate copy of this game's
+   saved progress for each player and swaps it in before the game starts, so the game itself keeps a single record, TT_ME.
+   Older versions had their own chooser (animals, typed names): ttOnePlayer() folds all of those into TT_ME with the merge rule, so nothing earned is lost.
+   ========================================================= */
+const TT_ME = "me";
+function ttNeedsOnePlayer(){ const all = readStoredAll(); return !!all && Object.keys(all).some(n=>n !== TT_ME); }
+function ttOnePlayer(){
+  const all = readStoredAll();
+  if(all && Object.keys(all).some(n=>n !== TT_ME)){
+    const one = Object.create(null);
+    one[TT_ME] = Object.keys(all).reduce((rec, n)=>ttMergeRecords(rec, all[n]), freshKidRecord());
+    if(!saveAllProgress(one)) return;
   }
+  try{ localStorage.removeItem("mathfacts_local_roster_v1"); }catch(e){}   // older versions kept typed names here
 }
-/* a child chose an animal: progress is kept under it */
-async function playAsName(name){
-  setPlayer(name);
-  const remote = await fetchRemoteProgress(name);
-  if(remote && typeof remote === "object") session.rec = ttMergeRecords(session.rec, remote);
-  saveKidRecord(name, session.rec);
-  dzEnter();
+/* the name shown: the site's player, "Just looking", or none when the page is opened on its own */
+function ttShownName(){
+  if(FMT.guest) return "Just looking";
+  try{
+    if(!window.TMG) return "";
+    if(!window.TMG.kid || window.TMG.kid === "guest") return "Just looking";
+    const kid = (JSON.parse(localStorage.getItem("tmg.family") || "{}").kids || []).filter(k=>k && k.id === window.TMG.kid)[0];
+    return kid && typeof kid.name === "string" ? kid.name : "";
+  }catch(e){ return ""; }
 }
-/* Back to the first screen ("Switch kid"). */
-function switchKid(){ if(!FMT.fixed) FMT.profile = null; session.name = null; session.rec = null; session.inStore = false; renderStart(); }
-function renderStart(){
-  dzFlying(false);
-  const all = loadAllProgress();
-  const note = (n)=>{
-    if(!dzOwn(all, n)) return "";
-    const rounds = Object.keys(all[n].levelBestTimes).length, stars = dzTotalStars(dzNormalise(all[n].dozen));
-    const words = DZ_DIRECT ? (stars ? stars + " ★" : "") : (rounds ? rounds + (rounds === 1 ? " round" : " rounds") : "");
-    return words ? ' <small>' + words + '</small>' : "";
-  };
-  const btn = (n, e)=>'<button type="button" class="dz-whobtn" data-player="'+esc(n)+'">'+(e ? '<span class="e" aria-hidden="true">'+e+'</span>' : "")+esc(n)+note(n)+'</button>';
-  const others = Object.keys(all).filter(n=>/^Player \d+$/.test(n));
-  document.getElementById("app").innerHTML = '<div class="dz dz-who"><div class="card dz-card"><h2 id="dzTitle" tabindex="-1">Who\'s playing?</h2><p>'+(DZ_DIRECT ? "Tap your animal to start your mission." : "Tap your animal to see your rounds and best time.")+'</p>'
-    + '<div class="dz-whogrid">'+TT_ANIMALS.map(a=>btn(a.n, a.e)).join("")+others.map(n=>btn(n)).join("")+'</div></div></div>';
-  let starting = false;
-  document.querySelectorAll("#app [data-player]").forEach(b=>b.addEventListener("click", ()=>{ if(starting) return; starting = true; playAsName(b.dataset.player); }));
-  window.scrollTo(0, 0);
-}
+function ttNameBit(){ const n = ttShownName(); return n && n !== "Just looking" ? ", "+esc(n) : ""; }
+function ttHello(){ const n = ttShownName(); return n === "Just looking" ? "Just looking 👀" : n ? "Hi, "+esc(n)+"! 👋" : "Hi! 👋"; }
 
 /* =========================================================
    RENDER: LEVEL GRID
@@ -1166,7 +1127,7 @@ function renderLevels(){
   const totalTime = Object.values(rec.levelBestTimes).reduce((a,b)=>a+b,0);
   app.innerHTML = `
     <div class="levels-header">
-      <div class="who">Hi, ${esc(session.name)}! 👋</div>
+      <div class="who">${ttHello()}</div>
       <div class="row" style="margin-top:0;">
         <div class="totalpill">${completedCount}/${TOTAL_LEVELS} rounds · ${fmtTime(totalTime)}</div>
         <div class="totalpill" style="background:#F2A559;color:var(--ink);">💰 ${fmtMoney(totalCents(rec))}</div>
@@ -1174,11 +1135,7 @@ function renderLevels(){
     </div>
     <p class="sub" style="margin:0 0 16px;">Play any round, in any order. Each answer right the first time earns 1¢, and your best try at each round counts.</p>
     ${dzPromoHtml()}
-    <div class="grid">${cards}</div>
-    <div class="row">
-      ${FMT.fixed ? "" : '<button class="btn secondary small" id="switchBtn">Switch kid</button>'}
-    </div>`;
-  const sw = document.getElementById("switchBtn"); if(sw) sw.addEventListener("click", switchKid);
+    <div class="grid">${cards}</div>`;
   dzWireOpen();
   document.querySelectorAll(".lvl-card").forEach(el=>{
     el.addEventListener("click", ()=> startLevel(parseInt(el.dataset.level)) );
@@ -1532,7 +1489,7 @@ function renderAllComplete(totalTimeSoFar){
   const rec = session.rec;
   app.innerHTML = `
     <div class="card result-card">
-      <h2>All 600 questions done, ${esc(session.name)}! 🏆</h2>
+      <h2>All 600 questions done${ttNameBit()}! 🏆</h2>
       <div class="big">${fmtTime(totalTimeSoFar)}</div>
       <div class="stat-row">
         <div class="stat"><div class="n">💰 ${fmtMoney(totalCents(rec))}</div><div class="l">total earned</div></div>
@@ -2051,7 +2008,7 @@ function dzRenderHub(quiet){
     return '<button class="dz-flight" data-flight="'+f.id+'" aria-label="Flight '+f.id+', '+f.name+'. '+st+' of 3 stars. '+f.blurb.replace(/"/g,"")+'"><span class="no" aria-hidden="true">'+f.id+'</span><span class="tx"><b>'+f.name+'</b><small>'+f.blurb+'</small></span><span class="st" aria-hidden="true">'+dzStarText(st)+'</span></button>';
   }).join("");
   app.innerHTML = '<div class="dz dz-hub">'
-    + '<div class="dz-top"><div class="dz-tag">🚀 Dozen Galaxy</div><div class="grp"><button class="btn secondary small" id="dzToMap">Round map</button>'+(FMT.fixed?'':'<button class="btn secondary small" id="dzSwitch">Switch kid</button>')+'</div></div>'
+    + '<div class="dz-top"><div class="dz-tag">🚀 Dozen Galaxy</div><div class="grp"><button class="btn secondary small" id="dzToMap">Round map</button></div></div>'
     + '<div class="card dz-card"><h2 id="dzTitle" tabindex="-1">Mission Control</h2>'
     + '<p>A <b>dozen</b> is 12. Every cargo pod holds a dozen star crystals: <span class="dz-blue">10 blue</span> and <span class="dz-pinkt">2 pink</span>. Captains ask for pods and you work out the crystals.</p>'
     + '<div class="dz-one" aria-hidden="true">'+dzPodSvg()+'</div>'
@@ -2061,7 +2018,6 @@ function dzRenderHub(quiet){
     + '<h3>Your star map: '+m.lit+' of '+DZ_MAP_SIZE+' stars</h3><p class="dz-sub">'+(m.lit >= DZ_MAP_SIZE ? "Your star map is full! Every star in the galaxy is lit." : "Every order you deliver lights a star. A dozen stars finish a constellation.")+'</p>'+dzMapHtml(d.pods)
     + '</div></div>';
   $dz("dzToMap").addEventListener("click", ()=>{ renderLevels(); });
-  if($dz("dzSwitch")) $dz("dzSwitch").addEventListener("click", switchKid);
   document.querySelectorAll(".dz-flight").forEach(b=>b.addEventListener("click", ()=>dzStart(parseInt(b.dataset.flight, 10))));
   if(quiet){ window.scrollTo(0, keepY); return; }
   window.scrollTo(0, 0);
@@ -2411,9 +2367,9 @@ else if(FMT.profile){
   setPlayer(FMT.profile.charAt(0).toUpperCase()+FMT.profile.slice(1));       // the passport animal, never a typed name
   dzEnter();
 } else {
-  const begin = ()=>{ ttRetireTypedNames(); renderStart(); };
-  /* with an old typed name to clear, wait for the account's newest copy first (a slow connection gets 2.5 seconds), so this change can not overwrite it */
-  if(ttTypedNames().length && window.TMG && window.TMG.ready) Promise.race([window.TMG.ready, new Promise(r=>setTimeout(r, 2500))]).then(begin, begin);
+  const begin = ()=>{ ttOnePlayer(); setPlayer(TT_ME); dzEnter(); };
+  /* with older records to fold together, wait for the account's newest copy first (a slow connection gets 2.5 seconds), so this change can not overwrite it */
+  if(ttNeedsOnePlayer() && window.TMG && window.TMG.ready) Promise.race([window.TMG.ready, new Promise(r=>setTimeout(r, 2500))]).then(begin, begin);
   else begin();
 }
 </script>
@@ -2508,10 +2464,10 @@ else if(FMT.profile){
   if (slot) return;   // in a top bar: nothing to move around
   /* The lessons keep their own buttons along the screen edges (Previous / Next in a footer, controls in a header), so a pill nailed to
      one corner always sat on top of something. Keep the pill 44px tall (easy to tap) and, whenever the page layout changes, put it in
-     whichever of six edge spots does not cover a button, link or field (spots tried in this order: bottom-centre, bottom-left,
-     bottom-right, top-centre, top-left, top-right). Buttons that are always on screen (fixed or sticky) count much more than ones
-     that scroll away. It does not move during scrolling; once scrolling stops it moves only if its spot now covers something. */
-  var SPOTS = ['bc', 'bl', 'br', 'tc', 'tl', 'tr'], cur = '', timer = 0, room = false;
+     whichever of six edge spots does not cover a button, link or field, or words (spots tried in this order: bottom-centre, bottom-left,
+     bottom-right, top-centre, top-left, top-right). Buttons that are always on screen (fixed or sticky) count most, then ones that
+     scroll away, then words (2026-11-27: the pill sat on the Times Tables title, because words did not count). It does not move during scrolling; once scrolling stops it moves only if its spot now covers something. */
+  var SPOTS = ['bc', 'bl', 'br', 'tc', 'tl', 'tr'], cur = '', timer = 0, room = false, topRoom = false;
   /* On a phone the two wide pills (about 300px) covered something in every spot, for example "Begin" on a lesson's first screen.
      Below 560px wide they become two round 48px buttons (🏠 and 🔄, still easy to tap; the words stay for screen readers),
      and the page gets room at the bottom so it can always scroll clear of them. */
@@ -2554,15 +2510,39 @@ else if(FMT.profile){
         if (t && !e.contains(t)) continue;   /* hidden behind something else right now (for example scrolled under the footer): not a button the pill can cover */
         items.push({ r: r, hard: fixedish(e) });
       }
+      var boxes = {};
+      SPOTS.forEach(function (s) { put(s); boxes[s] = a.getBoundingClientRect(); });
+      function over(q, b) { return q.left < b.right - 1 && q.right > b.left + 1 && q.top < b.bottom - 1 && q.bottom > b.top + 1; }
+      function nearSpot(q) { return SPOTS.some(function (s) { return over(q, boxes[s]); }); }
+      /* Words count too (a title, a line of instructions): only the lines of text that are on screen near one of the spots, and not hidden behind something else. */
+      var tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null), n;
+      while ((n = tw.nextNode())) {
+        var pe = n.parentElement; if (!pe || !/\S/.test(n.nodeValue) || a.contains(pe) || /^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE)$/.test(pe.tagName) || !nearSpot(pe.getBoundingClientRect())) continue;
+        var rg = document.createRange(); rg.selectNodeContents(n); var rs = rg.getClientRects();
+        for (j = 0; j < rs.length; j++) {
+          var q = rs[j]; if (q.width < 2 || q.height < 2 || q.bottom <= 0 || q.top >= H || !nearSpot(q)) continue;
+          var tp = document.elementFromPoint(Math.min(Math.max(q.left + q.width / 2, 0), W - 1), Math.min(Math.max(q.top + q.height / 2, 0), H - 1));
+          if (tp && (tp === pe || pe.contains(tp) || tp.contains(pe))) items.push({ r: q, text: true });
+        }
+      }
       var res = {};
       SPOTS.forEach(function (s) {
-        put(s); var b = a.getBoundingClientRect(), hard = 0, soft = 0;
-        items.forEach(function (it) { var q = it.r; if (q.left < b.right - 1 && q.right > b.left + 1 && q.top < b.bottom - 1 && q.bottom > b.top + 1) { if (it.hard) hard++; else soft++; } });
-        res[s] = { hard: hard, soft: soft };
+        var b = boxes[s], hard = 0, soft = 0, text = 0;
+        items.forEach(function (it) { if (over(it.r, b)) { if (it.text) text++; else if (it.hard) hard++; else soft++; } });
+        res[s] = { hard: hard, soft: soft, text: text };
       });
+      function free(x) { return x.hard + x.soft + x.text === 0; }
       var best = '', c = res[cur];
-      for (j = 0; j < SPOTS.length; j++) { var x = res[SPOTS[j]]; if (!best || x.hard < res[best].hard || (x.hard === res[best].hard && x.soft < res[best].soft)) best = SPOTS[j]; }
-      if (!(c && c.hard === 0 && (c.soft === 0 || res[best].hard > 0 || res[best].soft > 0))) cur = best;
+      for (j = 0; j < SPOTS.length; j++) { var x = res[SPOTS[j]], y = res[best]; if (!best || x.hard < y.hard || (x.hard === y.hard && (x.soft < y.soft || (x.soft === y.soft && x.text < y.text)))) best = SPOTS[j]; }
+      /* Nothing is free at the top of the page (the title fills the top, the content the bottom): make a strip of room above the page once, and the buttons sit in it. */
+      if (!free(res[best]) && !topRoom && (window.scrollY || 0) < 4) {
+        topRoom = true;
+        document.body.style.paddingTop = 'calc(' + (getComputedStyle(document.body).paddingTop || '0px') + ' + ' + Math.ceil(boxes.tc.height + 16) + 'px)';
+        a.style.pointerEvents = ''; place(); return;
+      }
+      /* Stay put (no jumping about) while the spot covers nothing; or only words and no spot is free; or scrolling buttons and every spot covers buttons. */
+      var bb = res[best];
+      if (!(c && c.hard === 0 && (free(c) || (c.soft === 0 ? !free(bb) : bb.hard + bb.soft > 0)))) cur = best;
       put(cur); a.style.pointerEvents = '';
     } catch (e) { put(cur || 'bl'); a.style.pointerEvents = ''; }
   }

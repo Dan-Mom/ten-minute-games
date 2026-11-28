@@ -648,11 +648,7 @@ svg.star{width:34px;height:34px}svg.star.off{filter:grayscale(1) brightness(1.6)
 .tlogo{flex:0 0 auto}.tsub{display:inline-block;background:var(--terra2);color:#fff;font:800 clamp(14px,2.4vw,20px) var(--font);padding:2px 16px;border-radius:14px;margin-bottom:6px}
 .tcity{max-width:760px}.trow{display:flex;gap:12px;justify-content:center}.btn.big{min-height:76px;min-width:240px;font-size:30px;border-radius:26px}
 .tcoach{max-width:640px;margin-top:0}
-.whoRow{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin:12px 0}
-.who{min-width:150px;min-height:128px;border:0;border-radius:24px;background:#fff;color:var(--purple2);font:800 22px var(--font);box-shadow:0 6px 0 rgba(61,37,102,.35);padding:10px 18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer}
-.who .wi{font-size:52px;line-height:1}.who small{font:700 15px var(--font);color:#6b5a86}.who.on{outline:5px solid var(--gold)}
 .stip{font:600 14px var(--font);opacity:.85;margin:6px 0 0;text-align:center}
-.whoNote{max-width:560px;margin:4px auto 0;font:600 15px var(--font);color:#fff;text-align:center}
 .wtabs{flex:0 0 auto;display:flex;gap:8px;margin:10px 0 6px;flex-wrap:wrap}
 .wbanner{flex:0 0 auto;display:flex;flex-direction:column;background:#fff;border:4px solid;border-radius:18px;padding:4px 14px;margin-bottom:8px;font:600 15px var(--font)}.wbanner b{font:900 clamp(20px,3vw,26px) var(--serif);color:var(--purple2)}
 .path{flex:0 0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:10px;margin-bottom:8px}
@@ -709,7 +705,6 @@ svg.star{width:34px;height:34px}svg.star.off{filter:grayscale(1) brightness(1.6)
   </header>
   <main id="stage">
     <section class="screen" id="s-title"></section>
-    <section class="screen" id="s-who"></section>
     <section class="screen" id="s-map"></section>
     <section class="screen" id="s-collect"></section>
     <section class="screen" id="s-build"></section>
@@ -727,7 +722,6 @@ svg.star{width:34px;height:34px}svg.star.off{filter:grayscale(1) brightness(1.6)
 const cleanId=x=>String(x).replace(/[^A-Za-z0-9_.-]/g,'_').slice(0,40);
 /* only a real http(s) origin counts as a host: "*", "null", javascript: and garbage are rejected (review F4) */
 const cleanHost=h=>{try{if(typeof h!=='string'||!h)return null;const u=new URL(h);return(u.protocol==='https:'||u.protocol==='http:')?u.origin:null}catch(e){return null}};
-const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};   /* storage can be blocked: never let a read kill the page (review F1) */
 const readContext=(search,c)=>{try{const q=new URLSearchParams(search);
   if(q.get('profile')&&!c.profile)c.profile=cleanId(q.get('profile'));
   if(q.get('host')&&!c.hostOrigin){const h=cleanHost(q.get('host'));if(h)c.hostOrigin=h}
@@ -739,7 +733,7 @@ try{window.PE_LEARNING_CONTEXT=readContext(location.search,(window.PE_LEARNING_C
 
   LearningHook.emit(name, data)  -> builds and delivers ONE event, never throws into the game:
     { schema:1, lesson_id, event:name, ts:"2026-09-26T18:04:05Z", session:"<random per page load>",
-      profile:"<anonymous id in localStorage lp_profile_v1:<slot>, or PE_LEARNING_CONTEXT.profile>", data:{...,lang:"en"} }
+      profile:"<anonymous id in localStorage lp_profile_v1, or PE_LEARNING_CONTEXT.profile>", data:{...,lang:"en"} }
   Delivery (each step in its own try/catch):
     1. appended to localStorage `lp_events_v1` (JSON array, newest last, max 500, oldest dropped)
     2. window.PE_LEARNING_HOOK(event) if the host defined that function
@@ -761,52 +755,16 @@ try{window.PE_LEARNING_CONTEXT=readContext(location.search,(window.PE_LEARNING_C
     hint_used          {unit, activity}                        each time the mascot hint / reveal / glow help fires
     session_end        {seconds}                               on pagehide / tab hidden, once per hide (seconds visible since load or last return)
 ==================================================================================================*/
-/*==================================================================================================
-  Who is playing?  -  one save per child (save keys carry the profile)
-  Four built-in animal slots, no names and no typing. Each slot has its OWN save (rnk_state:<slot>) and its OWN anonymous
-  event id (lp_profile_v1:<slot>), so brothers and sisters on one iPad never overwrite each other and the parent
-  dashboard can tell them apart. If a host app sets window.PE_LEARNING_CONTEXT.profile, that profile IS the slot (no picker).
-  Old single saves (rnk_state) are copied once to the Lion slot (the old file is left untouched).
-  Launch rule: 2 or more children have progress -> always ask; otherwise go straight to the only / last player.
-==================================================================================================*/
-const Who=(function(){
-  const CUR='rnk_who',SLOTS=[{id:'lion',icon:'\uD83E\uDD81',name:'Lion'},{id:'fox',icon:'\uD83E\uDD8A',name:'Fox'},{id:'panda',icon:'\uD83D\uDC3C',name:'Panda'},{id:'owl',icon:'\uD83E\uDD89',name:'Owl'}];
-  let mem=null;
-  /* a host-given child id is read ONCE at boot and frozen (a host changing it later must not make us write the old child's save into the new key) */
-  const HOSTED=(()=>{try{const c=window.PE_LEARNING_CONTEXT;return c&&c.profile?cleanId(c.profile):null}catch(e){return null}})();
-  const hostProfile=()=>HOSTED;
-  const valid=id=>SLOTS.some(s=>s.id===id);
-  function get(){if(HOSTED)return HOSTED;if(mem&&valid(mem))return mem;
-    const v=lsGet(CUR);if(valid(v)){mem=v;return v}return null}
-  function set(id){if(!valid(id))return;mem=id;try{localStorage.setItem(CUR,id)}catch(e){}}
-  const slot=id=>SLOTS.filter(s=>s.id===id)[0]||null;
-  /* one-time move of the old single save to the Lion slot; `st` is any storage-like object (tests pass an in-memory one) */
-  function migrate(st){try{st=st||localStorage}catch(e){return false}   /* reading the localStorage PROPERTY can throw (blocked cookies, sandboxed iframe) */
-    try{if(st.getItem('rnk_legacy_moved')==='1')return false;const legacy=st.getItem('rnk_state');
-      if(legacy&&st.getItem('rnk_state:lion'))return false;      /* the Lion already has a save: leave the old one alone and try again later, never abandon it */
-      if(legacy){st.setItem('rnk_state:lion',legacy);st.setItem('rnk_legacy_copied','1');
-        const lp=st.getItem('lp_profile_v1');if(lp&&!st.getItem('lp_profile_v1:lion'))st.setItem('lp_profile_v1:lion',lp)}
-      st.setItem('rnk_legacy_moved','1');return !!legacy}catch(e){return false}}
-  /* launch rule (pure): who plays now? cur = remembered player, withData = players that have progress.
-     Never silently drop a child into another child's kingdom: when it is not clear whose turn it is, ask. */
-  function launch(cur,withData){cur=valid(cur)?cur:null;
-    if(withData.length===0)return cur?{pick:cur,chooser:false}:{pick:null,chooser:true};
-    if(withData.length===1&&(!cur||cur===withData[0]))return{pick:withData[0],chooser:false};
-    return{pick:cur,chooser:true}}
-  return{SLOTS,get,set,slot,migrate,launch,hosted:()=>!!HOSTED,hostedId:HOSTED,needChooser:false,
-    /* true while nobody has been chosen yet (or the chooser is open): no play, no saving, no events */
-    pending(){return !HOSTED&&(this.needChooser||!get())},
-    active(){return !HOSTED&&this.needChooser?null:get()},
-    icon(){const s=slot(get());return s?s.icon:''},name(){const s=slot(get());return s?s.name:''}};
-})();
 const LearningHook=(function(){
   const LESSON='math.all.roman-numeral-kingdom',QK='lp_events_v1',PK='lp_profile_v1',SK='lp_started_v1',MAX=500;
   const rid=n=>{let s='';try{const a=new Uint8Array(n);crypto.getRandomValues(a);a.forEach(x=>s+=(x%36).toString(36))}catch(e){for(let i=0;i<n;i++)s+=Math.floor(Math.random()*36).toString(36)}return s};
-  const session=rid(8);let memProfile={},memStarted={},segStart=Date.now(),ended=false;
+  const session=rid(8);let memProfile='',memStarted={},segStart=Date.now(),ended=false;
   const ctx=()=>{try{return(window.PE_LEARNING_CONTEXT&&typeof window.PE_LEARNING_CONTEXT==='object')?window.PE_LEARNING_CONTEXT:{}}catch(e){return{}}};
-  function profile(){if(Who.hosted())return Who.hostedId;
-    const k=Who.get()?PK+':'+Who.get():PK;  /* one anonymous id per player slot */
-    try{let p=localStorage.getItem(k);if(!p){p='p'+rid(10);localStorage.setItem(k,p)}return p}catch(e){return memProfile[k]||(memProfile[k]='p'+rid(10))}}
+  /* a host-given id is read ONCE at boot and frozen */
+  const HOSTED=(()=>{try{const c=window.PE_LEARNING_CONTEXT;return c&&c.profile?cleanId(c.profile):null}catch(e){return null}})();
+  /* one anonymous id; the site keeps a separate copy of it for each player */
+  function profile(){if(HOSTED)return HOSTED;
+    try{let p=localStorage.getItem(PK);if(!p){p='p'+rid(10);localStorage.setItem(PK,p)}return p}catch(e){return memProfile||(memProfile='p'+rid(10))}}
   /* Bounded queue over a storage-like object {getItem,setItem,removeItem}. If writing (or reading) throws, it keeps a
      bounded in-memory queue (max MAX, oldest dropped, no duplicates) and peek() returns that combined ordered queue. */
   function makeQueue(store,key,max){let mem=[],failed=false;
@@ -832,9 +790,7 @@ const LearningHook=(function(){
     startOnce(){const k=SK+':'+LESSON+':'+profile();if(memStarted[k])return;memStarted[k]=1;
       try{if(localStorage.getItem(k))return;localStorage.setItem(k,'1')}catch(e){}emit('started',{})},
     /* time on the page: one session_end per hide */
-    hide(){if(ended)return;ended=true;if(!Who.active())return;/* nobody has picked a player yet: no session to report */emit('session_end',{seconds:Math.max(0,Math.round((Date.now()-segStart)/1000))})},
-    /* the child is switching players: close out the OUTGOING child's time now, so it is never billed to the next child (review F3) */
-    flush(){if(ended||!Who.active()){segStart=Date.now();return}const sec=Math.round((Date.now()-segStart)/1000);segStart=Date.now();if(sec>0)emit('session_end',{seconds:sec})},
+    hide(){if(ended)return;ended=true;emit('session_end',{seconds:Math.max(0,Math.round((Date.now()-segStart)/1000))})},
     show(){ended=false;segStart=Date.now()}};
 })();
 document.addEventListener('visibilitychange',()=>{try{document.visibilityState==='hidden'?LearningHook.hide():LearningHook.show()}catch(e){}});
@@ -862,12 +818,10 @@ const withTimers=o=>Object.assign(o,{tm:[],
 const Screens={cur:null,mods:{},
   reg(name,mod){this.mods[name]=mod},
   go(name,p){
-    if(name!=='who'&&Who.pending()){name='who';p={}}      /* nobody chosen yet: the only way on is to pick an animal */
     const old=this.mods[this.cur];if(old&&old.leave)try{old.leave()}catch(e){console.warn(e)}
     UI.closeAll&&UI.closeAll();
     $$('.screen').forEach(s=>s.classList.toggle('on',s.id==='s-'+name));
     this.cur=name;document.body.dataset.screen=name;
-    ['#b-home','#b-scroll'].forEach(q=>{const b=$(q);if(b)b.disabled=name==='who'});   /* Map / Scroll are off while choosing */
     const root=$('#s-'+name);root.scrollTop=0;
     const m=this.mods[name];if(m)m.enter(root,p||{});
     Mascot.mount($('.coach',root));
@@ -943,14 +897,17 @@ const SelfTest={
     const ev=LearningHook.make('activity_completed',{unit:'world1',activity:'block-builder',score:4,max:4,stars:3,attempts:4,hints:0});
     T(ev.schema===1&&ev.lesson_id==='math.all.roman-numeral-kingdom'&&ev.event==='activity_completed','hook shape');
     T(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/.test(ev.ts),'hook ts');T(!!ev.session&&!!ev.profile,'hook ids');T(ev.data.lang==='en'&&!('level' in ev.data),'hook lang, no level');
-    // per-player saves: separate keys, the old save moves once to the Lion, start over touches only the current player
-    {const ps=(()=>{const d={};return{getItem:k=>(k in d?d[k]:null),setItem:(k,v)=>{d[k]=String(v)},removeItem:k=>{delete d[k]}}})();
-      ps.setItem('rnk_state','{"stars":5}');ps.setItem('lp_profile_v1','pabc');
-      T(Who.migrate(ps)===true&&ps.getItem('rnk_state:lion')==='{"stars":5}'&&ps.getItem('lp_profile_v1:lion')==='pabc','old save moves to the Lion slot');
-      ps.setItem('rnk_state:fox','{"stars":9}');
-      T(Who.migrate(ps)===false&&ps.getItem('rnk_state:fox')==='{"stars":9}'&&ps.getItem('rnk_state:lion')==='{"stars":5}','migration runs only once');
-      T(new Set(Who.SLOTS.map(x=>Store.keyFor(x.id))).size===Who.SLOTS.length&&Who.SLOTS.every(x=>Store.keyFor(x.id).indexOf('rnk_state:')===0),'one save key per player');
-      Store.wipe(ps,Store.keyFor('lion'));T(ps.getItem('rnk_state:lion')===null&&ps.getItem('rnk_state:fox')==='{"stars":9}','start over removes only that player');}
+    const memStore=()=>{const d={};return{get length(){return Object.keys(d).length},key:i=>Object.keys(d)[i]||null,getItem:k=>(k in d?d[k]:null),setItem:(k,v)=>{d[k]=String(v)},removeItem:k=>{delete d[k]}}};
+    // one save: the old animal saves fold into it once, nothing earned is lost, folding again changes nothing
+    {const st=memStore();
+      st.setItem('rnk_state:lion',JSON.stringify({coins:10,stars:5,unlocked:2,nodes:{'1.0':{s:2},'1.1':{s:3}},hats:['none','party'],hat:'party',decos:['flowers'],seen:{'1.0':1}}));
+      st.setItem('rnk_state:fox',JSON.stringify({coins:30,stars:3,nodes:{'1.0':{s:3}},hats:['none','crown'],decos:['statue'],finale:true}));
+      st.setItem('rnk_who','fox');st.setItem('lp_profile_v1:lion','pabc');st.setItem('rnk_mute','1');
+      T(Store.combine(st)===true,'old saves are folded');const m=JSON.parse(st.getItem('rnk_state')),once=st.getItem('rnk_state');
+      T(m.nodes['1.0'].s===3&&m.nodes['1.1'].s===3&&m.stars===6&&m.coins===30&&m.unlocked===2&&m.finale===true&&m.seen['1.0']===1,'folded: best of every building, stars, coins, world');
+      T(m.hat==='party'&&['party','crown'].every(x=>m.hats.includes(x))&&['flowers','statue'].every(x=>m.decos.includes(x)),'folded: every hat and decoration kept');
+      T(st.length===3&&st.getItem('lp_profile_v1')==='pabc'&&st.getItem('rnk_mute')==='1','old keys removed, event id and sound setting kept');
+      T(Store.combine(st)===false&&st.getItem('rnk_state')===once,'folding again changes nothing');}
     // host context from the address; framed events go only to the declared host origin (never "*")
     {const c=readContext('?profile=kid%201!&lang=en&host=https%3A%2F%2Fapp.example',{});
       T(c.profile==='kid_1_'&&c.lang==='en'&&c.hostOrigin==='https://app.example','address context is read and cleaned');
@@ -958,21 +915,13 @@ const SelfTest={
       T(c2.profile==='given'&&c2.hostOrigin==='https://mine.example','window context wins over the address');
       T(LearningHook.postTarget({})===null&&LearningHook.postTarget({hostOrigin:''})===null&&LearningHook.postTarget(null)===null,'no host origin: no postMessage');
       T(LearningHook.postTarget({hostOrigin:'https://app.example'})==='https://app.example','host origin used as the target');}
-    // review fixes: blocked storage, host origin, safer migration, launch rule
-    {const bad={getItem(){throw new Error('blocked')},setItem(){throw new Error('blocked')},removeItem(){}};let threw=false,r=null;try{r=Who.migrate(bad)}catch(e){threw=true}
-      T(!threw&&r===false,'blocked storage: migrate() does not throw');
+    // review fixes: blocked storage, host origin
+    {const bad={get length(){throw new Error('blocked')},getItem(){throw new Error('blocked')},setItem(){throw new Error('blocked')},removeItem(){}};let threw=false,r=null;try{r=Store.combine(bad)}catch(e){threw=true}
+      T(!threw&&r===false,'blocked storage: combine() does not throw');
       T(cleanHost('https://app.example/x?y')==='https://app.example'&&cleanHost('*')===null&&cleanHost('null')===null&&cleanHost('javascript:alert(1)')===null&&cleanHost('')===null&&cleanHost(5)===null,'host must be a real http(s) origin');
-      T(LearningHook.postTarget({hostOrigin:'*'})===null,'"*" is never a target');
-      const m2=(()=>{const d={};return{getItem:k=>(k in d?d[k]:null),setItem:(k,v)=>{d[k]=String(v)},removeItem:k=>{delete d[k]}}})();
-      m2.setItem('rnk_state','{"stars":50}');m2.setItem('rnk_state:lion','{"stars":1}');
-      T(Who.migrate(m2)===false&&m2.getItem('rnk_legacy_moved')===null&&m2.getItem('rnk_state:lion')==='{"stars":1}','old save is not abandoned when the Lion already has one');
-      const A=Who.launch;
-      T(A(null,[]).chooser===true&&A('fox',[]).pick==='fox'&&A('fox',[]).chooser===false,'launch: nobody has progress');
-      T(A('lion',['lion']).chooser===false&&A(null,['fox']).pick==='fox'&&A(null,['fox']).chooser===false,'launch: one child has progress');
-      T(A('fox',['lion']).chooser===true&&A('lion',['lion','fox']).chooser===true,'launch: unclear whose turn it is -> ask');}
+      T(LearningHook.postTarget({hostOrigin:'*'})===null,'"*" is never a target');}
     // event queue, tested three ways; each reported as PASS / FAIL / SKIPPED (a skipped check is never counted as a pass)
     const Q={cap:'FAIL',nowrite:'FAIL',storage:'SKIPPED'};
-    const memStore=()=>{const d={};return{getItem:k=>(k in d?d[k]:null),setItem:(k,v)=>{d[k]=String(v)},removeItem:k=>{delete d[k]}}};
     {const nf=fails.length,q=LearningHook.makeQueue(memStore(),'q',LearningHook.MAX);
       for(let i=0;i<505;i++)q.append(Object.assign({},ev,{data:{i}}));const a=q.peek();
       T(a.length===LearningHook.MAX&&a[0].data.i===5&&a[a.length-1].data.i===504&&q.count()===LearningHook.MAX,'queue cap (injected store)');
@@ -1007,46 +956,55 @@ const EventsView={show(){const q=LearningHook.peek();let d=$('#selftest');if(!d)
     $('pre',d).textContent=q.slice(-40).map(e=>JSON.stringify(e)).join('\n');return q}};
 window.EventsView=EventsView;window.LearningHook=LearningHook;
 window.addEventListener('hashchange',()=>{if(location.hash==='#selftest')SelfTest.show();else if(location.hash==='#events')EventsView.show()});
-/*== STAGE 3: state + localStorage (all keys start with rnk_; the save is rnk_state:<player>) ==*/
+/*== STAGE 3: state + localStorage (all keys start with rnk_; the save is rnk_state) ==
+  Who is playing is picked on the site's home page: the site keeps a separate copy of this game's saves for each player and
+  swaps it in before the game starts, so the game keeps ONE save. Older versions had their own "Who is playing?" animals,
+  one save each (rnk_state:lion ...): combine() folds those into the one save, keeping the best of everything. */
 const Store={
-  PREFIX:'rnk_state:',MUTE:'rnk_mute',
-  keyFor(id){return this.PREFIX+id},
-  key(){if(Who.pending())return null;                 /* nobody chosen / chooser open: nothing is loaded or saved (review F2) */
-    const w=Who.get();return w?(Who.hosted()?this.PREFIX+'h:'+w:this.keyFor(w)):null},
-  /* what a slot's save holds, read defensively (used by the who-is-playing screen and the launch rule) */
-  summary(id){try{const o=JSON.parse(localStorage.getItem(this.keyFor(id))||'null');if(o&&typeof o==='object')return{stars:Math.max(0,+o.stars||0),coins:Math.max(0,+o.coins||0),done:o.nodes&&typeof o.nodes==='object'?Object.keys(o.nodes).length:0}}catch(e){}return{stars:0,coins:0,done:0}},
-  has(id){const m=this.summary(id);return m.done>0||m.stars>0||m.coins>0},
-  wipe(st,k){try{if(k)st.removeItem(k)}catch(e){}},
+  KEY:'rnk_state',MUTE:'rnk_mute',
+  OLD:/^(rnk_state:(lion|fox|panda|owl|h:[\w.-]+)|lp_profile_v1:(lion|fox|panda|owl)|rnk_who|rnk_legacy_moved|rnk_legacy_copied)$/,
+  oldKeys(st){const ks=[];try{st=st||localStorage;for(let i=0;i<st.length;i++){const k=st.key(i);if(this.OLD.test(k))ks.push(k)}}catch(e){}return ks},
+  isObj:v=>!!v&&typeof v==='object'&&!Array.isArray(v),
+  /* several saves -> one: the best stars of every building, every hat, decoration and seen intro, the most coins, the furthest world;
+     the hat worn is the one of the save with the most progress */
+  merge(list){const m=this.def(),rank=s=>Object.keys(s.nodes).length*1e13+s.stars*1e6+s.coins;let best=m;
+    list.filter(this.isObj).map(o=>this.fix(Object.assign(this.def(),o))).forEach(s=>{if(rank(s)>rank(best))best=s;
+      Object.keys(s.nodes).forEach(k=>{m.nodes[k]={s:Math.max(s.nodes[k].s,m.nodes[k]?m.nodes[k].s:0)}});Object.assign(m.seen,s.seen);
+      ['hats','decos'].forEach(f=>s[f].forEach(x=>{if(!m[f].includes(x))m[f].push(x)}));
+      m.coins=Math.max(m.coins,s.coins);m.stars=Math.max(m.stars,s.stars);m.unlocked=Math.max(m.unlocked,s.unlocked);m.finale=m.finale||s.finale});
+    m.stars=Math.max(m.stars,Object.keys(m.nodes).reduce((a,k)=>a+m.nodes[k].s,0));m.hat=best.hat;return m},
+  /* fold the old animal saves (and the current save) into the one save, then drop the old keys; nothing left to fold = false. Safe to run again. */
+  combine(st){try{st=st||localStorage;const ks=this.oldKeys(st);if(!ks.length)return false;
+    const rd=k=>{try{return JSON.parse(st.getItem(k))}catch(e){return null}};
+    if(!st.getItem('lp_profile_v1')){const p=ks.filter(k=>k.indexOf('lp_profile_v1:')===0).map(k=>st.getItem(k)).filter(Boolean)[0];if(p)st.setItem('lp_profile_v1',p)}
+    st.setItem(this.KEY,JSON.stringify(this.merge([this.KEY].concat(ks.filter(k=>k.indexOf(this.KEY+':')===0)).map(rd))));
+    ks.forEach(k=>st.removeItem(k));return true}catch(e){return false}},
   def(){return{v:1,coins:0,stars:0,unlocked:1,nodes:{},hat:'none',hats:['none'],decos:[],seen:{},finale:false}},
-  load(){let k=null,j=null;try{k=this.key();j=k&&localStorage.getItem(k);if(j){const o=JSON.parse(j);if(o&&typeof o==='object'&&!Array.isArray(o))return this.fix(Object.assign(this.def(),o))}}
+  load(){const k=this.KEY;let j=null;try{j=localStorage.getItem(k);if(j){const o=JSON.parse(j);if(this.isObj(o))return this.fix(Object.assign(this.def(),o))}}
     catch(e){}
-    try{if(k&&j&&!localStorage.getItem(k+':bak'))localStorage.setItem(k+':bak',j)}catch(e){}   /* unreadable save: keep one backup copy before it can be overwritten (review F8) */
+    try{if(j&&!localStorage.getItem(k+':bak'))localStorage.setItem(k+':bak',j)}catch(e){}   /* unreadable save: keep one backup copy before it can be overwritten (review F8) */
     return this.def()},
   /* a saved value with the wrong shape (corrupt store) falls back to the default instead of crashing the map */
-  fix(s){const d=this.def(),isObj=v=>v&&typeof v==='object'&&!Array.isArray(v),num=(v,lo,hi,dv)=>typeof v==='number'&&isFinite(v)?Math.min(hi,Math.max(lo,Math.floor(v))):dv;
+  fix(s){const d=this.def(),isObj=this.isObj,num=(v,lo,hi,dv)=>typeof v==='number'&&isFinite(v)?Math.min(hi,Math.max(lo,Math.floor(v))):dv;
     s.coins=num(s.coins,0,1e6,0);s.stars=num(s.stars,0,1e6,0);s.unlocked=num(s.unlocked,1,3,1);
     const nodes={};if(isObj(s.nodes))Object.keys(s.nodes).forEach(k=>{const v=s.nodes[k];if(/^[1-3]\.[0-5]$/.test(k)&&isObj(v))nodes[k]={s:num(v.s,0,3,1)}});s.nodes=nodes;
     const seen={};if(isObj(s.seen))Object.keys(s.seen).forEach(k=>{if(/^[1-3]\.[0-5]$/.test(k)&&s.seen[k])seen[k]=1});s.seen=seen;
     s.hats=Array.isArray(s.hats)?s.hats.filter(x=>typeof x==='string'):d.hats;s.decos=Array.isArray(s.decos)?s.decos.filter(x=>typeof x==='string'):[];
     if(typeof s.hat!=='string')s.hat='none';s.finale=s.finale===true;s.v=1;return s},
-  save(){try{const k=this.key();if(k)localStorage.setItem(k,JSON.stringify(S))}catch(e){}},
+  save(){try{localStorage.setItem(this.KEY,JSON.stringify(S))}catch(e){}},
   getMute(){try{return localStorage.getItem(this.MUTE)==='1'}catch(e){return false}},
   setMute(m){try{localStorage.setItem(this.MUTE,m?'1':'0')}catch(e){}},
-  /* start over = forget ONLY the current player's kingdom (never the other children, the sound setting or who is playing) */
-  reset(){this.wipe(localStorage,this.key());S=this.def();Game.refreshHud()}
+  /* start over = forget ONLY this player's kingdom (the site keeps the other children's copies; the sound setting stays) */
+  reset(){try{localStorage.removeItem(this.KEY)}catch(e){}S=this.def();Game.refreshHud()}
 };
-/* which child is playing: move an old single save to the Lion slot once, then apply the launch rule */
-try{if(!Who.hosted()){const moved=Who.migrate();if(moved&&!Who.get())Who.set('lion');
-  const L=Who.launch(Who.get(),Who.SLOTS.filter(x=>Store.has(x.id)).map(x=>x.id));
-  if(L.pick&&L.pick!==Who.get())Who.set(L.pick);
-  Who.needChooser=L.chooser}}catch(e){Who.needChooser=true}    /* anything odd with storage: just ask who is playing */
 let S=Store.load();
+/* the player picked on the site's home page: a child's name, "Just looking", or '' when this page is opened on its own */
+const siteName=()=>{try{const T=window.TMG;if(!T)return '';if(!T.kid||T.kid==='guest')return 'Just looking';
+  const n=(JSON.parse(localStorage.getItem('tmg.family')||'{"kids":[]}').kids.find(k=>k.id===T.kid)||{}).name;return typeof n==='string'?n:''}catch(e){return ''}};
 
 /* Game bookkeeping: coins, stars, node completion (a node = one activity on the world path; id "w.i") */
 const Game={
   refreshHud(){$('#n-coins').textContent=S.coins;$('#n-stars').textContent=S.stars},
-  /* switch to another child's kingdom (their own save), then go to the title */
-  choosePlayer(id){LearningHook.flush();Who.set(id);Who.needChooser=false;S=Store.load();Store.clean();this.refreshHud();Mascot.setHat(S.hat);LearningHook.startOnce();Screens.go('title')},
   addCoins(n){S.coins=Math.max(0,S.coins+n);this.refreshHud();this.bump('#p-coins');Store.save()},
   addStars(n){S.stars+=n;this.refreshHud();this.bump('#p-stars');Store.save()},
   bump(sel){const e=$(sel);e.classList.remove('bump');void e.offsetWidth;e.classList.add('bump')},
@@ -1116,7 +1074,7 @@ Object.assign(UI,{
   /* small floating "+1" text at a screen point */
   pop(text,x,y,cls){const e=h('div',{class:'floaty '+(cls||''),text});e.style.left=x+'px';e.style.top=y+'px';document.body.append(e);setTimeout(()=>e.remove(),950)},
   stars(n,max){let s='';for(let i=0;i<(max||3);i++)s+='<svg class="star'+(i<n?'':' off')+'"><use href="#i-star"/></svg>';return s},
-  confirmReset(){this.modal({title:'Start a brand-new kingdom'+(Who.name()?' for the '+Who.name():'')+'?',body:'Your buildings, coins and stars will go away. Are you sure?',
+  confirmReset(){const n=siteName();this.modal({title:'Start a brand-new kingdom'+(n&&n!=='Just looking'?' for '+n:'')+'?',body:'Your buildings, coins and stars will go away. Are you sure?',
     buttons:[{text:'No, keep playing!',cls:'green'},{text:'Yes, start over',cls:'ghost small',fn:()=>{Store.reset();Mascot.setHat('none');Screens.go('title');Mascot.say('A fresh start! Let’s build again!')}}]})}
 });
 window.addEventListener('resize',()=>UI.hudb());
@@ -1647,24 +1605,13 @@ Screens.reg('title',{
     root.append(h('div',{class:'tlogo'},[h('div',{class:'tsub',text:'Ancient Rome needs you!'}),h('h1',{class:'h1',html:'Roman Numeral<br>Kingdom Builder'})]),
       h('div',{class:'city tcity'}),
       h('div',{class:'trow'},[h('button',{class:'btn gold big',text:started?'Continue ▶':'Play! ▶',onclick:()=>{Snd.unlock();Snd.play('good');Screens.go('map')}})]),
-      ...(Who.hosted()?[]:[h('button',{class:'btn small ghost','aria-label':'Playing as '+Who.name()+'. Change player',text:Who.icon()+' '+Who.name()+' \u00B7 Change player',onclick:()=>{Snd.play('tap');Screens.go('who')}})]),
+      ...(siteName()?[h('p',{class:'stip',text:'Playing now: '+siteName()})]:[]),
       ...(started?[h('button',{class:'btn small ghost',text:'Start over',onclick:()=>{Snd.play('tap');UI.confirmReset()}})]:[]),
       h('div',{class:'coach tcoach'}),
       h('p',{class:'stip',text:'No sound? Check the silent switch on the side of your iPad.'}));
     City.render($('.tcity',root),{});
     Mascot.mount($('.coach',root));
     Mascot.say(started?'Welcome back, builder! Your city is waiting!':'Salve! I am Leo. Let’s build a Roman city and learn the numbers together!',{mood:'cheer'})}});
-Screens.reg('who',{
-  enter(root){root.innerHTML='';root.classList.add('center');
-    LearningHook.flush();Who.needChooser=true;S=Store.def();Game.refreshHud();   /* show zeros, never the last child's coins; nothing can be saved until an animal is picked */
-    const cur=Who.get();
-    root.append(h('div',{class:'tlogo'},[h('div',{class:'tsub',text:'Who is playing?'})]),
-      h('div',{class:'whoRow',role:'group','aria-label':'Choose your animal'},Who.SLOTS.map(x=>{const m=Store.summary(x.id);
-        return h('button',{class:'who'+(x.id===cur?' on':''),'aria-label':x.name+(m.stars?', '+m.stars+' stars':', new player'),onclick:()=>{Snd.unlock();Snd.play('good');Game.choosePlayer(x.id)}},
-          [h('span',{class:'wi',text:x.icon}),h('span',{text:x.name}),h('small',{text:m.stars?'\u2B50 '+m.stars:'New!'})])})),
-      ...(lsGet('rnk_legacy_copied')==='1'&&Store.has('lion')?[h('div',{class:'whoNote',text:'Your kingdom from before is with the Lion.'})]:[]),
-      h('div',{class:'coach tcoach'}));
-    Mascot.mount($('.coach',root));Mascot.say('Tap your animal, builder!',{mood:'cheer'})}});
 Screens.reg('map',{w:0,
   enter(root,p){root.innerHTML='';root.classList.remove('center');
     if(p.w)this.w=p.w;
@@ -1696,7 +1643,11 @@ try{if('serviceWorker' in navigator&&(location.protocol==='https:'||/^(localhost
     window.addEventListener('online',ensure);
   }catch(e){}})}catch(e){}
 /*== JS-END ==*/
-window.addEventListener('DOMContentLoaded',()=>{if(Who.needChooser)Screens.go('who');else{Screens.go('title');LearningHook.startOnce()}if(location.hash==='#selftest')SelfTest.show();else if(location.hash==='#events')EventsView.show()});
+window.addEventListener('DOMContentLoaded',()=>{
+  const begin=()=>{if(Store.combine()){S=Store.load();Store.clean();Game.refreshHud();Mascot.setHat(S.hat)}Screens.go('title');LearningHook.startOnce()};
+  /* old animal saves to fold: first wait (at most 2.5 s) for the site's newest copy of this player's saves, so folding never works on an old copy */
+  if(Store.oldKeys().length&&window.TMG&&window.TMG.ready)Promise.race([window.TMG.ready,sleep(2500)]).then(begin,begin);else begin();
+  if(location.hash==='#selftest')SelfTest.show();else if(location.hash==='#events')EventsView.show()});
 </script>
 <script>(function backPill() {
   try { if (window.parent !== window) return; } catch (e) { return; }
@@ -1789,10 +1740,10 @@ window.addEventListener('DOMContentLoaded',()=>{if(Who.needChooser)Screens.go('w
   if (slot) return;   // in a top bar: nothing to move around
   /* The lessons keep their own buttons along the screen edges (Previous / Next in a footer, controls in a header), so a pill nailed to
      one corner always sat on top of something. Keep the pill 44px tall (easy to tap) and, whenever the page layout changes, put it in
-     whichever of six edge spots does not cover a button, link or field (spots tried in this order: bottom-centre, bottom-left,
-     bottom-right, top-centre, top-left, top-right). Buttons that are always on screen (fixed or sticky) count much more than ones
-     that scroll away. It does not move during scrolling; once scrolling stops it moves only if its spot now covers something. */
-  var SPOTS = ['bc', 'bl', 'br', 'tc', 'tl', 'tr'], cur = '', timer = 0, room = false;
+     whichever of six edge spots does not cover a button, link or field, or words (spots tried in this order: bottom-centre, bottom-left,
+     bottom-right, top-centre, top-left, top-right). Buttons that are always on screen (fixed or sticky) count most, then ones that
+     scroll away, then words (2026-11-27: the pill sat on the Times Tables title, because words did not count). It does not move during scrolling; once scrolling stops it moves only if its spot now covers something. */
+  var SPOTS = ['bc', 'bl', 'br', 'tc', 'tl', 'tr'], cur = '', timer = 0, room = false, topRoom = false;
   /* On a phone the two wide pills (about 300px) covered something in every spot, for example "Begin" on a lesson's first screen.
      Below 560px wide they become two round 48px buttons (🏠 and 🔄, still easy to tap; the words stay for screen readers),
      and the page gets room at the bottom so it can always scroll clear of them. */
@@ -1835,15 +1786,39 @@ window.addEventListener('DOMContentLoaded',()=>{if(Who.needChooser)Screens.go('w
         if (t && !e.contains(t)) continue;   /* hidden behind something else right now (for example scrolled under the footer): not a button the pill can cover */
         items.push({ r: r, hard: fixedish(e) });
       }
+      var boxes = {};
+      SPOTS.forEach(function (s) { put(s); boxes[s] = a.getBoundingClientRect(); });
+      function over(q, b) { return q.left < b.right - 1 && q.right > b.left + 1 && q.top < b.bottom - 1 && q.bottom > b.top + 1; }
+      function nearSpot(q) { return SPOTS.some(function (s) { return over(q, boxes[s]); }); }
+      /* Words count too (a title, a line of instructions): only the lines of text that are on screen near one of the spots, and not hidden behind something else. */
+      var tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null), n;
+      while ((n = tw.nextNode())) {
+        var pe = n.parentElement; if (!pe || !/\S/.test(n.nodeValue) || a.contains(pe) || /^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE)$/.test(pe.tagName) || !nearSpot(pe.getBoundingClientRect())) continue;
+        var rg = document.createRange(); rg.selectNodeContents(n); var rs = rg.getClientRects();
+        for (j = 0; j < rs.length; j++) {
+          var q = rs[j]; if (q.width < 2 || q.height < 2 || q.bottom <= 0 || q.top >= H || !nearSpot(q)) continue;
+          var tp = document.elementFromPoint(Math.min(Math.max(q.left + q.width / 2, 0), W - 1), Math.min(Math.max(q.top + q.height / 2, 0), H - 1));
+          if (tp && (tp === pe || pe.contains(tp) || tp.contains(pe))) items.push({ r: q, text: true });
+        }
+      }
       var res = {};
       SPOTS.forEach(function (s) {
-        put(s); var b = a.getBoundingClientRect(), hard = 0, soft = 0;
-        items.forEach(function (it) { var q = it.r; if (q.left < b.right - 1 && q.right > b.left + 1 && q.top < b.bottom - 1 && q.bottom > b.top + 1) { if (it.hard) hard++; else soft++; } });
-        res[s] = { hard: hard, soft: soft };
+        var b = boxes[s], hard = 0, soft = 0, text = 0;
+        items.forEach(function (it) { if (over(it.r, b)) { if (it.text) text++; else if (it.hard) hard++; else soft++; } });
+        res[s] = { hard: hard, soft: soft, text: text };
       });
+      function free(x) { return x.hard + x.soft + x.text === 0; }
       var best = '', c = res[cur];
-      for (j = 0; j < SPOTS.length; j++) { var x = res[SPOTS[j]]; if (!best || x.hard < res[best].hard || (x.hard === res[best].hard && x.soft < res[best].soft)) best = SPOTS[j]; }
-      if (!(c && c.hard === 0 && (c.soft === 0 || res[best].hard > 0 || res[best].soft > 0))) cur = best;
+      for (j = 0; j < SPOTS.length; j++) { var x = res[SPOTS[j]], y = res[best]; if (!best || x.hard < y.hard || (x.hard === y.hard && (x.soft < y.soft || (x.soft === y.soft && x.text < y.text)))) best = SPOTS[j]; }
+      /* Nothing is free at the top of the page (the title fills the top, the content the bottom): make a strip of room above the page once, and the buttons sit in it. */
+      if (!free(res[best]) && !topRoom && (window.scrollY || 0) < 4) {
+        topRoom = true;
+        document.body.style.paddingTop = 'calc(' + (getComputedStyle(document.body).paddingTop || '0px') + ' + ' + Math.ceil(boxes.tc.height + 16) + 'px)';
+        a.style.pointerEvents = ''; place(); return;
+      }
+      /* Stay put (no jumping about) while the spot covers nothing; or only words and no spot is free; or scrolling buttons and every spot covers buttons. */
+      var bb = res[best];
+      if (!(c && c.hard === 0 && (free(c) || (c.soft === 0 ? !free(bb) : bb.hard + bb.soft > 0)))) cur = best;
       put(cur); a.style.pointerEvents = '';
     } catch (e) { put(cur || 'bl'); a.style.pointerEvents = ''; }
   }

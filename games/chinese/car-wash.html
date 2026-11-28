@@ -2314,10 +2314,10 @@ goOffline();
   if (slot) return;   // in a top bar: nothing to move around
   /* The lessons keep their own buttons along the screen edges (Previous / Next in a footer, controls in a header), so a pill nailed to
      one corner always sat on top of something. Keep the pill 44px tall (easy to tap) and, whenever the page layout changes, put it in
-     whichever of six edge spots does not cover a button, link or field (spots tried in this order: bottom-centre, bottom-left,
-     bottom-right, top-centre, top-left, top-right). Buttons that are always on screen (fixed or sticky) count much more than ones
-     that scroll away. It does not move during scrolling; once scrolling stops it moves only if its spot now covers something. */
-  var SPOTS = ['bc', 'bl', 'br', 'tc', 'tl', 'tr'], cur = '', timer = 0, room = false;
+     whichever of six edge spots does not cover a button, link or field, or words (spots tried in this order: bottom-centre, bottom-left,
+     bottom-right, top-centre, top-left, top-right). Buttons that are always on screen (fixed or sticky) count most, then ones that
+     scroll away, then words (2026-11-27: the pill sat on the Times Tables title, because words did not count). It does not move during scrolling; once scrolling stops it moves only if its spot now covers something. */
+  var SPOTS = ['bc', 'bl', 'br', 'tc', 'tl', 'tr'], cur = '', timer = 0, room = false, topRoom = false;
   /* On a phone the two wide pills (about 300px) covered something in every spot, for example "Begin" on a lesson's first screen.
      Below 560px wide they become two round 48px buttons (🏠 and 🔄, still easy to tap; the words stay for screen readers),
      and the page gets room at the bottom so it can always scroll clear of them. */
@@ -2360,15 +2360,39 @@ goOffline();
         if (t && !e.contains(t)) continue;   /* hidden behind something else right now (for example scrolled under the footer): not a button the pill can cover */
         items.push({ r: r, hard: fixedish(e) });
       }
+      var boxes = {};
+      SPOTS.forEach(function (s) { put(s); boxes[s] = a.getBoundingClientRect(); });
+      function over(q, b) { return q.left < b.right - 1 && q.right > b.left + 1 && q.top < b.bottom - 1 && q.bottom > b.top + 1; }
+      function nearSpot(q) { return SPOTS.some(function (s) { return over(q, boxes[s]); }); }
+      /* Words count too (a title, a line of instructions): only the lines of text that are on screen near one of the spots, and not hidden behind something else. */
+      var tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null), n;
+      while ((n = tw.nextNode())) {
+        var pe = n.parentElement; if (!pe || !/\S/.test(n.nodeValue) || a.contains(pe) || /^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE)$/.test(pe.tagName) || !nearSpot(pe.getBoundingClientRect())) continue;
+        var rg = document.createRange(); rg.selectNodeContents(n); var rs = rg.getClientRects();
+        for (j = 0; j < rs.length; j++) {
+          var q = rs[j]; if (q.width < 2 || q.height < 2 || q.bottom <= 0 || q.top >= H || !nearSpot(q)) continue;
+          var tp = document.elementFromPoint(Math.min(Math.max(q.left + q.width / 2, 0), W - 1), Math.min(Math.max(q.top + q.height / 2, 0), H - 1));
+          if (tp && (tp === pe || pe.contains(tp) || tp.contains(pe))) items.push({ r: q, text: true });
+        }
+      }
       var res = {};
       SPOTS.forEach(function (s) {
-        put(s); var b = a.getBoundingClientRect(), hard = 0, soft = 0;
-        items.forEach(function (it) { var q = it.r; if (q.left < b.right - 1 && q.right > b.left + 1 && q.top < b.bottom - 1 && q.bottom > b.top + 1) { if (it.hard) hard++; else soft++; } });
-        res[s] = { hard: hard, soft: soft };
+        var b = boxes[s], hard = 0, soft = 0, text = 0;
+        items.forEach(function (it) { if (over(it.r, b)) { if (it.text) text++; else if (it.hard) hard++; else soft++; } });
+        res[s] = { hard: hard, soft: soft, text: text };
       });
+      function free(x) { return x.hard + x.soft + x.text === 0; }
       var best = '', c = res[cur];
-      for (j = 0; j < SPOTS.length; j++) { var x = res[SPOTS[j]]; if (!best || x.hard < res[best].hard || (x.hard === res[best].hard && x.soft < res[best].soft)) best = SPOTS[j]; }
-      if (!(c && c.hard === 0 && (c.soft === 0 || res[best].hard > 0 || res[best].soft > 0))) cur = best;
+      for (j = 0; j < SPOTS.length; j++) { var x = res[SPOTS[j]], y = res[best]; if (!best || x.hard < y.hard || (x.hard === y.hard && (x.soft < y.soft || (x.soft === y.soft && x.text < y.text)))) best = SPOTS[j]; }
+      /* Nothing is free at the top of the page (the title fills the top, the content the bottom): make a strip of room above the page once, and the buttons sit in it. */
+      if (!free(res[best]) && !topRoom && (window.scrollY || 0) < 4) {
+        topRoom = true;
+        document.body.style.paddingTop = 'calc(' + (getComputedStyle(document.body).paddingTop || '0px') + ' + ' + Math.ceil(boxes.tc.height + 16) + 'px)';
+        a.style.pointerEvents = ''; place(); return;
+      }
+      /* Stay put (no jumping about) while the spot covers nothing; or only words and no spot is free; or scrolling buttons and every spot covers buttons. */
+      var bb = res[best];
+      if (!(c && c.hard === 0 && (free(c) || (c.soft === 0 ? !free(bb) : bb.hard + bb.soft > 0)))) cur = best;
       put(cur); a.style.pointerEvents = '';
     } catch (e) { put(cur || 'bl'); a.style.pointerEvents = ''; }
   }
